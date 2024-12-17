@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Validate each section
-      const validSections = finalResponse.sections.every(section => {
+      const validSections = finalResponse.sections.every((section: { title: string; sentences: { id: number; text: string }[] }) => {
         if (!section.title || !section.sentences || !Array.isArray(section.sentences)) {
           console.error('Invalid section structure:', section);
           return false;
