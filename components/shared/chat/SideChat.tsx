@@ -102,7 +102,7 @@ const SideChat = ( { primeSentence }: { primeSentence: string | null } ) => {
 
   return (
    
-    <div className='flex flex-col h-full  min-w-[400px] bg-slate-800 rounded-2xl mx-4'>
+    <div className='flex flex-col h-full  min-w-[400px] bg-slate-800 rounded-2xl mx-4 max-h-[80vh]'>
       <div className='bg-slate-800 text-white rounded-lg  border-red-900 border-2 p-4 m-4'>
         {/* <h1 className='text-xl font-regular'>AI Chat</h1> */}
         <div>
