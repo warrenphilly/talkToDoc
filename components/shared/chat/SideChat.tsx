@@ -97,10 +97,10 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 border-red-500 bg-slate-800 rounded-2xl mb-4 max-h-[90vh] ">
-      <div className="bg-slate-800 text-white rounded-lg  border-red-900 border-2 p-4 m-4">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-800 rounded-2xl mb-4 max-h-[90vh] ">
+      <div className="bg-slate-800 text-white rounded-lg  border-slate-700 border-2 p-4 m-4">
         {/* <h1 className='text-xl font-regular'>AI Chat</h1> */}
-        <div>
+        <div className="m-2">
           {primeSentence ? (
             <p>{primeSentence}</p>
           ) : (
@@ -108,9 +108,9 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
           )}
         </div>
         <div className="flex flex-row gap-2">
-        <Button>Explain </Button>
-          <Button>Give Example </Button>
-          </div>
+          <Button onClick={() => sendMessage("Explain this in greater detail")}>Explain </Button>
+          <Button onClick={() => sendMessage("Give me a step-by-step example")}>Give Example </Button>
+        </div>
       </div>
       <div className="flex-grow overflow-y-auto p-4 auto-scroll">
         {messages.map(
@@ -121,7 +121,7 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
                 className={`p-2 rounded mb-2 ${
                   msg.user === "User"
                     ? "bg-slate-800 text-gray-500"
-                    : "bg-slate-900 shadow"
+                    : "bg-slate-700 shadow text-white"
                 }`}
               >
                 {msg.user === "AI" ? (
@@ -135,13 +135,13 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
                               key={sectionIdx}
                               className="bg-white p-4 rounded-lg shadow"
                             >
-                              <h3 className="text-lg font-bold text-gray-800 mb-3">
+                              <h3 className="text-lg font-bold text-gray-100 mb-3">
                                 {section.title}
                               </h3>
                               <div className="space-y-2">
                                 {section.sentences.map((sentence: Sentence) => (
                                   <div className="p-2 bg-gray-50 hover:bg-gray-100 rounded cursor-pointer transition-colors">
-                                    <p className="text-gray-700">
+                                    <p className="text-gray-100">
                                       {sentence.text}
                                     </p>
                                   </div>
@@ -176,8 +176,8 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
             )
         )}
       </div>
-      <div className="bg-slate-800 p-4 border-t rounded-b-lg">
-        <div className="flex  bg-slate-900 rounded-lg  p-2 flex-row items-center gap-3">
+      <div className="bg-slate-800 p-4  rounded-b-lg">
+        <div className="flex  bg-slate-800 rounded-lg  p-2 flex-row items-center gap-3">
           <Textarea
             className="w-full border rounded bg-slate-900"
             placeholder="Type your message..."

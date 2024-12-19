@@ -8,7 +8,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable"
+} from "@/components/ui/resizable";
 
 import {
   Sheet,
@@ -205,24 +205,6 @@ const ChatClient = () => {
     }
   }, [messages]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const startX = e.clientX;
-    const startWidth = sideChatWidth;
-
-    const onMouseMove = (e: MouseEvent) => {
-      const newWidth = startWidth + (startX - e.clientX);
-      setSideChatWidth(Math.max(200, Math.min(newWidth, 500))); // Set min and max width
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  };
-
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-900 w-full">
       <div className="flex flex-col h-full bg-slate-900  w-full mx-2">
@@ -241,146 +223,141 @@ const ChatClient = () => {
             {showChat ? "Close Chat" : "Talk to my notes"}
           </Button>
         </div>
-        <div className="flex flex-col md:flex-row justify-center h-full max-h-[90vh]">
+        <div className="flex flex-col md:flex-row justify-center h-full max-h-[90vh] px-2">
+          <ResizablePanelGroup direction="horizontal" className="w-full px-2">
+            <ResizablePanel className="w-full p-2 min-w-[600px]">
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
+                {showUpload && (
+                  <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
+                    <div className=" p-4 border border-slate-700 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
+                      <h1 className="text-xl font-regular text-slate-100">
+                        Upload Files
+                      </h1>
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="file"
+                          multiple
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          accept="image/*,.pdf,.doc,.docx"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            fileInputRef.current?.click();
+                          }}
+                          className="flex items-center gap-2 bg-slate-500"
+                        >
+                          <Upload size={16} />
+                          Upload Files
+                        </Button>
+                        {files.length > 0 && (
+                          <span className="text-sm text-gray-500 self-center">
+                            {files.length} file(s) selected
+                          </span>
+                        )}
+                      </div>
 
-
-
-
-
-          <ResizablePanelGroup direction="horizontal">
- 
-  
- 
-
-  <ResizablePanel className="w-full max-w-[1200px]">
-    
-          <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 max-w-[1200px] h-full  max-h-[90vh]">
-            {showUpload && (
-              <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
-                <div className="bg-slate-700 p-4 border-t flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
-                  <h1 className="text-xl font-regular text-slate-100">
-                    Upload Files
-                  </h1>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="file"
-                      multiple
-                      ref={fileInputRef}
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      accept="image/*,.pdf,.doc,.docx"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        fileInputRef.current?.click();
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload size={16} />
-                      Upload Files
-                    </Button>
-                    {files.length > 0 && (
-                      <span className="text-sm text-gray-500 self-center">
-                        {files.length} file(s) selected
-                      </span>
-                    )}
+                      <div className="flex flex-row items-center gap-3  p-2 rounded-2xl">
+                        <Button onClick={sendMessage}>Generate Notes</Button>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <div className="flex flex-row items-center gap-3">
-                    <Button onClick={sendMessage}>Generate Notes</Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {messages.map((msg, index) => (
-              <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
-                {/* AI Responses */}
-                {msg.user === "AI" ? (
-                  <div className="text-sm">
-                    {Array.isArray(msg.text) ? (
-                      <div className="space-y-6 bg-slate-800">
-                        {msg.text.map(
-                          (section: Section, sectionIdx: number) => (
-                            <div
-                              key={sectionIdx}
-                              className="bg-slate-700 p-4 rounded-lg"
-                            >
-                              <h3 className="text-lg font-bold text-slate-200 mb-3">
-                                {section.title}
-                              </h3>
-                              <div className="space-y-2">
-                                {section.sentences.map((sentence: Sentence) => (
-                                  <Button
-                                    asChild
-                                    onClick={() =>
-                                      handleSentenceClick(sentence)
-                                    }
-                                    className="bg-slate-700 hover:bg-slate-900 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
-                                  >
-                                    <div className="pl-2 hover:p-2 hover:m-2 hover:shadow-md rounded cursor-pointer transition-colors">
-                                      <p className="text-gray-400">
-                                        {sentence.text}
-                                      </p>
-                                    </div>
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          )
+                {messages.map((msg, index) => (
+                  <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
+                    {/* AI Responses */}
+                    {msg.user === "AI" ? (
+                      <div className="text-sm">
+                        {Array.isArray(msg.text) ? (
+                          <div className="space-y-6 bg-slate-800">
+                            {msg.text.map(
+                              (section: Section, sectionIdx: number) => (
+                                <div
+                                  key={sectionIdx}
+                                  className="bg-slate-700 p-4 rounded-lg"
+                                >
+                                  <h3 className="text-lg font-bold text-slate-200 mb-3">
+                                    {section.title}
+                                  </h3>
+                                  <div className="space-y-2">
+                                    {section.sentences.map(
+                                      (sentence: Sentence) => (
+                                        <Button
+                                          asChild
+                                          onClick={() =>
+                                            handleSentenceClick(sentence)
+                                          }
+                                          className="bg-slate-700 hover:bg-slate-900 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
+                                        >
+                                          <div className="pl-2 hover:p-2 hover:m-2 hover:shadow-md rounded cursor-pointer transition-colors">
+                                            <p className="text-gray-400">
+                                              {sentence.text}
+                                            </p>
+                                          </div>
+                                        </Button>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        ) : (
+                          <span>{String(msg.text)}</span>
                         )}
                       </div>
                     ) : (
-                      <span>{String(msg.text)}</span>
+                      <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
+                        <div className="text-sm border border-slate-700 p-5 flex flex-col gap-2 items-start justify-center rounded-2xl w-full ">
+                          <p className="text-gray-500">Uploaded files</p>
+                          {msg.files && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {msg.files.map((fileUrl: string, idx: number) => (
+                                <img
+                                  key={idx}
+                                  src={fileUrl}
+                                  alt={`Uploaded file ${idx + 1}`}
+                                  className="max-w-[400px] max-h-[400px] object-cover rounded"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setMessages([]);
+                            setShowUpload(true);
+                            setShowChat(false);
+                            setPrimeSentence(null);
+                          }}
+                        >
+                          Clear Notes
+                        </Button>
+                      </div>
                     )}
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                    <div className="text-sm bg-slate-700 p-5 flex flex-col gap-2 items-start justify-center rounded-2xl w-full ">
-                      <p className="text-gray-500">Uploaded files</p>
-                      {msg.files && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {msg.files.map((fileUrl: string, idx: number) => (
-                            <img
-                              key={idx}
-                              src={fileUrl}
-                              alt={`Uploaded file ${idx + 1}`}
-                              className="max-w-[400px] max-h-[400px] object-cover rounded"
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setMessages([]);
-                        setShowUpload(true);
-                        setShowChat(false);
-                        setPrimeSentence(null);
-                      }}
-                    >
-                      Clear Notes
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
+                ))}
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle/>
-            <ResizablePanel className="w-full max-w-[700px]">
 
-          {showChat && (
-           
-              <div className="rounded-2xl border   mb-2 w-full min-w-[400px] max-w-[700px] " >
-                <SideChat primeSentence={primeSentence} />
-              </div>
-            
-              )}
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                className={` ${
+                  showChat
+                    ? "translate-x-0 w-full min-w-[400px] p-2 transition-transform duration-1000 ease-in-out transform"
+                    : "hidden"
+                }`}
+              >
+                <div className="rounded-2xl m-2 w-full min-w-[400px] max-w-[700px] ">
+                  <SideChat primeSentence={primeSentence} />
+                </div>
               </ResizablePanel>
-</ResizablePanelGroup>
-            
+            </>
+          </ResizablePanelGroup>
         </div>
       </div>
     </div>

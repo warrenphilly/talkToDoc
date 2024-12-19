@@ -81,9 +81,13 @@ export default {
   				ring: 'hsl(210, 10%, 60%)'
   			}
 			
-  		},
+		  },
+		  transitionDelay: {
+			'2000': '2000ms',
+		  },
+		  
   
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"),require("tailwindcss-animation-delay")],
 } satisfies Config;
