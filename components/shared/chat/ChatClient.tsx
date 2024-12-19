@@ -5,6 +5,12 @@ import { Image, Upload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
 
 import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -235,8 +241,20 @@ const ChatClient = () => {
             {showChat ? "Close Chat" : "Talk to my notes"}
           </Button>
         </div>
-        <div className="flex flex-col md:flex-row justify-center h-full">
-          <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 min-w-[700px]">
+        <div className="flex flex-col md:flex-row justify-center h-full max-h-[90vh]">
+
+
+
+
+
+          <ResizablePanelGroup direction="horizontal">
+ 
+  
+ 
+
+  <ResizablePanel className="w-full max-w-[1200px]">
+    
+          <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 max-w-[1200px] h-full  max-h-[90vh]">
             {showUpload && (
               <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
                 <div className="bg-slate-700 p-4 border-t flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
@@ -319,7 +337,7 @@ const ChatClient = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                    <div className="text-sm bg-slate-700 p-5 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
+                    <div className="text-sm bg-slate-700 p-5 flex flex-col gap-2 items-start justify-center rounded-2xl w-full ">
                       <p className="text-gray-500">Uploaded files</p>
                       {msg.files && (
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -348,23 +366,21 @@ const ChatClient = () => {
                 )}
               </div>
             ))}
-          </div>
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle/>
+            <ResizablePanel className="w-full max-w-[700px]">
 
           {showChat && (
-            <>
-              {/* <div 
-                className="w-2 cursor-col-resize bg-slate-900 border  border-red-500"
-                onMouseDown={handleMouseDown}
-              /> */}
-                    <div 
-                className="w-[3px] mt-[12.5%] cursor-col-resize bg-slate-800 max-h-[700px] "
-                onMouseDown={handleMouseDown}
-              />
-              <div className="rounded-2xl border  pl-2 mb-2 " style={{ width: sideChatWidth }}>
+           
+              <div className="rounded-2xl border   mb-2 w-full min-w-[400px] max-w-[700px] " >
                 <SideChat primeSentence={primeSentence} />
               </div>
-            </>
-          )}
+            
+              )}
+              </ResizablePanel>
+</ResizablePanelGroup>
+            
         </div>
       </div>
     </div>

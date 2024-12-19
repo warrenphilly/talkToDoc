@@ -30,14 +30,6 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    //   sendMessage(primeSentence.text);
-    console.log("primeSentence yall:", primeSentence);
-    if (primeSentence) {
-      sendMessage(primeSentence);
-    }
-  }, [primeSentence]);
-
   const sendMessage = async (messageText: string = input) => {
     console.log("sendMessage called with:", messageText);
     if (!messageText.trim() && files.length === 0) return;
@@ -105,7 +97,7 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 border-red-500 bg-slate-800 rounded-2xl mb-4 ">
+    <div className="flex flex-col h-full w-full border-3 border-red-500 bg-slate-800 rounded-2xl mb-4 max-h-[90vh] ">
       <div className="bg-slate-800 text-white rounded-lg  border-red-900 border-2 p-4 m-4">
         {/* <h1 className='text-xl font-regular'>AI Chat</h1> */}
         <div>
@@ -115,6 +107,10 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
             <p className="text-gray-500">Click a Sentence to add context</p>
           )}
         </div>
+        <div className="flex flex-row gap-2">
+        <Button>Explain </Button>
+          <Button>Give Example </Button>
+          </div>
       </div>
       <div className="flex-grow overflow-y-auto p-4 auto-scroll">
         {messages.map(

@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         max_tokens: 5000,
         temperature: 0.7,
         functions,
-        function_call: { name: "generate_sections" }
+        function_call: { name: "generate_sections", strict: true }
       }),
     });
 
