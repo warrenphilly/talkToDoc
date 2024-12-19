@@ -40,7 +40,7 @@ export default {
   				DEFAULT: 'hsl(0, 70%, 50%)',
   				foreground: 'hsl(0, 70%, 90%)'
   			},
-  			border: 'hsl(210, 10%, 50%)',
+  			
   			input: 'hsl(210, 10%, 55%)',
   			ring: 'hsl(210, 10%, 60%)',
   			chart: {
@@ -82,11 +82,7 @@ export default {
   			}
 			
   		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		}
+  
   	}
   },
   plugins: [require("tailwindcss-animate")],

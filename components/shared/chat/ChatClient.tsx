@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Upload, Image } from "lucide-react"; // Import icons
+import { Textarea } from "@/components/ui/textarea";
+import { Image, Upload } from "lucide-react"; // Import icons
+import React, { useEffect, useRef, useState } from "react";
 
 import {
   Sheet,
@@ -43,6 +43,7 @@ const ChatClient = () => {
   //   null
   // ); - possible to remove
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = event.target.files;
@@ -198,12 +199,30 @@ const ChatClient = () => {
     }
   }, [messages]);
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const startX = e.clientX;
+    const startWidth = sideChatWidth;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = startWidth + (startX - e.clientX);
+      setSideChatWidth(Math.max(200, Math.min(newWidth, 500))); // Set min and max width
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
   return (
-    <div className="flex flex-row h-screen bg-slate-900 ">
-      <div className="flex flex-col h-screen bg-gray-100 w-full  bg-slate-900  container ">
-        <div className="flex flex-row items-center justify-between ">
-          <div className=" text-white p-4 bg-slate-800 rounded-2xl w-fit my-5 font-semibold">
-            <h1 className="text-xl font-regular ">Enhanced Notes</h1>
+    <div className="flex flex-col md:flex-row h-screen bg-slate-900 w-full">
+      <div className="flex flex-col h-full bg-slate-900  w-full mx-2">
+        <div className="flex flex-row items-center justify-between w-full ">
+          <div className="text-white p-4 bg-slate-800 rounded-2xl w-fit my-5 font-semibold">
+            <h1 className="text-xl font-regular">Enhanced Notes</h1>
           </div>
 
           <Button
@@ -211,16 +230,16 @@ const ChatClient = () => {
               setShowChat(!showChat);
               setPrimeSentence(null);
             }}
-            className="text-white px-4 py-2 bg-slate-800 rounded-full w-fit m-5 font-semibold "
+            className="text-white px-4 py-2 bg-slate-800 rounded-full w-fit m-5 font-semibold"
           >
             {showChat ? "Close Chat" : "Talk to my notes"}
           </Button>
         </div>
-        <div className="flex flex-row  justify-center h-screen">
-          <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl max-h-[90vh]">
+        <div className="flex flex-col md:flex-row justify-center h-full">
+          <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 min-w-[700px]">
             {showUpload && (
-              <div className=" w-full flex flex-col gap-2 items-center justify-center rounded-2xl ">
-                <div className="bg-slate-700 p-4 border-t flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg ">
+              <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
+                <div className="bg-slate-700 p-4 border-t flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
                   <h1 className="text-xl font-regular text-slate-100">
                     Upload Files
                   </h1>
@@ -257,10 +276,8 @@ const ChatClient = () => {
               </div>
             )}
 
-            {/* if the user has not uploaded any files */}
-
             {messages.map((msg, index) => (
-              <div key={index} className={`p-2 rounded  mb-2 bg-slate-00`}>
+              <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
                 {/* AI Responses */}
                 {msg.user === "AI" ? (
                   <div className="text-sm">
@@ -270,7 +287,7 @@ const ChatClient = () => {
                           (section: Section, sectionIdx: number) => (
                             <div
                               key={sectionIdx}
-                              className="bg-slate-700 p-4 rounded-lg "
+                              className="bg-slate-700 p-4 rounded-lg"
                             >
                               <h3 className="text-lg font-bold text-slate-200 mb-3">
                                 {section.title}
@@ -302,8 +319,7 @@ const ChatClient = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                    <div className="text-sm bg-slate-700 p-5 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg ">
-             
+                    <div className="text-sm bg-slate-700 p-5 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
                       <p className="text-gray-500">Uploaded files</p>
                       {msg.files && (
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -335,9 +351,19 @@ const ChatClient = () => {
           </div>
 
           {showChat && (
-            <div className="w-[400px] rounded-2xl">
-              <SideChat primeSentence={primeSentence} />
-            </div>
+            <>
+              {/* <div 
+                className="w-2 cursor-col-resize bg-slate-900 border  border-red-500"
+                onMouseDown={handleMouseDown}
+              /> */}
+                    <div 
+                className="w-[3px] mt-[12.5%] cursor-col-resize bg-slate-800 max-h-[700px] "
+                onMouseDown={handleMouseDown}
+              />
+              <div className="rounded-2xl border  pl-2 mb-2 " style={{ width: sideChatWidth }}>
+                <SideChat primeSentence={primeSentence} />
+              </div>
+            </>
           )}
         </div>
       </div>

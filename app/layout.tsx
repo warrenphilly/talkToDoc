@@ -28,13 +28,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className='flex flex-row h-screen items-start justify-start ' >
+        <div className='flex flex-row h-screen w-full ' >
           <div className='flex flex-col h-screen items-start justify-start ' >
             <SidebarNav />
           </div>
-          <div className='flex flex-col  h-screen items-start justify-start w-full ' >
+        
             {children}
-            </div>
+          
+            
         </div>
       </body>
     </html>

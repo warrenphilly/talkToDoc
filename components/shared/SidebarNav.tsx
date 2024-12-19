@@ -16,7 +16,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/home",
     icon: Home,
   },
   {
@@ -60,7 +60,7 @@ export function SidebarNav() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarContent className="bg-slate-900 text-slate-200">
+        <SidebarContent className="bg-slate-900 text-slate-200 ">
           <SidebarGroup>
             <SidebarGroupLabel className="text-slate-400">Application</SidebarGroupLabel>
             <SidebarGroupContent>
