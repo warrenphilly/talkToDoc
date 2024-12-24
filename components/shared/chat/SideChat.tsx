@@ -22,7 +22,6 @@ interface Message {
 }
 
 const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
-  console.log("primeSentence nasty:", primeSentence);
   const [messages, setMessages] = useState<Message[]>([
     { user: "user", text: primeSentence || "" },
   ]);

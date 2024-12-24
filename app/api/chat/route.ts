@@ -120,7 +120,27 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    console.log("OpenAI complete response:", JSON.stringify(data, null, 2)); // Detailed debug log
+    //console.log("OpenAI complete response:", JSON.stringify(data, null, 2)); // Detailed debug log
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    //sugery section---------------------------------------------------------------------------------------------------
 
     // Ensure the response structure is correct
     const choices = data.choices;
@@ -158,6 +178,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         replies: finalResponse.sections, // Changed from 'reply' to 'replies'
       });
+
+      // end of surgery section----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     } catch (parseError) {
       console.error("Parsing error:", parseError);
       return NextResponse.json({

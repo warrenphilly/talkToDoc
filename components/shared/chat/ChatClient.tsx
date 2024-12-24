@@ -113,6 +113,7 @@ const ChatClient = () => {
           console.log("Raw API response:", data); // Debug log
 
           let parsedResponse;
+          
           try {
             if (!data.replies) {
               throw new Error("No replies in response");
@@ -162,6 +163,7 @@ const ChatClient = () => {
             };
 
             setMessages((prevMessages) => [...prevMessages, aiMessage]);
+            
             success = true;
           } catch (parseError) {
             console.error("Parsing error:", parseError);
@@ -217,10 +219,13 @@ const ChatClient = () => {
   };
 
   useEffect(() => {
-    if (messages.length > 0) {
-      setShowUpload(false);
-    }
+    // if (messages.length > 0) {
+    //   setShowUpload(false);
+    // }
+    console.log("messages", messages);
   }, [messages]);
+
+ 
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-900 w-full">
@@ -286,10 +291,11 @@ const ChatClient = () => {
                 {messages.map((msg, index) => (
                   <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
                     {/* AI Responses */}
+                    {/* surgery area------------------------------------------------------------------------------------------------ */}
                     {msg.user === "AI" ? (
                       <div className="text-sm">
                         {Array.isArray(msg.text) ? (
-                          <div className="space-y-6 bg-slate-800">
+                          <div className="space-y-6 bg-slate-100">
                             {msg.text.map(
                               (section: Section, sectionIdx: number) => (
                                 <div
