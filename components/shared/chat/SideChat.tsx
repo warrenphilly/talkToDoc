@@ -179,7 +179,7 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
       <div className="bg-slate-800 p-4  rounded-b-lg">
         <div className="flex  bg-slate-800 rounded-lg  p-2 flex-row items-center gap-3">
           <Textarea
-            className="w-full border rounded bg-slate-900"
+            className="w-full border rounded bg-slate-900 text-white"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}

@@ -1,7 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Upload } from "lucide-react"; // Import icons
+import { UploadOutlined } from "@ant-design/icons";
+import type { UploadFile, UploadProps } from "antd";
+import { Upload } from "antd";
+import { Image, Upload as LucideUpload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
 
 import {
@@ -36,6 +39,18 @@ interface Message {
   files?: string[];
 }
 
+// Define the upload properties
+const uploadProps: UploadProps = {
+  action: "/api/chat", // Your API endpoint
+  multiple: true, // Allow multiple file uploads
+  onChange({ file, fileList }: { file: UploadFile; fileList: UploadFile[] }) {
+    if (file.status !== "uploading") {
+      console.log(file, fileList);
+    }
+  },
+  showUploadList: true, // Show the list of uploaded files
+};
+
 const ChatClient = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(
@@ -68,9 +83,6 @@ const ChatClient = () => {
 
     const formData = new FormData();
     formData.append("message", input);
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
 
     const userMessage = {
       user: "User",
@@ -83,118 +95,123 @@ const ChatClient = () => {
     setFiles([]);
 
     const maxRetries = 3;
-    let attempt = 0;
-    let success = false;
 
-    while (attempt < maxRetries && !success) {
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          body: formData,
-        });
+    for (const file of files) {
+      formData.append("files", file);
 
-        const data = await response.json();
-        console.log("Raw API response:", data); // Debug log
+      let attempt = 0;
+      let success = false;
 
-        let parsedResponse;
+      while (attempt < maxRetries && !success) {
         try {
-          if (!data.reply) {
-            throw new Error("No reply in response");
-          }
-
-          parsedResponse =
-            typeof data.reply === "string"
-              ? JSON.parse(data.reply)
-              : data.reply;
-
-          console.log("Parsed response:", parsedResponse); // Debug log
-
-          if (!Array.isArray(parsedResponse)) {
-            throw new Error("Response is not an array");
-          }
-
-          const validSections = parsedResponse.every((section) => {
-            if (
-              !section.title ||
-              !section.sentences ||
-              !Array.isArray(section.sentences)
-            ) {
-              console.error("Invalid section structure:", section);
-              return false;
-            }
-
-            return section.sentences.every((sentence: Sentence) => {
-              if (
-                !sentence ||
-                typeof sentence.id !== "number" ||
-                typeof sentence.text !== "string"
-              ) {
-                console.error("Invalid sentence structure:", sentence);
-                return false;
-              }
-              return true;
-            });
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            body: formData,
           });
 
-          if (!validSections) {
-            throw new Error("Invalid section or sentence structure");
+          const data = await response.json();
+          console.log("Raw API response:", data); // Debug log
+
+          let parsedResponse;
+          try {
+            if (!data.replies) {
+              throw new Error("No replies in response");
+            }
+
+            parsedResponse =
+              typeof data.replies === "string"
+                ? JSON.parse(data.replies)
+                : data.replies;
+
+            console.log("Parsed response:", parsedResponse); // Debug log
+
+            if (!Array.isArray(parsedResponse)) {
+              throw new Error("Response is not an array");
+            }
+
+            const validSections = parsedResponse.every((section) => {
+              if (
+                !section.title ||
+                !section.sentences ||
+                !Array.isArray(section.sentences)
+              ) {
+                console.error("Invalid section structure:", section);
+                return false;
+              }
+
+              return section.sentences.every((sentence: Sentence) => {
+                if (
+                  !sentence ||
+                  typeof sentence.id !== "number" ||
+                  typeof sentence.text !== "string"
+                ) {
+                  console.error("Invalid sentence structure:", sentence);
+                  return false;
+                }
+                return true;
+              });
+            });
+
+            if (!validSections) {
+              throw new Error("Invalid section or sentence structure");
+            }
+
+            const aiMessage = {
+              user: "AI",
+              text: parsedResponse,
+            };
+
+            setMessages((prevMessages) => [...prevMessages, aiMessage]);
+            success = true;
+          } catch (parseError) {
+            console.error("Parsing error:", parseError);
+            attempt++;
+            if (attempt >= maxRetries) {
+              const fallbackResponse = [
+                {
+                  title: "Error",
+                  sentences: [
+                    {
+                      id: 1,
+                      text: "Sorry, there was an error processing the response. Please try again.",
+                    },
+                  ],
+                },
+              ];
+
+              setMessages((prevMessages) => [
+                ...prevMessages,
+                {
+                  user: "AI",
+                  text: fallbackResponse,
+                },
+              ]);
+              setShowUpload(false);
+            }
           }
+        } catch (error) {
+          console.error("Network error:", error);
+          const errorResponse = [
+            {
+              title: "Error",
+              sentences: [
+                {
+                  id: 1,
+                  text: "Sorry, there was a network error. Please try again.",
+                },
+              ],
+            },
+          ];
 
-          const aiMessage = {
-            user: "AI",
-            text: parsedResponse,
-          };
-
-          setMessages((prevMessages) => [...prevMessages, aiMessage]);
-          success = true;
-        } catch (parseError) {
-          console.error("Parsing error:", parseError);
-          attempt++;
-          if (attempt >= maxRetries) {
-            const fallbackResponse = [
-              {
-                title: "Error",
-                sentences: [
-                  {
-                    id: 1,
-                    text: "Sorry, there was an error processing the response. Please try again.",
-                  },
-                ],
-              },
-            ];
-
-            setMessages((prevMessages) => [
-              ...prevMessages,
-              {
-                user: "AI",
-                text: fallbackResponse,
-              },
-            ]);
-            setShowUpload(false);
-          }
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              user: "AI",
+              text: errorResponse,
+            },
+          ]);
+          break;
         }
-      } catch (error) {
-        console.error("Network error:", error);
-        const errorResponse = [
-          {
-            title: "Error",
-            sentences: [
-              {
-                id: 1,
-                text: "Sorry, there was a network error. Please try again.",
-              },
-            ],
-          },
-        ];
-
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            user: "AI",
-            text: errorResponse,
-          },
-        ]);
-        break;
       }
     }
   };
@@ -227,7 +244,7 @@ const ChatClient = () => {
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
             <ResizablePanel className="w-full p-2 min-w-[600px]">
               <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-                {showUpload && (
+              {showUpload && (
                   <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
                     <div className=" p-4 border border-slate-700 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
                       <h1 className="text-xl font-regular text-slate-100">
@@ -249,7 +266,7 @@ const ChatClient = () => {
                           }}
                           className="flex items-center gap-2 bg-slate-500"
                         >
-                          <Upload size={16} />
+                          <UploadOutlined />
                           Upload Files
                         </Button>
                         {files.length > 0 && (
