@@ -21,7 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import SideChat from "./SideChat";
+import SideChat from "@/components/shared/SideChat";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -113,7 +113,7 @@ const ChatClient = () => {
           console.log("Raw API response:", data); // Debug log
 
           let parsedResponse;
-          
+
           try {
             if (!data.replies) {
               throw new Error("No replies in response");
@@ -163,7 +163,7 @@ const ChatClient = () => {
             };
 
             setMessages((prevMessages) => [...prevMessages, aiMessage]);
-            
+
             success = true;
           } catch (parseError) {
             console.error("Parsing error:", parseError);
@@ -225,8 +225,6 @@ const ChatClient = () => {
     console.log("messages", messages);
   }, [messages]);
 
- 
-
   return (
     <div className="flex flex-col md:flex-row h-screen bg-slate-900 w-full">
       <div className="flex flex-col h-full bg-slate-900  w-full mx-2">
@@ -245,17 +243,52 @@ const ChatClient = () => {
             {showChat ? "Close Chat" : "Talk to my notes"}
           </Button>
         </div>
-        <div className="flex flex-col md:flex-row justify-center h-full max-h-[90vh] px-2">
+        <div className="flex flex-col md:flex-row justify-start h-full max-h-[90vh] px-2">
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
-            <ResizablePanel className="w-full p-2 min-w-[600px]">
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-              {showUpload && (
-                  <div className="w-full flex flex-col gap-2 items-center justify-center rounded-2xl">
-                    <div className=" p-4 border border-slate-700 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-lg">
+            <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
+              {/* surgery area */}
+              <div className="flex flex-col gap-2  p-4 items-center justify-center rounded-2xl w-full border border-slate-700 bg-slate-800">
+                {messages.length > 0 && (
+                  <div className="flex flex-row gap-2 items-center justify-center rounded-2xl w-full">
+              <h1 className="text-gray-100 text-xl font-regular ">Uploaded files</h1>
+              <Button
+              onClick={() => {
+                setMessages([]);
+                setShowUpload(true);
+                setShowChat(false);
+                setPrimeSentence(null);
+              }}
+              className={`bg-slate-500 text-white rounded-2xl w-fit ${messages.length > 0 ? "block" : "hidden"}`}
+            >
+              Clear Notes
+            </Button>
+            </div>
+              )}
+              
+              <div className="flex flex-row gap-2 items-start justify-start rounded-2xl w-full ">
+                {messages.map((msg, index) => (
+                  <div className="flex flex-col   gap-2 items-center justify-center rounded-2xl w-fit">
+                    {msg.files && (
+                      <div className="mx-2 flex flex-wrap gap-2 ">
+                        {msg.files.map((fileUrl: string, idx: number) => (
+                          <img
+                            key={idx}
+                            src={fileUrl}
+                            alt={`Uploaded file ${idx + 1}`}
+                            className="w-[200px] h-[200px] object-cover rounded-2xl mx-4"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+
+<div className=" p-4 border border-slate-700 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-[200px] h-[200px]">
                       <h1 className="text-xl font-regular text-slate-100">
                         Upload Files
                       </h1>
-                      <div className="flex gap-2 mb-2">
+                      <div className="flex gap-2 mb-2 ">
                         <input
                           type="file"
                           multiple
@@ -264,6 +297,8 @@ const ChatClient = () => {
                           className="hidden"
                           accept="image/*,.pdf,.doc,.docx"
                         />
+
+                        <div className="flex flex-col items-center gap-2">
                         <Button
                           variant="outline"
                           onClick={() => {
@@ -278,21 +313,32 @@ const ChatClient = () => {
                           <span className="text-sm text-gray-500 self-center">
                             {files.length} file(s) selected
                           </span>
+
                         )}
+                        </div>
                       </div>
 
                       <div className="flex flex-row items-center gap-3  p-2 rounded-2xl">
                         <Button onClick={sendMessage}>Generate Notes</Button>
                       </div>
                     </div>
-                  </div>
-                )}
+
+              </div>
+
+           
+
+              </div>
+
+              {/* end of surgery area */}
+
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
+              
 
                 {messages.map((msg, index) => (
                   <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
                     {/* AI Responses */}
                     {/* surgery area------------------------------------------------------------------------------------------------ */}
-                    {msg.user === "AI" ? (
+                    {msg.user === "AI" && (
                       <div className="text-sm">
                         {Array.isArray(msg.text) ? (
                           <div className="space-y-6 bg-slate-100">
@@ -331,34 +377,6 @@ const ChatClient = () => {
                         ) : (
                           <span>{String(msg.text)}</span>
                         )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                        <div className="text-sm border border-slate-700 p-5 flex flex-col gap-2 items-start justify-center rounded-2xl w-full ">
-                          <p className="text-gray-500">Uploaded files</p>
-                          {msg.files && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {msg.files.map((fileUrl: string, idx: number) => (
-                                <img
-                                  key={idx}
-                                  src={fileUrl}
-                                  alt={`Uploaded file ${idx + 1}`}
-                                  className="max-w-[400px] max-h-[400px] object-cover rounded"
-                                />
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          onClick={() => {
-                            setMessages([]);
-                            setShowUpload(true);
-                            setShowChat(false);
-                            setPrimeSentence(null);
-                          }}
-                        >
-                          Clear Notes
-                        </Button>
                       </div>
                     )}
                   </div>
