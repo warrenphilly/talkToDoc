@@ -32,11 +32,21 @@ export async function POST(req: NextRequest) {
         await writeFile(filepath, buffer);
 
         // Convert to base64 for OpenAI API
-        const base64Image = buffer.toString("base64");
-        return {
-          path: `/uploads/${filename}`,
-          base64: `data:${file.type};base64,${base64Image}`,
-        };
+        if (file.type.startsWith("image/")) {
+          // For images, convert to base64
+          const base64Image = buffer.toString("base64");
+          return {
+            type: "image",
+            path: `/uploads/${filename}`,
+            base64: `data:${file.type};base64,${base64Image}`,
+          };
+        } else if (file.type === "application/pdf") {
+          // For PDFs, just return the path
+          return {
+            type: "pdf",
+            path: `/uploads/${filename}`,
+          };
+        }
       })
     );
 
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
       {
         name: "generate_sections",
         description:
-          "Generates a structured response with sections and sentences",
+          "Generates a structured response with sections and cohesive sentences",
         parameters: {
           type: "object",
           properties: {
@@ -80,21 +90,39 @@ export async function POST(req: NextRequest) {
     const messages = [
       {
         role: "system",
-        content: `You are a An Expert in all subjects. You have the abiltiy to break down complex topics into simple, easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sections, where each section contains an array of sentences. Ensure that each sentence is a complete thought and can be understood on its own, but also ensure that the sentences are related to the title of the section and the corresponding image/file and all other sentences. You must give as much information as possible without overcomlicating the explanation and rambling. When analyzing the uploaded document, do not focus describing to the user what the document is but analyze the content of the document and break it down into sections and sentences. use as many sentences as possible to explain the content of the document. `,
+        content: `You are an Expert in all subjects. You have the ability to break down complex topics into simple, easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sections, where each section contains an array of sentences. Ensure that each sentence is a complete thought and can be understood on its own, but also ensure that the sentences are related to the title of the section and the corresponding image/file and all other sentences. You must give as much information as possible without overcomplicating the explanation and rambling. When analyzing the uploaded document, do not focus describing to the user what the document is but analyze the content of the document and break it down into sections and sentences. use as many sentences as possible to explain the content of the document.`,
       },
       {
         role: "user",
         content: [
           { type: "text", text: message },
-          ...uploadedFiles.map((file) => ({
-            type: "image_url",
-            image_url: {
-              url: file.base64,
-            },
-          })),
+          ...uploadedFiles
+            .filter(
+              (file): file is NonNullable<typeof file> => file?.type === "image"
+            )
+            .map((file) => ({
+              type: "image_url",
+              image_url: {
+                url: file.base64,
+              },
+            })),
         ],
       },
     ];
+
+    // Add PDF paths to the message if any PDFs were uploaded
+    const pdfFiles = uploadedFiles.filter(
+      (file): file is NonNullable<typeof file> => file?.type === "pdf"
+    );
+    if (pdfFiles.length > 0) {
+      const userMessage = messages[1].content[0] as {
+        type: string;
+        text: string;
+      };
+      userMessage.text += `\n\nPDF files uploaded: ${pdfFiles
+        .map((f) => f.path)
+        .join(", ")}`;
+    }
 
     // Update the API call
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -106,7 +134,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "gpt-4o",
         messages,
-        max_tokens: 5000,
+        max_tokens: 15000,
         temperature: 0.7,
         functions,
         function_call: { name: "generate_sections", strict: true },
@@ -122,25 +150,7 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     //console.log("OpenAI complete response:", JSON.stringify(data, null, 2)); // Detailed debug log
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    //sugery section---------------------------------------------------------------------------------------------------
+    //surgery section---------------------------------------------------------------------------------------------------
 
     // Ensure the response structure is correct
     const choices = data.choices;
@@ -180,22 +190,6 @@ export async function POST(req: NextRequest) {
       });
 
       // end of surgery section----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     } catch (parseError) {
       console.error("Parsing error:", parseError);
       return NextResponse.json({

@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/resizable";
 
 import SideChat from "@/components/shared/SideChat";
+import BentoDashboard from "./bento-dashboard";
+
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -57,7 +59,7 @@ const HomeClient = () => {
       <div className="flex flex-col h-full bg-slate-900  w-full mx-2">
         <div className="flex flex-row items-center justify-between w-full ">
           <div className="text-white p-4 bg-slate-800 rounded-2xl w-fit my-5 font-semibold">
-            <h1 className="text-xl font-regular">Welcome `user` </h1>
+            <h1 className="text-xl font-regular">Dashboard </h1>
           </div>
 
           <Button
@@ -79,55 +81,8 @@ const HomeClient = () => {
               {/* end of surgery area */}
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-              <h1 className="text-white text-xl font-regular"> Recent notes </h1>
-                {messages.map((msg, index) => (
-                  <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
-                 
-                    {/* AI Responses */}
-                    {/* surgery area------------------------------------------------------------------------------------------------ */}
-                    {msg.user === "AI" && (
-                      <div className="text-sm">
-                        {Array.isArray(msg.text) ? (
-                          <div className="space-y-6 bg-slate-100">
-                            {msg.text.map(
-                              (section: Section, sectionIdx: number) => (
-                                <div
-                                  key={sectionIdx}
-                                  className="bg-slate-700 p-4 rounded-lg"
-                                >
-                                  <h3 className="text-lg font-bold text-slate-200 mb-3">
-                                    {section.title}
-                                  </h3>
-                                  <div className="space-y-2">
-                                    {section.sentences.map(
-                                      (sentence: Sentence) => (
-                                        <Button
-                                          asChild
-                                          onClick={() =>
-                                            handleSentenceClick(sentence)
-                                          }
-                                          className="bg-slate-700 hover:bg-slate-900 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
-                                        >
-                                          <div className="pl-2 hover:p-2 hover:m-2 hover:shadow-md rounded cursor-pointer transition-colors">
-                                            <p className="text-gray-400">
-                                              {sentence.text}
-                                            </p>
-                                          </div>
-                                        </Button>
-                                      )
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <span>{String(msg.text)}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                <BentoDashboard />
+            
               </div>
             </ResizablePanel>
 
