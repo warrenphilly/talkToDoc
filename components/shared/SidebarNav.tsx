@@ -16,7 +16,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 const items = [
   {
     title: "Home",
-    url: "/home",
+    url: "/",
     icon: Home,
   },
   {
