@@ -130,42 +130,50 @@ const ChatClient = () => {
               throw new Error("Response is not an array");
             }
 
-            const validSections = parsedResponse.every((section) => {
-              if (
-                !section.title ||
-                !section.sentences ||
-                !Array.isArray(section.sentences)
-              ) {
-                console.error("Invalid section structure:", section);
-                return false;
+            // Iterate over each set of sections
+            parsedResponse.forEach((sections) => {
+              if (!Array.isArray(sections)) {
+                console.error("Invalid section structure:", sections);
+                throw new Error("Invalid section structure");
               }
 
-              return section.sentences.every((sentence: Sentence) => {
+              const validSections = sections.every((section) => {
                 if (
-                  !sentence ||
-                  typeof sentence.id !== "number" ||
-                  typeof sentence.text !== "string"
+                  !section.title ||
+                  !section.sentences ||
+                  !Array.isArray(section.sentences)
                 ) {
-                  console.error("Invalid sentence structure:", sentence);
+                  console.error("Invalid section structure:", section);
                   return false;
                 }
-                return true;
+
+                return section.sentences.every((sentence: Sentence) => {
+                  if (
+                    !sentence ||
+                    typeof sentence.id !== "number" ||
+                    typeof sentence.text !== "string"
+                  ) {
+                    console.error("Invalid sentence structure:", sentence);
+                    return false;
+                  }
+                  return true;
+                });
+              });
+
+              if (!validSections) {
+                throw new Error("Invalid section or sentence structure");
+              }
+
+              // Send each section as a separate message
+              sections.forEach((section) => {
+                const aiMessage = {
+                  user: "AI",
+                  text: [section],
+                };
+
+                setMessages((prevMessages) => [...prevMessages, aiMessage]);
               });
             });
-
-            if (!validSections) {
-              throw new Error("Invalid section or sentence structure");
-            }
-
-            // Send each section as a separate message
-            for (const section of parsedResponse) {
-              const aiMessage = {
-                user: "AI",
-                text: [section],
-              };
-
-              setMessages((prevMessages) => [...prevMessages, aiMessage]);
-            }
 
             success = true;
           } catch (parseError) {
