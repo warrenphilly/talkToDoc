@@ -78,6 +78,14 @@ const ChatClient = () => {
     setShowChat(true);
   };
 
+  const handleSectionClick = (section: Section) => {
+    const sectionText = section.sentences
+      .map((sentence) => sentence.text)
+      .join(" ");
+    setPrimeSentence(sectionText);
+    setShowChat(true);
+  };
+
   const sendMessage = async () => {
     if (!input.trim() && files.length === 0) return;
 
@@ -260,7 +268,7 @@ const ChatClient = () => {
               {/* surgery area */}
               <div className="flex flex-col gap-2  p-4 items-center justify-center rounded-2xl w-full border border-slate-700 bg-slate-800">
                 {messages.length > 0 && (
-                  <div className="flex  flex-row gap-2 md:items-start md:justify-start items-center justify-center rounded-2xl w-full">
+                  <div className="flex   flex-row gap-2 md:items-start md:justify-between items-center justify-between rounded-2xl w-full">
                     <h1 className="text-gray-100 text-xl font-regular ">
                       Uploaded files
                     </h1>
@@ -373,18 +381,18 @@ const ChatClient = () => {
                 {messages.map((msg, index) => (
                   <div key={index} className={`p-2 rounded mb-2 bg-slate-00`}>
                     {/* AI Responses */}
-                    {/* surgery area------------------------------------------------------------------------------------------------ */}
                     {msg.user === "AI" && (
                       <div className="text-sm">
                         {Array.isArray(msg.text) ? (
-                          <div className="space-y-6 bg-slate-100">
+                          <div className="space-y-6 ">
                             {msg.text.map(
                               (section: Section, sectionIdx: number) => (
                                 <div
                                   key={sectionIdx}
-                                  className="bg-slate-700 p-4 rounded-lg"
+                                  className="bg-slate-800 border border-slate-700 p-4 rounded-2xl  transition-colors"
+                                 
                                 >
-                                  <h3 className="text-lg font-bold text-slate-200 mb-3">
+                                  <h3 className="text-lg font-bold text-slate-400 mb-3 hover:bg-slate-600 cursor-pointer"  onClick={() => handleSectionClick(section)}>
                                     {section.title}
                                   </h3>
                                   <div className="space-y-2">
@@ -395,10 +403,10 @@ const ChatClient = () => {
                                           onClick={() =>
                                             handleSentenceClick(sentence)
                                           }
-                                          className="bg-slate-700 hover:bg-slate-900 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
+                                          className="bg-slate-800 hover:bg-slate-700 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
                                         >
-                                          <div className="pl-2 hover:p-2 hover:m-2 hover:shadow-md rounded cursor-pointer transition-colors">
-                                            <p className="text-gray-400">
+                                          <div className=" px-1 hover:shadow-md rounded cursor-pointer transition-colors">
+                                            <p className="text-gray-100 text-md">
                                               {sentence.text}
                                             </p>
                                           </div>
