@@ -8,7 +8,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
-import SideChat from "@/components/shared/SideChat";
+import SideChat from "@/components/shared/global/SideChat";
 import BentoDashboard from "./bento-dashboard";
 
 // First, let's define our message types
@@ -28,8 +28,6 @@ interface Message {
   files?: string[];
 }
 
-
-
 const HomeClient = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [showUpload, setShowUpload] = useState(true);
@@ -39,13 +37,10 @@ const HomeClient = () => {
   //   null
   // ); - possible to remove
 
-
   const handleSentenceClick = (sentence: Sentence) => {
     setPrimeSentence(sentence.text);
     setShowChat(true);
   };
-
-
 
   useEffect(() => {
     // if (messages.length > 0) {
@@ -76,13 +71,11 @@ const HomeClient = () => {
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
             <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
               {/* surgery area */}
-            
 
               {/* end of surgery area */}
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
                 <BentoDashboard />
-            
               </div>
             </ResizablePanel>
 

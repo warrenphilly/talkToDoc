@@ -13,9 +13,14 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
-import SideChat from "@/components/shared/SideChat";
+import SideChat from "@/components/shared/global/SideChat";
 
-import { fileUpload, sectionClick, sendMessage, sentenceClick } from "@/lib/utils";
+import {
+  fileUpload,
+  sectionClick,
+  sendMessage,
+  sentenceClick,
+} from "@/lib/utils";
 import UploadArea from "./UploadArea";
 
 const ChatClient = () => {
@@ -30,19 +35,26 @@ const ChatClient = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
 
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => {
+    fileUpload(event, setFiles);
+  };
 
-const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, setFiles: (files: File[]) => void) => {
-  fileUpload(event, setFiles);
-};
-
-
-  const handleSentenceClick = (sentence: Sentence, setPrimeSentence: (sentence: string) => void, setShowChat: (show: boolean) => void) => {
+  const handleSentenceClick = (
+    sentence: Sentence,
+    setPrimeSentence: (sentence: string) => void,
+    setShowChat: (show: boolean) => void
+  ) => {
     sentenceClick(sentence, setPrimeSentence, setShowChat);
   };
 
-
-
-  const handleSectionClick = (section: Section , setPrimeSentence: (sentence: string) => void, setShowChat: (show: boolean) => void) => {
+  const handleSectionClick = (
+    section: Section,
+    setPrimeSentence: (sentence: string) => void,
+    setShowChat: (show: boolean) => void
+  ) => {
     sectionClick(section, setPrimeSentence, setShowChat);
   };
 
@@ -58,7 +70,6 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, setFiles: 
   };
 
   useEffect(() => {
- 
     console.log("messages", messages);
   }, [messages]);
 
@@ -94,14 +105,20 @@ const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>, setFiles: 
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
                 {messages.map((msg, index) => (
-
-                    <ResponseMessage 
-                      msg={msg}
-                      index={index}
-                      handleSectionClick={(section) => handleSectionClick(section, setPrimeSentence, setShowChat)} 
-                      handleSentenceClick={(sentence) => handleSentenceClick(sentence, setPrimeSentence, setShowChat)}
-                    />
-                  
+                  <ResponseMessage
+                    msg={msg}
+                    index={index}
+                    handleSectionClick={(section) =>
+                      handleSectionClick(section, setPrimeSentence, setShowChat)
+                    }
+                    handleSentenceClick={(sentence) =>
+                      handleSentenceClick(
+                        sentence,
+                        setPrimeSentence,
+                        setShowChat
+                      )
+                    }
+                  />
                 ))}
               </div>
             </ResizablePanel>

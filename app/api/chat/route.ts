@@ -7,6 +7,13 @@ interface Sentence {
   text: string;
 }
 
+interface ConversionResponse {
+  success: boolean;
+  text?: string;
+  pageCount?: number;
+  error?: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -42,9 +49,25 @@ export async function POST(req: NextRequest) {
           };
         } else if (file.type === "application/pdf") {
           // For PDFs, just return the path
+          //convert pdf to text with the convert route
+
+          const pdfFormData = new FormData();
+          pdfFormData.append("file", file);
+
+          const baseUrl =
+            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+          const pdfText = await fetch(`${baseUrl}/api/convert`, {
+            method: "POST",
+            body: pdfFormData,
+          });
+
+          const data: ConversionResponse = await pdfText.json();
+
+          console.log("pdfText", data.text);
           return {
             type: "pdf",
             path: `/uploads/${filename}`,
+            text: data.text,
           };
         }
       })
@@ -109,28 +132,6 @@ export async function POST(req: NextRequest) {
         ],
       },
     ];
-    const complexMessage = [
-      {
-        role: "system",
-        content: `You are an Expert in all subjects. You have the ability to break down complex topics into simple, easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sections, where each section contains an array of sentences. Ensure that each sentence is a complete thought and can be understood on its own, but also ensure that the sentences are related to the title of the section and the corresponding image/file and all other sentences. You must give as much information as possible without overcomplicating the explanation and rambling. When analyzing the uploaded document, do not focus describing to the user what the document is but analyze the content of the document and break it down into sections and cohesive cohesive sentences. use as many sentences as possible to explain the content of the document. each section should contain a cohesive set of at least 9 sentences, more is needed,  that are related to the title of the section and the corresponding image/file and all other sentences. prioritize the information of the document. Ensure to understand the entire document to give a comprehensive response based on the entire document .`,
-      },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: message },
-          ...uploadedFiles
-            .filter(
-              (file): file is NonNullable<typeof file> => file?.type === "image"
-            )
-            .map((file) => ({
-              type: "image_url",
-              image_url: {
-                url: file.base64,
-              },
-            })),
-        ],
-      },
-    ];
 
     // Add PDF paths to the message if any PDFs were uploaded
     const pdfFiles = uploadedFiles.filter(
@@ -168,33 +169,11 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // Send the second request
-    const response2 = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: complexMessage,
-          max_tokens: 15000,
-          temperature: 0.7,
-          functions,
-          function_call: { name: "generate_sections", strict: true },
-        }),
-      }
-    );
-
     // Handle responses
     const data1 = await response1.json();
-    
 
     // Ensure the response structure is correct for both responses
     const choices1 = data1.choices;
-   
 
     if (!choices1 || !Array.isArray(choices1) || choices1.length === 0) {
       console.error(
@@ -208,13 +187,10 @@ export async function POST(req: NextRequest) {
     const functionCall1 = choices1[0]?.message?.function_call;
     const messageContent1 = functionCall1 ? functionCall1.arguments : null;
 
-  
-
-    if (!messageContent1 ) {
+    if (!messageContent1) {
       console.error(
         "Invalid OpenAI response structure:",
-        JSON.stringify(data1, null, 2),
-       
+        JSON.stringify(data1, null, 2)
       );
       throw new Error("Invalid API response structure");
     }
@@ -222,20 +198,18 @@ export async function POST(req: NextRequest) {
     let finalResponse1, finalResponse2;
     try {
       finalResponse1 = JSON.parse(messageContent1);
-    
+
       console.log("Parsed response 1:", finalResponse1); // Debug log
-     // Debug log
+      // Debug log
 
       // Validate the structure for both responses
-      if (
-        !Array.isArray(finalResponse1.sections) 
-      ) {
+      if (!Array.isArray(finalResponse1.sections)) {
         throw new Error("Response is not an array of sections");
       }
 
       // Return the sections directly without additional stringification
       return NextResponse.json({
-        replies: [finalResponse1.sections ], // Return both responses
+        replies: [finalResponse1.sections], // Return both responses
       });
     } catch (parseError) {
       console.error("Parsing error:", parseError);
