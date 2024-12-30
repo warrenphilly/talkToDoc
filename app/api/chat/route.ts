@@ -14,21 +14,6 @@ interface ConversionResponse {
   error?: string;
 }
 
-function splitTextIntoBatches(
-  text: string,
-  tokensPerBatch: number = 2000
-): string[] {
-  // Rough approximation: 1 token ≈ 4 characters
-  const charsPerBatch = tokensPerBatch * 4;
-  const batches: string[] = [];
-
-  for (let i = 0; i < text.length; i += charsPerBatch) {
-    batches.push(text.slice(i, i + charsPerBatch));
-  }
-
-  return batches;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -63,11 +48,12 @@ export async function POST(req: NextRequest) {
             base64: `data:${file.type};base64,${base64Image}`,
           };
         } else if (file.type === "application/pdf") {
-          // For PDFs, just return the path
-          //convert pdf to text with the convert route
-
+          // Convert PDF to text directly using the buffer
           const pdfFormData = new FormData();
-          pdfFormData.append("file", file);
+          pdfFormData.append(
+            "file",
+            new Blob([buffer], { type: "application/pdf" })
+          );
 
           const baseUrl =
             process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -78,11 +64,23 @@ export async function POST(req: NextRequest) {
 
           const data: ConversionResponse = await pdfText.json();
 
-          console.log("pdfText", data.text);
+          //convert the text to a array of 1000 characters sections
+          const SECTION_LENGTH = 1000;
+          const textSections = [];
+          if (data.text) {
+            for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
+                      textSections.push(data.text.slice(i, i + SECTION_LENGTH));
+                    }
+          }
+          console.log('alla dah sectiond', textSections.length);
+          //map through text sections and console.log each section
+          textSections.forEach((section, index) => {
+            console.log(`Section ${index + 1}:`, section);
+          });
+
           return {
-            type: "pdf",
-            path: `/uploads/${filename}`,
-            text: data.text,
+            type: "text", // Changed from "pdf" to "text"
+            content: data.text, // Store the text content directly
           };
         }
       })
@@ -162,130 +160,53 @@ export async function POST(req: NextRequest) {
         .join(", ")}`;
     }
 
+    // Update the PDF files handling section
+    const textContent = uploadedFiles
+      .filter((file): file is NonNullable<typeof file> => file?.type === "text")
+      .map((file) => file.content)
+      .join("\n\n");
+
+    if (textContent) {
+      const userMessage = messages[1].content[0] as {
+        type: string;
+        text: string;
+      };
+      userMessage.text += `\n\n${textContent}`;
+    }
+
     // Prepare second message for complex explanation
 
     // Send the first request
-    let finalResponse1;
-    let responseData; // Add this to store the API response data
 
-    if (pdfFiles.length > 0) {
-      // Process PDF content in batches
-      const allSections = [];
-
-      for (const pdfFile of pdfFiles) {
-        const textBatches = splitTextIntoBatches(pdfFile.text || "");
-
-        for (const batch of textBatches) {
-          const batchMessages = [
-            {
-              role: "system",
-              content: `You are an Expert in all subjects. You have the ability to break down complex topics into simple, easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sections, where each section contains an array of sentences. Ensure that each sentence is a complete thought and can be understood on its own, but also ensure that the sentences are related to the title of the section and all other sentences. You must give as much information as possible without overcomplicating the explanation and rambling. When analyzing the uploaded document, do not focus describing to the user what the document is but analyze the content of the document and break it down into sections and cohesive sentences.`,
-            },
-            {
-              role: "user",
-              content: [{ type: "text", text: batch }],
-            },
-          ];
-
-          try {
-            const response = await fetch(
-              "https://api.openai.com/v1/chat/completions",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-                },
-                body: JSON.stringify({
-                  model: "gpt-4",
-                  messages: batchMessages,
-                  max_tokens: 2000,
-                  temperature: 0.7,
-                  functions,
-                  function_call: { name: "generate_sections", strict: true },
-                }),
-              }
-            );
-
-            const batchData = await response.json();
-
-            // Log the response for debugging
-            console.log("OpenAI Response:", JSON.stringify(batchData, null, 2));
-
-            // Check if the response indicates an error
-            if (batchData.error) {
-              console.error("OpenAI API Error:", batchData.error);
-              throw new Error(`OpenAI API Error: ${batchData.error.message}`);
-            }
-
-            // Safely access the response data with proper error handling
-            if (!batchData.choices?.[0]?.message?.function_call?.arguments) {
-              console.error("Unexpected response structure:", batchData);
-              throw new Error("Invalid response structure from OpenAI API");
-            }
-
-            const batchContent = JSON.parse(
-              batchData.choices[0].message.function_call.arguments
-            );
-
-            if (batchContent.sections) {
-              allSections.push(...batchContent.sections);
-            }
-          } catch (error) {
-            console.error("Error processing batch:", error);
-            // You can choose to either:
-            // 1. Continue with other batches
-            continue;
-            // 2. Or throw the error to stop processing
-            // throw error;
-          }
-        }
+    const response1 = await fetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages,
+          max_tokens: 15000,
+          temperature: 0.7,
+          functions,
+          function_call: { name: "generate_sections", strict: true },
+        }),
       }
+    );
 
-      finalResponse1 = { sections: allSections };
-      responseData = {
-        choices: [
-          {
-            message: {
-              function_call: { arguments: JSON.stringify(finalResponse1) },
-            },
-          },
-        ],
-      };
-    } else {
-      // Handle non-PDF files with original single request
-      const response1 = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4-vision-preview",
-            messages,
-            max_tokens: 15000,
-            temperature: 0.7,
-            functions,
-            function_call: { name: "generate_sections", strict: true },
-          }),
-        }
-      );
+    // Handle responses
+    const data1 = await response1.json();
 
-      responseData = await response1.json();
-      const messageContent1 =
-        responseData.choices[0]?.message?.function_call?.arguments;
-      finalResponse1 = JSON.parse(messageContent1);
-    }
-
-    // Now use responseData instead of data1
-    const choices1 = responseData.choices;
+    // Ensure the response structure is correct for both responses
+    const choices1 = data1.choices;
 
     if (!choices1 || !Array.isArray(choices1) || choices1.length === 0) {
       console.error(
         "Invalid OpenAI response structure for first request:",
-        JSON.stringify(responseData, null, 2)
+        JSON.stringify(data1, null, 2)
       );
       throw new Error("Invalid API response structure for first request");
     }
@@ -297,19 +218,26 @@ export async function POST(req: NextRequest) {
     if (!messageContent1) {
       console.error(
         "Invalid OpenAI response structure:",
-        JSON.stringify(responseData, null, 2)
+        JSON.stringify(data1, null, 2)
       );
       throw new Error("Invalid API response structure");
     }
 
-    // Continue with the existing response handling
+    let finalResponse1;
     try {
+      finalResponse1 = JSON.parse(messageContent1);
+
+      console.log("Parsed response 1:", finalResponse1); // Debug log
+      // Debug log
+
+      // Validate the structure for both responses
       if (!Array.isArray(finalResponse1.sections)) {
         throw new Error("Response is not an array of sections");
       }
 
+      // Return the sections directly without additional stringification
       return NextResponse.json({
-        replies: [finalResponse1.sections],
+        replies: [finalResponse1.sections], // Return both responses
       });
     } catch (parseError) {
       console.error("Parsing error:", parseError);

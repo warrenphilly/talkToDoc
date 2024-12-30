@@ -19,6 +19,67 @@ export const sendMessage = async (
   const formData = new FormData();
   formData.append("message", input);
 
+  const textSections = [];
+
+  for (const file of files) {
+    if (file.type === "application/pdf") {
+      const pdfFormData = new FormData();
+      pdfFormData.append("file", file);
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      try {
+        const pdfResponse = await fetch(`${baseUrl}/api/convert`, {
+          method: "POST",
+          body: pdfFormData,
+        });
+
+        if (!pdfResponse.ok) {
+          throw new Error("PDF conversion failed");
+        }
+
+        const data = await pdfResponse.json();
+
+        // Split text into 1000 character sections
+        const SECTION_LENGTH = 1000;
+
+        if (data.text) {
+          for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
+            textSections.push(data.text.slice(i, i + SECTION_LENGTH));
+          }
+        }
+
+        // Append the sectioned text instead of the PDF file
+        formData.append("text", textSections.join("\n---\n"));
+      } catch (error) {
+        console.error("PDF conversion error:", error);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            user: "AI",
+            text: [
+              {
+                title: "Error",
+                sentences: [
+                  {
+                    id: 1,
+                    text: "Failed to convert PDF file. Please try again.",
+                  },
+                ],
+              },
+            ],
+          },
+        ]);
+        return;
+      }
+    } else {
+      // For non-PDF files, append them as usual
+      formData.append("files", file);
+    }
+  }
+
+  console.log("formDatapleaseeeee", formData);
+
   const userMessage: Message = {
     user: "User",
     text: input,
@@ -28,24 +89,28 @@ export const sendMessage = async (
   setMessages((prevMessages) => [...prevMessages, userMessage]);
   setInput("");
   setFiles([]);
-
+ 
+  //send message logic begins here
   const maxRetries = 3;
 
-  for (const file of files) {
-    formData.append("files", file);
-
+  // Process each text section
+  for (const section of textSections) {
     let attempt = 0;
     let success = false;
+    console.log(`sectionnnnnnnnnnnnnnn:`, section);
 
     while (attempt < maxRetries && !success) {
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
-          body: formData,
+          body: JSON.stringify({ message: section }),
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
 
         const data = await response.json();
-        console.log("Raw API response:", data); // Debug log
+        console.log("Raw API response for section:", data);
 
         let parsedResponse;
 
