@@ -20,7 +20,9 @@ export const sendMessage = async (
   formData.append("message", input);
 
   const textSections = [];
+  console.log("input", input);
 
+  console.log("files", files);
   for (const file of files) {
     if (file.type === "application/pdf") {
       const pdfFormData = new FormData();
@@ -93,11 +95,13 @@ export const sendMessage = async (
   //send message logic begins here
   const maxRetries = 3;
 
+  console.log(" totaltextSections", textSections.length);
+
   // Process each text section
   for (const section of textSections) {
     let attempt = 0;
     let success = false;
-    console.log(`sectionnnnnnnnnnnnnnn:`, section);
+    console.log(`section:`, section);
 
     while (attempt < maxRetries && !success) {
       try {
@@ -131,48 +135,42 @@ export const sendMessage = async (
           }
 
           // Iterate over each set of sections
-          parsedResponse.forEach((sections) => {
-            if (!Array.isArray(sections)) {
-              console.error("Invalid section structure:", sections);
+          parsedResponse.forEach((section) => {
+            console.log("Section received:", section); // Log the section for debugging
+
+            if (
+              typeof section.title !== "string" ||
+              !Array.isArray(section.sentences)
+            ) {
+              console.error("Invalid section structure:", section);
               throw new Error("Invalid section structure");
             }
 
-            const validSections = sections.every((section) => {
+            const validSentences = section.sentences.every((sentence: Sentence) => {
+              console.log("Checking sentence:", sentence); // Log each sentence
+
               if (
-                !section.title ||
-                !section.sentences ||
-                !Array.isArray(section.sentences)
+                typeof sentence.id !== "number" ||
+                typeof sentence.text !== "string"
               ) {
-                console.error("Invalid section structure:", section);
+                console.error("Invalid sentence structure:", sentence);
                 return false;
               }
-
-              return section.sentences.every((sentence: Sentence) => {
-                if (
-                  !sentence ||
-                  typeof sentence.id !== "number" ||
-                  typeof sentence.text !== "string"
-                ) {
-                  console.error("Invalid sentence structure:", sentence);
-                  return false;
-                }
-                return true;
-              });
+              return true;
             });
 
-            if (!validSections) {
-              throw new Error("Invalid section or sentence structure");
+            if (!validSentences) {
+              console.error("Invalid sentences found");
+              throw new Error("Invalid sentence structure");
             }
 
-            // Send each section as a separate message
-            sections.forEach((section) => {
-              const aiMessage = {
-                user: "AI",
-                text: [section],
-              };
+            // Send the section as a separate message
+            const aiMessage = {
+              user: "AI",
+              text: [section],
+            };
 
-              setMessages((prevMessages) => [...prevMessages, aiMessage]);
-            });
+            setMessages((prevMessages) => [...prevMessages, aiMessage]);
           });
 
           success = true;

@@ -103,23 +103,25 @@ const ChatClient = () => {
                 handleClear={handleClear}
               />
 
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-                {messages.map((msg, index) => (
-                  <ResponseMessage
-                    msg={msg}
-                    index={index}
-                    handleSectionClick={(section) =>
-                      handleSectionClick(section, setPrimeSentence, setShowChat)
-                    }
-                    handleSentenceClick={(sentence) =>
-                      handleSentenceClick(
-                        sentence,
-                        setPrimeSentence,
-                        setShowChat
-                      )
-                    }
-                  />
-                ))}
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full max-h-[90vh]">
+                {messages.map((msg, index) => {
+                  // Ensure msg.text is an array of Section[]
+                  const sections = Array.isArray(msg.text) ? msg.text : [];
+
+                  return (
+                    <ResponseMessage
+                      key={index}
+                      index={index}
+                      msg={{ user: msg.user, text: sections }}
+                      handleSectionClick={(section) =>
+                        handleSectionClick(section, setPrimeSentence, setShowChat)
+                      }
+                      handleSentenceClick={(sentence) =>
+                        handleSentenceClick(sentence, setPrimeSentence, setShowChat)
+                      }
+                    />
+                  );
+                })}
               </div>
             </ResizablePanel>
 
