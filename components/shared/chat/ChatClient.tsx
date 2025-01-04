@@ -70,12 +70,12 @@ const ChatClient = () => {
   };
 
   useEffect(() => {
-    console.log("messages", messages);
+    console.log("messages(this value will be stores in the database):", messages);
   }, [messages]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-900 w-full">
-      <div className="flex flex-col h-full bg-slate-900  w-full mx-2">
+    <div className="flex flex-col md:flex-row h-screen bg-slate-200 w-full">
+      <div className="flex flex-col h-full bg-slate-200  w-full mx-2">
         <div className="flex flex-row items-center justify-between w-full ">
           <div className="text-white p-4 bg-slate-800 rounded-2xl w-fit my-5 font-semibold">
             <h1 className="text-xl font-regular">Enhanced Notes</h1>
@@ -103,7 +103,7 @@ const ChatClient = () => {
                 handleClear={handleClear}
               />
 
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-800 rounded-2xl m-2 w-full h-full max-h-[90vh]">
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full max-h-[90vh]">
                 {messages.map((msg, index) => {
                   // Ensure msg.text is an array of Section[]
                   const sections = Array.isArray(msg.text) ? msg.text : [];

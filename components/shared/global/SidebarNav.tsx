@@ -60,16 +60,16 @@ export function SidebarNav() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarContent className="bg-slate-900 text-slate-200 ">
+        <SidebarContent className="bg-[#94b347] text-slate-200 ">
           <SidebarGroup>
-            <SidebarGroupLabel className="text-slate-400">Application</SidebarGroupLabel>
+         
             <SidebarGroupContent>
               <SidebarMenu>
                 {items.map((item) => (
                   <SidebarMenuItem key={item.title} className="hover:bg-slate-700">
                     <SidebarMenuButton asChild>
                       <a href={item.url} className="flex items-center gap-2 p-2">
-                        <item.icon className="text-slate-400" />
+                        <item.icon className="text-slate-100" />
                         <span>{item.title}</span>
                       </a>
                     </SidebarMenuButton>

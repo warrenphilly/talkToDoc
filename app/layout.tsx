@@ -1,7 +1,7 @@
+import { SidebarNav } from "@/components/shared/global/SidebarNav";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SidebarNav } from "@/components/shared/global/SidebarNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,22 +20,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning={true}
       >
-        <div className='flex flex-row h-screen w-full ' >
-          <div className='flex flex-col h-screen items-start justify-start ' >
+        <div className="flex flex-row h-screen w-full">
+          <div className="flex flex-col h-screen items-start justify-start">
             <SidebarNav />
           </div>
-        
-            {children}
-          
-            
+          {children}
         </div>
       </body>
     </html>

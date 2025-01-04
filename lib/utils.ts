@@ -43,7 +43,7 @@ export const sendMessage = async (
         const data = await pdfResponse.json();
 
         // Split text into 1000 character sections
-        const SECTION_LENGTH = 1000;
+        const SECTION_LENGTH = 500;
 
         if (data.text) {
           for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {

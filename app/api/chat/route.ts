@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
         easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sentences. 
         Ensure that each sentence is a complete thought and can be understood on its own, 
         but also ensure that the sentences are related to the title of the section and all other sentences. You must simplify  the information and make it easy to understand but do not lose any information. When analyzing the text, do not focus on describing what the text is but analyze 
-         the content and break it down into sections and cohesive sentences. Use as few sentences as possible to give the best explanation of the content possible.
-          Each section should contain a cohesive set of at least 3 but no more than 5 sentences that are related to the title of the section. Prioritize the information of the text. keep explanation of the text as short and simple as possible in a way that is easy to understand.`,
+         the content and break it down into sections and cohesive sentences. give the best explanation of the content possible.
+          Each section should contain a cohesive set of at least 7  sentences that are related to the title of the section. Prioritize the information of the text. keep explanation of the text as simple as possible in a way that is easy to understand.`,
       },
       {
         role: "user",
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "gpt-4o",
         messages,
-        max_tokens: 10000,
+        max_tokens: 15000,
         temperature: 0.7,
         functions,
         function_call: { name: "generate_sections", strict: true },
