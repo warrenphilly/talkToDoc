@@ -42,9 +42,7 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
 
     const userMessage = {
       user: "User",
-      text: `The user has asked: ${messageText}
-      The context of the sentence is: ${primeSentence || ""}
-      you must give all your responses in the context of the sentence, answer the question in the context of the sentence or the referer to the contnet .`,
+      text: messageText,
       files: files.map((file) => URL.createObjectURL(file)),
     };
 
@@ -62,42 +60,26 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
       console.log("Raw API response:", data); // Debug log
 
       const aiMessage = {
-        user: "System", // Change to 'System' for system-like messages
-        text: data.reply, // Use the reply directly as a string
+        user: "AI",
+        text: data.reply,
       };
 
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
     } catch (error) {
       console.error("Network error:", error);
-      const errorResponse = [
-        {
-          title: "Error",
-          sentences: [
-            {
-              id: 1,
-              text: "Sorry, there was a network error. Please try again.",
-            },
-          ],
-        },
-      ];
-
       setMessages((prevMessages) => [
         ...prevMessages,
         {
-          user: "System",
-          text: errorResponse
-            .map((section) =>
-              section.sentences.map((sentence) => sentence.text).join(" ")
-            )
-            .join("\n\n"),
+          user: "AI",
+          text: "Sorry, there was a network error. Please try again.",
         },
       ]);
     }
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-800 rounded-2xl mb-4 max-h-[90vh] ">
-      <div className="bg-slate-800 text-white rounded-lg  border-slate-700 border-2 p-4 m-4">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] ">
+      <div className="border border-[#94b347] text-white rounded-lg   p-4 m-4">
         {/* <h1 className='text-xl font-regular'>AI Chat</h1> */}
         <div className="m-2">
           {primeSentence ? (
@@ -107,20 +89,31 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
           )}
         </div>
         <div className="flex flex-row gap-2">
-          <Button onClick={() => sendMessage("Explain this in greater detail")}>Explain </Button>
-          <Button onClick={() => sendMessage("Give me a step-by-step example")}>Give Example </Button>
+          <Button
+            className="bg-[#94b347] text-white"
+            onClick={() => sendMessage("Explain this in greater detail")}
+          >
+            Explain{" "}
+          </Button>
+          <Button
+            className="bg-[#94b347] text-white"
+            onClick={() => sendMessage("Give me a step-by-step example")}
+          >
+            Give Example{" "}
+          </Button>
         </div>
       </div>
       <div className="flex-grow overflow-y-auto p-4 auto-scroll">
         {messages.map(
           (msg, index) =>
-            msg.text && (
+            msg.text &&
+            (msg.user === "User" || msg.user === "AI") && (
               <div
                 key={index}
                 className={`p-2 rounded mb-2 ${
                   msg.user === "User"
-                    ? "bg-slate-800 text-gray-500"
-                    : "bg-slate-700 shadow text-white"
+                    ? "bg-[#c1d295] shadow-sm rounded-xl text-white"
+                    : "bg-slate-100 text-lg text-slate-900"
                 }`}
               >
                 {msg.user === "AI" ? (
@@ -175,10 +168,10 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
             )
         )}
       </div>
-      <div className="bg-slate-800 p-4  rounded-b-lg">
-        <div className="flex  bg-slate-800 rounded-lg  p-2 flex-row items-center gap-3">
+      <div className="bg-slate-100 p-4  rounded-b-lg">
+        <div className="flex  bg-slate-200 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
           <Textarea
-            className="w-full border rounded bg-slate-900 text-white"
+            className="w-full h-full border shadow-none border-slate-200 rounded bg-slate-200 text-slate-900 flex-grow"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -186,7 +179,12 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
               e.key === "Enter" && !e.shiftKey && sendMessage(input)
             }
           />
-          <Button onClick={() => sendMessage(input)}>Send</Button>
+          <Button
+            className="bg-[#94b347] text-white"
+            onClick={() => sendMessage(input)}
+          >
+            Send
+          </Button>
         </div>
       </div>
     </div>

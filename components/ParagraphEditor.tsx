@@ -1,0 +1,96 @@
+'use client'
+
+import { useState } from 'react'
+import { PlusIcon, XIcon, SaveIcon } from 'lucide-react'
+
+interface Sentence {
+  id: number
+  text: string
+}
+
+interface ParagraphData {
+  title: string
+  sentences: Sentence[]
+}
+
+export default function ParagraphEditor() {
+  const [isEditing, setIsEditing] = useState(false)
+  const [title, setTitle] = useState('Untitled')
+  const [content, setContent] = useState('')
+  const [savedData, setSavedData] = useState<ParagraphData | null>(null)
+
+  const handleSave = () => {
+    const sentences = content
+      .split('.')
+      .filter(sentence => sentence.trim() !== '')
+      .map((sentence, index) => ({
+        id: index + 1,
+        text: sentence.trim() + '.'
+      }))
+
+    const paragraphData: ParagraphData = {
+      title,
+      sentences
+    }
+
+    setSavedData(paragraphData)
+    setIsEditing(false)
+    console.log('Saved data:', paragraphData)
+  }
+
+  return (
+    <div className="relative py-4">
+      <div className="flex items-center">
+        <button
+          onClick={() => setIsEditing(!isEditing)}
+          className={`flex items-center justify-center w-6 h-6 rounded-full transition-colors duration-300 ease-in-out ${
+            isEditing ? 'bg-red-200 hover:bg-red-300' : 'bg-gray-200 hover:bg-gray-300'
+          }`}
+        >
+          {isEditing ? (
+            <XIcon className="w-4 h-4 text-red-600" />
+          ) : (
+            <PlusIcon className="w-4 h-4 text-gray-600" />
+          )}
+        </button>
+        <div className="flex-grow h-px bg-gray-200 ml-2" />
+      </div>
+      {isEditing && (
+        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
+            placeholder="Enter paragraph title"
+          />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
+            placeholder="Type your paragraph here..."
+            rows={5}
+          />
+          <button
+            onClick={handleSave}
+            className="flex items-center justify-center px-4 py-2 bg-[#94b347] text-white rounded-md hover:bg-[#7a9339] transition-colors duration-300 ease-in-out"
+          >
+            <SaveIcon className="w-4 h-4 mr-2" />
+            Save
+          </button>
+        </div>
+      )}
+      {savedData && !isEditing && (
+        <div className="mt-4 p-4 bg-gray-100 rounded-md">
+          <h3 className="font-bold text-lg mb-2">{savedData.title}</h3>
+          {savedData.sentences.map((sentence) => (
+            <p key={sentence.id} className="mb-1">
+              {sentence.text}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
