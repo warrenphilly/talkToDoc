@@ -17,7 +17,7 @@ import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
-import { getChat, saveChat } from "@/lib/firebase/firestore";
+import { saveChat, getChat } from "@/lib/firebase/firestore";
 import {
   fileUpload,
   sectionClick,
