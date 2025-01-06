@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/resizable";
 
 import SideChat from "@/components/shared/global/SideChat";
-import { createNewNote } from "@/lib/firebase/firestore";
+import { createNewNotebook } from "@/lib/firebase/firestore";
 import BentoDashboard from "./bento-dashboard";
+import { CreateNotebookModal } from "@/components/shared/home/create-notebook-modal";
 
 // First, let's define our message types
 interface Sentence {
@@ -34,6 +35,7 @@ const HomeClient = () => {
   const [showUpload, setShowUpload] = useState(true);
   const [primeSentence, setPrimeSentence] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   // const [selectedSentence, setSelectedSentence] = useState<Sentence | null>(
   //   null
   // ); - possible to remove
@@ -60,10 +62,7 @@ const HomeClient = () => {
 
           <div className="flex gap-2">
             <Button
-              onClick={async () => {
-                await createNewNote();
-                setMessages([]);
-              }}
+              onClick={() => setIsCreateModalOpen(true)}
               className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full w-fit m-5 font-semibold"
             >
               New Notebook
@@ -100,6 +99,10 @@ const HomeClient = () => {
           </ResizablePanelGroup>
         </div>
       </div>
+      <CreateNotebookModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 };

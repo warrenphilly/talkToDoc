@@ -80,7 +80,7 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
     );
     // Save messages to Firestore whenever they change
     try {
-      await saveNote(messages);
+      await saveNote(tabId, messages);
     } catch (error) {
       console.error("Error saving chat to Firestore:", error);
     }
@@ -118,11 +118,11 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
   // Save to Firestore whenever messages change
   useEffect(() => {
     if (messages.length > 0) {
-      saveNote(messages).catch(error => {
+      saveNote(tabId, messages).catch(error => {
         console.error('Error saving chat to Firestore:', error);
       });
     }
-  }, [messages]);
+  }, [messages, tabId]);
 
   return (
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl">

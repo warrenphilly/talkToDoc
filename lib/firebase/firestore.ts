@@ -1,40 +1,43 @@
 import { Message } from "@/lib/types";
+import { db } from "@/firebase";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
-import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
-import { db } from "../../firebase";
-
-// Add interface for Note type
-interface Note {
+export interface Page {
   id: string;
-  createdAt: Date;
-  content: string;
   title: string;
+  content: string;
+  messages: Message[];
 }
 
-export const saveNote = async (note: Note) => {
+export interface Notebook {
+  id: string;
+  title: string;
+  createdAt: Date;
+  pages: Page[];
+}
+
+export const saveNote = async (noteId: string, messages: Message[]) => {
   try {
-    // Use a fixed document ID for the current note session
-    const noteDocRef = doc(db, "notes", note.id);
-    console.log("Saving note:", note);    
-    await setDoc(noteDocRef, note, { merge: true });
+    const noteDocRef = doc(db, "notebooks", noteId);
+    await updateDoc(noteDocRef, {
+      content: messages,
+      updatedAt: new Date()
+    });
   } catch (error) {
     console.error("Error saving chat:", error);
     throw error;
   }
 };
 
-export const getNote = async (noteId: string) => {
+export const getNote = async (noteId: string): Promise<Message[]> => {
   try {
-    const noteDocRef = doc(db, "notes", noteId);
+    const noteDocRef = doc(db, "notebooks", noteId);
     const docSnap = await getDoc(noteDocRef);
 
     if (docSnap.exists()) {
-      // Convert the object back to an array
       const data = docSnap.data();
-      const messagesArray = Object.keys(data)
-        .sort((a, b) => Number(a) - Number(b))
-        .map((key) => data[key]);
-      return messagesArray;
+      return data.content || [];
     }
     return [];
   } catch (error) {
@@ -43,36 +46,74 @@ export const getNote = async (noteId: string) => {
   }
 };
 
-export const createNewNote = async () => {
+export const createNewNotebook = async (title: string): Promise<string> => {
   try {
-    const noteId = `note_${Date.now()}`; // Create unique ID for each note
-    const noteDocRef = doc(db, "notes", noteId);
-    await setDoc(noteDocRef, {
+    const notebookId = `notebook_${Date.now()}`;
+    const firstPageId = `page_${Date.now()}`;
+    
+    const notebookData: Notebook = {
+      id: notebookId,
+      title,
       createdAt: new Date(),
-      content: "New Note",
-      title: "New Note",
-    });
-    return noteId;
+      pages: [{
+        id: firstPageId,
+        title: "Page 1",
+        content: "",
+        messages: []
+      }]
+    };
+
+    await setDoc(doc(db, "notebooks", notebookId), notebookData);
+    return notebookId;
   } catch (error) {
-    console.error("Error creating new note:", error);
+    console.error("Error creating notebook:", error);
     throw error;
   }
 };
 
-export const getAllNotes = async () => {
+export const getAllNotebooks = async (): Promise<Notebook[]> => {
   try {
-    const notesCollection = collection(db, "notes");
+    const notesCollection = collection(db, "notebooks");
     const querySnapshot = await getDocs(notesCollection);
-    const notes = querySnapshot.docs.map((doc) => ({
+    const notebooks = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as Note[]; // Type assertion to Note[]
-    return notes.sort(
+    })) as Notebook[];
+    return notebooks.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (error) {
-    console.error("Error getting notes:", error);
+    console.error("Error getting notebooks:", error);
+    throw error;
+  }
+};
+
+export const addPageToNotebook = async (notebookId: string, pageTitle: string): Promise<Page> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+    
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const newPage: Page = {
+      id: `page_${Date.now()}`,
+      title: pageTitle,
+      content: "",
+      messages: []
+    };
+    
+    const updatedPages = [...notebook.pages, newPage];
+    await updateDoc(notebookRef, { 
+      pages: updatedPages 
+    });
+    
+    return newPage;
+  } catch (error) {
+    console.error("Error adding page:", error);
     throw error;
   }
 };

@@ -6,6 +6,7 @@ import { Plus, X } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { TitleEditor } from './shared/chat/title-editor'
 import ChatClient from './shared/chat/ChatClient'
+import { addPageToNotebook } from "@/lib/firebase/firestore"
 
 interface Tab {
   id: string
@@ -14,22 +15,29 @@ interface Tab {
 }
 
 interface BrowserTabsProps {
+  notebookId: string
   initialTabs: Tab[]
   className?: string
 }
 
-export const BrowserTabs: React.FC<BrowserTabsProps> = ({ initialTabs, className }) => {
+export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTabs, className }) => {
   const [tabs, setTabs] = useState(initialTabs)
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id)
 
-  const addTab = () => {
-    const newTab = {
-      id: `tab-${Date.now()}`,
-      title: `Untitled Page ${tabs.length + 1}`,
-      content: <div>Content for New Tab {tabs.length + 1}</div>
+  const addTab = async () => {
+    const newTitle = `Untitled Page ${tabs.length + 1}`
+    try {
+      const newPage = await addPageToNotebook(notebookId, newTitle)
+      const newTab = {
+        id: newPage.id,
+        title: newPage.title,
+        content: <ChatClient title={newPage.title} tabId={newPage.id} />
+      }
+      setTabs([...tabs, newTab])
+      setActiveTabId(newTab.id)
+    } catch (error) {
+      console.error("Error adding new tab:", error)
     }
-    setTabs([...tabs, newTab])
-    setActiveTabId(newTab.id)
   }
 
   const removeTab = (tabId: string) => {
