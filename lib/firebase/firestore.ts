@@ -3,36 +3,30 @@ import { Message } from "@/lib/types";
 import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
-// Add interface for Chat type
-interface Chat {
+// Add interface for Note type
+interface Note {
   id: string;
   createdAt: Date;
-  messages: Record<string, Message>;
+  content: string;
   title: string;
 }
 
-export const saveChat = async (messages: Message[]) => {
+export const saveNote = async (note: Note) => {
   try {
-    // Use a fixed document ID for the current chat session
-    const chatDocRef = doc(db, "chat", "currentChat");
-
-    // Convert messages array to an object with numeric keys
-    const messagesObject = messages.reduce((acc, message, index) => {
-      acc[index] = message;
-      return acc;
-    }, {} as { [key: number]: Message });
-
-    await setDoc(chatDocRef, messagesObject, { merge: true });
+    // Use a fixed document ID for the current note session
+    const noteDocRef = doc(db, "notes", note.id);
+    console.log("Saving note:", note);    
+    await setDoc(noteDocRef, note, { merge: true });
   } catch (error) {
     console.error("Error saving chat:", error);
     throw error;
   }
 };
 
-export const getChat = async () => {
+export const getNote = async (noteId: string) => {
   try {
-    const chatDocRef = doc(db, "chat", "currentChat");
-    const docSnap = await getDoc(chatDocRef);
+    const noteDocRef = doc(db, "notes", noteId);
+    const docSnap = await getDoc(noteDocRef);
 
     if (docSnap.exists()) {
       // Convert the object back to an array
@@ -44,41 +38,41 @@ export const getChat = async () => {
     }
     return [];
   } catch (error) {
-    console.error("Error getting chat:", error);
+    console.error("Error getting note:", error);
     throw error;
   }
 };
 
-export const createNewChat = async () => {
+export const createNewNote = async () => {
   try {
-    const chatId = `chat_${Date.now()}`; // Create unique ID for each chat
-    const chatDocRef = doc(db, "chats", chatId);
-    await setDoc(chatDocRef, {
+    const noteId = `note_${Date.now()}`; // Create unique ID for each note
+    const noteDocRef = doc(db, "notes", noteId);
+    await setDoc(noteDocRef, {
       createdAt: new Date(),
-      messages: {},
-      title: "New Chat",
+      content: "New Note",
+      title: "New Note",
     });
-    return chatId;
+    return noteId;
   } catch (error) {
-    console.error("Error creating new chat:", error);
+    console.error("Error creating new note:", error);
     throw error;
   }
 };
 
-export const getAllChats = async () => {
+export const getAllNotes = async () => {
   try {
-    const chatsCollection = collection(db, "chats");
-    const querySnapshot = await getDocs(chatsCollection);
-    const chats = querySnapshot.docs.map((doc) => ({
+    const notesCollection = collection(db, "notes");
+    const querySnapshot = await getDocs(notesCollection);
+    const notes = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as Chat[]; // Type assertion to Chat[]
-    return chats.sort(
+    })) as Note[]; // Type assertion to Note[]
+    return notes.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (error) {
-    console.error("Error getting chats:", error);
+    console.error("Error getting notes:", error);
     throw error;
   }
 };

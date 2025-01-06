@@ -34,7 +34,7 @@ const UploadArea = ({
   return (
     <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full ">
       {showUploader ? (
-        <div className="border  bg-slate-100 md:items-start md:justify-between items-center justify-between rounded-2xl w-full px-4 py-4">
+        <div className="border  bg-slate-200 md:items-start md:justify-between items-center justify-between rounded-2xl w-full px-4 py-4">
           <div className="flex flex-row gap-2 items-center justify-between">
           <Button
                 onClick={() => setShowUploader(!showUploader)}
@@ -55,7 +55,7 @@ const UploadArea = ({
               
             </div>
           <div className="flex flex-row gap-2 md:items-start md:justify-between items-center justify-between rounded-2xl w-full p-2">
-            <h1 className="text-gray-100 text-xl font-regular">
+            <h1 className="text-slate-400 text-xl font-regular">
               Uploaded files
             </h1>
 

@@ -17,7 +17,7 @@ import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
-import { saveChat, getChat } from "@/lib/firebase/firestore";
+import { saveNote, getNote } from "@/lib/firebase/firestore"; 
 import {
   fileUpload,
   sectionClick,
@@ -25,8 +25,14 @@ import {
   sentenceClick,
 } from "@/lib/utils";
 import UploadArea from "./UploadArea";
+import { TitleEditor } from "./title-editor";
 
-const ChatClient = () => {
+interface ChatClientProps {
+  title: string;
+  tabId: string;
+}
+
+const ChatClient = ({ title, tabId }: ChatClientProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(
     "Explain this to me to like you are an expert"
@@ -38,7 +44,8 @@ const ChatClient = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
-
+  
+  
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     setFiles: (files: File[]) => void
@@ -73,7 +80,7 @@ const ChatClient = () => {
     );
     // Save messages to Firestore whenever they change
     try {
-      await saveChat(messages);
+      await saveNote(messages);
     } catch (error) {
       console.error("Error saving chat to Firestore:", error);
     }
@@ -97,7 +104,7 @@ const ChatClient = () => {
   useEffect(() => {
     const loadChat = async () => {
       try {
-        const existingMessages = await getChat();
+        const existingMessages = await getNote(tabId);
         if (existingMessages.length > 0) {
           setMessages(existingMessages);
         }
@@ -106,24 +113,22 @@ const ChatClient = () => {
       }
     };
     loadChat();
-  }, []);
+  }, [tabId]);
 
   // Save to Firestore whenever messages change
   useEffect(() => {
     if (messages.length > 0) {
-      saveChat(messages).catch(error => {
+      saveNote(messages).catch(error => {
         console.error('Error saving chat to Firestore:', error);
       });
     }
   }, [messages]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-200 w-full">
-      <div className="flex flex-col h-full bg-slate-200  w-full mx-2">
-        <div className="flex flex-row items-center justify-between w-full ">
-          <div className="text-slate-400 p-4 mx-4 rounded-2xl w-fit font-semibold">
-            <h1 className="text-2xl font-regular">Notes</h1>
-          </div>
+    <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl">
+      <div className="flex flex-col  bg-slate-100  w-full mx-2">
+        <div className="flex flex-row items-center justify-end w-full py-2 ">
+       
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
             <Button
               onClick={() => {
@@ -155,7 +160,7 @@ const ChatClient = () => {
                 handleClear={handleClear}
               />
 
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full max-h-[90vh]">
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-200 rounded-2xl m-2 w-full h-full max-h-[90vh]">
                 {messages.map((msg, index) => {
                   // Ensure msg.text is an array of Section[]
                   const sections = Array.isArray(msg.text) ? msg.text : [];

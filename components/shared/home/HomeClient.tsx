@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/resizable";
 
 import SideChat from "@/components/shared/global/SideChat";
-import { createNewChat } from "@/lib/firebase/firestore";
+import { createNewNote } from "@/lib/firebase/firestore";
 import BentoDashboard from "./bento-dashboard";
 
 // First, let's define our message types
@@ -61,22 +61,14 @@ const HomeClient = () => {
           <div className="flex gap-2">
             <Button
               onClick={async () => {
-                await createNewChat();
+                await createNewNote();
                 setMessages([]);
               }}
               className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full w-fit m-5 font-semibold"
             >
-              New Chat
+              New Notebook
             </Button>
-            <Button
-              onClick={() => {
-                setShowChat(!showChat);
-                setPrimeSentence(null);
-              }}
-              className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full w-fit m-5 font-semibold"
-            >
-              {showChat ? "Close Chat" : "Talk to my notes"}
-            </Button>
+            
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-start h-full max-h-[90vh] px-2">
