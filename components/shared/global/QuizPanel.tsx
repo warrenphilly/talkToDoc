@@ -1,9 +1,54 @@
-import React from 'react'
+"use client";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Image, Upload } from "lucide-react"; // Import icons
+import React, { useEffect, useRef, useState } from "react";
 
-const QuizPanel = () => {
-  return (
-    <div>QuizPanel</div>
-  )
+// First, let's define our message types
+interface Sentence {
+  id: number;
+  text: string;
 }
 
-export default QuizPanel
+interface Section {
+  title: string;
+  sentences: Sentence[];
+}
+
+interface Message {
+  user: string;
+  text: string | Section[];
+  files?: string[];
+}
+
+const QuizPanel = () => {
+  
+
+  
+
+  return (
+    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] ">
+      <div className=" text-white  min-h-[400px] rounded-lg flex flex-col justify-between items-center  p-4 m-4">
+        <div className="flex flex-row gap-2 justify-start items-start w-full">
+        <h1 className='text-xl font-regular text-[#94b347] font-bold '>AI Quiz</h1>
+
+        <div className="flex flex-row gap-2">
+        <Button className="bg-[#94b347] text-white rounded-lg p-2">
+          <h1 className="text-md font-regular text-white  ">Ask me questions</h1>
+        </Button> 
+
+        <Button className="bg-[#94b347] text-white rounded-lg p-2">
+          <h1 className="text-md  font-regular text-white ">Generate Text</h1>
+        </Button> 
+        </div>
+        </div>
+        <div className="h-px bg-slate-300 w-full my-4" />
+       
+     
+      </div>
+    
+    </div>
+  );
+};
+
+export default QuizPanel;

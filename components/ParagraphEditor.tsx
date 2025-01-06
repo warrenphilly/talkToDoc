@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PlusIcon, XIcon, SaveIcon } from 'lucide-react'
+import { Separator } from '@radix-ui/react-separator'
 
 interface Sentence {
   id: number
@@ -15,7 +16,7 @@ interface ParagraphData {
 
 export default function ParagraphEditor() {
   const [isEditing, setIsEditing] = useState(false)
-  const [title, setTitle] = useState('Untitled')
+  const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [savedData, setSavedData] = useState<ParagraphData | null>(null)
 
@@ -39,7 +40,7 @@ export default function ParagraphEditor() {
   }
 
   return (
-    <div className="relative py-4">
+    <div className="relative p-4 ">
       <div className="flex items-center">
         <button
           onClick={() => setIsEditing(!isEditing)}
@@ -56,18 +57,21 @@ export default function ParagraphEditor() {
         <div className="flex-grow h-px bg-gray-200 ml-2" />
       </div>
       {isEditing && (
-        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out">
+        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out  b border border-[#94b347] rounded-2xl p-4">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
+            className="w-full text-xl text-[#94b347] w-96 font-bold p-2 rounded-md bg-slate-100  focus:outline-none focus:ring-2 focus:ring-[#94b347]"
             placeholder="Enter paragraph title"
           />
+          <div className="w-full h-px bg-slate-300" />
+        
+          
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
+            className="w-full p-2 rounded-md bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
             placeholder="Type your paragraph here..."
             rows={5}
           />
