@@ -5,11 +5,11 @@ import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
 import { Notebook, Page } from "@/lib/firebase/firestore";
 
-interface PageProps {
+type Props = {
   params: {
     noteId: string;
   };
-}
+};
 
 async function getNotebookData(noteId: string): Promise<Notebook | null> {
   try {
@@ -35,7 +35,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-export default async function NotebookPage({ params }: PageProps) {
+const NotePage = async ({ params }: Props) => {
   console.log("Received params:", params);
   const notebook = await getNotebookData(params.noteId);
   
@@ -65,3 +65,5 @@ export default async function NotebookPage({ params }: PageProps) {
     </div>
   );
 }
+
+export default NotePage;

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { createNewNotebook } from "@/lib/firebase/firestore";
+import { revalidatePath } from "next/cache";
 
 interface CreateNotebookModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function CreateNotebookModal({ isOpen, onClose }: CreateNotebookModalProp
     try {
       const notebookId = await createNewNotebook(title);
       onClose();
+      revalidatePath("/notes");
       router.push(`/notes/${notebookId}`);
     } catch (error) {
       console.error("Error creating notebook:", error);

@@ -1,17 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/firebase";
 import { Notebook } from "@/lib/firebase/firestore";
-import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export default function BentoDashboard({listType}: {listType: string}) {
+export default function BentoDashboard({ listType }: { listType: string }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
   useEffect(() => {
@@ -36,7 +31,9 @@ export default function BentoDashboard({listType}: {listType: string}) {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-slate-400">{listType === "all" ? "All Notebooks" : "Recent Notebooks"}</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-400">
+        {listType === "all" ? "All Notebooks" : "Recent Notebooks"}
+      </h1>
       <div className="flex flex-wrap gap-4 items-center justify-start md:p-5">
         {notebooks.map((notebook) => (
           <Link key={notebook.id} href={`/notes/${notebook.id}`}>
@@ -49,7 +46,9 @@ export default function BentoDashboard({listType}: {listType: string}) {
                   {notebook.title}
                 </h2>
                 <p className="text-muted-foreground mt-2 flex-grow">
-                  {new Date(notebook.createdAt).toLocaleDateString()}
+                  {notebook.createdAt instanceof Date 
+                    ? notebook.createdAt.toLocaleDateString()
+                    : new Date(notebook.createdAt).toLocaleDateString()}
                 </p>
               </CardContent>
             </Card>
