@@ -1,18 +1,21 @@
-import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { notFound } from "next/navigation";
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
+import { db } from "@/firebase";
 import { Notebook, Page } from "@/lib/firebase/firestore";
-import { Metadata } from 'next';
+import { doc, getDoc } from "firebase/firestore";
+import type { Metadata } from 'next';
+import { notFound } from "next/navigation";
 
-interface PageProps {
+type Props = {
   params: {
     noteId: string;
   };
-}
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
   return {
     title: `Note ${params.noteId}`,
   };
@@ -23,7 +26,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
     console.log("Fetching notebook with ID:", noteId);
     const docRef = doc(db, "notebooks", noteId);
     const docSnap = await getDoc(docRef);
-    
+
     if (!docSnap.exists()) {
       console.log("Notebook not found");
       return null;
@@ -31,9 +34,9 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
 
     const data = {
       id: docSnap.id,
-      ...docSnap.data()
+      ...docSnap.data(),
     } as Notebook;
-    
+
     console.log("Found notebook:", data);
     return data;
   } catch (error) {
@@ -42,10 +45,10 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-export default async function NotePage({ params }: PageProps) {
+const NotePage = async ({ params, searchParams }: Props) => {
   console.log("Received params:", params);
   const notebook = await getNotebookData(params.noteId);
-  
+
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
     notFound();
@@ -56,19 +59,16 @@ export default async function NotePage({ params }: PageProps) {
   const tabs = notebook.pages.map((page: Page) => ({
     id: page.id,
     title: page.title,
-    content: <ChatClient 
-      title={page.title} 
-      tabId={page.id}
-      notebookId={notebook.id}
-    />
+    content: (
+      <ChatClient title={page.title} tabId={page.id} notebookId={notebook.id} />
+    ),
   }));
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-200 p-4">
-      <BrowserTabs 
-        notebookId={notebook.id}
-        initialTabs={tabs}
-      />
+      <BrowserTabs notebookId={notebook.id} initialTabs={tabs} />
     </div>
   );
-}
+};
+
+export default NotePage;
