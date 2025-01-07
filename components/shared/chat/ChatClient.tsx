@@ -9,7 +9,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Textarea } from "@/components/ui/textarea";
-import { Message, Section, Sentence } from "@/lib/types";
+import { Message, Section } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
 import { Image, Upload as LucideUpload, MoreVertical } from "lucide-react"; // Import icons
 import React, { RefObject, useEffect, useRef, useState } from "react";
@@ -33,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ParagraphData } from "@/lib/types";
 
 interface ChatClientProps {
   title: string;
@@ -52,6 +53,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -61,7 +63,10 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   };
 
   const handleSentenceClick = (
-    sentence: Sentence,
+    sentence: {
+      id: number;
+      text: string;
+    },
     setPrimeSentence: (sentence: string) => void,
     setShowChat: (show: boolean) => void
   ) => {
@@ -131,6 +136,35 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
       });
     }
   }, [messages, notebookId, tabId]);
+
+  const handleParagraphSave = async (paragraphData: ParagraphData, index: number) => {
+    if (!paragraphData?.text) {
+      console.error('Invalid paragraph data');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const newMessage: Message = {
+            
+            text: paragraphData.text,
+            user: 'AI'
+      };
+
+      const updatedMessages = JSON.parse(JSON.stringify(messages));
+      updatedMessages.splice(index + 1, 0, newMessage);
+      
+      setMessages(updatedMessages);
+      console.log('updatedMessages', updatedMessages)
+      await saveNote(notebookId, tabId, updatedMessages);
+    } catch (error) {
+      console.error("Error saving paragraph:", error);
+      setMessages(messages); // Revert on error
+      // Optionally show an error toast/notification here
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
@@ -250,7 +284,11 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                       />
                      
                         <div key={`editor-${index}`}>
-                          <ParagraphEditor />
+                          <ParagraphEditor 
+                            
+                            onSave={(data: ParagraphData) => handleParagraphSave(data, index) }
+                            messageIndex={index}
+                          />
                         </div>
                         </>
                       )}

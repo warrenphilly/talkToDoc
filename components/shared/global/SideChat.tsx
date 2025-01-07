@@ -78,17 +78,18 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] ">
-      <div className="border border-[#94b347] text-white rounded-lg   p-4 m-4">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh]  ">
+      <div className="border border-slate-400 text-[#94b347] rounded-lg   p-4 m-4">
         {/* <h1 className='text-xl font-regular'>AI Chat</h1> */}
         <div className="m-2">
           {primeSentence ? (
-            <p>{primeSentence}</p>
+            <p>"{primeSentence}"</p>
           ) : (
             <p className="text-gray-500">Click a Sentence to add context</p>
           )}
         </div>
-        <div className="flex flex-row gap-2">
+        <div className="h-px bg-slate-300" />
+        <div className="flex flex-row gap-2 w-full items-center justify-center m-4">
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => sendMessage("Explain this in greater detail")}

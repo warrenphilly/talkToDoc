@@ -8,8 +8,13 @@ export interface Section {
    sentences: Sentence[];
 }
   
-  export interface Message {
+export interface Message {
    user: string;
    text: string | Section[];
    files?: string[];
+}
+
+export interface ParagraphData {
+  user: string;
+  text: Section[];
 }

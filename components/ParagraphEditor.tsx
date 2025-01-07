@@ -4,17 +4,23 @@ import { useState } from 'react'
 import { PlusIcon, XIcon, SaveIcon } from 'lucide-react'
 import { Separator } from '@radix-ui/react-separator'
 
-interface Sentence {
-  id: number
-  text: string
-}
-
 interface ParagraphData {
-  title: string
-  sentences: Sentence[]
+  user: string
+  text: {
+    title: string
+    sentences: {
+      id: number
+      text: string
+    }[]
+  }[]
 }
 
-export default function ParagraphEditor() {
+interface ParagraphEditorProps {
+  onSave: (data: ParagraphData) => void;
+  messageIndex: number;
+}
+
+export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -30,10 +36,15 @@ export default function ParagraphEditor() {
       }))
 
     const paragraphData: ParagraphData = {
-      title,
-      sentences
+      user: "AI",
+      text: [{
+        title,
+        sentences
+      }]
     }
 
+    onSave(paragraphData);
+    
     setSavedData(paragraphData)
     setIsEditing(false)
     console.log('Saved data:', paragraphData)
@@ -84,16 +95,7 @@ export default function ParagraphEditor() {
           </button>
         </div>
       )}
-      {savedData && !isEditing && (
-        <div className="mt-4 p-4 bg-gray-100 rounded-md">
-          <h3 className="font-bold text-lg mb-2">{savedData.title}</h3>
-          {savedData.sentences.map((sentence) => (
-            <p key={sentence.id} className="mb-1">
-              {sentence.text}
-            </p>
-          ))}
-        </div>
-      )}
+  
     </div>
   )
 }
