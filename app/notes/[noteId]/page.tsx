@@ -1,9 +1,9 @@
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
 import { db } from "@/firebase";
-import { Notebook, Page } from "@/lib/firebase/firestore";
+import { Notebook, type Page } from "@/lib/firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 type Props = {
@@ -13,9 +13,7 @@ type Props = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Note ${params.noteId}`,
   };
