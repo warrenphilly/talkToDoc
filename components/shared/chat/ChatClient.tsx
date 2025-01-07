@@ -11,13 +11,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Message, Section, Sentence } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
-import { Image, Upload as LucideUpload } from "lucide-react"; // Import icons
+import { Image, Upload as LucideUpload, MoreVertical } from "lucide-react"; // Import icons
 import React, { RefObject, useEffect, useRef, useState } from "react";
 import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
-import { saveNote, getNote } from "@/lib/firebase/firestore"; 
+import { saveNote, getNote } from "@/lib/firebase/firestore";
 import {
   fileUpload,
   sectionClick,
@@ -26,6 +26,13 @@ import {
 } from "@/lib/utils";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatClientProps {
   title: string;
@@ -45,8 +52,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
-  
-  
+
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     setFiles: (files: File[]) => void
@@ -79,7 +85,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
       setFiles,
       setShowUpload
     );
-    
+
     try {
       await saveNote(notebookId, tabId, messages);
     } catch (error) {
@@ -120,7 +126,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   // Save messages whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      saveNote(notebookId, tabId, messages).catch(error => {
+      saveNote(notebookId, tabId, messages).catch((error) => {
         console.error("Error saving messages:", error);
       });
     }
@@ -130,16 +136,23 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
       <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
-        <button
-        className="text-[#94b347] px-4 py-2 bg-slate-200 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold"
-        > Uploaded files</button>
-       
+          <div className="flex flex-row gap-2 items-center justify-between">
+            <Button
+              onClick={() => setShowUpload(!showUpload)}
+              className={`bg-slate-100 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 text-slate-500 rounded-2xl w-fit ${
+                messages.length > 0 ? "block" : "hidden"
+              }`}
+            >
+              {showUpload ? "Close Uploads" : "Uploaded Files"}
+            </Button>
+          </div>
+
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
             <Button
               onClick={() => {
                 setShowQuiz(!showQuiz);
               }}
-              className="text-[#94b347] px-4 py-2 bg-slate-100 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold"
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               Quiz Me
             </Button>
@@ -147,10 +160,52 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
               onClick={() => {
                 setShowChat(!showChat);
               }}
-              className="text-[#94b347] px-4 py-2 bg-slate-100 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold "
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger className="bg-slate-100  rounded-full w-fit ">
+                <Button className="bg-slate-100 rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100">
+                  <MoreVertical />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-slate-100 p-0">
+                <DropdownMenuItem className="w-full bg-green-500 p-0">
+                  <Button
+                    onClick={handleClear}
+                    className={`bg-slate-100 shadow-none text-red-500 hover:bg-red-200 rounded-none w-full ${
+                      messages.length > 0 ? "block" : "hidden"
+                    }`}
+                  >
+                    Clear Page
+                  </Button>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300"  />
+                <DropdownMenuItem className="w-full hover:bg-red-500 p-0">
+                  <Button
+                    onClick={handleClear}
+                    className={`bg-slate-100 shadow-none hover:bg-red-200 rounded-none m-0 text-red-500  w-full ${
+                      messages.length > 0 ? "block" : "hidden"
+                    }`}
+                  >
+                    Delete Page
+                  </Button>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300" />
+                <DropdownMenuItem className="w-full hover:bg-red-500 p-0 m-0">
+                  <Button
+                    onClick={handleClear}
+                    className={`bg-slate-100 shadow-none hover:bg-red-200 text-red-500  rounded-none w-full ${
+                      messages.length > 0 ? "block" : "hidden"
+                    }`}
+                  >
+                    Delete Notebook
+                  </Button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
@@ -159,24 +214,26 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
               <UploadArea
                 messages={messages}
                 files={files}
+                showUpload={showUpload}
                 fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
                 handleFileUpload={(event) => handleFileUpload(event, setFiles)}
                 handleSendMessage={handleSendMessage}
                 handleClear={handleClear}
               />
 
-              <div className="flex flex-col overflow-y-auto p-4 bg-slate-200 rounded-2xl m-2 w-full h-full">
+              <div className="flex flex-col overflow-y-auto p-4 bg-slate-100 border-b-2 border-slate-300 rounded-t-2xl m-2 w-full h-full">
                 {messages.map((msg, index) => {
-                  // Ensure msg.text is an array of Section[]
                   const sections = Array.isArray(msg.text) ? msg.text : [];
 
                   return (
-                    <div className="">
-                      <ResponseMessage
-                        key={index}
-                        index={index}
-                        msg={{ user: msg.user, text: sections }}
-                        handleSectionClick={(section) =>
+                    <div key={`message-${index}`} className="">
+                      {msg.user === "AI" && (
+                        <>
+                        <ResponseMessage
+                          key={`response-${index}`}
+                          index={index}
+                          msg={{ user: msg.user, text: sections }}
+                          handleSectionClick={(section) =>
                           handleSectionClick(
                             section,
                             setPrimeSentence,
@@ -191,10 +248,12 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                           )
                         }
                       />
-                      <div>
                      
-                        <ParagraphEditor />
-                      </div>
+                        <div key={`editor-${index}`}>
+                          <ParagraphEditor />
+                        </div>
+                        </>
+                      )}
                     </div>
                   );
                 })}

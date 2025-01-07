@@ -12,6 +12,7 @@ interface UploadAreaProps {
   handleSendMessage: () => void;
   handleClear: () => void;
   className?: string;
+  showUpload: boolean;
 }
 
 const UploadArea = ({
@@ -21,40 +22,15 @@ const UploadArea = ({
   handleFileUpload,
   handleSendMessage,
   handleClear,
+  showUpload,
 }: UploadAreaProps) => {
   //useEffect for watching messages.length
 
-  const [showUploader, setShowUploader] = useState(true);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      setShowUploader(false);
-    }
-  }, [messages]);
-
   return (
     <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full ">
-      {showUploader ? (
+      {showUpload && (
         <div className="border  bg-slate-200 md:items-start md:justify-between items-center justify-between rounded-2xl w-full px-4 py-4">
-          <div className="flex flex-row gap-2 items-center justify-between">
-          <Button
-                onClick={() => setShowUploader(!showUploader)}
-                className={`bg-slate-500 text-white rounded-2xl w-fit ${
-                  messages.length > 0 ? "block" : "hidden"
-                }`}
-              >
-                Close Uploads
-              </Button>
-              <Button
-                onClick={handleClear}
-                className={`bg-red-500 text-white rounded-2xl w-fit ${
-                  messages.length > 0 ? "block" : "hidden"
-                }`}
-              >
-                Clear Notes
-              </Button>
-              
-            </div>
+         
           <div className="flex flex-row gap-2 md:items-start md:justify-between items-center justify-between rounded-2xl w-full p-2">
             <h1 className="text-slate-400 text-xl font-regular">
               Uploaded files
@@ -149,19 +125,7 @@ const UploadArea = ({
             </div>
           </div>
         </div>
-      ) : (
-        <div className="flex flex-row gap-2 md:items-start md:justify-between items-center justify-between rounded-2xl w-full">
-     
-          <Button
-            onClick={() => setShowUploader(!showUploader)}
-            className={`bg-slate-500 text-white rounded-2xl w-fit ${
-              messages.length > 0 ? "block" : "hidden"
-            }`}
-          >
-            Uploaded Files
-          </Button>
-        </div>
-      )}
+      ) }
     </div>
   );
 };
