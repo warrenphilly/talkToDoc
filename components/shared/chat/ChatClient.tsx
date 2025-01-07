@@ -46,7 +46,8 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   const [input, setInput] = useState(
     "Explain this to me to like you are an expert"
   );
-  const [showUpload, setShowUpload] = useState(true);
+
+  const [showUpload, setShowUpload] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [primeSentence, setPrimeSentence] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
@@ -54,6 +55,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -119,6 +121,12 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
         const pageData = await getNote(notebookId, tabId);
         if (pageData?.messages) {
           setMessages(pageData.messages);
+          if(pageData.messages.length === 0){
+            setShowUpload(true)
+          }
+          else{
+            setShowUpload(false)
+          }
         }
       } catch (error) {
         console.error("Error loading messages:", error);
@@ -163,6 +171,25 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
       // Optionally show an error toast/notification here
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleMessageEdit = (index: number) => {
+    // Set the message content for editing
+    const messageToEdit = messages[index];
+    // You can implement your edit logic here
+    console.log('Editing message:', messageToEdit);
+  };
+
+  const handleMessageDelete = async (index: number) => {
+    try {
+      const updatedMessages = [...messages];
+      updatedMessages.splice(index, 1);
+      setMessages(updatedMessages);
+      await saveNote(notebookId, tabId, updatedMessages);
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      setMessages(messages); // Revert on error
     }
   };
 
@@ -281,6 +308,8 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                             setShowChat
                           )
                         }
+                        onEdit={() => handleMessageEdit(index)}
+                        onDelete={() => handleMessageDelete(index)}
                       />
                      
                         <div key={`editor-${index}`}>
