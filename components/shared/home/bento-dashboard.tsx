@@ -46,9 +46,20 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   {notebook.title}
                 </h2>
                 <p className="text-muted-foreground mt-2 flex-grow">
-                  {notebook.createdAt instanceof Date 
-                    ? notebook.createdAt.toLocaleDateString()
-                    : new Date(notebook.createdAt).toLocaleDateString()}
+                  {notebook.id
+                    ? (() => {
+                        try {
+                          const timestamp = notebook.id.split("_")[1];
+                          console.log("Extracted timestamp:", timestamp); // Debug log
+                          return new Date(
+                            parseInt(timestamp)
+                          ).toLocaleDateString();
+                        } catch (error) {
+                          console.error("Date parsing error:", error);
+                          return "Invalid date";
+                        }
+                      })()
+                    : "No date available"}
                 </p>
               </CardContent>
             </Card>

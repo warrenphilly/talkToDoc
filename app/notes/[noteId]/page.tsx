@@ -9,6 +9,7 @@ type Props = {
   params: {
     noteId: string;
   };
+  searchParams?: { [key: string]: string | string[] | undefined };
 };
 
 async function getNotebookData(noteId: string): Promise<Notebook | null> {
@@ -35,7 +36,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-const NotePage = async ({ params }: Props) => {
+const NotePage = async ({ params, searchParams }: Props) => {
   console.log("Received params:", params);
   const notebook = await getNotebookData(params.noteId);
   
