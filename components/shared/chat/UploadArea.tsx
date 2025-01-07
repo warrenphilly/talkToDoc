@@ -27,7 +27,7 @@ const UploadArea = ({
   //useEffect for watching messages.length
 
   return (
-    <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full ">
+    <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full  px-6">
       {showUpload && (
         <div className="border  bg-slate-200 md:items-start md:justify-between items-center justify-between rounded-2xl w-full px-4 py-4">
          
@@ -38,15 +38,16 @@ const UploadArea = ({
 
           
           </div>
-          <div className="flex flex-row gap-2 items-start justify-start bg-red-500 rounded-2xl w-full">
+          <div className="flex flex-row gap-2 items-start justify-start  rounded-2xl w-full">
             
             {messages.map((msg, index) => (
+                  (msg.files && msg.files.length > 0) && (
               
               <div
                 key={index}
-                className="flex flex-col gap-2 items-center justify-center rounded-2xl w-fit"
+                className="flex flex-col gap-2 items-center justify-center rounded-2xl w-fit mx-4"
               >
-                {msg.files && (
+                {msg.files  && (
                   
                   <div className=" flex flex-wrap gap-2">
                     {msg.files.map((fileUrl: string, idx: number) => {
@@ -69,12 +70,12 @@ const UploadArea = ({
                           key={idx}
                           src={fileUrl}
                           alt={`Uploaded file ${idx + 1}`}
-                          className="w-[200px] h-[200px] object-cover rounded-2xl "
+                          className=" object-cover rounded-2xl "
                         />
                       ) : (
                         <div
                           key={idx}
-                          className="w-[200px] h-[200px] bg-slate-200 rounded-2xl flex items-center justify-center bg-green-500"
+                          className="w-[200px] h-[200px]  rounded-2xl flex items-center justify-center bg-slate-100"
                         >
                           <div className="text-center p-4">
                             <LucideUpload className="w-8 h-8 mx-auto mb-2 text-slate-900" />
@@ -91,10 +92,11 @@ const UploadArea = ({
                   </div>
                 )}
               </div>
+              )
             ))}
 
-            <div className="border border-[#94b347] bg-slate-100 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-[200px] h-[200px]">
-              <h1 className="text-xl font-regular text-[#94b347]">
+            <div className=" bg-[#b0cb68] flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-[200px] h-[200px] ">
+              <h1 className="text-xl font-regular text-slate-100">
                 Upload Files
               </h1>
               <div className="flex gap-2 mb-2">
@@ -111,7 +113,7 @@ const UploadArea = ({
                   <Button
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 border bg- border-slate-500"
+                    className="flex items-center gap-2  bg-slate-100 border-none shadow-lg"
                   >
                     <UploadOutlined />
                     Upload Files
@@ -125,7 +127,7 @@ const UploadArea = ({
               </div>
 
               <div className="flex flex-row items-center gap-3 p-2 rounded-2xl">
-                <Button className="bg-[#94b347] text-white rounded-2xl w-fit shadow-none" onClick={handleSendMessage}>Generate Notes</Button>
+                <Button className="bg-[#dae9b6] text-slate-700 rounded-2xl w-fit shadow-none" onClick={handleSendMessage}>Generate Notes</Button>
               </div>
             </div>
           </div>

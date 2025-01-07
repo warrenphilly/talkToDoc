@@ -11,7 +11,7 @@ import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-export default function BentoDashboard() {
+export default function BentoDashboard({listType}: {listType: string}) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export default function BentoDashboard() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-slate-400">Recent Notebooks</h1>
+      <h1 className="text-3xl font-bold mb-6 text-slate-400">{listType === "all" ? "All Notebooks" : "Recent Notebooks"}</h1>
       <div className="flex flex-wrap gap-4 items-center justify-start md:p-5">
         {notebooks.map((notebook) => (
           <Link key={notebook.id} href={`/notes/${notebook.id}`}>

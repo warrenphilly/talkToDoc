@@ -95,7 +95,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
             className={cn(
               "flex items-center px-3 py-2 text-sm font-medium rounded-t-lg cursor-pointer",
               activeTabId === tab.id
-                ? "bg-background text-foreground bg-slate-100 shadow-x-md"
+                ? " text-foreground bg-slate-100 shadow-x-md"
                 : "text-muted-foreground bg-slate-300"
             )}
             onClick={() => setActiveTabId(tab.id)}
@@ -129,7 +129,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4 rounded-b-lg h-[calc(100vh-8rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
+          className="p-4  h-[calc(100vh-5.2rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
         >
           <ChatClient 
             title={activeTab?.title || ''} 

@@ -70,7 +70,10 @@ const HomeClient = () => {
             
           </div>
         </div>
-        <div className="flex flex-col md:flex-row justify-start h-full max-h-[90vh] px-2">
+
+
+        {/* recent notebooks */}
+        <div className="flex flex-col md:flex-row justify-start h-fit px-2">
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
             <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
               {/* surgery area */}
@@ -78,7 +81,7 @@ const HomeClient = () => {
               {/* end of surgery area */}
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-                <BentoDashboard />
+                <BentoDashboard listType="recent" />
               </div>
             </ResizablePanel>
 
@@ -92,12 +95,43 @@ const HomeClient = () => {
                 }`}
               >
                 <div className="rounded-2xl m-2 w-full min-w-[400px] max-w-[700px] ">
-                  <SideChat primeSentence={primeSentence} />
+                  <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
                 </div>
               </ResizablePanel>
             </>
           </ResizablePanelGroup>
         </div>
+
+        {/*all notebooks */}
+        <div className="flex flex-col md:flex-row justify-start h-fit px-2">
+          <ResizablePanelGroup direction="horizontal" className="w-full px-2">
+            <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
+              {/* surgery area */}
+
+              {/* end of surgery area */}
+
+              <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
+                <BentoDashboard listType="all" />
+              </div>
+            </ResizablePanel >
+
+            <>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                className={` ${
+                  showChat
+                    ? "translate-x-0 w-full min-w-[400px] p-2 transition-transform duration-1000 ease-in-out transform"
+                    : "hidden"
+                }`}
+              >
+                <div className="rounded-2xl m-2 w-full min-w-[400px] max-w-[700px] ">
+                  <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
+                </div>
+              </ResizablePanel>
+            </>
+          </ResizablePanelGroup>
+        </div>
+
       </div>
       <CreateNotebookModal 
         isOpen={isCreateModalOpen}
