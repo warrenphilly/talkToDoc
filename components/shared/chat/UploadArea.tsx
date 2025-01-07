@@ -38,15 +38,20 @@ const UploadArea = ({
 
           
           </div>
-          <div className="flex flex-row gap-2 items-start justify-start rounded-2xl w-full">
+          <div className="flex flex-row gap-2 items-start justify-start bg-red-500 rounded-2xl w-full">
+            
             {messages.map((msg, index) => (
+              
               <div
                 key={index}
                 className="flex flex-col gap-2 items-center justify-center rounded-2xl w-fit"
               >
                 {msg.files && (
+                  
                   <div className=" flex flex-wrap gap-2">
                     {msg.files.map((fileUrl: string, idx: number) => {
+                   
+                     
                       const fileExtension = fileUrl
                         .split(".")
                         .pop()
@@ -69,7 +74,7 @@ const UploadArea = ({
                       ) : (
                         <div
                           key={idx}
-                          className="w-[200px] h-[200px] bg-slate-200 rounded-2xl flex items-center justify-center"
+                          className="w-[200px] h-[200px] bg-slate-200 rounded-2xl flex items-center justify-center bg-green-500"
                         >
                           <div className="text-center p-4">
                             <LucideUpload className="w-8 h-8 mx-auto mb-2 text-slate-900" />

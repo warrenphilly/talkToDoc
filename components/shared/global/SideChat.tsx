@@ -21,7 +21,7 @@ interface Message {
   files?: string[];
 }
 
-const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
+const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string | null, setPrimeSentence: (primeSentence: string | null) => void }) => {
   const [messages, setMessages] = useState<Message[]>([
     { user: "user", text: primeSentence || "" },
   ]);
@@ -105,6 +105,12 @@ const SideChat = ({ primeSentence }: { primeSentence: string | null }) => {
             onClick={() => sendMessage("Give me a step-by-step example")}
           >
             Give Example{" "}
+          </Button>
+          <Button
+            className="bg-[#94b347] text-white"
+            onClick={() => setPrimeSentence(null)}
+          >
+            Clear Context{" "}
           </Button>
         </div>
       </div>

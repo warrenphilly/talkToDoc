@@ -17,7 +17,7 @@ import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
-import { saveNote, getNote } from "@/lib/firebase/firestore";
+import { saveNote, getNote, deleteNotebook, deletePage } from "@/lib/firebase/firestore";
 import {
   fileUpload,
   sectionClick,
@@ -35,14 +35,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ParagraphData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
+import { useRouter } from "next/navigation";
 
 interface ChatClientProps {
   title: string;
   tabId: string;
   notebookId: string;
+  onPageDelete?: (pageId: string) => void;
 }
 
-const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
+const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps) => {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(
     "Explain this to me to like you are an expert"
@@ -207,6 +210,25 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
     }
   };
 
+  const handleDeletePage = async () => {
+    try {
+      await deletePage(notebookId, tabId);
+      onPageDelete?.(tabId); // Call the callback to update tabs
+    } catch (error) {
+      console.error("Error deleting page:", error);
+    }
+  };
+
+  const handleDeleteNotebook = async () => {
+    try {
+      await deleteNotebook(notebookId);
+      router.push('/'); // Redirect to home page
+    } catch (error) {
+      console.error("Error deleting notebook:", error);
+      // Optionally add error handling UI here
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
       <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
@@ -250,9 +272,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 <DropdownMenuItem className="w-full bg-green-500 p-0">
                   <Button
                     onClick={handleClear}
-                    className={`bg-slate-100 shadow-none text-red-500 hover:bg-red-200 rounded-none w-full ${
-                      messages.length > 0 ? "block" : "hidden"
-                    }`}
+                    className={`bg-slate-100 shadow-none text-red-500 hover:bg-red-200 rounded-none w-full`}
                   >
                     Clear Page
                   </Button>
@@ -260,10 +280,8 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 <DropdownMenuSeparator className="m-0 p-0 bg-slate-300"  />
                 <DropdownMenuItem className="w-full hover:bg-red-500 p-0">
                   <Button
-                    onClick={handleClear}
-                    className={`bg-slate-100 shadow-none hover:bg-red-200 rounded-none m-0 text-red-500  w-full ${
-                      messages.length > 0 ? "block" : "hidden"
-                    }`}
+                    onClick={handleDeletePage}
+                    className={`bg-slate-100 shadow-none hover:bg-red-200 rounded-none m-0 text-red-500  w-full`}
                   >
                     Delete Page
                   </Button>
@@ -271,10 +289,8 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 <DropdownMenuSeparator className="m-0 p-0 bg-slate-300" />
                 <DropdownMenuItem className="w-full hover:bg-red-500 p-0 m-0">
                   <Button
-                    onClick={handleClear}
-                    className={`bg-slate-100 shadow-none hover:bg-red-200 text-red-500  rounded-none w-full ${
-                      messages.length > 0 ? "block" : "hidden"
-                    }`}
+                    onClick={handleDeleteNotebook}
+                    className={`bg-slate-100 shadow-none hover:bg-red-200 text-red-500  rounded-none w-full `}
                   >
                     Delete Notebook
                   </Button>
@@ -297,6 +313,10 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
               />
 
               <div className="flex flex-col overflow-y-auto p-4 bg-slate-100  rounded-t-2xl m-2 w-full h-full">
+                <ParagraphEditor 
+                  onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
+                  messageIndex={0}
+                />
                 {messages.map((msg, index) => {
                   const sections = Array.isArray(msg.text) ? msg.text : [];
 
@@ -352,7 +372,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                       : "hidden"
                   }`}
                 >
-                  <SideChat primeSentence={primeSentence} />
+                  <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
                 </div>
 
                 <div

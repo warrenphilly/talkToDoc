@@ -1,6 +1,6 @@
 import { Message } from "@/lib/types";
 import { db } from "@/firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { collection, getDocs } from "firebase/firestore";
 
 export interface Page {
@@ -132,6 +132,51 @@ export const addPageToNotebook = async (notebookId: string, pageTitle: string): 
     return newPage;
   } catch (error) {
     console.error("Error adding page:", error);
+    throw error;
+  }
+};
+
+export const deleteNotebook = async (notebookId: string) => {
+  try {
+    await deleteDoc(doc(db, "notebooks", notebookId));
+  } catch (error) {
+    console.error("Error deleting notebook:", error);
+    throw error;
+  }
+};
+
+export const deletePage = async (notebookId: string, pageId: string) => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+    
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const updatedPages = notebook.pages.filter(page => page.id !== pageId);
+    
+    // If this would leave us with no pages, create a new default page
+    if (updatedPages.length === 0) {
+      const newPage: Page = {
+        id: crypto.randomUUID(),
+        title: "New Page",
+        content: "",
+        messages: []
+      };
+      updatedPages.push(newPage);
+    }
+    
+    // Update the notebook with the filtered pages
+    await updateDoc(notebookRef, {
+      pages: updatedPages
+    });
+
+    // Return the ID of the first page if we need to redirect
+    return updatedPages[0].id;
+  } catch (error) {
+    console.error("Error deleting page:", error);
     throw error;
   }
 };

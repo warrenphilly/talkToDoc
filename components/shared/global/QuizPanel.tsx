@@ -35,17 +35,17 @@ const QuizPanel = () => {
         <div className="flex flex-row gap-2 justify-center items-center w-full">
      
 
-        <div className="flex flex-row gap-2">
-        <Button className="bg-[#94b347] text-white text-xl rounded-lg p-2">
-          <h1 className="text-md font-regular text-white  ">Ask me questions</h1>
+        <div className="flex flex-col gap-5">
+        <Button className="border-1 border-slate-300  bg-slate-100  hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full  hover:text-[#94b347] text-xl p-2">
+          <h1 className="text-md font-regular text-slate-500  ">Ask me questions</h1>
         </Button> 
 
-        <Button className="bg-[#94b347] text-white text-xl rounded-lg p-2">
-          <h1 className="text-md  font-regular text-white ">Generate Text</h1>
+        <Button className="border-1 border-slate-300  bg-slate-100  hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full  hover:text-[#94b347] text-xl p-2">
+          <h1 className="text-md  text-slate-500  p-5">Generate Test for me</h1>
         </Button> 
         </div>
         </div>
-        <div className="h-px bg-slate-300 w-full my-4" />
+     
        
      
       </div>

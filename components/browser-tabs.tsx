@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X } from 'lucide-react'
 import { cn } from "@/lib/utils"
@@ -24,6 +24,34 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
   const [tabs, setTabs] = useState(initialTabs)
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id)
 
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.find(tab => tab.id === activeTabId)) {
+      setActiveTabId(tabs[tabs.length - 1].id)
+    }
+  }, [tabs, activeTabId])
+
+  useEffect(() => {
+    if (tabs.length === 0) {
+      createNewTab()
+    }
+  }, [tabs])
+
+  const createNewTab = async () => {
+    const newTitle = `Untitled Page ${tabs.length + 1}`
+    try {
+      const newPage = await addPageToNotebook(notebookId, newTitle)
+      const newTab = {
+        id: newPage.id,
+        title: newPage.title,
+        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} onPageDelete={syncTabs} />
+      }
+      setTabs([newTab])
+      setActiveTabId(newPage.id)
+    } catch (error) {
+      console.error("Error creating new tab:", error)
+    }
+  }
+
   const addTab = async () => {
     const newTitle = `Untitled Page ${tabs.length + 1}`
     try {
@@ -31,10 +59,10 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
       const newTab = {
         id: newPage.id,
         title: newPage.title,
-        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} />
+        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} onPageDelete={syncTabs} />
       }
       setTabs([...tabs, newTab])
-      setActiveTabId(newTab.id)
+      setActiveTabId(newPage.id)
     } catch (error) {
       console.error("Error adding new tab:", error)
     }
@@ -43,15 +71,22 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
   const removeTab = (tabId: string) => {
     const newTabs = tabs.filter(tab => tab.id !== tabId)
     setTabs(newTabs)
+    
     if (activeTabId === tabId) {
-      setActiveTabId(newTabs[newTabs.length - 1]?.id)
+      const removedTabIndex = tabs.findIndex(tab => tab.id === tabId)
+      const newActiveIndex = Math.max(0, removedTabIndex - 1)
+      setActiveTabId(newTabs[newActiveIndex]?.id)
     }
   }
 
-  const activeTab = tabs.find(tab => tab.id === activeTabId);
+  const syncTabs = (deletedPageId: string) => {
+    removeTab(deletedPageId)
+  }
+
+  const activeTab = tabs.find(tab => tab.id === activeTabId)
 
   return (
-    <div className={cn("w-full h-full mx-auto  rounded-lg  bg-slate-200", className)}>
+    <div className={cn("w-full h-full mx-auto rounded-lg bg-slate-200", className)}>
       <div className="flex items-center bg-slate-200  rounded-t-lg">
         {tabs.map((tab) => (
           <motion.div
@@ -96,10 +131,16 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
           transition={{ duration: 0.2 }}
           className="p-4 rounded-b-lg h-[calc(100vh-8rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
         >
-          <ChatClient title={activeTab?.title || ''} tabId={activeTab?.id || ''} notebookId={notebookId} />
+          <ChatClient 
+            title={activeTab?.title || ''} 
+            tabId={activeTab?.id || ''} 
+            notebookId={notebookId}
+            onPageDelete={syncTabs}
+          />
         </motion.div>
       </AnimatePresence>
     </div>
   )
 }
+
 
