@@ -4,13 +4,19 @@ import { notFound } from "next/navigation";
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
 import { Notebook, Page } from "@/lib/firebase/firestore";
+import { Metadata } from 'next';
 
-type Props = {
+interface PageProps {
   params: {
     noteId: string;
   };
-  searchParams?: { [key: string]: string | string[] | undefined };
-};
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  return {
+    title: `Note ${params.noteId}`,
+  };
+}
 
 async function getNotebookData(noteId: string): Promise<Notebook | null> {
   try {
@@ -36,7 +42,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-const NotePage = async ({ params, searchParams }: Props) => {
+export default async function NotePage({ params }: PageProps) {
   console.log("Received params:", params);
   const notebook = await getNotebookData(params.noteId);
   
@@ -66,5 +72,3 @@ const NotePage = async ({ params, searchParams }: Props) => {
     </div>
   );
 }
-
-export default NotePage;
