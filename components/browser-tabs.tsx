@@ -31,7 +31,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
       const newTab = {
         id: newPage.id,
         title: newPage.title,
-        content: <ChatClient title={newPage.title} tabId={newPage.id} />
+        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} />
       }
       setTabs([...tabs, newTab])
       setActiveTabId(newTab.id)
@@ -94,9 +94,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4 rounded-b-lg h-[calc(100vh-85px)] rounded-b-xl rounded-r-xl bg-slate-100"
+          className="p-4 rounded-b-lg h-[calc(100vh-8rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
         >
-          <ChatClient title={activeTab?.title || ''} tabId={activeTab?.id || ''} />
+          <ChatClient title={activeTab?.title || ''} tabId={activeTab?.id || ''} notebookId={notebookId} />
         </motion.div>
       </AnimatePresence>
     </div>

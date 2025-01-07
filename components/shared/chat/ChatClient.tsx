@@ -30,9 +30,10 @@ import { TitleEditor } from "./title-editor";
 interface ChatClientProps {
   title: string;
   tabId: string;
+  notebookId: string;
 }
 
-const ChatClient = ({ title, tabId }: ChatClientProps) => {
+const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(
     "Explain this to me to like you are an expert"
@@ -78,11 +79,11 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
       setFiles,
       setShowUpload
     );
-    // Save messages to Firestore whenever they change
+    
     try {
-      await saveNote(tabId, messages);
+      await saveNote(notebookId, tabId, messages);
     } catch (error) {
-      console.error("Error saving chat to Firestore:", error);
+      console.error("Error saving chat:", error);
     }
   };
 
@@ -100,34 +101,38 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
     );
   }, [messages]);
 
-  // Load existing chat when component mounts
+  // Load messages when component mounts
   useEffect(() => {
-    const loadChat = async () => {
+    const loadMessages = async () => {
       try {
-        const existingMessages = await getNote(tabId);
-        if (existingMessages.length > 0) {
-          setMessages(existingMessages);
+        const pageData = await getNote(notebookId, tabId);
+        if (pageData?.messages) {
+          setMessages(pageData.messages);
         }
       } catch (error) {
-        console.error('Error loading chat:', error);
+        console.error("Error loading messages:", error);
       }
     };
-    loadChat();
-  }, [tabId]);
 
-  // Save to Firestore whenever messages change
+    loadMessages();
+  }, [notebookId, tabId]);
+
+  // Save messages whenever they change
   useEffect(() => {
     if (messages.length > 0) {
-      saveNote(tabId, messages).catch(error => {
-        console.error('Error saving chat to Firestore:', error);
+      saveNote(notebookId, tabId, messages).catch(error => {
+        console.error("Error saving messages:", error);
       });
     }
-  }, [messages, tabId]);
+  }, [messages, notebookId, tabId]);
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl">
-      <div className="flex flex-col  bg-slate-100  w-full mx-2">
-        <div className="flex flex-row items-center justify-end w-full py-2 ">
+    <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
+      <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
+        <div className="flex flex-row items-center justify-between w-full py-2">
+        <button
+        className="text-[#94b347] px-4 py-2 bg-slate-200 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold"
+        > Uploaded files</button>
        
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
             <Button
@@ -142,15 +147,15 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
               onClick={() => {
                 setShowChat(!showChat);
               }}
-              className="text-[#94b347] px-4 py-2 bg-slate-100 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold"
+              className="text-[#94b347] px-4 py-2 bg-slate-100 hover:bg-[#e9efda] rounded-2xl w-fit font-semibold "
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row justify-start h-full max-h-[90vh] px-2">
+        <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
-            <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
+            <ResizablePanel className="w-full p-2 min-w-[600px] flex flex-col gap-2 h-full overflow-hidden">
               <UploadArea
                 messages={messages}
                 files={files}
@@ -160,7 +165,7 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
                 handleClear={handleClear}
               />
 
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-200 rounded-2xl m-2 w-full h-full max-h-[90vh]">
+              <div className="flex flex-col overflow-y-auto p-4 bg-slate-200 rounded-2xl m-2 w-full h-full">
                 {messages.map((msg, index) => {
                   // Ensure msg.text is an array of Section[]
                   const sections = Array.isArray(msg.text) ? msg.text : [];
@@ -187,7 +192,7 @@ const ChatClient = ({ title, tabId }: ChatClientProps) => {
                         }
                       />
                       <div>
-                        {index}
+                     
                         <ParagraphEditor />
                       </div>
                     </div>

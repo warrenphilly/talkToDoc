@@ -49,11 +49,15 @@ export default async function NotebookPage({ params }: PageProps) {
   const tabs = notebook.pages.map((page: Page) => ({
     id: page.id,
     title: page.title,
-    content: <ChatClient title={page.title} tabId={page.id} />
+    content: <ChatClient 
+      title={page.title} 
+      tabId={page.id}
+      notebookId={notebook.id}
+    />
   }));
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-200 px-4 pb-4">
+    <div className="flex flex-col h-screen w-full bg-slate-200 p-4">
       <BrowserTabs 
         notebookId={notebook.id}
         initialTabs={tabs}

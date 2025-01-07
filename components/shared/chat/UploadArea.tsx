@@ -8,9 +8,10 @@ interface UploadAreaProps {
   messages: Message[];
   files: File[];
   fileInputRef: React.RefObject<HTMLInputElement>;
-  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSendMessage: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSendMessage: () => void;
   handleClear: () => void;
+  className?: string;
 }
 
 const UploadArea = ({

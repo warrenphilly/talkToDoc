@@ -17,29 +17,47 @@ export interface Notebook {
   pages: Page[];
 }
 
-export const saveNote = async (noteId: string, messages: Message[]) => {
+export const saveNote = async (notebookId: string, pageId: string, messages: Message[]) => {
   try {
-    const noteDocRef = doc(db, "notebooks", noteId);
-    await updateDoc(noteDocRef, {
-      content: messages,
-      updatedAt: new Date()
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+    
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+    
+    if (pageIndex === -1) {
+      throw new Error("Page not found in notebook");
+    }
+
+    // Update the messages for the specific page
+    notebook.pages[pageIndex].messages = messages;
+
+    await updateDoc(notebookRef, {
+      pages: notebook.pages
     });
   } catch (error) {
-    console.error("Error saving chat:", error);
+    console.error("Error saving messages:", error);
     throw error;
   }
 };
 
-export const getNote = async (noteId: string): Promise<Message[]> => {
+export const getNote = async (notebookId: string, pageId: string): Promise<Page | null> => {
   try {
-    const noteDocRef = doc(db, "notebooks", noteId);
-    const docSnap = await getDoc(noteDocRef);
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
 
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      return data.content || [];
+    if (!notebookSnap.exists()) {
+      return null;
     }
-    return [];
+
+    const notebook = notebookSnap.data() as Notebook;
+    const page = notebook.pages.find(p => p.id === pageId);
+    
+    return page || null;
   } catch (error) {
     console.error("Error getting note:", error);
     throw error;
