@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PlusIcon, XIcon, SaveIcon } from 'lucide-react'
-import { Separator } from '@radix-ui/react-separator'
 
 interface ParagraphData {
   user: string
@@ -16,15 +15,36 @@ interface ParagraphData {
 }
 
 interface ParagraphEditorProps {
-  onSave: (data: ParagraphData) => void;
+  onSave: (data: ParagraphData, index: number) => void;
+  onDelete?: () => void;
   messageIndex: number;
+  initialData?: ParagraphData;
 }
 
-export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEditorProps) {
+export default function ParagraphEditor({ 
+  onSave, 
+  messageIndex, 
+  initialData 
+}: ParagraphEditorProps) {
+  // Start in editing mode only if we're editing an existing paragraph
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [savedData, setSavedData] = useState<ParagraphData | null>(null)
+  const [savedData, setSavedData] = useState<ParagraphData | null>(initialData || null)
+
+  // Parse initial data into content when component mounts or when editing starts
+  useEffect(() => {
+    if (initialData?.text[0]) {
+      const sentences = initialData.text[0].sentences;
+      const combinedContent = sentences
+        .map(s => s.text.replace(/\.$/, '')) // Remove trailing periods
+        .join('. ') + '.'; // Add period at the end
+      
+      setContent(combinedContent);
+      setTitle(initialData.text[0].title);
+      setIsEditing(true); // Only set editing to true when we have initial data
+    }
+  }, [initialData]);
 
   const handleSave = () => {
     const sentences = content
@@ -33,7 +53,7 @@ export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEdito
       .map((sentence, index) => ({
         id: index + 1,
         text: sentence.trim() + '.'
-      }))
+      }));
 
     const paragraphData: ParagraphData = {
       user: "AI",
@@ -41,17 +61,20 @@ export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEdito
         title,
         sentences
       }]
-    }
+    };
 
-    onSave(paragraphData);
-    
-    setSavedData(paragraphData)
-    setIsEditing(false)
-    console.log('Saved data:', paragraphData)
-  }
+    onSave(paragraphData, messageIndex);
+    setSavedData(paragraphData);
+    setIsEditing(false);
+    // Reset form if this was a new paragraph
+    if (!initialData) {
+      setTitle('');
+      setContent('');
+    }
+  };
 
   return (
-    <div className="relative p-4 ">
+    <div className="relative p-4">
       <div className="flex items-center">
         <button
           onClick={() => setIsEditing(!isEditing)}
@@ -67,17 +90,17 @@ export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEdito
         </button>
         <div className="flex-grow h-px bg-gray-200 ml-2" />
       </div>
+
       {isEditing && (
-        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out  b border border-[#94b347] rounded-2xl p-4">
+        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out border border-[#94b347] rounded-2xl p-4">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-xl text-[#94b347] w-96 font-bold p-2 rounded-md bg-slate-100  focus:outline-none focus:ring-2 focus:ring-[#94b347]"
+            className="w-full text-xl text-[#94b347] font-bold p-2 rounded-md bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#94b347]"
             placeholder="Enter paragraph title"
           />
           <div className="w-full h-px bg-slate-300" />
-        
           
           <textarea
             value={content}
@@ -95,8 +118,7 @@ export default function ParagraphEditor({ onSave, messageIndex }: ParagraphEdito
           </button>
         </div>
       )}
-  
     </div>
-  )
+  );
 }
 

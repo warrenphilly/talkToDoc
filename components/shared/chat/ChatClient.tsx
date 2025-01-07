@@ -174,11 +174,24 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
     }
   };
 
-  const handleMessageEdit = (index: number) => {
-    // Set the message content for editing
-    const messageToEdit = messages[index];
-    // You can implement your edit logic here
-    console.log('Editing message:', messageToEdit);
+  const handleMessageEdit = async (editedData: ParagraphData | null, index: number) => {
+    if (!editedData) {
+      // This is just the initial edit click, not the actual save
+      return;
+    }
+
+    try {
+      const updatedMessages = [...messages];
+      updatedMessages[index] = {
+        user: 'AI',
+        text: editedData.text
+      };
+      setMessages(updatedMessages);
+      await saveNote(notebookId, tabId, updatedMessages);
+    } catch (error) {
+      console.error("Error updating message:", error);
+      setMessages(messages);
+    }
   };
 
   const handleMessageDelete = async (index: number) => {
@@ -295,23 +308,16 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                           index={index}
                           msg={{ user: msg.user, text: sections }}
                           handleSectionClick={(section) =>
-                          handleSectionClick(
-                            section,
-                            setPrimeSentence,
-                            setShowChat
-                          )
-                        }
-                        handleSentenceClick={(sentence) =>
-                          handleSentenceClick(
-                            sentence,
-                            setPrimeSentence,
-                            setShowChat
-                          )
-                        }
-                        onEdit={() => handleMessageEdit(index)}
-                        onDelete={() => handleMessageDelete(index)}
-                      />
-                     
+                            handleSectionClick(section, setPrimeSentence, setShowChat)
+                          }
+                          handleSentenceClick={(sentence) =>
+                            handleSentenceClick(sentence, setPrimeSentence, setShowChat)
+                          }
+                          onEdit={() => handleMessageEdit(null, index)}
+                          onDelete={() => handleMessageDelete(index)}
+                          onSave={(data) => handleMessageEdit(data, index)}
+                        />
+                       
                         <div key={`editor-${index}`}>
                           <ParagraphEditor 
                             
@@ -332,14 +338,14 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
               <ResizablePanel
                 className={` ${
                   showChat || showQuiz
-                    ? "translate-x-0  p-2 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                    ? "translate-x-0 flex flex-col gap-2  p-2 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
                     : "hidden"
                 }`}
               >
                 <div
                   className={` ${
                     showChat
-                      ? "translate-x-0  p-2 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                      ? "translate-x-0  p-2 border border-slate-300 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
                       : "hidden"
                   }`}
                 >
@@ -348,7 +354,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 <div
                   className={` ${
                     showQuiz
-                      ? "translate-x-0  p-2 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                      ? "translate-x-0  p-2 border border-slate-300 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
                       : "hidden"
                   }`}
                 >
