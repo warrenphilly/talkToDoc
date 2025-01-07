@@ -7,10 +7,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 type Props = {
-  params: {
-    noteId: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: { noteId: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -43,9 +41,9 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-const NotePage = async ({ params, searchParams }: Props) => {
-  console.log("Received params:", params);
-  const notebook = await getNotebookData(params.noteId);
+const NotePage = async ({ params: { noteId }, searchParams }: Props) => {
+  console.log("Received params:", { noteId });
+  const notebook = await getNotebookData(noteId);
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
