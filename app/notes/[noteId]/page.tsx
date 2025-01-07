@@ -6,12 +6,12 @@ import { doc, getDoc } from "firebase/firestore";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-type Props = {
+interface PageProps {
   params: { noteId: string };
   searchParams?: { [key: string]: string | string[] | undefined };
-};
+}
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   return {
     title: `Note ${params.noteId}`,
   };
@@ -41,9 +41,9 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
   }
 }
 
-const NotePage = async ({ params: { noteId }, searchParams }: Props) => {
-  console.log("Received params:", { noteId });
-  const notebook = await getNotebookData(noteId);
+const NotePage = async ({ params, searchParams }: PageProps) => {
+  console.log("Received params:", { noteId: params.noteId });
+  const notebook = await getNotebookData(params.noteId);
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
