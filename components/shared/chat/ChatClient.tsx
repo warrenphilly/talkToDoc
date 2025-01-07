@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ParagraphData } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
 
 interface ChatClientProps {
   title: string;
@@ -295,7 +296,7 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 handleClear={handleClear}
               />
 
-              <div className="flex flex-col overflow-y-auto p-4 bg-slate-100 border-b-2 border-slate-300 rounded-t-2xl m-2 w-full h-full">
+              <div className="flex flex-col overflow-y-auto p-4 bg-slate-100  rounded-t-2xl m-2 w-full h-full">
                 {messages.map((msg, index) => {
                   const sections = Array.isArray(msg.text) ? msg.text : [];
 
@@ -332,29 +333,32 @@ const ChatClient = ({ title, tabId, notebookId }: ChatClientProps) => {
                 })}
               </div>
             </ResizablePanel>
+         
 
             <>
-              <ResizableHandle withHandle />
+              <ResizableHandle withHandle  />
               <ResizablePanel
                 className={` ${
                   showChat || showQuiz
-                    ? "translate-x-0 flex flex-col gap-2  p-2 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                    ? "translate-x-0 flex flex-col gap-2   p-2 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px] max-w-[700px]"
                     : "hidden"
                 }`}
               >
+                
                 <div
                   className={` ${
                     showChat
-                      ? "translate-x-0  p-2 border border-slate-300 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                      ? "translate-x-0  p-2 border border-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
                       : "hidden"
                   }`}
                 >
                   <SideChat primeSentence={primeSentence} />
                 </div>
+
                 <div
                   className={` ${
                     showQuiz
-                      ? "translate-x-0  p-2 border border-slate-300 transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                      ? "translate-x-0  p-2 border border-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
                       : "hidden"
                   }`}
                 >

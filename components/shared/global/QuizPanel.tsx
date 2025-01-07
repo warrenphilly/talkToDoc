@@ -28,16 +28,19 @@ const QuizPanel = () => {
 
   return (
     <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] ">
+      <div className="flex flex-row items-center justify-center">
+      <h1 className='text-xl font-regular text-[#94b347]'>AI Quiz</h1>
+      </div>
       <div className=" text-white  min-h-[400px] rounded-lg flex flex-col justify-between items-center  p-4 m-4">
-        <div className="flex flex-row gap-2 justify-start items-start w-full">
-        <h1 className='text-xl font-regular text-[#94b347] font-bold '>AI Quiz</h1>
+        <div className="flex flex-row gap-2 justify-center items-center w-full">
+     
 
         <div className="flex flex-row gap-2">
-        <Button className="bg-[#94b347] text-white rounded-lg p-2">
+        <Button className="bg-[#94b347] text-white text-xl rounded-lg p-2">
           <h1 className="text-md font-regular text-white  ">Ask me questions</h1>
         </Button> 
 
-        <Button className="bg-[#94b347] text-white rounded-lg p-2">
+        <Button className="bg-[#94b347] text-white text-xl rounded-lg p-2">
           <h1 className="text-md  font-regular text-white ">Generate Text</h1>
         </Button> 
         </div>
