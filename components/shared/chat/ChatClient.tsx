@@ -25,7 +25,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import { deleteNotebook, deletePage, getNote, saveNote } from "@/lib/firebase/firestore";
+import {
+  deleteNotebook,
+  deletePage,
+  getNote,
+  saveNote,
+} from "@/lib/firebase/firestore";
 import { ParagraphData } from "@/lib/types";
 import {
   fileUpload,
@@ -44,7 +49,12 @@ interface ChatClientProps {
   onPageDelete?: (pageId: string) => void;
 }
 
-const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps) => {
+const ChatClient = ({
+  title,
+  tabId,
+  notebookId,
+  onPageDelete,
+}: ChatClientProps) => {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState(
@@ -59,7 +69,6 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -125,11 +134,10 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
         const pageData = await getNote(notebookId, tabId);
         if (pageData?.messages) {
           setMessages(pageData.messages);
-          if(pageData.messages.length === 0){
-            setShowUpload(true)
-          }
-          else{
-            setShowUpload(false)
+          if (pageData.messages.length === 0) {
+            setShowUpload(true);
+          } else {
+            setShowUpload(false);
           }
         }
       } catch (error) {
@@ -149,25 +157,27 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
     }
   }, [messages, notebookId, tabId]);
 
-  const handleParagraphSave = async (paragraphData: ParagraphData, index: number) => {
+  const handleParagraphSave = async (
+    paragraphData: ParagraphData,
+    index: number
+  ) => {
     if (!paragraphData?.text) {
-      console.error('Invalid paragraph data');
+      console.error("Invalid paragraph data");
       return;
     }
 
     setIsSaving(true);
     try {
       const newMessage: Message = {
-            
-            text: paragraphData.text,
-            user: 'AI'
+        text: paragraphData.text,
+        user: "AI",
       };
 
       const updatedMessages = JSON.parse(JSON.stringify(messages));
       updatedMessages.splice(index + 1, 0, newMessage);
-      
+
       setMessages(updatedMessages);
-      console.log('updatedMessages', updatedMessages)
+      console.log("updatedMessages", updatedMessages);
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
       console.error("Error saving paragraph:", error);
@@ -178,7 +188,10 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
     }
   };
 
-  const handleMessageEdit = async (editedData: ParagraphData | null, index: number) => {
+  const handleMessageEdit = async (
+    editedData: ParagraphData | null,
+    index: number
+  ) => {
     if (!editedData) {
       // This is just the initial edit click, not the actual save
       return;
@@ -187,8 +200,8 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
     try {
       const updatedMessages = [...messages];
       updatedMessages[index] = {
-        user: 'AI',
-        text: editedData.text
+        user: "AI",
+        text: editedData.text,
       };
       setMessages(updatedMessages);
       await saveNote(notebookId, tabId, updatedMessages);
@@ -222,7 +235,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
   const handleDeleteNotebook = async () => {
     try {
       await deleteNotebook(notebookId);
-      router.push('/'); // Redirect to home page
+      router.push("/"); // Redirect to home page
     } catch (error) {
       console.error("Error deleting notebook:", error);
       // Optionally add error handling UI here
@@ -230,11 +243,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
   };
 
   return (
-
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
-
-
-
       {/* hydration error is here */}
       <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
@@ -283,7 +292,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
                     Clear Page
                   </Button>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300"  />
+                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300" />
                 <DropdownMenuItem className="w-full hover:bg-red-500 p-0">
                   <Button
                     onClick={handleDeletePage}
@@ -306,30 +315,10 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
           </div>
         </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
-
           {/* workspace panel */}
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
-
-           {/* notbook panel */}
+            {/* notbook panel */}
             <ResizablePanel className="w-full p-2 min-w-[600px] flex flex-col gap-2 h-full overflow-hidden">
               <UploadArea
                 messages={messages}
@@ -342,7 +331,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
               />
 
               <div className="flex flex-col overflow-y-auto p-4 bg-slate-100  rounded-t-2xl m-2 w-full h-full">
-                <ParagraphEditor 
+                <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
                   messageIndex={0}
                 />
@@ -353,28 +342,37 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
                     <div key={`message-${index}`} className="">
                       {msg.user === "AI" && (
                         <>
-                        <ResponseMessage
-                          key={`response-${index}`}
-                          index={index}
-                          msg={{ user: msg.user, text: sections }}
-                          handleSectionClick={(section) =>
-                            handleSectionClick(section, setPrimeSentence, setShowChat)
-                          }
-                          handleSentenceClick={(sentence) =>
-                            handleSentenceClick(sentence, setPrimeSentence, setShowChat)
-                          }
-                          onEdit={() => handleMessageEdit(null, index)}
-                          onDelete={() => handleMessageDelete(index)}
-                          onSave={(data) => handleMessageEdit(data, index)}
-                        />
-                       
-                        <div key={`editor-${index}`}>
-                          <ParagraphEditor 
-                            
-                            onSave={(data: ParagraphData) => handleParagraphSave(data, index) }
-                            messageIndex={index}
+                          <ResponseMessage
+                            key={`response-${index}`}
+                            index={index}
+                            msg={{ user: msg.user, text: sections }}
+                            handleSectionClick={(section) =>
+                              handleSectionClick(
+                                section,
+                                setPrimeSentence,
+                                setShowChat
+                              )
+                            }
+                            handleSentenceClick={(sentence) =>
+                              handleSentenceClick(
+                                sentence,
+                                setPrimeSentence,
+                                setShowChat
+                              )
+                            }
+                            onEdit={() => handleMessageEdit(null, index)}
+                            onDelete={() => handleMessageDelete(index)}
+                            onSave={(data) => handleMessageEdit(data, index)}
                           />
-                        </div>
+
+                          <div key={`editor-${index}`}>
+                            <ParagraphEditor
+                              onSave={(data: ParagraphData) =>
+                                handleParagraphSave(data, index)
+                              }
+                              messageIndex={index}
+                            />
+                          </div>
                         </>
                       )}
                     </div>
@@ -382,19 +380,15 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
                 })}
               </div>
             </ResizablePanel>
-         
 
             <>
-
-              
-            {showQuiz || showChat && (
-                    
-                    <ResizableHandle withHandle  className="bg-slate-300 m-2" /> 
+              {showQuiz ||
+                (showChat && (
+                  <ResizableHandle withHandle className="bg-slate-300 m-2" />
+                ))}
+              {showQuiz && showChat && (
+                <ResizableHandle withHandle className="bg-slate-300 m-2" />
               )}
-               {showQuiz && showChat && (
-                    
-                    <ResizableHandle withHandle  className="bg-slate-300 m-2" /> 
-                    )}
 
               {/* chat and quiz panels */}
               <ResizablePanel
@@ -404,38 +398,47 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
                     : "hidden"
                 }`}
               >
-                <ResizablePanelGroup direction="vertical" className="flex flex-col gap-2    ">
-                  <ResizablePanel className="flex flex-col gap-2 h-full w-full ">
-                <div
-                  className={` ${
-                    showChat
-                      ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
-                      : "hidden"
-                  }`}
+                <ResizablePanelGroup
+                  direction="vertical"
+                  className="flex flex-col gap-2    "
                 >
-                  <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
-                    </div>
+                  {showChat && (
+                    <ResizablePanel
+                      className={` ${
+                        showChat
+                          ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
+                          : "hidden"
+                      }`}
+                    >
+                   
+                      <SideChat
+                        primeSentence={primeSentence}
+                        setPrimeSentence={setPrimeSentence}
+                      />
+                   
                   </ResizablePanel>
-                  
-                  {showQuiz && showChat && (
-                    
-                      <ResizableHandle withHandle className="bg-slate-300 w-full" /> 
-                      )}
+                  )}
 
-<ResizablePanel className="flex flex-col gap-2 h-full ">
-                <div
-                  className={` ${
-                    showQuiz
-                         ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
-                      : "hidden"
-                  }`}
-                >
-                  <QuizPanel />
-                </div>
-                </ResizablePanel>
+                  {showQuiz && showChat && (
+                    <ResizableHandle
+                      withHandle
+                      className="bg-slate-300 w-full"
+                    />
+                  )}
+
+                  {showQuiz && (
+
+                  <ResizablePanel  className={` ${
+                        showQuiz
+                          ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
+                          : "hidden"
+                      }`}>
+                   
+                      <QuizPanel />
+                  
+                  </ResizablePanel>
+                )}
                 </ResizablePanelGroup>
-                
-                
               </ResizablePanel>
             </>
           </ResizablePanelGroup>

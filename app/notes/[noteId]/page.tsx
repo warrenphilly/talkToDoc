@@ -8,16 +8,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: Promise<{ noteId: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }> | undefined;
+  params: { noteId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const resolvedParams = await params;
   return {
-    title: `Note ${resolvedParams.noteId}`,
+    title: `Note ${params.noteId}`,
   };
 }
 
