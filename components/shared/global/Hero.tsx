@@ -17,7 +17,7 @@ export default function Hero() {
       <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link className="flex items-center justify-center" href="#">
           <Cpu className="h-6 w-6" />
-          <span className="sr-only">Acme Inc</span>
+          <span className="sr-only">Studiyo</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link
@@ -46,16 +46,20 @@ export default function Hero() {
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Welcome to Our SaaS Platform
+                  Welcome to  Studiyo 
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
                   Empower your business with our cutting-edge software solution.
                   Streamline workflows, boost productivity, and drive growth.
                 </p>
               </div>
-              <div className="space-x-4">
-                <SignInButton>Get Started</SignInButton>
-                <Button variant="outline">Learn More</Button>
+              <div className="space-x-4 flex flex-row items-center justify-center ">
+                <SignInButton>
+                    <div className="rounded-lg  bg-[#94b347] text-white p-2">
+                        Get Started for Free
+                    </div>
+                </SignInButton>
+                <Button variant="outline" className="bg-slate-100 border border-[bg-slate-400] p-2">Learn More</Button>
               </div>
             </div>
           </div>
@@ -72,7 +76,7 @@ export default function Hero() {
               <Card>
                 <CardHeader>
                   <Globe className="h-8 w-8 mb-2" />
-                  <CardTitle>Global Reach</CardTitle>
+                  <CardTitle>Generate Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p>
@@ -96,7 +100,7 @@ export default function Hero() {
               <Card>
                 <CardHeader>
                   <Code className="h-8 w-8 mb-2" />
-                  <CardTitle>Customizable</CardTitle>
+                  <CardTitle>Test your knowledge</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p>
@@ -110,11 +114,11 @@ export default function Hero() {
         </section>
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 flex flex-col items-center justify-center">
           <div className="container px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12 text-[#94b347]">
               Pricing Plans
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card>
+              <Card className="bg-slate-100 text-slate-600">
                 <CardHeader>
                   <CardTitle>Basic</CardTitle>
                   <CardDescription>
@@ -122,67 +126,61 @@ export default function Hero() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold">$29/mo</p>
+                  <p className="text-4xl font-bold text-[#94b347]">$5/mo</p>
                   <ul className="mt-4 space-y-2">
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 5 team members
+                      <Check className="mr-2 h-4 w-4" /> 20 Notes generation/Month, Then Pay as you go
                     </li>
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 10GB storage
+                      <Check className="mr-2 h-4 w-4" /> 10 Quizes/ Month, then Pay as you go
                     </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Basic support
-                    </li>
+                 
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Choose Plan</Button>
+                  <Button className="w-full bg-[#94b347] text-white">Choose Plan</Button>
                 </CardFooter>
               </Card>
-              <Card>
+              <Card className="bg-slate-100 text-slate-600">
                 <CardHeader>
                   <CardTitle>Pro</CardTitle>
                   <CardDescription>For growing businesses</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold">$99/mo</p>
+                  <p className="text-4xl font-bold text-[#94b347]">$15/mo</p>
                   <ul className="mt-4 space-y-2">
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited team members
+                      <Check className="mr-2 h-4 w-4" /> Unlimited Notes generation
                     </li>
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 100GB storage
+                      <Check className="mr-2 h-4 w-4" /> Unlimited Quiz generation
                     </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Priority support
-                    </li>
+                    
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Choose Plan</Button>
+                  <Button className="w-full bg-[#94b347] text-white">Choose Plan</Button>
                 </CardFooter>
               </Card>
-              <Card>
+              <Card className="bg-slate-100 text-slate-600">
                 <CardHeader>
                   <CardTitle>Enterprise</CardTitle>
                   <CardDescription>For large organizations</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-4xl font-bold">Custom</p>
+                  <p className="text-4xl font-bold text-[#94b347]">Buy Tokens</p>
                   <ul className="mt-4 space-y-2">
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited everything
+                      <Check className="mr-2 h-4 w-4" /> Pre-purchase tokens for note generation
                     </li>
                     <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 24/7 premium support
+                      <Check className="mr-2 h-4 w-4" /> After, you can buy more or set up pay as you go 
                     </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Custom integrations
-                    </li>
+                    
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Contact Sales</Button>
+                  <Button className="w-full bg-[#94b347] text-white">Contact Sales</Button>
                 </CardFooter>
               </Card>
             </div>
