@@ -62,6 +62,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
     content: (
       <ChatClient title={page.title} tabId={page.id} notebookId={notebook.id} />
     ),
+    isOpen: page.isOpen
   }));
 
   return (

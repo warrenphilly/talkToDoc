@@ -1,92 +1,183 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X } from 'lucide-react'
-import { cn } from "@/lib/utils"
-import { TitleEditor } from './shared/chat/title-editor'
-import ChatClient from './shared/chat/ChatClient'
-import { addPageToNotebook } from "@/lib/firebase/firestore"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  addPageToNotebook,
+  Page,
+  togglePageOpenState,
+} from "@/lib/firebase/firestore";
+import { Message } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { List, Plus, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import ChatClient from "./shared/chat/ChatClient";
+import { TitleEditor } from "./shared/chat/title-editor";
 
 interface Tab {
-  id: string
-  title: string
-  content: React.ReactNode
+  id: string;
+  title: string;
+  content: React.ReactNode;
+  messages: Message[];
+  isOpen: boolean;
 }
 
 interface BrowserTabsProps {
-  notebookId: string
-  initialTabs: Tab[]
-  className?: string
+  notebookId: string;
+  initialTabs: Tab[];
+  className?: string;
 }
 
-export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTabs, className }) => {
-  const [tabs, setTabs] = useState(initialTabs)
-  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id)
+export const BrowserTabs: React.FC<BrowserTabsProps> = ({
+  notebookId,
+  initialTabs,
+  className,
+}) => {
+  const [tabs, setTabs] = useState(initialTabs);
+  const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [allPages, setAllPages] = useState<Tab[]>([]);
 
   useEffect(() => {
-    if (tabs.length > 0 && !tabs.find(tab => tab.id === activeTabId)) {
-      setActiveTabId(tabs[tabs.length - 1].id)
+    const openPages = initialTabs.filter((tab) => tab.isOpen);
+    const convertedTabs: Tab[] = openPages.map((page) => ({
+      id: page.id,
+      title: page.title,
+      content: (
+        <ChatClient
+          title={page.title}
+          tabId={page.id}
+          notebookId={notebookId}
+          onPageDelete={syncTabs}
+        />
+      ),
+      messages: page.messages,
+      isOpen: page.isOpen,
+    }));
+
+    setTabs(convertedTabs);
+    setAllPages(initialTabs);
+    console.log("convertedTabs",convertedTabs);
+    console.log("initialTabs",initialTabs);
+    console.log("allPages",allPages);
+    if (convertedTabs.length > 0) {
+      setActiveTabId(convertedTabs[0].id);
     }
-  }, [tabs, activeTabId])
+  }, [initialTabs, notebookId]);
 
   useEffect(() => {
     if (tabs.length === 0) {
-      createNewTab()
+      createNewTab();
     }
-  }, [tabs])
+  }, [tabs]);
 
   const createNewTab = async () => {
-    const newTitle = `Untitled Page ${tabs.length + 1}`
+    const newTitle = `Untitled Page ${tabs.length + 1}`;
     try {
-      const newPage = await addPageToNotebook(notebookId, newTitle)
-      const newTab = {
+      const newPage = await addPageToNotebook(notebookId, newTitle);
+      const newTab: Tab = {
         id: newPage.id,
         title: newPage.title,
-        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} onPageDelete={syncTabs} />
-      }
-      setTabs([newTab])
-      setActiveTabId(newPage.id)
+        content: (
+          <ChatClient
+            title={newPage.title}
+            tabId={newPage.id}
+            notebookId={notebookId}
+            onPageDelete={syncTabs}
+          />
+        ),
+        messages: [],
+        isOpen: true,
+      };
+      setTabs([newTab]);
+      setActiveTabId(newPage.id);
     } catch (error) {
-      console.error("Error creating new tab:", error)
+      console.error("Error creating new tab:", error);
     }
-  }
+  };
 
   const addTab = async () => {
-    const newTitle = `Untitled Page ${tabs.length + 1}`
+    const newTitle = `Untitled Page ${tabs.length + 1}`;
     try {
-      const newPage = await addPageToNotebook(notebookId, newTitle)
-      const newTab = {
+      const newPage = await addPageToNotebook(notebookId, newTitle);
+      const newTab: Tab = {
         id: newPage.id,
         title: newPage.title,
-        content: <ChatClient title={newPage.title} tabId={newPage.id} notebookId={notebookId} onPageDelete={syncTabs} />
-      }
-      setTabs([...tabs, newTab])
-      setActiveTabId(newPage.id)
+        content: (
+          <ChatClient
+            title={newPage.title}
+            tabId={newPage.id}
+            notebookId={notebookId}
+            onPageDelete={syncTabs}
+          />
+        ),
+        messages: [],
+        isOpen: true,
+      };
+      setTabs([...tabs, newTab]);
+      setActiveTabId(newPage.id);
     } catch (error) {
-      console.error("Error adding new tab:", error)
+      console.error("Error adding new tab:", error);
     }
-  }
+  };
 
-  const removeTab = (tabId: string) => {
-    const newTabs = tabs.filter(tab => tab.id !== tabId)
-    setTabs(newTabs)
-    
+  const removeTab = async (tabId: string) => {
+    await togglePageOpenState(notebookId, tabId, false);
+    const newTabs = tabs.filter((tab) => tab.id !== tabId);
+    setTabs(newTabs);
+
     if (activeTabId === tabId) {
-      const removedTabIndex = tabs.findIndex(tab => tab.id === tabId)
-      const newActiveIndex = Math.max(0, removedTabIndex - 1)
-      setActiveTabId(newTabs[newActiveIndex]?.id)
+      const removedTabIndex = tabs.findIndex((tab) => tab.id === tabId);
+      const newActiveIndex = Math.max(0, removedTabIndex - 1);
+      setActiveTabId(newTabs[newActiveIndex]?.id);
     }
-  }
+  };
 
   const syncTabs = (deletedPageId: string) => {
-    removeTab(deletedPageId)
-  }
+    removeTab(deletedPageId);
+  };
 
-  const activeTab = tabs.find(tab => tab.id === activeTabId)
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+
+  const handlePageToggle = async (pageId: string) => {
+    const page = allPages.find((p) => p.id === pageId);
+    if (!page) return;
+
+    if (page.isOpen) {
+      await removeTab(pageId);
+    } else {
+      await togglePageOpenState(notebookId, pageId, true);
+      const newTab: Tab = {
+        id: page.id,
+        title: page.title,
+        content: (
+          <ChatClient
+            title={page.title}
+            tabId={page.id}
+            notebookId={notebookId}
+            onPageDelete={syncTabs}
+          />
+        ),
+        messages: page.messages,
+        isOpen: true,
+      };
+      setTabs([...tabs, newTab]);
+      setActiveTabId(page.id);
+    }
+  };
 
   return (
-    <div className={cn("w-full h-full mx-auto rounded-lg bg-slate-200", className)}>
+    <div
+      className={cn("w-full h-full mx-auto rounded-lg bg-slate-200", className)}
+    >
       <div className="flex items-center bg-slate-200  rounded-t-lg">
         {tabs.map((tab) => (
           <motion.div
@@ -100,12 +191,12 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
             )}
             onClick={() => setActiveTabId(tab.id)}
           >
-             <TitleEditor initialTitle={tab.title} noteId={tab.id} />
+            <TitleEditor initialTitle={tab.title} noteId={tab.id} notebookId={notebookId} />
             <button
               className="ml-2 text-muted-foreground hover:text-foreground"
               onClick={(e) => {
-                e.stopPropagation()
-                removeTab(tab.id)
+                e.stopPropagation();
+                removeTab(tab.id);
               }}
             >
               <X size={14} />
@@ -121,6 +212,12 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
             Add page
           </span>
         </button>
+        <button
+          className="p-1 ml-auto mr-2 text-muted-foreground hover:text-foreground"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <List size={20} />
+        </button>
       </div>
       <AnimatePresence mode="wait">
         <motion.div
@@ -131,16 +228,37 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({ notebookId, initialTab
           transition={{ duration: 0.2 }}
           className="p-4  h-[calc(100vh-5.2rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
         >
-          <ChatClient 
-            title={activeTab?.title || ''} 
-            tabId={activeTab?.id || ''} 
+          <ChatClient
+            title={activeTab?.title || ""}
+            tabId={activeTab?.id || ""}
             notebookId={notebookId}
             onPageDelete={syncTabs}
           />
         </motion.div>
       </AnimatePresence>
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>All Pages</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[300px] w-full pr-4">
+            {allPages.map((page) => (
+              <div
+                key={page.id}
+                className="flex items-center justify-between py-2 border-b"
+              >
+                <span>{page.title}</span>
+                <button
+                  className="px-2 py-1 text-sm bg-slate-200 rounded hover:bg-slate-300"
+                  onClick={() => handlePageToggle(page.id)}
+                >
+                  {page.isOpen ? "Close" : "Open"}
+                </button>
+              </div>
+            ))}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
-}
-
-
+  );
+};

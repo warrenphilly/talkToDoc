@@ -1,28 +1,31 @@
 "use client";
 
-import { db } from "@/firebase";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { db } from "@/firebase";
+import { updatePageTitle } from "@/lib/firebase/firestore";
 import { doc, updateDoc } from "firebase/firestore";
 import { useState } from "react";
 
 interface TitleEditorProps {
   initialTitle: string;
   noteId: string;
+  notebookId: string;
 }
 
-export function TitleEditor({ initialTitle, noteId }: TitleEditorProps) {
+export const TitleEditor: React.FC<TitleEditorProps> = ({
+  initialTitle,
+  noteId,
+  notebookId,
+}) => {
   const [title, setTitle] = useState(initialTitle);
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleSave = async () => {
+  const handleTitleChange = async (newTitle: string) => {
     try {
-      const noteRef = doc(db, "notes", noteId);
-      await updateDoc(noteRef, {
-        title: title,
-      });
+      await updatePageTitle(notebookId, noteId, newTitle);
+      setTitle(newTitle);
       setIsEditing(false);
-      console.log("Title updated successfully");
     } catch (error) {
       console.error("Error updating title:", error);
     }
@@ -45,7 +48,7 @@ export function TitleEditor({ initialTitle, noteId }: TitleEditorProps) {
       />
       {isEditing && (
         <Button 
-          onClick={handleSave}
+          onClick={() => handleTitleChange(title)}
           className="save-button bg-[#94b347] hover:bg-[#7a9339] text-white"
         >
           Save
@@ -53,4 +56,4 @@ export function TitleEditor({ initialTitle, noteId }: TitleEditorProps) {
       )}
     </div>
   );
-}
+};

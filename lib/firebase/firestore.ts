@@ -1,13 +1,21 @@
-import { Message } from "@/lib/types";
 import { db } from "@/firebase";
-import { deleteDoc, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { collection, getDocs } from "firebase/firestore";
+import { Message } from "@/lib/types";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 export interface Page {
   id: string;
   title: string;
   content: string;
   messages: Message[];
+  isOpen: boolean;
 }
 
 export interface Notebook {
@@ -17,18 +25,22 @@ export interface Notebook {
   pages: Page[];
 }
 
-export const saveNote = async (notebookId: string, pageId: string, messages: Message[]) => {
+export const saveNote = async (
+  notebookId: string,
+  pageId: string,
+  messages: Message[]
+) => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
-    
+
     if (!notebookSnap.exists()) {
       throw new Error("Notebook not found");
     }
 
     const notebook = notebookSnap.data() as Notebook;
-    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
-    
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+
     if (pageIndex === -1) {
       throw new Error("Page not found in notebook");
     }
@@ -37,7 +49,7 @@ export const saveNote = async (notebookId: string, pageId: string, messages: Mes
     notebook.pages[pageIndex].messages = messages;
 
     await updateDoc(notebookRef, {
-      pages: notebook.pages
+      pages: notebook.pages,
     });
   } catch (error) {
     console.error("Error saving messages:", error);
@@ -45,7 +57,10 @@ export const saveNote = async (notebookId: string, pageId: string, messages: Mes
   }
 };
 
-export const getNote = async (notebookId: string, pageId: string): Promise<Page | null> => {
+export const getNote = async (
+  notebookId: string,
+  pageId: string
+): Promise<Page | null> => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
@@ -55,8 +70,8 @@ export const getNote = async (notebookId: string, pageId: string): Promise<Page 
     }
 
     const notebook = notebookSnap.data() as Notebook;
-    const page = notebook.pages.find(p => p.id === pageId);
-    
+    const page = notebook.pages.find((p) => p.id === pageId);
+
     return page || null;
   } catch (error) {
     console.error("Error getting note:", error);
@@ -68,17 +83,20 @@ export const createNewNotebook = async (title: string): Promise<string> => {
   try {
     const notebookId = `notebook_${Date.now()}`;
     const firstPageId = `page_${Date.now()}`;
-    
+
     const notebookData: Notebook = {
       id: notebookId,
       title,
       createdAt: new Date(),
-      pages: [{
-        id: firstPageId,
-        title: "Page 1",
-        content: "",
-        messages: []
-      }]
+      pages: [
+        {
+          id: firstPageId,
+          title: "Page 1",
+          content: "",
+          messages: [],
+          isOpen: true,
+        },
+      ],
     };
 
     await setDoc(doc(db, "notebooks", notebookId), notebookData);
@@ -107,11 +125,14 @@ export const getAllNotebooks = async (): Promise<Notebook[]> => {
   }
 };
 
-export const addPageToNotebook = async (notebookId: string, pageTitle: string): Promise<Page> => {
+export const addPageToNotebook = async (
+  notebookId: string,
+  pageTitle: string
+): Promise<Page> => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
-    
+
     if (!notebookSnap.exists()) {
       throw new Error("Notebook not found");
     }
@@ -121,14 +142,15 @@ export const addPageToNotebook = async (notebookId: string, pageTitle: string): 
       id: `page_${Date.now()}`,
       title: pageTitle,
       content: "",
-      messages: []
+      messages: [],
+      isOpen: true,
     };
-    
+
     const updatedPages = [...notebook.pages, newPage];
-    await updateDoc(notebookRef, { 
-      pages: updatedPages 
+    await updateDoc(notebookRef, {
+      pages: updatedPages,
     });
-    
+
     return newPage;
   } catch (error) {
     console.error("Error adding page:", error);
@@ -149,34 +171,96 @@ export const deletePage = async (notebookId: string, pageId: string) => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
-    
+
     if (!notebookSnap.exists()) {
       throw new Error("Notebook not found");
     }
 
     const notebook = notebookSnap.data() as Notebook;
-    const updatedPages = notebook.pages.filter(page => page.id !== pageId);
-    
+    const updatedPages = notebook.pages.filter((page) => page.id !== pageId);
+
     // If this would leave us with no pages, create a new default page
     if (updatedPages.length === 0) {
       const newPage: Page = {
         id: crypto.randomUUID(),
         title: "New Page",
         content: "",
-        messages: []
+        messages: [],
+        isOpen: true,
       };
       updatedPages.push(newPage);
     }
-    
+
     // Update the notebook with the filtered pages
     await updateDoc(notebookRef, {
-      pages: updatedPages
+      pages: updatedPages,
     });
 
     // Return the ID of the first page if we need to redirect
     return updatedPages[0].id;
   } catch (error) {
     console.error("Error deleting page:", error);
+    throw error;
+  }
+};
+
+export const togglePageOpenState = async (
+  notebookId: string,
+  pageId: string,
+  isOpen: boolean
+): Promise<void> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+
+    if (pageIndex === -1) {
+      throw new Error("Page not found");
+    }
+
+    notebook.pages[pageIndex].isOpen = isOpen;
+    await updateDoc(notebookRef, { pages: notebook.pages });
+  } catch (error) {
+    console.error("Error toggling page state:", error);
+    throw error;
+  }
+};
+
+export const updatePageTitle = async (
+  notebookId: string,
+  pageId: string,
+  newTitle: string
+): Promise<void> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+
+    if (pageIndex === -1) {
+      throw new Error("Page not found in notebook");
+    }
+
+    // Update the title for the specific page
+    notebook.pages[pageIndex].title = newTitle;
+
+    // Update the notebook document
+    await updateDoc(notebookRef, {
+      pages: notebook.pages,
+    });
+  } catch (error) {
+    console.error("Error updating page title:", error);
     throw error;
   }
 };
