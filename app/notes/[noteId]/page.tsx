@@ -8,15 +8,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 interface PageProps {
-  params: { noteId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ noteId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> | undefined;
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  return{
-    title: `Note ${params.noteId}`,
+  const resolvedParams = await params;
+  return {
+    title: `Note ${resolvedParams.noteId}`,
   };
 }
 
@@ -45,8 +46,9 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
 }
 
 const NotePage = async ({ params, searchParams }: PageProps) => {
-  console.log("Received params:", { noteId: params.noteId });
-  const notebook = await getNotebookData(params.noteId);
+  const resolvedParams = await params;
+  console.log("Received params:", { noteId: resolvedParams.noteId });
+  const notebook = await getNotebookData(resolvedParams.noteId);
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
