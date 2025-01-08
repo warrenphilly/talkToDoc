@@ -1,4 +1,3 @@
-
 "use server"
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
@@ -10,7 +9,7 @@ import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ noteId: string }>;
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }> | undefined;
 }
 
 export async function generateMetadata({
