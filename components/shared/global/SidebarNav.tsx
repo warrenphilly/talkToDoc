@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@clerk/nextjs";
 import {
   Collapsible,
   CollapsibleContent,
@@ -74,8 +75,8 @@ export function SidebarNav() {
   }, []);
 
   return (
-    <SidebarProvider>
-      <Sidebar>
+    <SidebarProvider >
+      <Sidebar >
         <SidebarContent className="bg-slate-200 text-slate-400 py-4 pl-2 w-full ">
           <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
             <SidebarGroupContent className="flex flex-col justify-between h-full w-full">
@@ -83,7 +84,9 @@ export function SidebarNav() {
                 <div className="text-slate-800 p-4 bg-slate-200 w-full rounded-2xl my-5 font-semibold flex items-center justify-between">
                   <h1 className="text-xl font-regular"> User</h1> <Button className="bg-slate-100 text-slate-400 rounded-full m-1 hover:border hover:border-[#94b347] hover:bg-slate-100  ">
                   <Settings className="text-[#94b347] " /> 
+                 
                 </Button>
+                <SignOutButton> Sign Out</SignOutButton>
                 </div>
                 {/* Regular menu items */}
                 {items.map((item) => (
@@ -153,10 +156,3 @@ export function SidebarNav() {
   );
 }
 
-export function App() {
-  return (
-    <SidebarProvider>
-      <SidebarNav />
-    </SidebarProvider>
-  );
-}
