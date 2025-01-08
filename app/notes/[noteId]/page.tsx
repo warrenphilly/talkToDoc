@@ -1,4 +1,5 @@
 
+"use server"
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
 import { db } from "@/firebase";

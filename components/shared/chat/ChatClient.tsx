@@ -17,15 +17,6 @@ import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
-import { saveNote, getNote, deleteNotebook, deletePage } from "@/lib/firebase/firestore";
-import {
-  fileUpload,
-  sectionClick,
-  sendMessage,
-  sentenceClick,
-} from "@/lib/utils";
-import UploadArea from "./UploadArea";
-import { TitleEditor } from "./title-editor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +24,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ParagraphData } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
+import { deleteNotebook, deletePage, getNote, saveNote } from "@/lib/firebase/firestore";
+import { ParagraphData } from "@/lib/types";
+import {
+  fileUpload,
+  sectionClick,
+  sendMessage,
+  sentenceClick,
+} from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import UploadArea from "./UploadArea";
+import { TitleEditor } from "./title-editor";
 
 interface ChatClientProps {
   title: string;
