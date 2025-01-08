@@ -67,20 +67,21 @@ export const ResponseMessage = ({
                     >
                       {section.title}
                     </h3>
-                    <div className="flex gap-2">
+                    <div className="flex  bg-slate-200 rounded-md border border-slate-200 ">
                       <Button
                         onClick={() => handleEditClick(sectionIdx)}
                         variant="ghost"
                         size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                        className="text-slate-400  hover:bg-slate-100 w-full rounded-l-md rounded-r-none"
                       >
                         <Edit2 className="h-4 w-4" />
-                      </Button>
+                        </Button>
+                        <div className="border-r border-slate-300 w-px"/>
                       <Button
                         onClick={onDelete}
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-100"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-100 w-full rounded-r-md rounded-l-none"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -95,7 +96,7 @@ export const ResponseMessage = ({
                         className="bg-slate-100 hover:border hover:bg-slate-300 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
                       >
                         <div className="px-1 rounded cursor-pointer transition-colors">
-                          <p className="text-gray-800 text-md">
+                          <p className="text-gray-800 text-md text-wrap">
                             {sentence.text}
                           </p>
                         </div>

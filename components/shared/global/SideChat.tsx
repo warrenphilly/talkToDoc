@@ -78,7 +78,7 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh]  ">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] p-3 ">
       <div className="flex flex-row items-center justify-center">
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>
@@ -97,18 +97,21 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => sendMessage("Explain this in greater detail")}
+            disabled={primeSentence == null}
           >
             Explain{" "}
           </Button>
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => sendMessage("Give me a step-by-step example")}
+            disabled={primeSentence == null}
           >
             Give Example{" "}
           </Button>
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => setPrimeSentence(null)}
+            disabled={primeSentence == null}
           >
             Clear Context{" "}
           </Button>
@@ -179,10 +182,10 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
             )
         )}
       </div>
-      <div className="bg-slate-100 p-4  rounded-b-lg">
-        <div className="flex  bg-slate-200 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
+      <div className="bg-slate-200 p-4  rounded-b-lg">
+        <div className="flex  bg-slate-100 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
           <Textarea
-            className="w-full h-full border shadow-none border-slate-200 rounded bg-slate-200 text-slate-900 flex-grow"
+            className="w-full h-fit border shadow-none border-slate-200 rounded-lg bg-slate-100 text-slate-900 flex-grow"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}

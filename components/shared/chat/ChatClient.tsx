@@ -233,6 +233,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
       <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
+          {/* Primary notebook buttons */}
           <div className="flex flex-row gap-2 items-center justify-between px-7">
             <Button
               onClick={() => setShowUpload(!showUpload)}
@@ -300,7 +301,11 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
+
+          {/* workspace panel */}
           <ResizablePanelGroup direction="horizontal" className="w-full px-2">
+
+           {/* notbook panel */}
             <ResizablePanel className="w-full p-2 min-w-[600px] flex flex-col gap-2 h-full overflow-hidden">
               <UploadArea
                 messages={messages}
@@ -356,34 +361,57 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
          
 
             <>
-              <ResizableHandle withHandle  />
+
+              
+            {showQuiz || showChat && (
+                    
+                    <ResizableHandle withHandle  className="bg-slate-300 m-2" /> 
+              )}
+               {showQuiz && showChat && (
+                    
+                    <ResizableHandle withHandle  className="bg-slate-300 m-2" /> 
+                    )}
+
+              {/* chat and quiz panels */}
               <ResizablePanel
                 className={` ${
                   showChat || showQuiz
-                    ? "translate-x-0 flex flex-col gap-2   p-2 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px] max-w-[700px]"
+                    ? "translate-x-0  transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px] "
                     : "hidden"
                 }`}
               >
-                
+                <ResizablePanelGroup direction="vertical" className="flex flex-col gap-2    ">
+                  <ResizablePanel className="flex flex-col gap-2 h-full w-full ">
                 <div
                   className={` ${
                     showChat
-                      ? "translate-x-0  p-2 border border-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                      ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                       : "hidden"
                   }`}
                 >
                   <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
-                </div>
+                    </div>
+                  </ResizablePanel>
+                  
+                  {showQuiz && showChat && (
+                    
+                      <ResizableHandle withHandle className="bg-slate-300 w-full" /> 
+                      )}
 
+<ResizablePanel className="flex flex-col gap-2 h-full ">
                 <div
                   className={` ${
                     showQuiz
-                      ? "translate-x-0  p-2 border border-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl mx-2 w-full min-w-[400px] max-w-[700px]"
+                         ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                       : "hidden"
                   }`}
                 >
                   <QuizPanel />
                 </div>
+                </ResizablePanel>
+                </ResizablePanelGroup>
+                
+                
               </ResizablePanel>
             </>
           </ResizablePanelGroup>
