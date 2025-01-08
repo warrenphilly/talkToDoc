@@ -15,7 +15,7 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  return {
+  return{
     title: `Note ${params.noteId}`,
   };
 }
@@ -45,9 +45,8 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
 }
 
 const NotePage = async ({ params, searchParams }: PageProps) => {
-  const resolvedParams = await params;
-  console.log("Received params:", { noteId: resolvedParams.noteId });
-  const notebook = await getNotebookData(resolvedParams.noteId);
+  console.log("Received params:", { noteId: params.noteId });
+  const notebook = await getNotebookData(params.noteId);
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
