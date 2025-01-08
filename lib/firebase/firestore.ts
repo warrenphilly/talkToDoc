@@ -1,13 +1,13 @@
 import { db } from "@/firebase";
 import { Message } from "@/lib/types";
 import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
+   collection,
+   deleteDoc,
+   doc,
+   getDoc,
+   getDocs,
+   setDoc,
+   updateDoc,
 } from "firebase/firestore";
 
 export interface Page {
@@ -81,8 +81,10 @@ export const getNote = async (
 
 export const createNewNotebook = async (title: string): Promise<string> => {
   try {
-    const notebookId = `notebook_${Date.now()}`;
-    const firstPageId = `page_${Date.now()}`;
+    // Use a consistent ID format that will be the same on server and client
+    const timestamp = new Date().toISOString();
+    const notebookId = `notebook_${timestamp}`;
+    const firstPageId = `page_${timestamp}`;
 
     const notebookData: Notebook = {
       id: notebookId,

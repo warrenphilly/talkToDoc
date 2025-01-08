@@ -1,3 +1,4 @@
+
 import { BrowserTabs } from "@/components/browser-tabs";
 import ChatClient from "@/components/shared/chat/ChatClient";
 import { db } from "@/firebase";
@@ -62,7 +63,8 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
     content: (
       <ChatClient title={page.title} tabId={page.id} notebookId={notebook.id} />
     ),
-    isOpen: page.isOpen
+    isOpen: page.isOpen,
+    messages: page.messages || []
   }));
 
   return (

@@ -230,7 +230,12 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
   };
 
   return (
+
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
+
+
+
+      {/* hydration error is here */}
       <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
           {/* Primary notebook buttons */}
@@ -264,7 +269,7 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
             </Button>
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="bg-slate-100  rounded-full w-fit ">
+              <DropdownMenuTrigger asChild>
                 <Button className="bg-slate-100 rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100">
                   <MoreVertical />
                 </Button>
@@ -300,6 +305,25 @@ const ChatClient = ({ title, tabId, notebookId, onPageDelete }: ChatClientProps)
             </DropdownMenu>
           </div>
         </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
 
           {/* workspace panel */}

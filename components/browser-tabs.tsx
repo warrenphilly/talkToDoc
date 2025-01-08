@@ -65,9 +65,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
     setTabs(convertedTabs);
     setAllPages(initialTabs);
-    console.log("convertedTabs",convertedTabs);
-    console.log("initialTabs",initialTabs);
-    console.log("allPages",allPages);
+    console.log("convertedTabs", convertedTabs);
+    console.log("initialTabs", initialTabs);
+    console.log("allPages", allPages);
     if (convertedTabs.length > 0) {
       setActiveTabId(convertedTabs[0].id);
     }
@@ -80,6 +80,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   }, [tabs]);
 
   const createNewTab = async () => {
+    const timestamp = new Date().toISOString();
     const newTitle = `Untitled Page ${tabs.length + 1}`;
     try {
       const newPage = await addPageToNotebook(notebookId, newTitle);
@@ -191,7 +192,11 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             )}
             onClick={() => setActiveTabId(tab.id)}
           >
-            <TitleEditor initialTitle={tab.title} noteId={tab.id} notebookId={notebookId} />
+            <TitleEditor
+              initialTitle={tab.title}
+              noteId={tab.id}
+              notebookId={notebookId}
+            />
             <button
               className="ml-2 text-muted-foreground hover:text-foreground"
               onClick={(e) => {
@@ -259,6 +264,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </ScrollArea>
         </DialogContent>
       </Dialog>
+      
     </div>
   );
 };
