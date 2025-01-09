@@ -25,6 +25,12 @@ export interface Notebook {
   pages: Page[];
 }
 
+export interface ClerkUser {
+  id: string;
+  email?: string;
+  metadata: any;
+}
+
 export const saveNote = async (
   notebookId: string,
   pageId: string,
@@ -263,6 +269,21 @@ export const updatePageTitle = async (
     });
   } catch (error) {
     console.error("Error updating page title:", error);
+    throw error;
+  }
+};
+
+export const createNewUser = async (userData: ClerkUser) => {
+  try {
+    const userRef = doc(db, "users", userData.id);
+    await setDoc(userRef, {
+      id: userData.id,
+      email: userData.email,
+      metadata: userData.metadata,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
     throw error;
   }
 };
