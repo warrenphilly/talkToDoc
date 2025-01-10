@@ -122,7 +122,7 @@ export const createNewNotebook = async (title: string): Promise<string> => {
       pages: [
         {
           id: firstPageId,
-          title: "Page 1",
+          title: "Untitled Page",
           content: "",
           messages: [],
           isOpen: true,
@@ -397,3 +397,4 @@ export const getUserById = async (userId: string) => {
     throw error;
   }
 };
+

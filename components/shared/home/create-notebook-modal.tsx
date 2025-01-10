@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { createNewNotebook, createNewPage } from "@/lib/firebase/firestore";
+import { createNewNotebook, addPageToNotebook } from "@/lib/firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -24,12 +24,10 @@ export function CreateNotebookModal({ isOpen, onClose }: CreateNotebookModalProp
       const notebookId = await createNewNotebook(title);
       
       // Create a default page
-      await createNewPage({
-        notebookId,
-        title: "Untitled Page",
-        content: "",
-        order: 0
-      });
+      // await addPageToNotebook(notebookId, 
+      // "Untitled Page",
+        
+      // );
 
       onClose();
       router.refresh();
