@@ -68,12 +68,10 @@ export default function Hero() {
         </section>
         <section
           id="features"
-          className="w-full py-12 md:py-24 bg-slate-200 lg:py-32 bg-[#94b347]  flex flex-col items-center justify-center"
+          className="w-full py-12 md:py-24 bg-slate-100 lg:py-32   flex flex-col items-center justify-center"
         >
           <div className="container px-4 md:px-6">
-            <h2 className="text-3xl text-slate-500 font-bold tracking-tighter sm:text-5xl text-center mb-12">
-              Key Features
-            </h2>
+          
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
@@ -114,7 +112,7 @@ export default function Hero() {
             </div>
           </div>
         </section>
-        <section id="pricing" className="w-full bg-slate-100 py-12 md:py-24 lg:py-32 flex flex-col items-center justify-center">
+        <section id="pricing" className="w-full bg-slate-200 py-12 md:py-24 lg:py-32 flex flex-col items-center justify-center">
           <div className="container px-4 md:px-6">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12 text-slate-500">
               Pricing Plans

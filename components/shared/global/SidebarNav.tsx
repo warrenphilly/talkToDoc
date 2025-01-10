@@ -83,7 +83,7 @@ export function SidebarNav() {
           <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
             <SidebarGroupContent className="flex flex-col justify-between h-full w-full">
               <SidebarMenu className="h-fit rounded-2xl flex flex-col justify-center items-start w-full  ">
-                {/* <div className="text-slate-800 p-4 bg-slate-200 w-full rounded-2xl my-5 font-semibold flex items-center justify-between">
+                 <div className="text-slate-800 p-4 bg-slate-200 w-full rounded-2xl my-5 font-semibold flex items-center justify-between">
                   <UserButton /> 
 
                   <SignOutButton> 
@@ -93,7 +93,7 @@ export function SidebarNav() {
 
                  
                 
-                </div> */}
+                </div> 
                 
                 {/* Regular menu items */}
                 {items.map((item) => (
