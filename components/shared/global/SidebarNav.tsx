@@ -20,6 +20,7 @@ import {
   MessageCircle,
   Search,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -48,11 +49,11 @@ const items = [
   //   url: "#",
   //   icon: BookOpen,
   // },
-  // {
-  //   title: "Document Builder",
-  //   url: "#",
-  //   icon: BookOpenText,
-  // },
+  {
+    title: "Document Builder",
+    url: "#",
+    icon: BookOpenText,
+  },
 
   // {
   //   title: "Uploaded files",
@@ -83,13 +84,19 @@ export function SidebarNav() {
               <SidebarMenu className="h-fit rounded-2xl flex flex-col justify-center items-start w-full  ">
                 <div className="text-slate-800 p-4 bg-slate-200 w-full rounded-2xl my-5 font-semibold flex items-center justify-between">
                   <UserButton /> 
-                  
+
+                  <SignOutButton> 
+                    <div className="flex flex-row items-center gap-2">logout
+                    <LogOut className="text-[#94b347] text-[30px]"/></div>
+                  </SignOutButton>
+
                  
                 
                 </div>
+                
                 {/* Regular menu items */}
                 {items.map((item) => (
-                  <div key={item.title} className="w-full my-4 text-xl" >
+                  <div key={item.title} className="w-full my-1 text-xl" >
                     <SidebarMenuItem className="hover:bg-slate-200 text-xl w-full">
                       <SidebarMenuButton asChild className="w-full py-2 hover:bg-slate-200 text-sm items-center bg-slate-200 rounded-lg p-5">
                         <a
@@ -107,6 +114,7 @@ export function SidebarNav() {
                 ))}
 
                 {/* Notebooks collapsible section */}
+                <div className=" mt-5 flex flex-col gap-6 w-full">
                 <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full justify-center  bg-slate-200 rounded-lg">
                   <CollapsibleTrigger className="flex items-center gap-2 py-2 w-full hover:bg-slate-200 px-4 rounded-lg">
                     <BookOpen className="text-[#94b347]  h-4" />
@@ -145,6 +153,9 @@ export function SidebarNav() {
                     ))}
                   </CollapsibleContent>
                 </Collapsible>
+
+             
+                </div>
               </SidebarMenu>
 
             

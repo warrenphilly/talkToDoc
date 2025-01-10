@@ -46,7 +46,7 @@ export default function Hero() {
             <div className="flex flex-col items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl text-[#94b347] h-full font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Welcome to  Studiyo 
+                  Welcome to  Studyo 
                 </h1>
                 <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
                   The world's most powerful notebook. Crafted by you, Powered by AI.
@@ -131,7 +131,7 @@ export default function Hero() {
                   <p className="text-4xl font-bold text-[#94b347]">Free</p>
                   <ul className="mt-4 space-y-2">
                   <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited notebook use
+                      <Check className="mr-2 h-4 w-4" /> Up to 3 notebooks
                     </li>
                     <li className="flex items-center">
                       <Check className="mr-2 h-4 w-4" /> 20 chat requests/day
@@ -157,9 +157,22 @@ export default function Hero() {
                 <CardContent>
                   <p className="text-4xl font-bold text-[#94b347]">$15/mo</p>
                   <ul className="mt-4 space-y-2">
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited Notes generation
+                  <li className="flex items-center">
+                      <Check className="mr-2 h-4 w-4" /> Unlimited notebooks
                     </li>
+                    <li className="flex items-center">
+                      <Check className="mr-2 h-4 w-4" /> Unlimited chat requests 
+                    </li>
+                    
+                    <li className="flex items-center">
+                      <Check className="mr-2 h-4 w-4" /> 30 Notes generation/Month
+                    </li>
+                    {/* <li className="flex items-center">
+                      <Check className="mr-2 h-4 w-4" /> Use Speech features 
+                    </li> */}
+                    {/* <li className="flex items-center">
+                      <Check className="mr-2 h-4 w-4" /> Generate shortform video explanation 
+                    </li> */}
                     <li className="flex items-center">
                       <Check className="mr-2 h-4 w-4" /> Unlimited Quiz generation
                     </li>
