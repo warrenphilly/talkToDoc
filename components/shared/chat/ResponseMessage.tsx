@@ -1,8 +1,8 @@
-import { Message, Section, Sentence } from '@/lib/types';
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button';
-import { Edit2, Trash2 } from 'lucide-react';
-import ParagraphEditor from '@/components/ParagraphEditor';
+import ParagraphEditor from "@/components/ParagraphEditor";
+import { Button } from "@/components/ui/button";
+import { Message, Section, Sentence } from "@/lib/types";
+import { Edit2, Trash2 } from "lucide-react";
+import React, { useState } from "react";
 
 interface ResponseProps {
   msg: Message;
@@ -15,15 +15,17 @@ interface ResponseProps {
 }
 
 export const ResponseMessage = ({
-  msg, 
-  handleSectionClick, 
-  handleSentenceClick, 
+  msg,
+  handleSectionClick,
+  handleSentenceClick,
   onEdit,
   onDelete,
   onSave,
-  index
+  index,
 }: ResponseProps) => {
-  const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null);
+  const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(
+    null
+  );
 
   const handleEditClick = (sectionIdx: number) => {
     setEditingSectionIndex(sectionIdx);
@@ -34,7 +36,7 @@ export const ResponseMessage = ({
     setEditingSectionIndex(null);
   };
 
-  if (typeof msg.text === 'string') {
+  if (typeof msg.text === "string") {
     return (
       <div key={index} className="p-2 rounded mb-2 bg-slate-100">
         <div className="text-sm">
@@ -58,13 +60,15 @@ export const ResponseMessage = ({
                   messageIndex={index}
                   initialData={{
                     user: "AI",
-                    text: [{
-                      title: section.title,
-                      sentences: section.sentences.map(s => ({
-                        id: s.id || 0,
-                        text: s.text.trim()
-                      }))
-                    }]
+                    text: [
+                      {
+                        title: section.title,
+                        sentences: section.sentences.map((s) => ({
+                          id: s.id || 0,
+                          text: s.text.trim(),
+                        })),
+                      },
+                    ],
                   }}
                 />
               ) : (
@@ -84,8 +88,8 @@ export const ResponseMessage = ({
                         className="text-slate-400  hover:bg-slate-100 w-full rounded-l-md rounded-r-none"
                       >
                         <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <div className="border-r border-slate-300 w-px"/>
+                      </Button>
+                      <div className="border-r border-slate-300 w-px" />
                       <Button
                         onClick={onDelete}
                         variant="ghost"
@@ -97,20 +101,22 @@ export const ResponseMessage = ({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {section.sentences.map((sentence: Sentence, sentenceIdx: number) => (
-                      <Button
-                        key={sentenceIdx}
-                        asChild
-                        onClick={() => handleSentenceClick(sentence)}
-                        className="bg-slate-100 hover:border hover:bg-slate-300 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
-                      >
-                        <div className="px-1 rounded cursor-pointer transition-colors">
-                          <p className="text-gray-800 text-md text-wrap">
-                            {sentence.text}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                    {section.sentences.map(
+                      (sentence: Sentence, sentenceIdx: number) => (
+                        <Button
+                          key={sentenceIdx}
+                          asChild
+                          onClick={() => handleSentenceClick(sentence)}
+                          className="bg-slate-100 hover:border hover:bg-slate-300 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
+                        >
+                          <div className="px-1 rounded cursor-pointer transition-colors">
+                            <p className="text-gray-800 text-md text-wrap">
+                              {sentence.text}
+                            </p>
+                          </div>
+                        </Button>
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -120,6 +126,6 @@ export const ResponseMessage = ({
       )}
     </div>
   );
-}
+};
 
 export default ResponseMessage;

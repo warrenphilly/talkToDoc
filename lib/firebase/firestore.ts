@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
@@ -30,7 +31,24 @@ export interface Notebook {
 export interface ClerkUser {
   id: string;
   email?: string;
-  metadata: any;
+  firstName?: string;
+  lastName?: string;
+  imageUrl?: string;
+  createdAt: Date;
+  metadata?: Record<string, any>;
+}
+
+export interface FirestoreUser {
+  id: string;
+  clerkId: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  imageUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  notebooks: string[]; // Array of notebook IDs
+  metadata?: Record<string, any>;
 }
 
 export const saveNote = async (
@@ -286,17 +304,96 @@ export const updatePageTitle = async (
   }
 };
 
-export const createNewUser = async (userData: ClerkUser) => {
+export const createNewUser = async (clerkUser: ClerkUser) => {
   try {
-    const userRef = doc(db, "users", userData.id);
+    const userId = `user_${crypto.randomUUID()}`;
+    const userRef = doc(db, "users", userId);
+
     await setDoc(userRef, {
-      id: userData.id,
-      email: userData.email,
-      metadata: userData.metadata,
+      id: userId,
+      clerkId: clerkUser.id,
+      email: clerkUser.email,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
+      imageUrl: clerkUser.imageUrl,
       createdAt: new Date(),
+      metadata: clerkUser.metadata || {},
     });
+
+    return userId;
   } catch (error) {
     console.error("Error creating user:", error);
+    throw error;
+  }
+};
+
+export const createFirestoreUser = async (clerkUser: {
+  id: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  imageUrl?: string;
+  metadata?: Record<string, any>;
+}) => {
+  try {
+    // Generate a unique Firestore user ID
+    const userId = `user_${crypto.randomUUID()}`;
+    const userRef = doc(db, "users", userId);
+
+    const userData: FirestoreUser = {
+      id: userId,
+      clerkId: clerkUser.id,
+      email: clerkUser.email,
+      firstName: clerkUser.firstName,
+      lastName: clerkUser.lastName,
+      imageUrl: clerkUser.imageUrl,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      notebooks: [],
+      metadata: clerkUser.metadata || {},
+    };
+
+    await setDoc(userRef, {
+      ...userData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return userId;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
+};
+
+// Helper function to get a user by their Clerk ID
+export const getUserByClerkId = async (clerkId: string) => {
+  try {
+    const usersRef = collection(db, "users");
+    const querySnapshot = await getDocs(usersRef);
+    const user = querySnapshot.docs.find(
+      (doc) => doc.data().clerkId === clerkId
+    );
+    return user ? ({ id: user.id, ...user.data() } as FirestoreUser) : null;
+  } catch (error) {
+    console.error("Error getting user:", error);
+    throw error;
+  }
+};
+
+// Helper function to get a user by their Firestore ID
+export const getUserById = async (userId: string) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      return null;
+    }
+
+    return { id: userSnap.id, ...userSnap.data() } as FirestoreUser;
+  } catch (error) {
+    console.error("Error getting user:", error);
     throw error;
   }
 };
