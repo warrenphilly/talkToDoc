@@ -106,20 +106,7 @@ const HomeClient = () => {
               </div>
             </ResizablePanel>
 
-            <>
-              <ResizableHandle withHandle />
-              <ResizablePanel
-                className={` ${
-                  showChat
-                    ? "translate-x-0 w-full min-w-[400px] p-2 transition-transform duration-1000 ease-in-out transform"
-                    : "hidden"
-                }`}
-              >
-                <div className="rounded-2xl m-2 w-full min-w-[400px] max-w-[700px] ">
-                  <SideChat primeSentence={primeSentence} setPrimeSentence={setPrimeSentence} />
-                </div>
-              </ResizablePanel>
-            </>
+          
           </ResizablePanelGroup>
         </div>
 

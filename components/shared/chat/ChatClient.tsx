@@ -412,6 +412,8 @@ const ChatClient = ({
                       <SideChat
                         primeSentence={primeSentence}
                         setPrimeSentence={setPrimeSentence}
+                        notebookId={notebookId}
+                        pageId={tabId}
                       />
                     </ResizablePanel>
                   )}

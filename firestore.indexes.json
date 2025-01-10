@@ -1,4 +1,24 @@
 {
-  "indexes": [],
-  "fieldOverrides": []
+  "firestore": {
+    "indexes": [
+      {
+        "collectionGroup": "sidechats",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "notebookId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "pageId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -9,6 +9,10 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  query,
+  where,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { getCurrentUserId } from "../auth";
 
@@ -49,6 +53,16 @@ export interface FirestoreUser {
   updatedAt: Date;
   notebooks: string[]; // Array of notebook IDs
   metadata?: Record<string, any>;
+}
+
+interface SideChat {
+  id: string;
+  notebookId: string;
+  pageId: string;
+  primeSentence: string | null;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const saveNote = async (
@@ -407,6 +421,89 @@ export const getUserById = async (userId: string) => {
     return { id: userSnap.id, ...userSnap.data() } as FirestoreUser;
   } catch (error) {
     console.error("Error getting user:", error);
+    throw error;
+  }
+};
+
+export const saveSideChat = async (
+  notebookId: string,
+  pageId: string,
+  primeSentence: string | null,
+  messages: Message[]
+) => {
+  try {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("User not authenticated");
+
+    const sideChatId = `sidechat_${crypto.randomUUID()}`;
+    const sideChatRef = doc(db, "sidechats", sideChatId);
+
+    const sideChatData: SideChat = {
+      id: sideChatId,
+      notebookId,
+      pageId,
+      primeSentence,
+      messages,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await setDoc(sideChatRef, sideChatData);
+    return sideChatId;
+  } catch (error) {
+    console.error("Error saving side chat:", error);
+    throw error;
+  }
+};
+
+export const updateSideChat = async (
+  sideChatId: string,
+  primeSentence: string | null,
+  messages: Message[]
+) => {
+  try {
+    const sideChatRef = doc(db, "sidechats", sideChatId);
+    await updateDoc(sideChatRef, {
+      primeSentence,
+      messages,
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Error updating side chat:", error);
+    throw error;
+  }
+};
+
+export const getSideChat = async (
+  notebookId: string,
+  pageId: string
+): Promise<SideChat | null> => {
+  try {
+    const sidechatsRef = collection(db, "sidechats");
+    const q = query(
+      sidechatsRef,
+      where("notebookId", "==", notebookId),
+      where("pageId", "==", pageId),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+
+    const doc = querySnapshot.docs[0];
+    return { id: doc.id, ...doc.data() } as SideChat;
+  } catch (error) {
+    console.error("Error getting side chat:", error);
+    throw error;
+  }
+};
+
+export const deleteSideChat = async (sideChatId: string) => {
+  try {
+    const sideChatRef = doc(db, "sidechats", sideChatId);
+    await deleteDoc(sideChatRef);
+  } catch (error) {
+    console.error("Error deleting side chat:", error);
     throw error;
   }
 };

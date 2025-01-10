@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Image, Upload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
+import { saveSideChat, updateSideChat, getSideChat, deleteSideChat } from "@/lib/firebase/firestore";
 
 // First, let's define our message types
 interface Sentence {
@@ -21,16 +22,67 @@ interface Message {
   files?: string[];
 }
 
-const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string | null, setPrimeSentence: (primeSentence: string | null) => void }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    { user: "user", text: primeSentence || "" },
-  ]);
+interface SideChatProps {
+  primeSentence: string | null;
+  setPrimeSentence: (primeSentence: string | null) => void;
+  notebookId: string;
+  pageId: string;
+}
+
+const SideChat = ({ 
+  primeSentence: initialPrimeSentence,
+  setPrimeSentence, 
+  notebookId, 
+  pageId 
+}: SideChatProps) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [sideChatId, setSideChatId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [primeSentence, setPrimeSentenceLocal] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Update both local and parent state when prime sentence changes
+  const updatePrimeSentence = (newPrimeSentence: string | null) => {
+    setPrimeSentenceLocal(newPrimeSentence);
+    setPrimeSentence(newPrimeSentence);
+  };
+
+  useEffect(() => {
+    const initializeSideChat = async () => {
+      setIsLoading(true);
+      try {
+        const existingSideChat = await getSideChat(notebookId, pageId);
+        
+        if (existingSideChat) {
+          console.log("Loading existing side chat:", existingSideChat);
+          setSideChatId(existingSideChat.id);
+          setMessages(existingSideChat.messages);
+          updatePrimeSentence(existingSideChat.primeSentence);
+        } else if (initialPrimeSentence) {
+          console.log("Creating new side chat");
+          const newSideChatId = await saveSideChat(
+            notebookId, 
+            pageId, 
+            initialPrimeSentence, 
+            []
+          );
+          setSideChatId(newSideChatId);
+          updatePrimeSentence(initialPrimeSentence);
+          setMessages([]);
+        }
+      } catch (error) {
+        console.error("Error initializing side chat:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeSideChat();
+  }, [notebookId, pageId]);
+
   const sendMessage = async (messageText: string = input) => {
-    console.log("sendMessage called with:", messageText);
     if (!messageText.trim() && files.length === 0) return;
 
     const formData = new FormData();
@@ -46,7 +98,8 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
       files: files.map((file) => URL.createObjectURL(file)),
     };
 
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
     setFiles([]);
 
@@ -57,25 +110,55 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
       });
 
       const data = await response.json();
-      console.log("Raw API response:", data); // Debug log
-
       const aiMessage = {
         user: "AI",
         text: data.reply,
       };
 
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      const finalMessages = [...updatedMessages, aiMessage];
+      setMessages(finalMessages);
+
+      if (sideChatId) {
+        await updateSideChat(sideChatId, primeSentence, finalMessages);
+      } else if (initialPrimeSentence) {
+        const newSideChatId = await saveSideChat(
+          notebookId, 
+          pageId, 
+          initialPrimeSentence, 
+          finalMessages
+        );
+        setSideChatId(newSideChatId);
+      }
     } catch (error) {
-      console.error("Network error:", error);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          user: "AI",
-          text: "Sorry, there was a network error. Please try again.",
-        },
-      ]);
+      console.error("Error sending message:", error);
+      const errorMessage = {
+        user: "AI",
+        text: "Sorry, there was an error. Please try again.",
+      };
+      setMessages([...updatedMessages, errorMessage]);
     }
   };
+
+  const handleClearChat = async () => {
+    try {
+      if (sideChatId) {
+        await deleteSideChat(sideChatId);
+        setSideChatId(null);
+        setMessages([]);
+        updatePrimeSentence(null);
+      }
+    } catch (error) {
+      console.error("Error clearing chat:", error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
@@ -86,8 +169,8 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
       <div className="border border-slate-400 text-[#94b347] rounded-lg   p-4 m-4">
         
         <div className="m-2">
-          {primeSentence ? (
-            <p>"{primeSentence}"</p>
+          {initialPrimeSentence ? (
+            <p>"{initialPrimeSentence}"</p>
           ) : (
             <p className="text-gray-500">Click a Sentence to add context</p>
           )}
@@ -97,23 +180,30 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => sendMessage("Explain this in greater detail")}
-            disabled={primeSentence == null}
+            disabled={initialPrimeSentence == null}
           >
             Explain{" "}
           </Button>
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => sendMessage("Give me a step-by-step example")}
-            disabled={primeSentence == null}
+            disabled={initialPrimeSentence == null}
           >
             Give Example{" "}
           </Button>
           <Button
             className="bg-[#94b347] text-white"
             onClick={() => setPrimeSentence(null)}
-            disabled={primeSentence == null}
+            disabled={initialPrimeSentence == null}
           >
             Clear Context{" "}
+          </Button>
+          <Button
+            className="bg-red-500 hover:bg-red-600 text-white"
+            onClick={handleClearChat}
+            disabled={!sideChatId}
+          >
+            Clear Chat
           </Button>
         </div>
       </div>
