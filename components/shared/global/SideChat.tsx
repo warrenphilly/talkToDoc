@@ -78,7 +78,7 @@ const SideChat = ({ primeSentence, setPrimeSentence }: { primeSentence: string |
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] p-3 ">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="flex flex-row items-center justify-center">
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>

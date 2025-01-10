@@ -12,7 +12,8 @@ import SideChat from "@/components/shared/global/SideChat";
 import { createNewNotebook } from "@/lib/firebase/firestore";
 import BentoDashboard from "./bento-dashboard";
 import { CreateNotebookModal } from "@/components/shared/home/create-notebook-modal";
-
+import { useUser } from "@clerk/nextjs";
+import  ContinuousSegmentSpinner  from "@/components/continuous-segment-spinner"; 
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -36,6 +37,17 @@ const HomeClient = () => {
   const [primeSentence, setPrimeSentence] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const {isLoaded, isSignedIn} = useUser()
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(true);
+      }, 1000);
+    }
+  }, [isLoaded, isSignedIn]);
   // const [selectedSentence, setSelectedSentence] = useState<Sentence | null>(
   //   null
   // ); - possible to remove
@@ -81,7 +93,16 @@ const HomeClient = () => {
               {/* end of surgery area */}
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-                <BentoDashboard listType="recent" />
+                {isLoading && isSignedIn ? (
+                  <BentoDashboard listType="recent" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="text-slate-900 text-xl font-semibold">Loading your notebooks...</div>
+                    <ContinuousSegmentSpinner /> 
+
+
+                  </div>
+                )}
               </div>
             </ResizablePanel>
 

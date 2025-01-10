@@ -35,11 +35,11 @@ const QuizPanel = () => {
   
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] ">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] overflow-y-auto ">
       <div className="flex flex-col items-center justify-center p-3 gap-4">
    
       <h1 className='text-xl font-semibold text-[#94b347]'>Quiz Me</h1>
-      <Button disabled className="  bg-white  shadow-none border border-slate-400 text-red-500  hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full  hover:text-[#94b347] text-md   ">
+      <Button disabled className="  bg-white  shadow-none border border-slate-400 text-red-500  hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full   hover:text-[#94b347] text-md   ">
           <h1 className="text-md">Clear Test </h1>
             </Button> 
       </div>

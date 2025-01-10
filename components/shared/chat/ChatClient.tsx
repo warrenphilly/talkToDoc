@@ -427,7 +427,7 @@ const ChatClient = ({
                     <ResizablePanel
                       className={` ${
                         showQuiz
-                          ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
+                          ? "translate-x-0   min-h-[500px] bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                           : "hidden"
                       }`}
                     >
