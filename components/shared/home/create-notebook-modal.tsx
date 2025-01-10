@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { createNewNotebook, createNewPage } from "@/lib/firebase/firestore";
 import { useRouter } from "next/navigation";
-import { createNewNotebook } from "@/lib/firebase/firestore";
-import { revalidatePath } from "next/cache";
+import { useState } from "react";
 
 interface CreateNotebookModalProps {
   isOpen: boolean;
@@ -21,9 +20,19 @@ export function CreateNotebookModal({ isOpen, onClose }: CreateNotebookModalProp
     if (!title.trim()) return;
     
     try {
+      // Create the notebook
       const notebookId = await createNewNotebook(title);
+      
+      // Create a default page
+      await createNewPage({
+        notebookId,
+        title: "Untitled Page",
+        content: "",
+        order: 0
+      });
+
       onClose();
-      revalidatePath("/notes");
+      router.refresh();
       router.push(`/notes/${notebookId}`);
     } catch (error) {
       console.error("Error creating notebook:", error);

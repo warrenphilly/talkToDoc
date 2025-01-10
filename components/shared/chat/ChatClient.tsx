@@ -343,9 +343,8 @@ const ChatClient = ({
                       {msg.user === "AI" && (
                         <>
                           <ResponseMessage
-                            key={`response-${index}`}
+                            msg={msg}
                             index={index}
-                            msg={{ user: msg.user, text: sections }}
                             handleSectionClick={(section) =>
                               handleSectionClick(
                                 section,
@@ -410,13 +409,11 @@ const ChatClient = ({
                           : "hidden"
                       }`}
                     >
-                   
                       <SideChat
                         primeSentence={primeSentence}
                         setPrimeSentence={setPrimeSentence}
                       />
-                   
-                  </ResizablePanel>
+                    </ResizablePanel>
                   )}
 
                   {showQuiz && showChat && (
@@ -427,17 +424,16 @@ const ChatClient = ({
                   )}
 
                   {showQuiz && (
-
-                  <ResizablePanel  className={` ${
+                    <ResizablePanel
+                      className={` ${
                         showQuiz
                           ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                           : "hidden"
-                      }`}>
-                   
+                      }`}
+                    >
                       <QuizPanel />
-                  
-                  </ResizablePanel>
-                )}
+                    </ResizablePanel>
+                  )}
                 </ResizablePanelGroup>
               </ResizablePanel>
             </>

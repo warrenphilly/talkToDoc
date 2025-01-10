@@ -1,14 +1,15 @@
 import { db } from "@/firebase";
 import { Message } from "@/lib/types";
 import {
-   collection,
-   deleteDoc,
-   doc,
-   getDoc,
-   getDocs,
-   setDoc,
-   updateDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
+import { getCurrentUserId } from "../auth";
 
 export interface Page {
   id: string;
@@ -22,6 +23,7 @@ export interface Notebook {
   id: string;
   title: string;
   createdAt: Date;
+  userId: string;
   pages: Page[];
 }
 
@@ -37,6 +39,9 @@ export const saveNote = async (
   messages: Message[]
 ) => {
   try {
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("User not authenticated");
+
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
 
@@ -51,7 +56,6 @@ export const saveNote = async (
       throw new Error("Page not found in notebook");
     }
 
-    // Update the messages for the specific page
     notebook.pages[pageIndex].messages = messages;
 
     await updateDoc(notebookRef, {
@@ -87,15 +91,16 @@ export const getNote = async (
 
 export const createNewNotebook = async (title: string): Promise<string> => {
   try {
-    // Use a consistent ID format that will be the same on server and client
-    const timestamp = new Date().toISOString();
-    const notebookId = `notebook_${timestamp}`;
-    const firstPageId = `page_${timestamp}`;
+    const userId = await getCurrentUserId();
+
+    const notebookId = `notebook_${crypto.randomUUID()}`;
+    const firstPageId = `page_${crypto.randomUUID()}`;
 
     const notebookData: Notebook = {
       id: notebookId,
       title,
       createdAt: new Date(),
+      userId,
       pages: [
         {
           id: firstPageId,
@@ -117,13 +122,21 @@ export const createNewNotebook = async (title: string): Promise<string> => {
 
 export const getAllNotebooks = async (): Promise<Notebook[]> => {
   try {
+    const userId = await getCurrentUserId();
+
     const notesCollection = collection(db, "notebooks");
     const querySnapshot = await getDocs(notesCollection);
     const notebooks = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Notebook[];
-    return notebooks.sort(
+
+    // Filter notebooks by userId
+    const userNotebooks = notebooks.filter(
+      (notebook) => notebook.userId === userId
+    );
+
+    return userNotebooks.sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );

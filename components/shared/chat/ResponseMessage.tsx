@@ -1,14 +1,11 @@
-import { Section, Sentence } from '@/lib/types';
+import { Message, Section, Sentence } from '@/lib/types';
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button';
 import { Edit2, Trash2 } from 'lucide-react';
 import ParagraphEditor from '@/components/ParagraphEditor';
 
 interface ResponseProps {
-  msg: {
-    user: string;
-    text: Section[];
-  };
+  msg: Message;
   handleSectionClick: (section: Section) => void;
   handleSentenceClick: (sentence: Sentence) => void;
   onEdit: () => void;
@@ -36,6 +33,18 @@ export const ResponseMessage = ({
     onSave(data, index);
     setEditingSectionIndex(null);
   };
+
+  if (typeof msg.text === 'string') {
+    return (
+      <div key={index} className="p-2 rounded mb-2 bg-slate-100">
+        <div className="text-sm">
+          <div className="bg-slate-100 border border-[#94b347] p-4 rounded-2xl transition-colors">
+            <p className="text-gray-800">{msg.text}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div key={index} className="p-2 rounded mb-2 bg-slate-100">
