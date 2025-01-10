@@ -5,7 +5,7 @@ import { db } from "@/firebase";
 import { Notebook, type Page } from "@/lib/firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ noteId: string }>;
@@ -52,7 +52,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
-    notFound();
+    redirect("/404");
   }
 
   console.log("Creating tabs from notebook:", notebook);
