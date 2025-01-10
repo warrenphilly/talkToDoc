@@ -110,6 +110,11 @@ export const getNote = async (
 export const createNewNotebook = async (title: string): Promise<string> => {
   try {
     const userId = await getCurrentUserId();
+    if (!userId) throw new Error("User not authenticated");
+
+    // Get user document
+    const user = await getUserById(userId);
+    if (!user) throw new Error("User not found");
 
     const notebookId = `notebook_${crypto.randomUUID()}`;
     const firstPageId = `page_${crypto.randomUUID()}`;
@@ -118,7 +123,7 @@ export const createNewNotebook = async (title: string): Promise<string> => {
       id: notebookId,
       title,
       createdAt: new Date(),
-      userId,
+      userId: userId, // Add userId to notebook
       pages: [
         {
           id: firstPageId,
@@ -130,7 +135,15 @@ export const createNewNotebook = async (title: string): Promise<string> => {
       ],
     };
 
+    // Create the notebook
     await setDoc(doc(db, "notebooks", notebookId), notebookData);
+
+    // Update user's notebooks array
+    await updateDoc(doc(db, "users", userId), {
+      notebooks: [...(user.notebooks || []), notebookId],
+      updatedAt: new Date(),
+    });
+
     return notebookId;
   } catch (error) {
     console.error("Error creating notebook:", error);

@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/firebase";
+import { getCurrentUserId } from "@/lib/auth";
 import { Notebook } from "@/lib/firebase/firestore";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { MessageSquare } from "lucide-react";
@@ -10,23 +11,36 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
 
   useEffect(() => {
-    // Create a query to get notebooks ordered by creation date
-    const notebooksQuery = query(
-      collection(db, "notebooks"),
-      orderBy("createdAt", "desc")
-    );
+    const fetchNotebooks = async () => {
+      const userId = await getCurrentUserId();
+      if (!userId) return;
 
-    // Set up real-time listener
-    const unsubscribe = onSnapshot(notebooksQuery, (snapshot) => {
-      const notebooksList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Notebook[];
-      setNotebooks(notebooksList);
-    });
+      // Create a query to get notebooks ordered by creation date
+      const notebooksQuery = query(
+        collection(db, "notebooks"),
+        orderBy("createdAt", "desc")
+      );
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+      // Set up real-time listener
+      const unsubscribe = onSnapshot(notebooksQuery, (snapshot) => {
+        const notebooksList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Notebook[];
+
+        // Filter notebooks to only show the current user's notebooks
+        const userNotebooks = notebooksList.filter(
+          (notebook) => notebook.userId === userId
+        );
+
+        setNotebooks(userNotebooks);
+      });
+
+      // Cleanup subscription on unmount
+      return () => unsubscribe();
+    };
+
+    fetchNotebooks();
   }, []);
 
   return (
