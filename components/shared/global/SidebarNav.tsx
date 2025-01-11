@@ -20,6 +20,8 @@ import {
   Search,
   Settings,
   LogOut,
+  FileText,
+  Link,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -36,8 +38,8 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { Notebook } from "@/lib/firebase/firestore";
-import { getAllNotebooks } from "@/lib/firebase/firestore";
+import { getNotebooksByFirestoreUserId, getUserByClerkId, Notebook } from "@/lib/firebase/firestore";
+import { getCurrentUserId } from "@/lib/auth";
 // Menu items.
 const items = [
   {
@@ -68,14 +70,31 @@ export function SidebarNav() {
   const [isOpen, setIsOpen] = useState(true);
   const pathname = usePathname();
 
-  useEffect(() => {
-    const loadNotebooks = async () => {
-      const notebooks = await getAllNotebooks();
-      setNotebooks(notebooks);
-    };
-    loadNotebooks();
-  }, []);
 
+  useEffect(() => {
+    const fetchNotebooks = async () => {
+      try {
+        // Get Clerk ID
+        const clerkUserId = await getCurrentUserId();
+        if (!clerkUserId) return;
+
+        // Get Firestore user
+        const firestoreUser = await getUserByClerkId(clerkUserId);
+        // if (!firestoreUser) return;
+
+        // // Get notebooks using Firestore user ID
+        if (!firestoreUser) return;
+        const userNotebooks = await getNotebooksByFirestoreUserId(firestoreUser.id);
+        setNotebooks(userNotebooks);
+    
+      } catch (error) {
+        console.error("Error fetching notebooks:", error);
+      }
+    };
+
+    fetchNotebooks();
+    console.log(notebooks)
+  }, []);
   return (
     <SidebarProvider >
       <Sidebar >
@@ -137,16 +156,17 @@ export function SidebarNav() {
                             : ""
                         }`}
                         >
-                           <div className="h-px bg-slate-300 w-full"/>
+                          <div className="h-px bg-slate-300 w-full" />
+                          
                         <SidebarMenuButton asChild>
-                          <a
+                          <Link
                             href={`/notes/${notebook.id}`}
                             className="flex items-center gap-2 p-2 justify-start pl-10 hover:bg-slate-300"
                           >
                             {" "}
-                            <File className="text-[#94b347]" />
+                            <FileText className="text-[#94b347]" />
                             <span> {notebook.title}</span>
-                          </a>
+                          </Link>
                         </SidebarMenuButton>
                         
                       </SidebarMenuItem>

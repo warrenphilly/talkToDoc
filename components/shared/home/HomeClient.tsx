@@ -13,7 +13,8 @@ import { createNewNotebook } from "@/lib/firebase/firestore";
 import BentoDashboard from "./bento-dashboard";
 import { CreateNotebookModal } from "@/components/shared/home/create-notebook-modal";
 import { useUser } from "@clerk/nextjs";
-import  ContinuousSegmentSpinner  from "@/components/continuous-segment-spinner"; 
+import ContinuousSegmentSpinner from "@/components/continuous-segment-spinner"; 
+import CircularProgress from '@mui/material/CircularProgress';
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -41,26 +42,13 @@ const HomeClient = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      setIsLoading(false);
-      setTimeout(() => {
+    setTimeout(() => {
         setIsLoading(true);
       }, 1000);
-    }
-  }, [isLoaded, isSignedIn]);
-  // const [selectedSentence, setSelectedSentence] = useState<Sentence | null>(
-  //   null
-  // ); - possible to remove
+  }, [, ]);
 
-  const handleSentenceClick = (sentence: Sentence) => {
-    setPrimeSentence(sentence.text);
-    setShowChat(true);
-  };
 
   useEffect(() => {
-    // if (messages.length > 0) {
-    //   setShowUpload(false);
-    // }
     console.log("messages", messages);
   }, [messages]);
 
@@ -86,28 +74,20 @@ const HomeClient = () => {
 
         {/* recent notebooks */}
         <div className="flex flex-col md:flex-row justify-start h-fit px-2">
-          <ResizablePanelGroup direction="horizontal" className="w-full px-2">
-            <ResizablePanel className="w-full p-2 min-w-[600px]  flex flex-col gap-2 items-center justify-center h-full overflow-y-auto ">
+         
+            
               {/* surgery area */}
 
               {/* end of surgery area */}
 
               <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full  max-h-[90vh]">
-                {isLoading && isSignedIn ? (
+                
                   <BentoDashboard listType="recent" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <div className="text-slate-900 text-xl font-semibold">Loading your notebooks...</div>
-                    <ContinuousSegmentSpinner /> 
-
-
-                  </div>
-                )}
+              
               </div>
-            </ResizablePanel>
+          
 
           
-          </ResizablePanelGroup>
         </div>
 
         {/*all notebooks */}

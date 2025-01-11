@@ -1,18 +1,21 @@
+"use server";
+
 import { db } from "@/firebase";
 import { Message } from "@/lib/types";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import {
   collection,
   deleteDoc,
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
-  query,
   where,
-  orderBy,
-  limit,
 } from "firebase/firestore";
 import { getCurrentUserId } from "../auth";
 
@@ -123,12 +126,26 @@ export const getNote = async (
 
 export const createNewNotebook = async (title: string): Promise<string> => {
   try {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error("User not authenticated");
+    const clerkUser = await currentUser();
+    if (!clerkUser) throw new Error("User not authenticated");
 
-    // Get user document
-    const user = await getUserById(userId);
-    if (!user) throw new Error("User not found");
+    // Get or create user document
+    let user = await getUserByClerkId(clerkUser.id);
+
+    if (!user) {
+      // Create new Firestore user
+      // await createFirestoreUser({
+      //   id: clerkUser.id,
+      //   email: clerkUser.emailAddresses[0]?.emailAddress,
+      //   firstName: clerkUser.firstName ?? "",
+      //   lastName: clerkUser.lastName ?? "",
+      //   imageUrl: clerkUser.imageUrl ?? "",
+      // });
+
+      // Fetch the newly created user
+      user = await getUserByClerkId(clerkUser.id);
+      if (!user) throw new Error("Failed to create user");
+    }
 
     const notebookId = `notebook_${crypto.randomUUID()}`;
     const firstPageId = `page_${crypto.randomUUID()}`;
@@ -137,7 +154,7 @@ export const createNewNotebook = async (title: string): Promise<string> => {
       id: notebookId,
       title,
       createdAt: new Date(),
-      userId: userId, // Add userId to notebook
+      userId: user.id,
       pages: [
         {
           id: firstPageId,
@@ -153,7 +170,7 @@ export const createNewNotebook = async (title: string): Promise<string> => {
     await setDoc(doc(db, "notebooks", notebookId), notebookData);
 
     // Update user's notebooks array
-    await updateDoc(doc(db, "users", userId), {
+    await updateDoc(doc(db, "users", user.id), {
       notebooks: [...(user.notebooks || []), notebookId],
       updatedAt: new Date(),
     });
@@ -376,7 +393,7 @@ export const createFirestoreUser = async (clerkUser: {
       imageUrl: clerkUser.imageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
-      notebooks: [],
+      notebooks: [], // Initialize empty notebooks array
       metadata: clerkUser.metadata || {},
     };
 
@@ -401,7 +418,9 @@ export const getUserByClerkId = async (clerkId: string) => {
     const user = querySnapshot.docs.find(
       (doc) => doc.data().clerkId === clerkId
     );
-    return user ? ({ id: user.id, ...user.data() } as FirestoreUser) : null;
+    // user ? ({ id: user.id, ...user.data() } as FirestoreUser) : null;
+    if (!user) return null;
+    return JSON.parse(JSON.stringify(user.data())) as FirestoreUser;
   } catch (error) {
     console.error("Error getting user:", error);
     throw error;
@@ -508,3 +527,36 @@ export const deleteSideChat = async (sideChatId: string) => {
   }
 };
 
+export const getUserNotebooks = async (userId: string) => {
+  const notebooksRef = collection(db, "notebooks");
+  const q = query(notebooksRef, where("userId", "==", userId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => doc.data()) as Notebook[];
+};
+
+export const getNotebooksByFirestoreUserId = async (
+  firestoreUserId: string
+): Promise<Notebook[]> => {
+  try {
+    const notesCollection = collection(db, "notebooks");
+    const q = query(notesCollection, where("userId", "==", firestoreUserId));
+
+    const querySnapshot = await getDocs(q);
+    const notebooks = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore Timestamp to JavaScript Date
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    }) as Notebook[];
+
+    return notebooks.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  } catch (error) {
+    console.error("Error getting notebooks by Firestore user ID:", error);
+    throw error;
+  }
+};

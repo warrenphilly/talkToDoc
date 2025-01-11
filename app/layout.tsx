@@ -33,10 +33,8 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         <div className="flex flex-row h-screen w-full">
-          <div className="flex flex-col h-screen items-start justify-start">
-            <SignedOut>
+          <div className="flex flex-col h-screen ">
            
-          </SignedOut>
           <SignedIn>
           <SidebarNav />
           </SignedIn>
