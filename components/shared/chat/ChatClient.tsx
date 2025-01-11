@@ -69,6 +69,7 @@ const ChatClient = ({
   const [sideChatWidth, setSideChatWidth] = useState(300); // Initial width for SideChat
   const [showQuiz, setShowQuiz] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -242,6 +243,29 @@ const ChatClient = ({
     }
   };
 
+  // Add this useEffect to handle screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      setIsSmallScreen(window.innerWidth < 1068);
+    
+    };
+
+   
+
+    // Set initial value
+    handleResize();
+
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
+    if(isSmallScreen){
+    
+      setShowQuiz(false);
+    }
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSmallScreen]);
+
   return (
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
       {/* hydration error is here */}
@@ -263,6 +287,9 @@ const ChatClient = ({
             <Button
               onClick={() => {
                 setShowQuiz(!showQuiz);
+                if(isSmallScreen){
+                  setShowChat(false);
+                }
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -271,6 +298,9 @@ const ChatClient = ({
             <Button
               onClick={() => {
                 setShowChat(!showChat);
+                if(isSmallScreen){
+                  setShowQuiz(false);
+                }
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -316,8 +346,11 @@ const ChatClient = ({
         </div>
 
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
-          {/* workspace panel */}
-          <ResizablePanelGroup direction="horizontal" className="w-full px-2">
+          {/* workspace panel if the viewport is small then it will be vertical else horizontal */}
+          <ResizablePanelGroup 
+            direction={isSmallScreen ? "vertical" : "horizontal"} 
+            className="w-full px-2"
+          >
             {/* notbook panel */}
             <ResizablePanel className="w-full p-2 min-w-[600px] flex flex-col gap-2 h-full overflow-hidden">
               <UploadArea
@@ -398,7 +431,7 @@ const ChatClient = ({
                 }`}
               >
                 <ResizablePanelGroup
-                  direction="vertical"
+                  direction={isSmallScreen ? "horizontal" : "vertical"} 
                   className="flex flex-col gap-2    "
                 >
                   {showChat && (
@@ -431,7 +464,7 @@ const ChatClient = ({
                         showQuiz
                           ? "translate-x-0   min-h-[500px] bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                           : "hidden"
-                      }`}
+                      } ` }
                     >
                       <QuizPanel />
                     </ResizablePanel>
