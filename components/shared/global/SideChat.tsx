@@ -216,8 +216,8 @@ const SideChat = ({
                 key={index}
                 className={`p-2 rounded mb-2 ${
                   msg.user === "User"
-                    ? "bg-[#c1d295] shadow-sm rounded-xl text-white"
-                    : "bg-slate-100 text-lg text-slate-900"
+                    ? "bg-slate-100 shadow-sm rounded-lg text-slate-400"
+                    : "border border-[#94b347] text-lg text-[#94b347]"
                 }`}
               >
                 {msg.user === "AI" ? (
@@ -231,9 +231,9 @@ const SideChat = ({
                               key={sectionIdx}
                               className="bg-white p-4 rounded-lg shadow"
                             >
-                              <h3 className="text-lg font-bold text-gray-100 mb-3">
+                              {/* <h3 className="text-lg font-bold text-gray-100 mb-3">
                                 {section.title}
-                              </h3>
+                              </h3> */}
                               <div className="space-y-2">
                                 {section.sentences.map((sentence: Sentence) => (
                                   <div className="p-2 bg-gray-50 hover:bg-gray-100 rounded cursor-pointer transition-colors">
