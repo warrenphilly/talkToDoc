@@ -41,6 +41,7 @@ import {
 import { useRouter } from "next/navigation";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
+import { CircularProgress } from "@mui/material";
 
 interface ChatClientProps {
   title: string;
@@ -70,6 +71,9 @@ const ChatClient = ({
   const [showQuiz, setShowQuiz] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [totalSections, setTotalSections] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -104,7 +108,10 @@ const ChatClient = ({
       setMessages,
       setInput,
       setFiles,
-      setShowUpload
+      setShowUpload,
+      setProgress,
+      setTotalSections,
+      setIsProcessing
     );
 
     try {
@@ -247,23 +254,19 @@ const ChatClient = ({
   useEffect(() => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 1068);
-    
     };
-
-   
 
     // Set initial value
     handleResize();
 
     // Add event listener
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     // Cleanup
-    if(isSmallScreen){
-    
+    if (isSmallScreen) {
       setShowQuiz(false);
     }
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [isSmallScreen]);
 
   return (
@@ -287,9 +290,9 @@ const ChatClient = ({
             <Button
               onClick={() => {
                 setShowQuiz(!showQuiz);
-                if(isSmallScreen){
+            
                   setShowChat(false);
-                }
+            
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -298,9 +301,9 @@ const ChatClient = ({
             <Button
               onClick={() => {
                 setShowChat(!showChat);
-                if(isSmallScreen){
+                
                   setShowQuiz(false);
-                }
+                
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -347,8 +350,8 @@ const ChatClient = ({
 
         <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
           {/* workspace panel if the viewport is small then it will be vertical else horizontal */}
-          <ResizablePanelGroup 
-            direction={isSmallScreen ? "vertical" : "horizontal"} 
+          <ResizablePanelGroup
+            direction={isSmallScreen ? "vertical" : "horizontal"}
             className="w-full px-2"
           >
             {/* notbook panel */}
@@ -361,7 +364,22 @@ const ChatClient = ({
                 handleFileUpload={(event) => handleFileUpload(event, setFiles)}
                 handleSendMessage={handleSendMessage}
                 handleClear={handleClear}
+                setShowUpload={setShowUpload}
               />
+
+              {isProcessing && (
+                <div className="w-full px-4">
+                  <div className="w-full bg-slate-200 rounded-full h-2.5">
+                    <div
+                      className="bg-[#94b347] h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(progress / totalSections) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-slate-500 text-center mt-2">
+                    Processing section {progress} of {totalSections}
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col overflow-y-auto p-4 bg-slate-100  rounded-t-2xl m-2 w-full h-full">
                 <ParagraphEditor
@@ -410,6 +428,19 @@ const ChatClient = ({
                     </div>
                   );
                 })}
+                {isProcessing && (
+                  <div className="w-full px-4">
+                    <p className="text-sm text-slate-500 text-center mt-2 flex flex-col items-center justify-center gap-2">
+                      Generating note sections {progress} of {totalSections}
+                      <CircularProgress
+                        size={20}
+                        sx={{
+                          color: "#94b347",
+                        }}
+                      />
+                    </p>
+                  </div>
+                )}
               </div>
             </ResizablePanel>
 
@@ -431,7 +462,7 @@ const ChatClient = ({
                 }`}
               >
                 <ResizablePanelGroup
-                  direction={isSmallScreen ? "horizontal" : "vertical"} 
+                  direction={isSmallScreen ? "horizontal" : "vertical"}
                   className="flex flex-col gap-2    "
                 >
                   {showChat && (
@@ -464,7 +495,7 @@ const ChatClient = ({
                         showQuiz
                           ? "translate-x-0   min-h-[500px] bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
                           : "hidden"
-                      } ` }
+                      } `}
                     >
                       <QuizPanel />
                     </ResizablePanel>

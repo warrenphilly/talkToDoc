@@ -12,7 +12,10 @@ export const sendMessage = async (
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   setInput: (input: string) => void,
   setFiles: (files: File[]) => void,
-  setShowUpload: (show: boolean) => void
+  setShowUpload: (show: boolean) => void,
+  setProgress: (progress: number) => void,
+  setTotalSections: (total: number) => void,
+  setIsProcessing: (isProcessing: boolean) => void
 ) => {
   if (!input.trim() && files.length === 0) return;
 
@@ -97,11 +100,18 @@ export const sendMessage = async (
 
   console.log(" totaltextSections", textSections.length);
 
+  // Reset progress
+  setProgress(0);
+  setIsProcessing(true);
+
+  // After processing PDF and getting textSections
+  setTotalSections(textSections.length);
+  
   // Process each text section
-  for (const section of textSections) {
+  for (let i = 0; i < textSections.length; i++) {
+    const section = textSections[i];
     let attempt = 0;
     let success = false;
-    console.log(`section:`, section);
 
     while (attempt < maxRetries && !success) {
       try {
@@ -174,6 +184,7 @@ export const sendMessage = async (
           });
 
           success = true;
+          setProgress(i + 1); // Update progress after successful processing
         } catch (parseError) {
           console.error("Parsing error:", parseError);
           attempt++;
@@ -225,6 +236,9 @@ export const sendMessage = async (
       }
     }
   }
+
+  // Reset processing state when done
+  setIsProcessing(false);
 };
 
 export const fileUpload = (

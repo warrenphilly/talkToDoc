@@ -13,6 +13,7 @@ interface UploadAreaProps {
   handleClear: () => void;
   className?: string;
   showUpload: boolean;
+  setShowUpload: (show: boolean) => void;
 }
 
 const UploadArea = ({
@@ -23,7 +24,13 @@ const UploadArea = ({
   handleSendMessage,
   handleClear,
   showUpload,
+  setShowUpload,
 }: UploadAreaProps) => {
+
+  const handleGenerateNotes = () => {
+    setShowUpload(false);
+    handleSendMessage();
+  }
   //useEffect for watching messages.length
 
   return (
@@ -127,7 +134,7 @@ const UploadArea = ({
               </div>
 
               <div className="flex flex-row items-center gap-3 p-2 rounded-2xl">
-                <Button className="bg-[#dae9b6] text-slate-700 rounded-2xl w-fit shadow-none" onClick={handleSendMessage}>Generate Notes</Button>
+                <Button className="bg-[#dae9b6] text-slate-700 rounded-2xl w-fit shadow-none" onClick={handleGenerateNotes}>Generate Notes</Button>
               </div>
             </div>
           </div>

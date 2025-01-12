@@ -119,11 +119,11 @@ export function SidebarNav() {
                   <Skeleton className="h-24 my-5 w-full rounded-2xl" />
                 ) : (
                   <div className="text-slate-800 bg-slate-200   w-full rounded-2xl my-5 font-semibold flex flex-col  justify-between">
-                  <div className="flex flex-row items-center justify-center  gap-2 p-4">
+                  <div className="flex flex-col items-center justify-center  gap-2 p-4">
                     <div className="flex flex-row items-center justify-center  gap-2 text-xl">
                       <UserButton /> <p >{user?.username}</p>
                     </div>
-                    <Separator orientation="vertical" className="bg-slate-300" />
+                   
                     <div className="flex flex-row items-center gap-2 text-sm text-slate-500">
                     
                       {user?.firstName} {user?.lastName}

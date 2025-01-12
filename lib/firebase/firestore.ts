@@ -515,7 +515,18 @@ export const getSideChat = async (
     if (querySnapshot.empty) return null;
 
     const doc = querySnapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as SideChat;
+    const data = doc.data();
+
+    // Convert Firestore timestamps to ISO strings
+    return {
+      id: doc.id,
+      notebookId: data.notebookId,
+      pageId: data.pageId,
+      primeSentence: data.primeSentence,
+      messages: data.messages,
+      createdAt: data.createdAt?.toDate().toISOString(),
+      updatedAt: data.updatedAt?.toDate().toISOString(),
+    } as SideChat;
   } catch (error) {
     console.error("Error getting side chat:", error);
     throw error;
