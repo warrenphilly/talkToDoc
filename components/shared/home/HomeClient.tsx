@@ -63,17 +63,11 @@ const HomeClient = () => {
           <div className="flex gap-2 ">
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full w-fit my-5 font-semibold"
+              className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full border border-slate-300 shadow-none w-fit my-5 font-semibold mx-5"
             >
               New Notebook
             </Button>
-            <Button
-              
-              className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full w-fit my-5 mr-5 font-semibold"
-            >
-              Settings
-            </Button>
-            
+          
           </div>
         </div>
 

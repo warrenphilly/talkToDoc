@@ -31,6 +31,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           firestoreUser.id
         );
         setNotebooks(userNotebooks);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching notebooks:", error);
       }
@@ -39,11 +40,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     fetchNotebooks();
   }, []);
 
-  useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-    }, 4000);
-  }, []);
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     setLoading(false);
+  //   }, 4000);
+  // }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -74,7 +75,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         ) : (
           notebooks.map((notebook) => (
             <Link key={notebook.id} href={`/notes/${notebook.id}`}>
-              <Card className="h-full transition-transform hover:scale-105 bg-slate-200 shadow-md border-none w-[800px] md:w-[400px] mx-4">
+              <Card className="h-full transition-transform hover:scale-105 shadow-none bg-slate-200 border-none w-[800px] md:w-[400px] mx-4">
                 <CardContent className="p-6 flex flex-col h-full">
                   <div className="p-2 rounded-full w-fit bg-[#94b347]">
                     <FileText className="h-6 w-6 text-white" />
