@@ -40,6 +40,7 @@ export interface ClerkUser {
   email?: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
   imageUrl?: string;
   createdAt: Date;
   metadata?: Record<string, any>;
@@ -51,6 +52,7 @@ export interface FirestoreUser {
   email?: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
   imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -359,6 +361,7 @@ export const createNewUser = async (clerkUser: ClerkUser) => {
       email: clerkUser.email,
       firstName: clerkUser.firstName,
       lastName: clerkUser.lastName,
+      username: clerkUser.username,
       imageUrl: clerkUser.imageUrl,
       createdAt: new Date(),
       metadata: clerkUser.metadata || {},
@@ -376,6 +379,7 @@ export const createFirestoreUser = async (clerkUser: {
   email?: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
   imageUrl?: string;
   metadata?: Record<string, any>;
 }) => {
@@ -390,6 +394,7 @@ export const createFirestoreUser = async (clerkUser: {
       email: clerkUser.email,
       firstName: clerkUser.firstName,
       lastName: clerkUser.lastName,
+      username: clerkUser.username,
       imageUrl: clerkUser.imageUrl,
       createdAt: new Date(),
       updatedAt: new Date(),

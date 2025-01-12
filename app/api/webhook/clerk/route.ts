@@ -49,13 +49,14 @@ export async function POST(req: Request) {
     // Handle the webhook
     const eventType = evt.type;
     if (eventType === 'user.created') {
-      const { id, email_addresses, first_name, last_name, image_url, public_metadata } = evt.data;
+      const { id, email_addresses, first_name, last_name, username, image_url, public_metadata } = evt.data;
       
       await createNewUser({
         id,
         email: email_addresses?.[0]?.email_address,
         firstName: first_name || undefined,
         lastName: last_name || undefined,
+        username: username || undefined,
         imageUrl: image_url,
         createdAt: new Date(),
         metadata: public_metadata as Record<string, any> || {}

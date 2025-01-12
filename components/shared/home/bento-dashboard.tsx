@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 
 export default function BentoDashboard({ listType }: { listType: string }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchNotebooks = async () => {
@@ -38,13 +39,21 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     fetchNotebooks();
   }, []);
 
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 4000);
+  }, []);
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6 text-slate-400">
         {listType === "all" ? "All Notebooks" : "Recent Notebooks"}
       </h1>
       <div className="flex flex-wrap gap-4 items-center justify-start md:p-5">
+       
         {notebooks.length === 0 ? (
+          loading ? (
           <div className="flex flex-col items-center justify-center h-full w-full gap-2">
             <div className="text-slate-400 text-xl font-semibold">
               Loading your notebooks...
@@ -54,7 +63,14 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 color: "#94b347",
               }}
             />
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full w-full gap-2">
+              <div className="text-slate-400 text-xl font-semibold">
+                No notebooks found
+              </div>
+            </div>
+          )
         ) : (
           notebooks.map((notebook) => (
             <Link key={notebook.id} href={`/notes/${notebook.id}`}>

@@ -21,11 +21,11 @@ import {
   Settings,
   LogOut,
   FileText,
-  Link,
+  
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
+import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getNotebooksByFirestoreUserId, getUserByClerkId, Notebook } from "@/lib/firebase/firestore";
 import { getCurrentUserId } from "@/lib/auth";
+import { User } from "@clerk/nextjs/server";
 // Menu items.
 const items = [
   {
@@ -52,11 +53,11 @@ const items = [
   //   url: "#",
   //   icon: BookOpen,
   // },
-  {
-    title: "Document Builder",
-    url: "#",
-    icon: BookOpenText,
-  },
+  // {
+  //   title: "Document Builder",
+  //   url: "#",
+  //   icon: BookOpenText,
+  // },
 
   // {
   //   title: "Uploaded files",
@@ -68,6 +69,7 @@ const items = [
 export function SidebarNav() {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [isOpen, setIsOpen] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const pathname = usePathname();
 
 
@@ -80,6 +82,10 @@ export function SidebarNav() {
 
         // Get Firestore user
         const firestoreUser = await getUserByClerkId(clerkUserId);
+        console.log(firestoreUser)
+        // if (firestoreUser) {
+        //   setUser(firestoreUser);
+        // }
         // if (!firestoreUser) return;
 
         // // Get notebooks using Firestore user ID
@@ -118,12 +124,20 @@ export function SidebarNav() {
                 {items.map((item) => (
                   <div key={item.title} className="w-full my-1 text-xl" >
                     <SidebarMenuItem className="hover:bg-slate-200 text-xl w-full">
-                      <SidebarMenuButton asChild className="w-full py-2 hover:bg-slate-200 text-sm items-center bg-slate-200 rounded-lg p-5">
+                      <SidebarMenuButton asChild className={`w-full py-2 hover:bg-slate-200 text-sm items-center bg-slate-200 rounded-lg p-5 ${
+                          pathname === item.url
+                            ? "bg-[#adc668] text-white"
+                            : ""
+                        }`}>
                         <a
                           href={item.url}
                           className="flex items-center gap-2 p-2"
                         >
-                          <item.icon className="text-[#94b347] text-[30px]" />
+                          <item.icon className={`text-[30px] ${
+                          pathname === item.url
+                            ? "text-white"
+                            : "text-[#94b347]"
+                        }`} />
                           <span>{item.title}</span>
                         </a>
                       </SidebarMenuButton>
