@@ -211,7 +211,7 @@ const SideChat = ({
         {messages.map(
           (msg, index) =>
             msg.text &&
-            (msg.user === "User" || msg.user === "AI") && (
+         
               <div
                 key={index}
                 className={`p-2 rounded mb-2 ${
@@ -269,7 +269,7 @@ const SideChat = ({
                   </div>
                 )}
               </div>
-            )
+            
         )}
       </div>
       <div className="bg-slate-200 p-4  rounded-b-lg">
