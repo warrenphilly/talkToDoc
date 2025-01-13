@@ -29,6 +29,9 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
   const [incorrectAnswers, setIncorrectAnswers] = useState<number[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [evaluationResults, setEvaluationResults] = useState<
+    Record<number, boolean>
+  >({});
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -72,7 +75,6 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
 
   const handleAnswer = async (answer: string) => {
     if (currentQuestion.type === "shortAnswer") {
-      // For short answers, don't update score or user answers until after AI evaluation
       setIsLoading(true);
       try {
         const response = await fetch("/api/feedback", {
@@ -91,12 +93,14 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
 
         const data = await response.json();
 
-        // Update selected answer and show explanation
         setSelectedAnswer(answer);
         setShowExplanation(true);
-
-        // Update score and answers after AI evaluation
         setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
+
+        setEvaluationResults((prev) => ({
+          ...prev,
+          [currentQuestion.id]: data.isCorrect,
+        }));
 
         if (data.isCorrect) {
           setScore((prev) => prev + 1);

@@ -24,8 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ feedback: "" });
     }
 
-    let prompt: string;
-    // Initialize evaluation with default values
+    let prompt = "";
     let evaluation = {
       isCorrect: false,
       explanation: "",
@@ -43,23 +42,30 @@ export async function POST(request: Request) {
         1. Overall performance analysis
         2. Key areas for improvement based on the incorrect answers
         3. Encouragement for future learning`;
-    } else {
-      // For short answers, first evaluate if the answer contains required concepts
+    } else if (questionType === "shortAnswer") {
       const evaluationPrompt = `
         Question: "${question}"
         User's answer: "${userAnswer}"
-        Required concepts: "${correctAnswer}"
+        Expected concepts: "${correctAnswer}"
 
         Evaluation Instructions:
-        1. The answer must demonstrate clear understanding of the core concept
-        2. Random text, gibberish, or unrelated answers should be marked as incorrect
-        3. The answer should contain key terms or synonyms related to the correct answer
-        4. Spelling mistakes are acceptable only if the intended meaning is clear
-        5. Respond with a JSON object containing:
-           - isCorrect: boolean (true only if answer demonstrates clear understanding)
-           - explanation: string (detailed feedback explaining the evaluation)
-           - matchedConcepts: string[] (key concepts found in the answer)
+        1. Focus on conceptual understanding rather than exact wording
+        2. Ignore spelling mistakes if the intended meaning is clear
+        3. Accept synonyms and alternative phrasings
+        4. Mark as correct if the core concept is understood, even if expressed imperfectly
+        5. Only mark as incorrect if:
+           - The answer shows fundamental misunderstanding
+           - The answer is completely unrelated
+           - The answer is gibberish or nonsensical
+        
+        Respond with a JSON object containing:
+        {
+          "isCorrect": boolean (true if core concept is understood),
+          "explanation": string (friendly feedback explaining the evaluation),
+          "matchedConcepts": string[] (concepts correctly expressed)
+        }
 
+        Important: Be lenient with spelling and grammar, but strict with conceptual understanding.
         Provide your evaluation in valid JSON format.
       `;
 
@@ -69,7 +75,7 @@ export async function POST(request: Request) {
           {
             role: "system",
             content:
-              "You are a strict answer evaluator. You must ensure answers demonstrate clear understanding. Return only valid JSON.",
+              "You are an understanding evaluator. Focus on conceptual understanding rather than perfect spelling or grammar. Accept alternative phrasings and synonyms.",
           },
           {
             role: "user",
@@ -81,7 +87,7 @@ export async function POST(request: Request) {
 
       evaluation = JSON.parse(
         evaluationResponse.choices[0]?.message?.content ||
-          '{"isCorrect": false, "explanation": "", "matchedConcepts": []}'
+          '{"isCorrect": false, "explanation": "Unable to evaluate answer", "matchedConcepts": []}'
       );
 
       prompt = `
@@ -89,11 +95,11 @@ export async function POST(request: Request) {
         User's answer: ${userAnswer}
         Evaluation: ${evaluation.explanation}
         
-        Please provide constructive feedback that:
-        1. Acknowledges any correct concepts (if any)
-        2. Identifies missing or incorrect concepts
-        3. Explains the correct answer
-        4. Provides guidance for improvement
+        Please provide encouraging feedback that:
+        1. Acknowledges what they got right (even if partially correct)
+        2. Gently corrects any misunderstandings
+        3. Provides the complete correct answer
+        4. Offers a helpful tip for remembering the concept
       `;
     }
 
@@ -104,7 +110,7 @@ export async function POST(request: Request) {
           role: "system",
           content:
             questionType === "shortAnswer"
-              ? "You are an AI evaluating short answer responses. Be encouraging but accurate in your assessment."
+              ? "You are an encouraging teacher providing feedback. Focus on what the student understood correctly, even if their expression wasn't perfect."
               : "You are a helpful educational assistant providing quiz performance feedback.",
         },
         {
@@ -124,6 +130,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         feedback: aiResponse,
         isCorrect: evaluation.isCorrect,
+        explanation: evaluation.explanation,
       });
     }
 
