@@ -70,6 +70,12 @@ const items = [
   //   url: "#",
   //   icon: File,
   // },
+  
+  // {
+  //   title: "show me where i went wrong  with my exams",
+  //   url: "#",
+  //   icon: File,
+  // },
 ];
 
 export function SidebarNav() {

@@ -1,5 +1,7 @@
 import { Message, Section, Sentence } from "@/lib/types";
 import { clsx, type ClassValue } from "clsx";
+import fs from "fs";
+import path from "path";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -23,9 +25,8 @@ export const sendMessage = async (
   formData.append("message", input);
 
   const textSections = [];
-  console.log("input", input);
+  let markdownFilename: string | null = null;
 
-  console.log("files", files);
   for (const file of files) {
     if (file.type === "application/pdf") {
       const pdfFormData = new FormData();
@@ -49,8 +50,53 @@ export const sendMessage = async (
         const SECTION_LENGTH = 500;
 
         if (data.text) {
+          // Create filename for the first section only
+          if (!markdownFilename) {
+            try {
+              const initResponse = await fetch("/api/save-markdown", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ section: "", createNew: true }),
+              });
+
+              if (!initResponse.ok) {
+                throw new Error("Failed to initialize markdown file");
+              }
+
+              const { filename } = await initResponse.json();
+              markdownFilename = filename;
+            } catch (error) {
+              console.error("Error initializing markdown file:", error);
+              continue;
+            }
+          }
+
           for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
-            textSections.push(data.text.slice(i, i + SECTION_LENGTH));
+            const section = data.text.slice(i, i + SECTION_LENGTH);
+            textSections.push(section);
+
+            // Save section to existing markdown file
+            try {
+              const saveResponse = await fetch("/api/save-markdown", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                  section,
+                  filename: markdownFilename,
+                  createNew: false 
+                }),
+              });
+
+              if (!saveResponse.ok) {
+                throw new Error("Failed to save markdown");
+              }
+            } catch (error) {
+              console.error("Error saving to markdown:", error);
+            }
           }
         }
 
@@ -94,7 +140,7 @@ export const sendMessage = async (
   setMessages((prevMessages) => [...prevMessages, userMessage]);
   setInput("");
   setFiles([]);
- 
+
   //send message logic begins here
   const maxRetries = 3;
 
@@ -106,7 +152,7 @@ export const sendMessage = async (
 
   // After processing PDF and getting textSections
   setTotalSections(textSections.length);
-  
+
   // Process each text section
   for (let i = 0; i < textSections.length; i++) {
     const section = textSections[i];
@@ -156,18 +202,20 @@ export const sendMessage = async (
               throw new Error("Invalid section structure");
             }
 
-            const validSentences = section.sentences.every((sentence: Sentence) => {
-              console.log("Checking sentence:", sentence); // Log each sentence
+            const validSentences = section.sentences.every(
+              (sentence: Sentence) => {
+                console.log("Checking sentence:", sentence); // Log each sentence
 
-              if (
-                typeof sentence.id !== "number" ||
-                typeof sentence.text !== "string"
-              ) {
-                console.error("Invalid sentence structure:", sentence);
-                return false;
+                if (
+                  typeof sentence.id !== "number" ||
+                  typeof sentence.text !== "string"
+                ) {
+                  console.error("Invalid sentence structure:", sentence);
+                  return false;
+                }
+                return true;
               }
-              return true;
-            });
+            );
 
             if (!validSentences) {
               console.error("Invalid sentences found");
