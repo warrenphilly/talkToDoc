@@ -38,7 +38,8 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
     question: string,
     userAnswer: string,
     correctAnswer: string,
-    isLastQ: boolean
+    isLastQ: boolean,
+    questionType: string
   ) => {
     setIsLoading(true);
     try {
@@ -55,6 +56,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
           score,
           totalQuestions: data.questions.length,
           incorrectAnswers,
+          questionType,
         }),
       });
 
@@ -69,23 +71,70 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
   };
 
   const handleAnswer = async (answer: string) => {
-    setSelectedAnswer(answer);
-    setShowExplanation(true);
-    setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
+    if (currentQuestion.type === "shortAnswer") {
+      // For short answers, don't update score or user answers until after AI evaluation
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/feedback", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: currentQuestion.question,
+            userAnswer: answer,
+            correctAnswer: currentQuestion.correctAnswer,
+            isLastQuestion: false,
+            questionType: "shortAnswer",
+          }),
+        });
 
-    const isAnswerCorrect = answer === currentQuestion.correctAnswer;
-    if (isAnswerCorrect) {
-      setScore((prev) => prev + 1);
+        const data = await response.json();
+
+        // Update selected answer and show explanation
+        setSelectedAnswer(answer);
+        setShowExplanation(true);
+
+        // Update score and answers after AI evaluation
+        setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
+
+        if (data.isCorrect) {
+          setScore((prev) => prev + 1);
+        } else {
+          setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
+        }
+
+        setGptFeedback(data.feedback);
+      } catch (error) {
+        console.error("Error evaluating answer:", error);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
+      // For multiple choice and true/false, evaluate immediately
+      setSelectedAnswer(answer);
+      setShowExplanation(true);
+      setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
+
+      const isAnswerCorrect =
+        answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+      if (isAnswerCorrect) {
+        setScore((prev) => prev + 1);
+      } else {
+        setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
+      }
     }
 
-    await getGPTFeedback(
-      currentQuestion.question,
-      answer,
-      currentQuestion.correctAnswer,
-      isLastQuestion
-    );
+    // Only get final feedback at the end of the quiz
+    if (isLastQuestion) {
+      await getGPTFeedback(
+        currentQuestion.question,
+        answer,
+        currentQuestion.correctAnswer,
+        true,
+        currentQuestion.type
+      );
+    }
   };
 
   const nextQuestion = () => {
@@ -174,7 +223,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
           </span>
         </div>
         <div className="text-sm text-gray-500">
-          {Math.round(scorePercentage)}% correct
+          {Math.round((score / (currentQuestionIndex + 1)) * 100)}% correct
         </div>
       </div>
 
@@ -283,10 +332,10 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
                 placeholder="Type your answer here..."
                 value={selectedAnswer || ""}
                 onChange={(e) => setSelectedAnswer(e.target.value)}
-                disabled={!!selectedAnswer}
-                className="w-full p-2"
+                disabled={isLoading}
+                className="w-full p-2 text-slate-500"
               />
-              {selectedAnswer && (
+              {selectedAnswer && !isLoading && (
                 <Button
                   onClick={() => handleAnswer(selectedAnswer)}
                   className="w-full bg-[#94b347] hover:bg-[#a5c05f]"
@@ -294,26 +343,38 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
                   Submit Answer
                 </Button>
               )}
-              {selectedAnswer && (
-                <div
-                  className={`p-4 rounded-lg ${
-                    isCorrect ? "bg-green-50" : "bg-red-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {isCorrect ? (
+              {isLoading && (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
+                  <span className="ml-2">Evaluating your answer...</span>
+                </div>
+              )}
+              {gptFeedback && (
+                <div className={`p-4 rounded-lg bg-slate-50`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {userAnswers[currentQuestion.id] &&
+                    !incorrectAnswers.includes(currentQuestion.id) ? (
                       <CheckCircle className="w-5 h-5 text-green-500" />
                     ) : (
                       <XCircle className="w-5 h-5 text-red-500" />
                     )}
                     <span
                       className={`font-medium ${
-                        isCorrect ? "text-green-700" : "text-red-700"
+                        userAnswers[currentQuestion.id] &&
+                        !incorrectAnswers.includes(currentQuestion.id)
+                          ? "text-green-700"
+                          : "text-red-700"
                       }`}
                     >
-                      {isCorrect ? "Correct!" : "Incorrect"}
+                      {userAnswers[currentQuestion.id] &&
+                      !incorrectAnswers.includes(currentQuestion.id)
+                        ? "Correct!"
+                        : "Incorrect"}
                     </span>
                   </div>
+                  <p className="text-slate-700 whitespace-pre-line">
+                    {gptFeedback}
+                  </p>
                 </div>
               )}
             </div>
@@ -328,7 +389,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
         </div>
       )}
 
-      {isLoading ? (
+      {/* {isLoading ? (
         <div className="mt-6 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
           <span className="ml-2 text-gray-600">Getting AI feedback...</span>
@@ -340,7 +401,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
             <p className="text-slate-700 whitespace-pre-line">{gptFeedback}</p>
           </div>
         )
-      )}
+      )} */}
 
       {selectedAnswer && !isLastQuestion && (
         <Button
