@@ -89,7 +89,7 @@ Format the response as a JSON object with the following structure:
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4-turbo-preview', // Updated to use the latest model
+        model: 'gpt-4o', // Updated to use the latest model
         messages,
         max_tokens: 4500,
         temperature: 0.7,

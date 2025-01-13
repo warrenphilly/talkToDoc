@@ -1,17 +1,20 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Image, Upload } from "lucide-react"; // Import icons
-import React, { useEffect, useRef, useState } from "react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Image, Upload } from "lucide-react"; // Import icons
+import React, { useEffect, useRef, useState } from "react";
+import Quiz from "@/components/ui/Quiz";
 
-import { Switch } from "@/components/ui/switch"
+  // import { Quiz } from "@/components/ui/Quiz";
+  import { Switch } from "@/components/ui/switch";
+  import { QuizData } from "@/types/quiz";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -40,7 +43,7 @@ const QuizPanel = () => {
     shortAnswer: false,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [quizResponse, setQuizResponse] = useState<string>("");
+  const [quizData, setQuizData] = useState<QuizData | null>(null);
 
   const generateQuiz = async () => {
     setIsLoading(true);
@@ -64,7 +67,7 @@ const QuizPanel = () => {
       });
 
       const data = await response.json();
-      setQuizResponse(JSON.stringify(data.quiz, null, 2));
+      setQuizData(data.quiz);
     } catch (error) {
       console.error('Error generating quiz:', error);
     } finally {
@@ -85,89 +88,95 @@ const QuizPanel = () => {
       </div>
 
       <div className="text-white min-h-[400px] rounded-lg flex flex-col justify-between items-center p-4 m-4">
-        <div className="flex flex-col gap-5 w-full max-w-md">
-          <Select onValueChange={(value) => setTestFormat(value)}>
-            <SelectTrigger className="w-full text-slate-500">
-              <SelectValue placeholder="How would you like to be tested?" />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-100">
-              <SelectItem value="oneAtATime" className="text-slate-500 hover:bg-slate-300">
-                Ask me one question at a time
-              </SelectItem>
-              <SelectItem value="allAtOnce" className="text-slate-500 hover:bg-slate-300">
-                Ask me all at once
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        {!quizData ? (
+          <div className="flex flex-col gap-5 w-full max-w-md">
+            <Select onValueChange={(value) => setTestFormat(value)}>
+              <SelectTrigger className="w-full text-slate-500">
+                <SelectValue placeholder="How would you like to be tested?" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-100">
+                <SelectItem value="oneAtATime" className="text-slate-500 hover:bg-slate-300">
+                  Ask me one question at a time
+                </SelectItem>
+                <SelectItem value="allAtOnce" className="text-slate-500 hover:bg-slate-300">
+                  Ask me all at once
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select onValueChange={(value) => setResponseType(value)}>
-            <SelectTrigger className="w-full text-slate-500">
-              <SelectValue placeholder="Text or Speech?" />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-100">
-              <SelectItem value="text" className="text-slate-500 hover:bg-slate-300">Text</SelectItem>
-              <SelectItem value="speech" className="text-slate-500 hover:bg-slate-300">Speech</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select onValueChange={(value) => setResponseType(value)}>
+              <SelectTrigger className="w-full text-slate-500">
+                <SelectValue placeholder="Text or Speech?" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-100">
+                <SelectItem value="text" className="text-slate-500 hover:bg-slate-300">Text</SelectItem>
+                <SelectItem value="speech" className="text-slate-500 hover:bg-slate-300">Speech</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select onValueChange={(value) => setQuestionCount(value)}>
-            <SelectTrigger className="w-full text-slate-500">
-              <SelectValue placeholder="How many Questions?" />
-            </SelectTrigger>
-            <SelectContent className="bg-slate-100">
-              <SelectItem value="5" className="text-slate-500 hover:bg-slate-300">5</SelectItem>
-              <SelectItem value="10" className="text-slate-500 hover:bg-slate-300">10</SelectItem>
-              <SelectItem value="15" className="text-slate-500 hover:bg-slate-300">15</SelectItem>
-              <SelectItem value="20" className="text-slate-500 hover:bg-slate-300">20</SelectItem>
-              <SelectItem value="25" className="text-slate-500 hover:bg-slate-300">25</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select onValueChange={(value) => setQuestionCount(value)}>
+              <SelectTrigger className="w-full text-slate-500">
+                <SelectValue placeholder="How many Questions?" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-100">
+                <SelectItem value="5" className="text-slate-500 hover:bg-slate-300">5</SelectItem>
+                <SelectItem value="10" className="text-slate-500 hover:bg-slate-300">10</SelectItem>
+                <SelectItem value="15" className="text-slate-500 hover:bg-slate-300">15</SelectItem>
+                <SelectItem value="20" className="text-slate-500 hover:bg-slate-300">20</SelectItem>
+                <SelectItem value="25" className="text-slate-500 hover:bg-slate-300">25</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <div className="flex flex-col gap-2 items-start text-slate-500">
-            <h1 className="text-md font-bold">Question Type</h1>
-            <div className="flex flex-row gap-2 items-center">
-              <Switch 
-                checked={questionTypes.trueFalse}
-                onCheckedChange={(checked) => 
-                  setQuestionTypes(prev => ({ ...prev, trueFalse: checked }))
-                }
-              />
-              <p>True/False</p>
+            <div className="flex flex-col gap-2 items-start text-slate-500">
+              <h1 className="text-md font-bold">Question Type</h1>
+              <div className="flex flex-row gap-2 items-center">
+                <Switch 
+                  checked={questionTypes.trueFalse}
+                  onCheckedChange={(checked) => 
+                    setQuestionTypes(prev => ({ ...prev, trueFalse: checked }))
+                  }
+                />
+                <p>True/False</p>
+              </div>
+              <div className="flex flex-row gap-2 items-center">
+                <Switch 
+                  checked={questionTypes.multipleChoice}
+                  onCheckedChange={(checked) => 
+                    setQuestionTypes(prev => ({ ...prev, multipleChoice: checked }))
+                  }
+                />
+                <p>Multiple choice</p>
+              </div>
+              <div className="flex flex-row gap-2 items-center">
+                <Switch 
+                  checked={questionTypes.shortAnswer}
+                  onCheckedChange={(checked) => 
+                    setQuestionTypes(prev => ({ ...prev, shortAnswer: checked }))
+                  }
+                />
+                <p>Short answer</p>
+              </div>
             </div>
-            <div className="flex flex-row gap-2 items-center">
-              <Switch 
-                checked={questionTypes.multipleChoice}
-                onCheckedChange={(checked) => 
-                  setQuestionTypes(prev => ({ ...prev, multipleChoice: checked }))
-                }
-              />
-              <p>Multiple choice</p>
-            </div>
-            <div className="flex flex-row gap-2 items-center">
-              <Switch 
-                checked={questionTypes.shortAnswer}
-                onCheckedChange={(checked) => 
-                  setQuestionTypes(prev => ({ ...prev, shortAnswer: checked }))
-                }
-              />
-              <p>Short answer</p>
-            </div>
+
+            <Button 
+              onClick={generateQuiz}
+              disabled={isLoading}
+              className="bg-[#94b347] hover:bg-[#a5c05f] text-white shadow-none p-5 rounded-lg text-xl w-full"
+            >
+              {isLoading ? "Generating..." : "Generate Test"}
+            </Button>
           </div>
-
-          <Button 
-            onClick={generateQuiz}
-            disabled={isLoading}
-            className="bg-[#94b347] hover:bg-[#a5c05f] text-white shadow-none p-5 rounded-lg text-xl w-full"
-          >
-            {isLoading ? "Generating..." : "Generate Test"}
-          </Button>
-
-          {quizResponse && (
-            <div className="mt-4 p-4 bg-white rounded-lg text-slate-700">
-              <pre className="whitespace-pre-wrap">{quizResponse}</pre>
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="w-full">
+            <Button 
+              onClick={() => setQuizData(null)}
+              className="mb-4 bg-white shadow-none border border-slate-400 text-red-500 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
+            >
+              Back to Quiz Settings
+            </Button>
+            <Quiz data={quizData} />
+          </div>
+        )}
       </div>
     </div>
   );
