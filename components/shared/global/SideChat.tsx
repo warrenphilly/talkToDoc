@@ -20,6 +20,14 @@ interface Message {
   user: string;
   text: string | Section[];
   files?: string[];
+  role?: string;
+  content?: string;
+  system?: boolean;
+  systemMessage?: string;
+  systemRole?: string;
+  systemContent?: string;
+  systemFiles?: string[];
+
 }
 
 interface SideChatProps {
@@ -86,22 +94,33 @@ const SideChat = ({
     if (!messageText.trim() && files.length === 0) return;
 
     const formData = new FormData();
-    formData.append("message", messageText);
+    formData.append("userMessage", messageText);
+    formData.append("systemMessage", `You are a helpful Teacher. When explaining content, first understand the context provided, 
+      then address the user's specific request. Provide detailed yet concise explanations that are easy to understand. 
+      Please respond in complete paragraphs. when the user ask to explain "this" or something similar, use the context provided. Context: ${initialPrimeSentence}`);
     formData.append("context", primeSentence || "");
-    files.forEach((file) => {
-      formData.append("files", file);
-    });
+  
 
-    const userMessage = {
+    const userMessage: Message = {
       user: "User",
-      text: messageText,
+      text:messageText,
       files: files.map((file) => URL.createObjectURL(file)),
     };
 
-    const updatedMessages = [...messages, userMessage];
+    console.log("userMessage", userMessage);
+
+    const systemMessage: Message = {
+      user: "developer",
+      text: `You are a helpful Teacher. When explaining content, first understand the context provided, 
+      then address the user's specific request. Provide detailed yet concise explanations that are easy to understand. 
+      Please respond in complete paragraphs. Context: ${initialPrimeSentence}`,
+    };
+
+    const updatedMessages = [...messages, userMessage, systemMessage];
     setMessages(updatedMessages);
     setInput("");
     setFiles([]);
+
 
     try {
       const response = await fetch("/api/sidechat", {
@@ -115,11 +134,11 @@ const SideChat = ({
         text: data.reply,
       };
 
-      const finalMessages = [...updatedMessages, aiMessage];
+      const finalMessages = [...updatedMessages, aiMessage, systemMessage];
       setMessages(finalMessages);
 
       if (sideChatId) {
-        await updateSideChat(sideChatId, primeSentence, finalMessages);
+        await updateSideChat(sideChatId, initialPrimeSentence, finalMessages);
       } else if (initialPrimeSentence) {
         const newSideChatId = await saveSideChat(
           notebookId, 
@@ -211,7 +230,7 @@ const SideChat = ({
         {messages.map(
           (msg, index) =>
             msg.text &&
-         
+            (msg.user === "User" || msg.user === "AI") && (
               <div
                 key={index}
                 className={`p-2 rounded mb-2 ${
@@ -269,7 +288,7 @@ const SideChat = ({
                   </div>
                 )}
               </div>
-            
+            )
         )}
       </div>
       <div className="bg-slate-200 p-4  rounded-b-lg">
