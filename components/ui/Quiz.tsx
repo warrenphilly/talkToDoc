@@ -218,7 +218,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-slate-100  w-full rounded-xl shadow-lg p-8  w-full">
+    <div className="bg-white w-full rounded-xl  p-8  w-full">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-500" />
@@ -265,7 +265,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
           <span className="text-sm font-medium text-gray-500  ">
             Question {currentQuestionIndex + 1} of {data.questions.length}
           </span>
-          <div className="h-2 flex-1 mx-4 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-2 flex-1 mx-4 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-[#94b347] transition-all duration-300"
               style={{
@@ -348,7 +348,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
               {selectedAnswer && !isLoading && (
                 <Button
                   onClick={() => handleAnswer(selectedAnswer)}
-                  disabled={isLoading || selectedAnswer === ""}
+                  disabled={isLoading || selectedAnswer === "" || showExplanation}
                   className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
                 >
                   Submit Answer
