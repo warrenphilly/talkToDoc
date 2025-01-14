@@ -49,8 +49,8 @@ const QuizPanel = () => {
     setIsLoading(true);
     try {
       const message = {
-        format: testFormat,
-        responseType: responseType,
+        format: 'allAtOnce',
+        responseType: 'text',
         numberOfQuestions: questionCount,
         questionTypes: Object.entries(questionTypes)
           .filter(([_, enabled]) => enabled)
@@ -76,43 +76,19 @@ const QuizPanel = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] overflow-y-auto">
+    <div className="flex flex-col h-full w-full  border-3 bg-white rounded-2xl mb-4 max-h-[90vh] overflow-y-auto">
       <div className="flex flex-col items-center justify-center p-3 gap-4">
         <h1 className="text-xl font-semibold text-[#94b347]">Quiz Me</h1>
-        <Button 
-          disabled 
-          className="bg-white shadow-none border border-slate-400 text-red-500 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
-        >
-          <h1 className="text-md">Clear Test</h1>
-        </Button>
+       
       </div>
+
+      
 
       <div className="text-white min-h-[400px] rounded-lg flex flex-col justify-between items-center p-4 m-4">
         {!quizData ? (
           <div className="flex flex-col gap-5 w-full max-w-md">
-            <Select onValueChange={(value) => setTestFormat(value)}>
-              <SelectTrigger className="w-full text-slate-500">
-                <SelectValue placeholder="How would you like to be tested?" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-100">
-                <SelectItem value="oneAtATime" className="text-slate-500 hover:bg-slate-300">
-                  Ask me one question at a time
-                </SelectItem>
-                <SelectItem value="allAtOnce" className="text-slate-500 hover:bg-slate-300">
-                  Ask me all at once
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select onValueChange={(value) => setResponseType(value)}>
-              <SelectTrigger className="w-full text-slate-500">
-                <SelectValue placeholder="Text or Speech?" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-100">
-                <SelectItem value="text" className="text-slate-500 hover:bg-slate-300">Text</SelectItem>
-                <SelectItem value="speech" className="text-slate-500 hover:bg-slate-300">Speech</SelectItem>
-              </SelectContent>
-            </Select>
+            
+         
 
             <Select onValueChange={(value) => setQuestionCount(value)}>
               <SelectTrigger className="w-full text-slate-500">
@@ -172,7 +148,7 @@ const QuizPanel = () => {
               onClick={() => setQuizData(null)}
               className="mb-4 bg-white shadow-none border border-slate-400 text-red-500 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
             >
-              Back to Quiz Settings
+              Exit Quiz
             </Button>
             <Quiz data={quizData} />
           </div>

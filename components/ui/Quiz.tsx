@@ -162,7 +162,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
     const isCorrectAnswer = userAnswer === question.correctAnswer;
 
     return (
-      <div className="border rounded-lg mb-2">
+      <div className="border rounded-lg mb-2 ">
         <Button
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
@@ -218,11 +218,11 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full">
+    <div className="bg-slate-100  w-full rounded-xl shadow-lg p-8  w-full">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-500" />
-          <span className="font-medium">
+          <span className="font-medium text-slate-500">
             Score: {score}/{currentQuestionIndex + 1}
           </span>
         </div>
@@ -234,7 +234,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
       <Button
         onClick={() => setShowSummary(!showSummary)}
         variant="outline"
-        className="w-full mb-6"
+        className="w-fit mb-6"
       >
         <BookOpen className="w-5 h-5 mr-2" />
         <span>{showSummary ? "Hide" : "Show"} Question Summary</span>
@@ -260,9 +260,9 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
         </div>
       )}
 
-      <div className="mb-6">
+      <div className="mb-6 w-full">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-medium text-gray-500">
+          <span className="text-sm font-medium text-gray-500  ">
             Question {currentQuestionIndex + 1} of {data.questions.length}
           </span>
           <div className="h-2 flex-1 mx-4 bg-gray-200 rounded-full overflow-hidden">
@@ -276,11 +276,13 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
             />
           </div>
         </div>
+        <div className="w-full flex flex-col items-center justify-center bg-red-">
         <h2 className="text-xl font-semibold text-gray-800 mb-6">
           {currentQuestion.question}
         </h2>
+        </div>
 
-        <div className="space-y-3">
+        <div className=" w-full flex flex-row  gap-6 items-center justify-center">
           {currentQuestion.type === "trueFalse" ? (
             ["True", "False"].map((answer) => (
               <Button
@@ -288,12 +290,12 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
                 onClick={() => !selectedAnswer && handleAnswer(answer)}
                 disabled={!!selectedAnswer}
                 variant="outline"
-                className={`w-full justify-between ${
+                className={`w-fit justify-between ${
                   selectedAnswer === answer
                     ? isCorrect
-                      ? "border-green-500 bg-green-50"
-                      : "border-red-500 bg-red-50"
-                    : ""
+                       ? "border-green-600 bg-green-50 text-green-600"
+                      : "border-red-500 bg-red-50 text-red-500"
+                    : " border border-slate-400 text-slate-400 bg-white"
                 }`}
               >
                 <span className="font-medium">{answer}</span>
@@ -306,18 +308,19 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
               </Button>
             ))
           ) : currentQuestion.type === "multipleChoice" ? (
-            currentQuestion.options.map((option) => (
+            <div className="grid grid-cols-2 gap-2  w-fit p flex flex-col items-center justify-center">
+            {currentQuestion.options.map((option) => (
               <Button
                 key={option}
                 onClick={() => !selectedAnswer && handleAnswer(option)}
                 disabled={!!selectedAnswer}
                 variant="outline"
-                className={`w-full justify-between ${
+                className={`w-fit   min-w-[270px] p-4 hover:bg-slate-300 justify-between ${
                   selectedAnswer === option
                     ? isCorrect
-                      ? "border-green-500 bg-green-50"
-                      : "border-red-500 bg-red-50"
-                    : ""
+                      ? "border-green-500 bg-green-50 text-green-500"
+                      : "border-red-500 bg-red-50 text-red-500"
+                    : " border border-slate-400 text-slate-400 bg-white text-slate-600"
                 }`}
               >
                 <span className="font-medium">{option}</span>
@@ -325,10 +328,13 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
                   (isCorrect ? (
                     <CheckCircle className="w-5 h-5 text-green-500" />
                   ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
+                    <XCircle className="w-5 h-5 text-red-500 " />
                   ))}
               </Button>
-            ))
+            ))}
+            </div>
+
+
           ) : currentQuestion.type === "shortAnswer" ? (
             <div className="space-y-4">
               <Input
@@ -342,7 +348,8 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
               {selectedAnswer && !isLoading && (
                 <Button
                   onClick={() => handleAnswer(selectedAnswer)}
-                  className="w-full bg-[#94b347] hover:bg-[#a5c05f]"
+                  disabled={isLoading || selectedAnswer === ""}
+                  className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
                 >
                   Submit Answer
                 </Button>
@@ -350,7 +357,7 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
               {isLoading && (
                 <div className="flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
-                  <span className="ml-2">Evaluating your answer...</span>
+                  <span className="ml-2 text-slate-600">Evaluating your answer...</span>
                 </div>
               )}
               {gptFeedback && (
@@ -408,13 +415,15 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
       )} */}
 
       {selectedAnswer && !isLastQuestion && (
+        <div className="w-full flex flex-row items-center justify-end">
         <Button
           onClick={nextQuestion}
-          className="mt-6 w-full bg-[#94b347] hover:bg-[#a5c05f]"
+          className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
         >
-          <span>Next Question</span>
-          <ArrowRight className="w-4 h-4 ml-2" />
+          <span className="text-slate-100">Next Question</span>
+          <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
         </Button>
+        </div>
       )}
 
       {selectedAnswer && isLastQuestion && (

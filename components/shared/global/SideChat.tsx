@@ -180,7 +180,7 @@ const SideChat = ({
   }
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-200 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
+    <div className="flex flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="flex flex-row items-center justify-center">
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>
@@ -235,8 +235,8 @@ const SideChat = ({
                 key={index}
                 className={`p-2 rounded mb-2 ${
                   msg.user === "User"
-                    ? "bg-slate-100 shadow-sm rounded-lg text-slate-400"
-                    : "border border-[#94b347] text-lg text-[#94b347]"
+                    ? "border border-slate-400 shadow-sm rounded-lg text-slate-400"
+                    : "border border-[#94b347] text-lg text-[#94b347] my-4 rounded-lg"
                 }`}
               >
                 {msg.user === "AI" ? (
@@ -248,7 +248,7 @@ const SideChat = ({
                           (section: Section, sectionIdx: number) => (
                             <div
                               key={sectionIdx}
-                              className="bg-white p-4 rounded-lg shadow"
+                              className="bg-white p-4 rounded-lg "
                             >
                               {/* <h3 className="text-lg font-bold text-gray-100 mb-3">
                                 {section.title}
@@ -267,7 +267,7 @@ const SideChat = ({
                         )}
                       </div>
                     ) : (
-                      <span>{String(msg.text)}</span>
+                      <div className="text-sm bg-white p-2 rounded-lg ">{String(msg.text)}</div>
                     )}
                   </div>
                 ) : (

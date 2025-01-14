@@ -11,9 +11,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Message, Section } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
-import { Image, Upload as LucideUpload, MoreVertical } from "lucide-react"; // Import icons
+import { Image, Upload as LucideUpload, MoreVertical, Maximize2, Minimize2 } from "lucide-react"; // Import icons
 import React, { RefObject, useEffect, useRef, useState } from "react";
 import { ResponseMessage } from "./ResponseMessage";
+import ExpandableContainer from "@/components/expandable-container";
 
 import SideChat from "@/components/shared/global/SideChat";
 
@@ -74,6 +75,9 @@ const ChatClient = ({
   const [progress, setProgress] = useState(0);
   const [totalSections, setTotalSections] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
+  const [isChatFullscreen, setIsChatFullscreen] = useState(false);
+  const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -287,22 +291,43 @@ const ChatClient = ({
           </div>
 
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
+          <Button
+              onClick={() => {
+                setShowQuiz(!showQuiz);
+            
+                  setShowChat(false);
+                  setIsNotebookFullscreen(false);
+                  setIsChatFullscreen(false);
+                  setIsQuizFullscreen(false);
+            
+              }}
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+            >
+               Generate Study Cards
+            </Button>
             <Button
               onClick={() => {
                 setShowQuiz(!showQuiz);
             
                   setShowChat(false);
+                  setIsNotebookFullscreen(false);
+                  setIsChatFullscreen(false);
+                  setIsQuizFullscreen(false);
             
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               Quiz Me
             </Button>
+            
             <Button
               onClick={() => {
                 setShowChat(!showChat);
-                
+
                   setShowQuiz(false);
+                  setIsNotebookFullscreen(false);
+                  setIsChatFullscreen(false);
+                  setIsQuizFullscreen(false);
                 
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
@@ -355,7 +380,11 @@ const ChatClient = ({
             className="w-full px-2"
           >
             {/* notbook panel */}
-            <ResizablePanel className="w-full p-2 min-w-[600px] flex flex-col gap-2 h-full overflow-hidden">
+            <ResizablePanel 
+              className={`relative ${isNotebookFullscreen ? 'w-full' : 'w-full p-2 min-w-[600px]'} ${isChatFullscreen || isQuizFullscreen ? 'hidden' : 'w-full p-2 min-w-[600px]'} flex flex-col gap-2 h-full overflow-hidden`}
+              defaultSize={isNotebookFullscreen ? 100 : 50}
+            >
+            
               <UploadArea
                 messages={messages}
                 files={files}
@@ -381,7 +410,7 @@ const ChatClient = ({
                 </div>
               )}
 
-              <div className="flex flex-col overflow-y-auto p-4 bg-slate-100  rounded-t-2xl m-2 w-full h-full">
+              <div className="flex bg-white flex-col overflow-y-auto p-4 bg-slate-100  rounded-2xl m-2 w-full h-full">
                 <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
                   messageIndex={0}
@@ -444,65 +473,70 @@ const ChatClient = ({
               </div>
             </ResizablePanel>
 
-            <>
-              {showQuiz ||
-                (showChat && (
-                  <ResizableHandle withHandle className="bg-slate-300 m-2" />
-                ))}
-              {showQuiz && showChat && (
-                <ResizableHandle withHandle className="bg-slate-300 m-2" />
-              )}
+            {!(isNotebookFullscreen || isChatFullscreen || isQuizFullscreen) && (showQuiz || showChat) && (
+              <ResizableHandle withHandle className="bg-slate-300 m-2" />
+            )}
 
-              {/* chat and quiz panels */}
+            {/* Chat and Quiz panels */}
+            {!isNotebookFullscreen && (showChat || showQuiz) && (
               <ResizablePanel
-                className={` ${
+                className={`relative ${
                   showChat || showQuiz
-                    ? "translate-x-0  transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px] "
-                    : "hidden"
-                }`}
+                    ? 'translate-x-0 my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px]'
+                    : 'hidden'
+                } ${isChatFullscreen || isQuizFullscreen ? 'w-full' : 'w-full p-2 min-w-[600px]'}`}
+                defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
               >
-                <ResizablePanelGroup
-                  direction={isSmallScreen ? "horizontal" : "vertical"}
-                  className="flex flex-col gap-2    "
-                >
-                  {showChat && (
-                    <ResizablePanel
-                      className={` ${
-                        showChat
-                          ? "translate-x-0   bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
-                          : "hidden"
-                      }`}
+                {showChat && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showChat
+                        ? 'translate-x-0 bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]'
+                        : 'hidden'
+                    }`}
+                    defaultSize={isChatFullscreen ? 100 : 50}
+                  >
+                    <Button
+                      onClick={() => setIsChatFullscreen(!isChatFullscreen)}
+                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                      size="icon"
                     >
-                      <SideChat
-                        primeSentence={primeSentence}
-                        setPrimeSentence={setPrimeSentence}
-                        notebookId={notebookId}
-                        pageId={tabId}
-                      />
-                    </ResizablePanel>
-                  )}
-
-                  {showQuiz && showChat && (
-                    <ResizableHandle
-                      withHandle
-                      className="bg-slate-300 w-full"
+                      {isChatFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                    </Button>
+                    <SideChat
+                      primeSentence={primeSentence}
+                      setPrimeSentence={setPrimeSentence}
+                      notebookId={notebookId}
+                      pageId={tabId}
                     />
-                  )}
+                  </ResizablePanel>
+                )}
 
-                  {showQuiz && (
-                    <ResizablePanel
-                      className={` ${
-                        showQuiz
-                          ? "translate-x-0   min-h-[500px] bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl  w-full min-w-[400px]"
-                          : "hidden"
-                      } `}
+                {!isChatFullscreen && !isQuizFullscreen && showQuiz && showChat && (
+                  <ResizableHandle withHandle className="bg-slate-300 w-full" />
+                )}
+
+                {showQuiz && !isChatFullscreen && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showQuiz
+                        ? 'translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]'
+                        : 'hidden'
+                    }`}
+                    defaultSize={isQuizFullscreen ? 100 : 50}
+                  >
+                    <Button
+                      onClick={() => setIsQuizFullscreen(!isQuizFullscreen)}
+                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                      size="icon"
                     >
-                      <QuizPanel />
-                    </ResizablePanel>
-                  )}
-                </ResizablePanelGroup>
+                      {isQuizFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                    </Button>
+                    <QuizPanel />
+                  </ResizablePanel>
+                )}
               </ResizablePanel>
-            </>
+            )}
           </ResizablePanelGroup>
         </div>
       </div>

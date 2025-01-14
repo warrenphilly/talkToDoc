@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
 import path from 'path';
+import { cleanMarkdownContent, splitIntoChunks } from '@/lib/markdownUtils';
 
 interface QuizParams {
   format: string;
@@ -13,23 +14,38 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const messageStr = formData.get('message') as string;
-    const context = formData.get('context') as string;
     const files = formData.getAll('files');
+
+    // Read the markdown file content
+    const markdownPath = path.join(process.cwd(), 'public', 'markdown', 'document_1736818193766.md');
+    const markdownContent = cleanMarkdownContent(await readFile(markdownPath, 'utf-8'));
 
     // Parse the message string into our QuizParams interface
     const quizParams: QuizParams = JSON.parse(messageStr);
 
-    // Create a detailed system prompt based on quiz parameters
-    const systemPrompt = `You are a quiz generator. Generate a quiz with the following specifications:
+    // Split the markdown content into chunks
+    const chunks = splitIntoChunks(markdownContent, 500);
+
+    const systemPrompt = `You are a quiz generator. You will generate questions based on the following markdown document content:
+
+${chunks.join('\n\n')}
+
+Generate a quiz with the following specifications:
 - Format: ${quizParams.format === 'oneAtATime' ? 'One question at a time with immediate feedback' : 'All questions at once with feedback at the end'}
 - Number of questions: ${quizParams.numberOfQuestions}
 - Question types to include: ${quizParams.questionTypes.join(', ')}
 - Response format: ${quizParams.responseType}
 
+IMPORTANT: 
+1. Only generate questions that can be answered using the provided markdown content
+2. Ensure all questions and answers are directly related to the content provided
+3. Use the exact terminology and concepts from the document
+4. Include specific references to the document content in your explanations
+
 For each question:
 1. If it's multiple choice, provide 4 options
 2. Include the correct answer
-3. Provide a brief explanation for the correct answer
+3. Provide a brief explanation for the correct answer, citing the relevant part of the document
 
 Format the response as a JSON object with the following structure:
 {
@@ -40,10 +56,19 @@ Format the response as a JSON object with the following structure:
       "question": string,
       "options": string[] (for multiple choice),
       "correctAnswer": string,
-      "explanation": string
+      "explanation": string,
+      "sourceContext": string
     }
   ]
 }`;
+
+    // Prepare messages for OpenAI API
+    const messages = [
+      { 
+        role: 'system', 
+        content: systemPrompt
+      }
+    ];
 
     // Handle file uploads (if any)
     const uploadedFiles = await Promise.all(
@@ -60,26 +85,6 @@ Format the response as a JSON object with the following structure:
         };
       })
     );
-
-    // Prepare messages for OpenAI API
-    const messages = [
-      { 
-        role: 'system', 
-        content: systemPrompt
-      },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: context },
-          ...uploadedFiles.map(file => ({
-            type: "image_url",
-            image_url: {
-              url: file.base64
-            }
-          }))
-        ]
-      }
-    ];
 
     // Make the API call to OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
