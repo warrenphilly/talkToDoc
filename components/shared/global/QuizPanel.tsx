@@ -37,6 +37,7 @@ const QuizPanel = () => {
   const [testFormat, setTestFormat] = useState<string>("");
   const [responseType, setResponseType] = useState<string>("");
   const [questionCount, setQuestionCount] = useState<string>("");
+  const [questionScope, setQuestionScope] = useState<string>("");
   const [questionTypes, setQuestionTypes] = useState({
     trueFalse: false,
     multipleChoice: false,
@@ -94,7 +95,7 @@ const QuizPanel = () => {
               <SelectTrigger className="w-full text-slate-500">
                 <SelectValue placeholder="How many Questions?" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-100">
+              <SelectContent className="bg-white">
                 <SelectItem value="5" className="text-slate-500 hover:bg-slate-300">5</SelectItem>
                 <SelectItem value="10" className="text-slate-500 hover:bg-slate-300">10</SelectItem>
                 <SelectItem value="15" className="text-slate-500 hover:bg-slate-300">15</SelectItem>
@@ -102,6 +103,17 @@ const QuizPanel = () => {
                 <SelectItem value="25" className="text-slate-500 hover:bg-slate-300">25</SelectItem>
               </SelectContent>
             </Select>
+            {/* <Select onValueChange={(value) => setQuestionScope(value)}>
+              <SelectTrigger className="w-full text-slate-500">
+                <SelectValue placeholder="What do you want to be tested on?" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="this page" className="text-slate-500 hover:bg-slate-300">this page</SelectItem>
+                <SelectItem value="all pages" className="text-slate-500 hover:bg-slate-300">all pages</SelectItem>
+              
+              </SelectContent>
+            </Select> */}
+
 
             <div className="flex flex-col gap-2 items-start text-slate-500">
               <h1 className="text-md font-bold">Question Type</h1>
