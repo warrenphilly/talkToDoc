@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/firebase";
+import { db, storage } from "@/firebase";
 import { Message } from "@/lib/types";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import {
@@ -17,6 +17,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { getCurrentUserId } from "../auth";
 
 export interface Page {
@@ -25,6 +26,8 @@ export interface Page {
   content: string;
   messages: Message[];
   isOpen: boolean;
+  markdownUrl?: string;  // URL to the markdown file in storage
+  markdownPath?: string; // Storage path to the markdown file
 }
 
 export interface Notebook {
@@ -573,6 +576,56 @@ export const getNotebooksByFirestoreUserId = async (
     );
   } catch (error) {
     console.error("Error getting notebooks by Firestore user ID:", error);
+    throw error;
+  }
+};
+
+export const saveMarkdownToStorage = async (
+  notebookId: string,
+  pageId: string,
+  content: string,
+  createNew: boolean = false
+): Promise<{ url: string; path: string }> => {
+  try {
+    // Create a reference to the markdown file in storage
+    const markdownPath = `markdown/${notebookId}/${pageId}.md`;
+    const storageRef = ref(storage, markdownPath);
+
+    // Upload the content
+    await uploadString(storageRef, content);
+
+    // Get the download URL
+    const downloadUrl = await getDownloadURL(storageRef);
+
+    // Update the page in Firestore with the markdown reference
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) {
+      throw new Error("Notebook not found");
+    }
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+
+    if (pageIndex === -1) {
+      throw new Error("Page not found");
+    }
+
+    // Update the page with the markdown references
+    notebook.pages[pageIndex].markdownUrl = downloadUrl;
+    notebook.pages[pageIndex].markdownPath = markdownPath;
+
+    await updateDoc(notebookRef, {
+      pages: notebook.pages,
+    });
+
+    return {
+      url: downloadUrl,
+      path: markdownPath,
+    };
+  } catch (error) {
+    console.error("Error saving markdown to storage:", error);
     throw error;
   }
 };

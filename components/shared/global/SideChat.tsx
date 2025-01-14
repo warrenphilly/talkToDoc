@@ -185,7 +185,7 @@ const SideChat = ({
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>
       
-      <div className="border border-slate-400 text-[#94b347] rounded-lg   p-4 m-4">
+      <div className="border c text-[#94b347] rounded-lg   p-4 m-4">
         
         <div className="m-2">
           {initialPrimeSentence ? (
@@ -291,7 +291,7 @@ const SideChat = ({
             )
         )}
       </div>
-      <div className="bg-slate-200 p-4  rounded-b-lg">
+      <div className="bg-white p-4  rounded-b-lg">
         <div className="flex  bg-slate-100 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
           <Textarea
             className="w-full h-fit border shadow-none border-slate-200 rounded-lg bg-slate-100 text-slate-900 flex-grow"

@@ -17,7 +17,9 @@ export const sendMessage = async (
   setShowUpload: (show: boolean) => void,
   setProgress: (progress: number) => void,
   setTotalSections: (total: number) => void,
-  setIsProcessing: (isProcessing: boolean) => void
+  setIsProcessing: (isProcessing: boolean) => void,
+  notebookId: string,
+  pageId: string
 ) => {
   if (!input.trim() && files.length === 0) return;
 
@@ -58,7 +60,12 @@ export const sendMessage = async (
                 headers: {
                   "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ section: "", createNew: true }),
+                body: JSON.stringify({ 
+                  section: "", 
+                  createNew: true,
+                  notebookId,
+                  pageId
+                }),
               });
 
               if (!initResponse.ok) {
@@ -87,7 +94,9 @@ export const sendMessage = async (
                 body: JSON.stringify({ 
                   section,
                   filename: markdownFilename,
-                  createNew: false 
+                  createNew: false,
+                  notebookId,
+                  pageId
                 }),
               });
 

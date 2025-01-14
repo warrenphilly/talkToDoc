@@ -72,7 +72,7 @@ export const ResponseMessage = ({
                   }}
                 />
               ) : (
-                <div className="bg-white border border-[#94b347] p-4 rounded-2xl transition-colors">
+                <div className="bg-white p-4 rounded-2xl transition-colors">
                   <div className="flex justify-between items-center mb-3">
                     <h3
                       className="text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer"
