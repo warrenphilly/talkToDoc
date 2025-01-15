@@ -1,8 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { db } from "@/firebase";
 import { saveQuizState } from "@/lib/firebase/firestore";
 import type { QuizData, QuizState } from "@/types/quiz";
+import { doc, onSnapshot } from "firebase/firestore";
 import {
   AlertCircle,
   ArrowRight,
@@ -63,88 +65,127 @@ const Quiz: React.FC<QuizProps> = ({
   const [showSummary, setShowSummary] = useState(false);
   const [aiVoice, setAiVoice] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState(false);
-
-  // Save state whenever relevant state changes
-  useEffect(() => {
-    const saveQuizProgress = async () => {
-      try {
-        const quizState: QuizState = {
-          id: quizId,
-          notebookId,
-          pageId,
-          startedAt: initialState?.startedAt || new Date(),
-          lastUpdatedAt: new Date(),
-          currentQuestionIndex,
-          score,
-          totalQuestions: data.questions.length,
-          userAnswers,
-          evaluationResults,
-          incorrectAnswers,
-          isComplete: showResults,
-          gptFeedback,
-          quizData: {
-            questions: data.questions,
-            format: data.format || "standard",
-            numberOfQuestions: data.questions.length,
-            questionTypes: data.questions.map((q) => q.type),
-          },
-        };
-
-        await saveQuizState(quizState);
-      } catch (error) {
-        console.error("Error saving quiz progress:", error);
-      }
-    };
-
-    saveQuizProgress();
-  }, [
-    currentQuestionIndex,
-    score,
-    userAnswers,
-    evaluationResults,
-    incorrectAnswers,
-    showResults,
-    gptFeedback,
-  ]);
-
-  // Restore answer for current question when changing questions
-  useEffect(() => {
-    if (userAnswers[currentQuestionIndex]) {
-      setSelectedAnswer(userAnswers[currentQuestionIndex]);
-      setIsCorrect(evaluationResults[currentQuestionIndex]);
-      setShowExplanation(true);
-    } else {
-      setSelectedAnswer("");
-      setIsCorrect(null);
-      setShowExplanation(false);
-    }
-  }, [currentQuestionIndex, userAnswers, evaluationResults]);
+  const [isChangingQuestion, setIsChangingQuestion] = useState(false);
 
   const handleAnswer = async (answer: string) => {
     setSelectedAnswer(answer);
     const currentQuestion = data.questions[currentQuestionIndex];
-    const correct =
-      answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+    const correct = answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+    
+    // Batch state updates
+    const newScore = correct ? score + 1 : score;
+    const newIncorrectAnswers = correct ? incorrectAnswers : [...incorrectAnswers, currentQuestionIndex];
+    const newUserAnswers = { ...userAnswers, [currentQuestionIndex]: answer };
+    const newEvaluationResults = { ...evaluationResults, [currentQuestionIndex]: correct };
+
+    // Update all state at once
+    setScore(newScore);
+    setIncorrectAnswers(newIncorrectAnswers);
+    setUserAnswers(newUserAnswers);
+    setEvaluationResults(newEvaluationResults);
     setIsCorrect(correct);
     setShowExplanation(true);
 
-    // Update scores and tracking
-    if (correct) {
-      setScore((prev) => prev + 1);
-    } else {
-      setIncorrectAnswers((prev) => [...prev, currentQuestionIndex]);
-    }
+    // Save state once after all updates
+    try {
+      const quizState: QuizState = {
+        id: quizId,
+        notebookId,
+        pageId,
+        startedAt: initialState?.startedAt || new Date(),
+        lastUpdatedAt: new Date(),
+        currentQuestionIndex,
+        score: newScore,
+        totalQuestions: data.questions.length,
+        userAnswers: newUserAnswers,
+        evaluationResults: newEvaluationResults,
+        incorrectAnswers: newIncorrectAnswers,
+        isComplete: showResults,
+        gptFeedback,
+        quizData: {
+          questions: data.questions,
+          format: data.format || 'standard',
+          numberOfQuestions: data.questions.length,
+          questionTypes: data.questions.map(q => q.type)
+        }
+      };
 
-    // Save the answer and result
-    setUserAnswers((prev) => ({
-      ...prev,
-      [currentQuestionIndex]: answer,
-    }));
-    setEvaluationResults((prev) => ({
-      ...prev,
-      [currentQuestionIndex]: correct,
-    }));
+      await saveQuizState(quizState);
+    } catch (error) {
+      console.error("Error saving quiz state:", error);
+    }
   };
+
+  const nextQuestion = async () => {
+    setIsChangingQuestion(true);
+    const newIndex = currentQuestionIndex + 1;
+    
+    // Batch state updates
+    setCurrentQuestionIndex(newIndex);
+    setSelectedAnswer("");
+    setGptFeedback("");
+    setShowExplanation(false);
+
+    try {
+      const quizState: QuizState = {
+        id: quizId,
+        notebookId,
+        pageId,
+        startedAt: initialState?.startedAt || new Date(),
+        lastUpdatedAt: new Date(),
+        currentQuestionIndex: newIndex,
+        score,
+        totalQuestions: data.questions.length,
+        userAnswers,
+        evaluationResults,
+        incorrectAnswers,
+        isComplete: showResults,
+        gptFeedback,
+        quizData: {
+          questions: data.questions,
+          format: data.format || 'standard',
+          numberOfQuestions: data.questions.length,
+          questionTypes: data.questions.map(q => q.type)
+        }
+      };
+
+      await saveQuizState(quizState);
+    } catch (error) {
+      console.error("Error saving quiz state:", error);
+    } finally {
+      setTimeout(() => {
+        setIsChangingQuestion(false);
+      }, 100);
+    }
+  };
+
+  // Keep only the real-time listener useEffect
+  useEffect(() => {
+    if (!quizId) return;
+
+    const quizRef = doc(db, "quizzes", quizId);
+    const unsubscribe = onSnapshot(
+      quizRef,
+      (doc) => {
+        if (doc.exists() && !isChangingQuestion) {
+          const data = doc.data() as QuizState;
+          // Only update if we're not in the middle of a manual change
+          setScore(data.score);
+          setCurrentQuestionIndex(data.currentQuestionIndex);
+          setUserAnswers(data.userAnswers);
+          setEvaluationResults(data.evaluationResults);
+          setIncorrectAnswers(data.incorrectAnswers);
+          setGptFeedback(data.gptFeedback);
+          setShowResults(data.isComplete);
+        }
+      },
+      (error) => {
+        console.error("Error listening to quiz updates:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [quizId, isChangingQuestion]);
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -184,13 +225,6 @@ const Quiz: React.FC<QuizProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const nextQuestion = () => {
-    setCurrentQuestionIndex((prev) => prev + 1);
-    setSelectedAnswer("");
-    setGptFeedback("");
-    setShowExplanation(false);
   };
 
   const QuestionSummary = ({
@@ -328,11 +362,12 @@ const Quiz: React.FC<QuizProps> = ({
           <h3 className="font-semibold text-gray-800 mb-4">Question Summary</h3>
           <div className="space-y-2">
             {data.questions.map((question) => (
-              <QuestionSummary
-                key={question.id}
-                question={question}
-                userAnswer={userAnswers[question.id]}
-              />
+              <div key={`question-${question.id}`}>
+                <QuestionSummary
+                  question={question}
+                  userAnswer={userAnswers[question.id]}
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -474,26 +509,12 @@ const Quiz: React.FC<QuizProps> = ({
             </div>
           </div>
 
-          {showExplanation && currentQuestion.type !== "shortAnswer" && (
+          {showExplanation && currentQuestion.type === "shortAnswer" && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-700 mb-2">Explanation:</h3>
               <p className="text-gray-600">{currentQuestion.explanation}</p>
             </div>
           )}
-
-          {/* {isLoading ? (
-        <div className="mt-6 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
-          <span className="ml-2 text-gray-600">Getting AI feedback...</span>
-        </div>
-      ) : (
-        gptFeedback && (
-          <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-            <h3 className="font-semibold text-slate-900 mb-2">AI Feedback:</h3>
-            <p className="text-slate-700 whitespace-pre-line">{gptFeedback}</p>
-          </div>
-        )
-      )} */}
 
           {selectedAnswer && !isLastQuestion ? (
             <div className="w-full flex flex-row items-center justify-center ">

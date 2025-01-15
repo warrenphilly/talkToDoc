@@ -95,16 +95,17 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     setQuizData(quiz.quizData);
   };
 
+
   return (
     <div
-      className={` h-full bg-slate-100 rounded-xl p-6 w-full`}
+      className={` h-full bg-slate-100 rounded-xl p-6 w-full overflow-y-auto`}
     >
       <div className="flex flex-col items-center mb-4">
         <h1 className="text-2xl font-semibold text-slate-500">Quiz Panel</h1>
       </div>
 
       <div
-        className={`w-full h-full flex flex-col items-center ${
+        className={`w-full h-full flex flex-col items-center  ${
           quizData ? "w-full" : ""
         }`}
       >
@@ -114,7 +115,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         />
 
         {!quizData ? (
-          <div className="flex flex-col gap-5 w-full max-w-md bg-slate-200  p-4 rounded-xl">
+          <div className="flex flex-col gap-5 w-full max-w-[800px] border border-slate-400 bg-slate-200  p-4 rounded-xl">
             <div className="flex flex-col  items-center text-slate-500">
               <h1 className="text-md font-bold">Generate Quiz</h1>
             </div>
@@ -218,7 +219,14 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 }
                 className="shadow-none text-slate-500 bg-slate-100 border border-slate-400 hover:bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
               >
-                {isLoading ? "Generating..." : "Generate Test"}
+                {isLoading ? (
+                  <>
+                    Generating...
+                    <CircularProgress className="bg-[#94b347]" />
+                  </>
+                ) : (
+                  "Generate Test"
+                )}
               </Button>
             </div>
           </div>
@@ -227,9 +235,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             <Button
               onClick={() => {
                 setQuizData(null);
-                setSelectedQuiz(null);
+                  setSelectedQuiz(null);
+                  
               }}
-              className="mb-4 bg-white shadow-none border border-slate-400 text-red-500 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
+              className="mb-4 bg-slate-100 shadow-none border border-slate-400 text-slate-400 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
             >
               Exit Quiz
             </Button>
