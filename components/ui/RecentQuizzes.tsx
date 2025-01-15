@@ -6,9 +6,10 @@ import { Button } from "./button";
 
 interface RecentQuizzesProps {
   pageId: string;
+  onQuizSelect: (quiz: QuizState) => void;
 }
 
-const RecentQuizzes: React.FC<RecentQuizzesProps> = ({ pageId }) => {
+const RecentQuizzes: React.FC<RecentQuizzesProps> = ({ pageId, onQuizSelect }) => {
   const [quizzes, setQuizzes] = useState<QuizState[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -53,9 +54,10 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({ pageId }) => {
         {quizzes.map((quiz) => (
           <div
             key={quiz.id}
-            className="bg-white rounded-lg shadow p-4 flex items-center justify-between"
+            className="bg-white rounded-lg shadow p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+            onClick={() => onQuizSelect(quiz)}
           >
-            <div>
+            <div className="flex-1">
               <div className="flex items-center gap-4">
                 <span className="text-sm font-medium text-slate-700">
                   Score: {quiz.score}/{quiz.totalQuestions}
@@ -75,14 +77,19 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({ pageId }) => {
                 </span>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleDelete(quiz.id)}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent quiz selection when deleting
+                  handleDelete(quiz.id);
+                }}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         ))}
       </div>

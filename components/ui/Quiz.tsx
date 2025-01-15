@@ -25,22 +25,38 @@ interface QuizProps {
   data: QuizData;
   notebookId: string;
   pageId: string;
+  initialState?: QuizState | null;
 }
 
-const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+const Quiz: React.FC<QuizProps> = ({
+  data,
+  notebookId,
+  pageId,
+  initialState,
+}) => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
+    initialState?.currentQuestionIndex || 0
+  );
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [gptFeedback, setGptFeedback] = useState<string>("");
+  const [gptFeedback, setGptFeedback] = useState(
+    initialState?.gptFeedback || ""
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [score, setScore] = useState(0);
-  const [incorrectAnswers, setIncorrectAnswers] = useState<number[]>([]);
+  const [score, setScore] = useState(initialState?.score || 0);
+  const [incorrectAnswers, setIncorrectAnswers] = useState<number[]>(
+    initialState?.incorrectAnswers || []
+  );
   const [showSummary, setShowSummary] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [showResults, setShowResults] = useState(
+    initialState?.isComplete || false
+  );
+  const [userAnswers, setUserAnswers] = useState<Record<number, string>>(
+    initialState?.userAnswers || {}
+  );
   const [evaluationResults, setEvaluationResults] = useState<
     Record<number, boolean>
-  >({});
+  >(initialState?.evaluationResults || {});
   const [aiVoice, setAiVoice] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState(false);
   const [quizId] = useState(`quiz_${crypto.randomUUID()}`);
@@ -252,7 +268,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
       incorrectAnswers,
       isComplete: showResults,
       gptFeedback,
-      quizData: data
+      quizData: data,
     };
 
     await saveQuizState(quizState);
@@ -267,7 +283,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
     evaluationResults,
     incorrectAnswers,
     showResults,
-    gptFeedback
+    gptFeedback,
   ]);
 
   return (
@@ -283,10 +299,18 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
 
         <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
           <Button onClick={() => setAiVoice(!aiVoice)}>
-            {aiVoice ? <Volume2 className="w-5 h-5 text-yellow-500" /> : <VolumeOff className="w-5 h-5 text-yellow-500" />}
+            {aiVoice ? (
+              <Volume2 className="w-5 h-5 text-yellow-500" />
+            ) : (
+              <VolumeOff className="w-5 h-5 text-yellow-500" />
+            )}
           </Button>
           <Button onClick={() => setVocalAnswer(!vocalAnswer)}>
-            {vocalAnswer ? <Mic className="w-5 h-5 text-yellow-500" /> : <MicOff className="w-5 h-5 text-yellow-500" />}
+            {vocalAnswer ? (
+              <Mic className="w-5 h-5 text-yellow-500" />
+            ) : (
+              <MicOff className="w-5 h-5 text-yellow-500" />
+            )}
           </Button>
 
           <Button
