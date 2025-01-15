@@ -102,8 +102,8 @@ const UploadArea = ({
               )
             ))}
 
-            <div className=" bg-[#b0cb68] flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-[200px] h-[200px] ">
-              <h1 className="text-xl font-regular text-slate-100">
+            <div className=" bg-slate-100 border border-slate-200 flex flex-col gap-2 items-center justify-center rounded-2xl w-full max-w-[200px] h-[200px] ">
+              <h1 className="text-xl font-regular text-slate-500">
                 Upload Files
               </h1>
               <div className="flex gap-2 mb-2">
@@ -120,7 +120,7 @@ const UploadArea = ({
                   <Button
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2  bg-slate-100 border-none shadow-lg"
+                    className="flex items-center gap-2  bg-slate-200 border-none shadow-lg"
                   >
                     <UploadOutlined />
                     Upload Files

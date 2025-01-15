@@ -12,7 +12,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Add validation for storage bucket
+if (!firebaseConfig.storageBucket) {
+  throw new Error('Firebase Storage Bucket is not configured');
+}
+
 export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+
+console.log('Storage bucket:', app.options.storageBucket);

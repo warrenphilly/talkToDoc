@@ -28,14 +28,16 @@ export const sendMessage = async (
 
   const textSections = [];
   let markdownFilename: string | null = null;
+  let allText = '';
 
   for (const file of files) {
     if (file.type === "application/pdf") {
       const pdfFormData = new FormData();
       pdfFormData.append("file", file);
 
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       try {
         const pdfResponse = await fetch(`${baseUrl}/api/convert`, {
           method: "POST",
@@ -47,70 +49,18 @@ export const sendMessage = async (
         }
 
         const data = await pdfResponse.json();
-
-        // Split text into 1000 character sections
-        const SECTION_LENGTH = 500;
-
+        
+        // Accumulate all text from the PDF
         if (data.text) {
-          // Create filename for the first section only
-          if (!markdownFilename) {
-            try {
-              const initResponse = await fetch("/api/save-markdown", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ 
-                  section: "", 
-                  createNew: true,
-                  notebookId,
-                  pageId
-                }),
-              });
-
-              if (!initResponse.ok) {
-                throw new Error("Failed to initialize markdown file");
-              }
-
-              const { filename } = await initResponse.json();
-              markdownFilename = filename;
-            } catch (error) {
-              console.error("Error initializing markdown file:", error);
-              continue;
-            }
-          }
-
+          allText += data.text + '\n\n';
+          
+          // Split into sections for processing
+          const SECTION_LENGTH = 500;
           for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
             const section = data.text.slice(i, i + SECTION_LENGTH);
             textSections.push(section);
-
-            // Save section to existing markdown file
-            try {
-              const saveResponse = await fetch("/api/save-markdown", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ 
-                  section,
-                  filename: markdownFilename,
-                  createNew: false,
-                  notebookId,
-                  pageId
-                }),
-              });
-
-              if (!saveResponse.ok) {
-                throw new Error("Failed to save markdown");
-              }
-            } catch (error) {
-              console.error("Error saving to markdown:", error);
-            }
           }
         }
-
-        // Append the sectioned text instead of the PDF file
-        formData.append("text", textSections.join("\n---\n"));
       } catch (error) {
         console.error("PDF conversion error:", error);
         setMessages((prevMessages) => [
@@ -135,6 +85,33 @@ export const sendMessage = async (
     } else {
       // For non-PDF files, append them as usual
       formData.append("files", file);
+    }
+  }
+
+  // Create single markdown file after processing all PDFs
+  if (allText) {
+    try {
+      const initResponse = await fetch("/api/save-markdown", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          section: allText,
+          createNew: true,
+          notebookId,
+          pageId
+        }),
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Failed to save markdown file");
+      }
+
+      const { path } = await initResponse.json();
+      markdownFilename = path;
+    } catch (error) {
+      console.error("Error saving markdown file:", error);
     }
   }
 

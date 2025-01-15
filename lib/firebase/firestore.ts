@@ -26,8 +26,11 @@ export interface Page {
   content: string;
   messages: Message[];
   isOpen: boolean;
-  markdownUrl?: string;  // URL to the markdown file in storage
-  markdownPath?: string; // Storage path to the markdown file
+  markdownRefs?: {
+    url: string;
+    path: string;
+    timestamp: Date;
+  }[];
 }
 
 export interface Notebook {
@@ -587,12 +590,31 @@ export const saveMarkdownToStorage = async (
   createNew: boolean = false
 ): Promise<{ url: string; path: string }> => {
   try {
+    // Ensure we have a valid storage instance
+    if (!storage) {
+      throw new Error("Storage not initialized");
+    }
+
     // Create a reference to the markdown file in storage
-    const markdownPath = `markdown/${notebookId}/${pageId}.md`;
+    const timestamp = new Date().getTime();
+    const markdownPath = `markdown/${notebookId}/${pageId}_${timestamp}.md`;
+    
+    // Create storage reference
     const storageRef = ref(storage, markdownPath);
 
-    // Upload the content
-    await uploadString(storageRef, content);
+    // Log for debugging
+    console.log('Attempting to save to path:', markdownPath);
+    console.log('Storage bucket:', storage.app.options.storageBucket);
+
+    // Upload with metadata
+    await uploadString(storageRef, content, 'raw', {
+      contentType: 'text/markdown',
+      customMetadata: {
+        notebookId,
+        pageId,
+        timestamp: timestamp.toString()
+      }
+    });
 
     // Get the download URL
     const downloadUrl = await getDownloadURL(storageRef);
@@ -612,9 +634,17 @@ export const saveMarkdownToStorage = async (
       throw new Error("Page not found");
     }
 
-    // Update the page with the markdown references
-    notebook.pages[pageIndex].markdownUrl = downloadUrl;
-    notebook.pages[pageIndex].markdownPath = markdownPath;
+    // Initialize markdownRefs array if it doesn't exist
+    if (!notebook.pages[pageIndex].markdownRefs) {
+      notebook.pages[pageIndex].markdownRefs = [];
+    }
+
+    // Add new reference to the existing array
+    notebook.pages[pageIndex].markdownRefs.push({
+      url: downloadUrl,
+      path: markdownPath,
+      timestamp: new Date()
+    });
 
     await updateDoc(notebookRef, {
       pages: notebook.pages,
@@ -626,6 +656,17 @@ export const saveMarkdownToStorage = async (
     };
   } catch (error) {
     console.error("Error saving markdown to storage:", error);
+    // Add more detailed error information
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        // @ts-ignore
+        code: error.code,
+        // @ts-ignore
+        serverResponse: error.serverResponse
+      });
+    }
     throw error;
   }
 };

@@ -24,9 +24,8 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ 
-      success: true, 
-      url,
-      path
+      path,
+      url
     });
   } catch (error) {
     console.error("Error saving markdown:", error);
