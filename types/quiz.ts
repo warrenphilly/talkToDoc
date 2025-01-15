@@ -1,4 +1,4 @@
-export type QuestionType = 'multipleChoice' | 'trueFalse' | 'shortAnswer';
+export type QuestionType = "multipleChoice" | "trueFalse" | "shortAnswer";
 
 export interface BaseQuestion {
   id: number;
@@ -9,22 +9,35 @@ export interface BaseQuestion {
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
-  type: 'multipleChoice';
+  type: "multipleChoice";
   options: string[];
 }
 
 export interface TrueFalseQuestion extends BaseQuestion {
-  type: 'trueFalse';
+  type: "trueFalse";
 }
 
 export interface ShortAnswerQuestion extends BaseQuestion {
-  type: 'shortAnswer';
+  type: "shortAnswer";
 }
 
-export type Question = MultipleChoiceQuestion | TrueFalseQuestion | ShortAnswerQuestion;
+export type Question =
+  | MultipleChoiceQuestion
+  | TrueFalseQuestion
+  | ShortAnswerQuestion;
 
 export interface QuizData {
-  questions: Question[];
+  questions: Array<{
+    id: number;
+    question: string;
+    type: string;
+    correctAnswer: string;
+    explanation: string;
+    options?: string[];
+  }>;
+  format?: string;
+  numberOfQuestions?: number;
+  questionTypes?: string[];
 }
 
 export interface QuizState {
@@ -43,4 +56,3 @@ export interface QuizState {
   gptFeedback: string;
   quizData: QuizData;
 }
-

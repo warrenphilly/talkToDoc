@@ -714,17 +714,54 @@ export const saveMarkdownToStorage = async (
 
 export const saveQuizState = async (quizState: QuizState): Promise<string> => {
   try {
-    const quizId = quizState.id || `quiz_${crypto.randomUUID()}`;
-    const quizRef = doc(db, "quizzes", quizId);
-
-    await setDoc(quizRef, {
-      ...quizState,
-      id: quizId,
+    // Deep clone and sanitize the quiz state to remove any undefined values
+    const sanitizedQuizState = {
+      id: quizState.id || `quiz_${crypto.randomUUID()}`,
+      notebookId: quizState.notebookId || "",
+      pageId: quizState.pageId || "",
       startedAt: quizState.startedAt || new Date(),
       lastUpdatedAt: new Date(),
-    });
+      currentQuestionIndex: quizState.currentQuestionIndex ?? 0,
+      score: quizState.score ?? 0,
+      totalQuestions: quizState.totalQuestions ?? 0,
+      userAnswers: quizState.userAnswers ?? {},
+      evaluationResults: quizState.evaluationResults ?? {},
+      incorrectAnswers: quizState.incorrectAnswers ?? [],
+      isComplete: quizState.isComplete ?? false,
+      gptFeedback: quizState.gptFeedback ?? "",
+      quizData: {
+        questions: (quizState.quizData?.questions ?? []).map((q) => ({
+          id: q.id ?? 0,
+          question: q.question ?? "",
+          type: q.type ?? "multipleChoice",
+          correctAnswer: q.correctAnswer ?? "",
+          explanation: q.explanation ?? "",
+          options: Array.isArray(q.options) ? q.options : [],
+        })),
+        format: quizState.quizData?.format ?? "standard",
+        numberOfQuestions: quizState.quizData?.questions?.length ?? 0,
+        questionTypes: (quizState.quizData?.questions ?? []).map(
+          (q) => q.type ?? "multipleChoice"
+        ),
+      },
+    };
 
-    return quizId;
+    // Remove any remaining undefined values
+    const cleanData = JSON.parse(JSON.stringify(sanitizedQuizState));
+
+    // Convert dates to Firestore timestamps
+    const firestoreData = {
+      ...cleanData,
+      startedAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp(),
+    };
+
+    // Save to Firestore
+    const quizRef = doc(db, "quizzes", sanitizedQuizState.id);
+    await setDoc(quizRef, firestoreData);
+
+    console.log("Quiz state saved successfully:", sanitizedQuizState.id);
+    return sanitizedQuizState.id;
   } catch (error) {
     console.error("Error saving quiz state:", error);
     throw error;

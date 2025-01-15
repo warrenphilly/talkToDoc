@@ -34,22 +34,14 @@ const Quiz: React.FC<QuizProps> = ({
   pageId,
   initialState,
 }) => {
-  const [quizId] = useState(initialState?.id || `quiz_${crypto.randomUUID()}`);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(
     initialState?.currentQuestionIndex || 0
   );
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [gptFeedback, setGptFeedback] = useState(
-    initialState?.gptFeedback || ""
-  );
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<string>("");
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [score, setScore] = useState(initialState?.score || 0);
-  const [incorrectAnswers, setIncorrectAnswers] = useState<number[]>(
-    initialState?.incorrectAnswers || []
-  );
-  const [showSummary, setShowSummary] = useState(false);
-  const [showResults, setShowResults] = useState(
+  const [score, setScore] = useState<number>(initialState?.score || 0);
+  const [showResults, setShowResults] = useState<boolean>(
     initialState?.isComplete || false
   );
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>(
@@ -58,8 +50,101 @@ const Quiz: React.FC<QuizProps> = ({
   const [evaluationResults, setEvaluationResults] = useState<
     Record<number, boolean>
   >(initialState?.evaluationResults || {});
+  const [incorrectAnswers, setIncorrectAnswers] = useState<number[]>(
+    initialState?.incorrectAnswers || []
+  );
+  const [gptFeedback, setGptFeedback] = useState<string>(
+    initialState?.gptFeedback || ""
+  );
+  const [quizId] = useState<string>(
+    initialState?.id || `quiz_${crypto.randomUUID()}`
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [aiVoice, setAiVoice] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState(false);
+
+  // Save state whenever relevant state changes
+  useEffect(() => {
+    const saveQuizProgress = async () => {
+      try {
+        const quizState: QuizState = {
+          id: quizId,
+          notebookId,
+          pageId,
+          startedAt: initialState?.startedAt || new Date(),
+          lastUpdatedAt: new Date(),
+          currentQuestionIndex,
+          score,
+          totalQuestions: data.questions.length,
+          userAnswers,
+          evaluationResults,
+          incorrectAnswers,
+          isComplete: showResults,
+          gptFeedback,
+          quizData: {
+            questions: data.questions,
+            format: data.format || "standard",
+            numberOfQuestions: data.questions.length,
+            questionTypes: data.questions.map((q) => q.type),
+          },
+        };
+
+        await saveQuizState(quizState);
+      } catch (error) {
+        console.error("Error saving quiz progress:", error);
+      }
+    };
+
+    saveQuizProgress();
+  }, [
+    currentQuestionIndex,
+    score,
+    userAnswers,
+    evaluationResults,
+    incorrectAnswers,
+    showResults,
+    gptFeedback,
+  ]);
+
+  // Restore answer for current question when changing questions
+  useEffect(() => {
+    if (userAnswers[currentQuestionIndex]) {
+      setSelectedAnswer(userAnswers[currentQuestionIndex]);
+      setIsCorrect(evaluationResults[currentQuestionIndex]);
+      setShowExplanation(true);
+    } else {
+      setSelectedAnswer("");
+      setIsCorrect(null);
+      setShowExplanation(false);
+    }
+  }, [currentQuestionIndex, userAnswers, evaluationResults]);
+
+  const handleAnswer = async (answer: string) => {
+    setSelectedAnswer(answer);
+    const currentQuestion = data.questions[currentQuestionIndex];
+    const correct =
+      answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+    setIsCorrect(correct);
+    setShowExplanation(true);
+
+    // Update scores and tracking
+    if (correct) {
+      setScore((prev) => prev + 1);
+    } else {
+      setIncorrectAnswers((prev) => [...prev, currentQuestionIndex]);
+    }
+
+    // Save the answer and result
+    setUserAnswers((prev) => ({
+      ...prev,
+      [currentQuestionIndex]: answer,
+    }));
+    setEvaluationResults((prev) => ({
+      ...prev,
+      [currentQuestionIndex]: correct,
+    }));
+  };
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -101,84 +186,12 @@ const Quiz: React.FC<QuizProps> = ({
     }
   };
 
-  const handleAnswer = async (answer: string) => {
-    if (currentQuestion.type === "shortAnswer") {
-      setIsLoading(true);
-      try {
-        const response = await fetch("/api/feedback", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: currentQuestion.question,
-            userAnswer: answer,
-            correctAnswer: currentQuestion.correctAnswer,
-            isLastQuestion: false,
-            questionType: "shortAnswer",
-            notebookId,
-            pageId,
-          }),
-        });
-
-        const data = await response.json();
-
-        setSelectedAnswer(answer);
-        setShowExplanation(true);
-        setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
-
-        if (data.isCorrect) {
-          setScore((prev) => prev + data.score);
-        } else {
-          setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
-        }
-
-        setGptFeedback(data.feedback);
-
-        if (data.improvements) {
-          // You might want to add a new state for improvements
-          // setImprovements(data.improvements);
-        }
-      } catch (error) {
-        console.error("Error evaluating answer:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      // For multiple choice and true/false, evaluate immediately
-      setSelectedAnswer(answer);
-      setShowExplanation(true);
-      setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
-
-      const isAnswerCorrect =
-        answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
-      if (isAnswerCorrect) {
-        setScore((prev) => prev + 1);
-      } else {
-        setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
-      }
-    }
-
-    // Only get final feedback at the end of the quiz
-    if (isLastQuestion) {
-      await getGPTFeedback(
-        currentQuestion.question,
-        answer,
-        currentQuestion.correctAnswer,
-        true,
-        currentQuestion.type
-      );
-    }
-  };
-
   const nextQuestion = () => {
     setCurrentQuestionIndex((prev) => prev + 1);
-    setSelectedAnswer(null);
+    setSelectedAnswer("");
     setGptFeedback("");
     setShowExplanation(false);
   };
-
-  const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
 
   const QuestionSummary = ({
     question,
@@ -252,39 +265,6 @@ const Quiz: React.FC<QuizProps> = ({
       </div>
     );
   };
-
-  const saveState = async () => {
-    const quizState: QuizState = {
-      id: quizId,
-      notebookId,
-      pageId,
-      startedAt: initialState?.startedAt || new Date(),
-      lastUpdatedAt: new Date(),
-      currentQuestionIndex,
-      score,
-      totalQuestions: data.questions.length,
-      userAnswers,
-      evaluationResults,
-      incorrectAnswers,
-      isComplete: showResults,
-      gptFeedback,
-      quizData: data,
-    };
-
-    await saveQuizState(quizState);
-  };
-
-  useEffect(() => {
-    saveState();
-  }, [
-    currentQuestionIndex,
-    score,
-    userAnswers,
-    evaluationResults,
-    incorrectAnswers,
-    showResults,
-    gptFeedback,
-  ]);
 
   return (
     <div className="bg-white w-full rounded-xl  p-8  ">
@@ -407,14 +387,14 @@ const Quiz: React.FC<QuizProps> = ({
                   </Button>
                 ))
               ) : currentQuestion.type === "multipleChoice" ? (
-                <div className="grid grid-cols-2 gap-2  w-fit p">
-                  {currentQuestion.options.map((option) => (
+                <div className="grid grid-cols-2 gap-2 w-fit p">
+                  {(currentQuestion.options || []).map((option) => (
                     <Button
                       key={option}
                       onClick={() => !selectedAnswer && handleAnswer(option)}
                       disabled={!!selectedAnswer}
                       variant="outline"
-                      className={`w-fit   min-w-[270px] p-4 hover:bg-slate-300 justify-between ${
+                      className={`w-fit min-w-[270px] p-4 hover:bg-slate-300 justify-between ${
                         selectedAnswer === option
                           ? isCorrect
                             ? "border-green-500 bg-green-50 text-green-500"
