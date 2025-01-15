@@ -459,28 +459,31 @@ export const getUserById = async (userId: string) => {
 export const saveSideChat = async (
   notebookId: string,
   pageId: string,
-  primeSentence: string | null,
+  primeSentence: string,
   messages: Message[]
-) => {
+): Promise<string> => {
   try {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error("User not authenticated");
+    console.log("Saving new side chat:", {
+      notebookId,
+      pageId,
+      primeSentence,
+      messagesCount: messages.length,
+    });
 
-    const sideChatId = `sidechat_${crypto.randomUUID()}`;
-    const sideChatRef = doc(db, "sidechats", sideChatId);
-
-    const sideChatData: SideChat = {
-      id: sideChatId,
+    const sideChatRef = doc(collection(db, "sideChats"));
+    const sideChatData = {
+      id: sideChatRef.id,
       notebookId,
       pageId,
       primeSentence,
       messages,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
 
     await setDoc(sideChatRef, sideChatData);
-    return sideChatId;
+    console.log("Side chat saved successfully:", sideChatRef.id);
+    return sideChatRef.id;
   } catch (error) {
     console.error("Error saving side chat:", error);
     throw error;
@@ -489,16 +492,23 @@ export const saveSideChat = async (
 
 export const updateSideChat = async (
   sideChatId: string,
-  primeSentence: string | null,
+  primeSentence: string,
   messages: Message[]
-) => {
+): Promise<void> => {
   try {
-    const sideChatRef = doc(db, "sidechats", sideChatId);
+    console.log("Updating side chat:", {
+      sideChatId,
+      primeSentence,
+      messagesCount: messages.length,
+    });
+
+    const sideChatRef = doc(db, "sideChats", sideChatId);
     await updateDoc(sideChatRef, {
       primeSentence,
       messages,
-      updatedAt: new Date(),
+      updatedAt: serverTimestamp(),
     });
+    console.log("Side chat updated successfully:", sideChatId);
   } catch (error) {
     console.error("Error updating side chat:", error);
     throw error;
@@ -508,32 +518,62 @@ export const updateSideChat = async (
 export const getSideChat = async (
   notebookId: string,
   pageId: string
-): Promise<SideChat | null> => {
+): Promise<any | null> => {
   try {
-    const sidechatsRef = collection(db, "sidechats");
-    const q = query(
-      sidechatsRef,
-      where("notebookId", "==", notebookId),
-      where("pageId", "==", pageId),
-      limit(1)
-    );
+    let sideChatQuery;
 
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return null;
+    try {
+      // Try with ordering first
+      sideChatQuery = query(
+        collection(db, "sideChats"),
+        where("notebookId", "==", notebookId),
+        where("pageId", "==", pageId),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(sideChatQuery);
 
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
+      if (!querySnapshot.empty) {
+        const sideChatDoc = querySnapshot.docs[0];
+        const data = sideChatDoc.data();
+        console.log("Found existing side chat:", sideChatDoc.id);
 
-    // Convert Firestore timestamps to ISO strings
-    return {
-      id: doc.id,
-      notebookId: data.notebookId,
-      pageId: data.pageId,
-      primeSentence: data.primeSentence,
-      messages: data.messages,
-      createdAt: data.createdAt?.toDate().toISOString(),
-      updatedAt: data.updatedAt?.toDate().toISOString(),
-    } as SideChat;
+        // Convert Firestore Timestamps to ISO strings
+        return {
+          id: sideChatDoc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toISOString(),
+          updatedAt: data.updatedAt?.toDate().toISOString(),
+        };
+      }
+    } catch (error) {
+      // If index doesn't exist yet, try without ordering
+      console.log("Falling back to simple query while index builds...");
+      sideChatQuery = query(
+        collection(db, "sideChats"),
+        where("notebookId", "==", notebookId),
+        where("pageId", "==", pageId),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(sideChatQuery);
+
+      if (!querySnapshot.empty) {
+        const sideChatDoc = querySnapshot.docs[0];
+        const data = sideChatDoc.data();
+        console.log("Found existing side chat (unordered):", sideChatDoc.id);
+
+        // Convert Firestore Timestamps to ISO strings
+        return {
+          id: sideChatDoc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate().toISOString(),
+          updatedAt: data.updatedAt?.toDate().toISOString(),
+        };
+      }
+    }
+
+    console.log("No existing side chat found");
+    return null;
   } catch (error) {
     console.error("Error getting side chat:", error);
     throw error;

@@ -1,9 +1,14 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  deleteSideChat,
+  getSideChat,
+  saveSideChat,
+  updateSideChat,
+} from "@/lib/firebase/firestore";
 import { Image, Upload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
-import { saveSideChat, updateSideChat, getSideChat, deleteSideChat } from "@/lib/firebase/firestore";
 
 // First, let's define our message types
 interface Sentence {
@@ -27,7 +32,6 @@ interface Message {
   systemRole?: string;
   systemContent?: string;
   systemFiles?: string[];
-
 }
 
 interface SideChatProps {
@@ -37,11 +41,11 @@ interface SideChatProps {
   pageId: string;
 }
 
-const SideChat = ({ 
+const SideChat = ({
   primeSentence: initialPrimeSentence,
-  setPrimeSentence, 
-  notebookId, 
-  pageId 
+  setPrimeSentence,
+  notebookId,
+  pageId,
 }: SideChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sideChatId, setSideChatId] = useState<string | null>(null);
@@ -59,26 +63,35 @@ const SideChat = ({
 
   useEffect(() => {
     const initializeSideChat = async () => {
+      console.log("Initializing side chat with:", {
+        notebookId,
+        pageId,
+        initialPrimeSentence,
+      });
+
       setIsLoading(true);
       try {
         const existingSideChat = await getSideChat(notebookId, pageId);
-        
+
         if (existingSideChat) {
           console.log("Loading existing side chat:", existingSideChat);
           setSideChatId(existingSideChat.id);
-          setMessages(existingSideChat.messages);
+          setMessages(existingSideChat.messages || []);
           updatePrimeSentence(existingSideChat.primeSentence);
         } else if (initialPrimeSentence) {
-          console.log("Creating new side chat");
+          console.log("Creating new side chat with prime sentence");
           const newSideChatId = await saveSideChat(
-            notebookId, 
-            pageId, 
-            initialPrimeSentence, 
+            notebookId,
+            pageId,
+            initialPrimeSentence,
             []
           );
+          console.log("Created new side chat with ID:", newSideChatId);
           setSideChatId(newSideChatId);
           updatePrimeSentence(initialPrimeSentence);
           setMessages([]);
+        } else {
+          console.log("No prime sentence available, waiting for selection");
         }
       } catch (error) {
         console.error("Error initializing side chat:", error);
@@ -87,46 +100,51 @@ const SideChat = ({
       }
     };
 
-    initializeSideChat();
-  }, [notebookId, pageId]);
+    if (notebookId && pageId) {
+      initializeSideChat();
+    } else {
+      console.warn("Missing required IDs:", { notebookId, pageId });
+    }
+  }, [notebookId, pageId, initialPrimeSentence]);
 
   const sendMessage = async (messageText: string = input) => {
     if (!messageText.trim() && files.length === 0) return;
 
-    const formData = new FormData();
-    formData.append("userMessage", messageText);
-    formData.append("systemMessage", `You are a helpful Teacher. When explaining content, first understand the context provided, 
-      then address the user's specific request. Provide detailed yet concise explanations that are easy to understand. 
-      Please respond in complete paragraphs. when the user ask to explain "this" or something similar, use the context provided. Context: ${initialPrimeSentence}`);
-    formData.append("context", primeSentence || "");
-  
-
-    const userMessage: Message = {
-      user: "User",
-      text:messageText,
-      files: files.map((file) => URL.createObjectURL(file)),
-    };
-
-    console.log("userMessage", userMessage);
-
-    const systemMessage: Message = {
-      user: "developer",
-      text: `You are a helpful Teacher. When explaining content, first understand the context provided, 
-      then address the user's specific request. Provide detailed yet concise explanations that are easy to understand. 
-      Please respond in complete paragraphs. Context: ${initialPrimeSentence}`,
-    };
-
-    const updatedMessages = [...messages, userMessage, systemMessage];
-    setMessages(updatedMessages);
-    setInput("");
-    setFiles([]);
-
-
     try {
+      console.log("Starting sendMessage with:", {
+        messageText,
+        notebookId,
+        pageId,
+        sideChatId,
+        initialPrimeSentence,
+      });
+
+      const formData = new FormData();
+      formData.append("userMessage", messageText);
+      formData.append("notebookId", notebookId);
+      formData.append("pageId", pageId);
+      formData.append("systemMessage", `You are a helpful Teacher...`);
+
+      const userMessage: Message = {
+        user: "User",
+        text: messageText,
+        files: files.map((file) => URL.createObjectURL(file)),
+      };
+
+      // Create new messages array first
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setInput("");
+      setFiles([]);
+
       const response = await fetch("/api/sidechat", {
         method: "POST",
         body: formData,
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
       const aiMessage = {
@@ -134,27 +152,57 @@ const SideChat = ({
         text: data.reply,
       };
 
-      const finalMessages = [...updatedMessages, aiMessage, systemMessage];
+      const finalMessages = [...newMessages, aiMessage];
       setMessages(finalMessages);
 
-      if (sideChatId) {
-        await updateSideChat(sideChatId, initialPrimeSentence, finalMessages);
-      } else if (initialPrimeSentence) {
-        const newSideChatId = await saveSideChat(
-          notebookId, 
-          pageId, 
-          initialPrimeSentence, 
-          finalMessages
-        );
-        setSideChatId(newSideChatId);
+      try {
+        if (sideChatId) {
+          console.log("Updating existing side chat:", {
+            sideChatId,
+            primeSentence: initialPrimeSentence || "",
+            messagesCount: finalMessages.length,
+          });
+
+          await updateSideChat(
+            sideChatId,
+            initialPrimeSentence || "",
+            finalMessages
+          );
+          console.log("Side chat updated successfully");
+        } else {
+          console.log("Creating new side chat:", {
+            notebookId,
+            pageId,
+            primeSentence: initialPrimeSentence,
+            messagesCount: finalMessages.length,
+          });
+
+          if (!initialPrimeSentence) {
+            console.warn(
+              "No prime sentence available, creating with empty string"
+            );
+          }
+
+          const newSideChatId = await saveSideChat(
+            notebookId,
+            pageId,
+            initialPrimeSentence || "",
+            finalMessages
+          );
+          console.log("New side chat created with ID:", newSideChatId);
+          setSideChatId(newSideChatId);
+        }
+      } catch (saveError) {
+        console.error("Error saving/updating side chat:", saveError);
+        throw saveError;
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Error in sendMessage:", error);
       const errorMessage = {
         user: "AI",
         text: "Sorry, there was an error. Please try again.",
       };
-      setMessages([...updatedMessages, errorMessage]);
+      setMessages([...messages, errorMessage]);
     }
   };
 
@@ -182,11 +230,10 @@ const SideChat = ({
   return (
     <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="flex flex-row items-center justify-center">
-      <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
+        <h1 className="text-xl font-regular text-[#94b347]">Talk to Notes</h1>
       </div>
-      
+
       <div className=" bg-slate-200 text-[#94b347] rounded-lg   p-4 m-4">
-        
         <div className="m-2">
           {initialPrimeSentence ? (
             <p>"{initialPrimeSentence}"</p>
@@ -267,7 +314,9 @@ const SideChat = ({
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm bg-white p-2 rounded-lg ">{String(msg.text)}</div>
+                      <div className="text-sm bg-white p-2 rounded-lg ">
+                        {String(msg.text)}
+                      </div>
                     )}
                   </div>
                 ) : (
