@@ -77,7 +77,7 @@ const QuizPanel = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full  border-3 bg-white rounded-2xl mb-4 max-h-[90vh] overflow-y-auto">
+    <div className="flex flex-col h-full w-full  border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] overflow-y-auto">
       <div className="flex flex-col items-center justify-center p-3 gap-4">
         <h1 className="text-xl font-semibold text-[#94b347]">Quiz Me</h1>
        
@@ -95,7 +95,7 @@ const QuizPanel = () => {
               <SelectTrigger className="w-full text-slate-500">
                 <SelectValue placeholder="How many Questions?" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent className="bg-slate-100">
                 <SelectItem value="5" className="text-slate-500 hover:bg-slate-300">5</SelectItem>
                 <SelectItem value="10" className="text-slate-500 hover:bg-slate-300">10</SelectItem>
                 <SelectItem value="15" className="text-slate-500 hover:bg-slate-300">15</SelectItem>

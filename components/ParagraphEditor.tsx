@@ -88,11 +88,13 @@ export default function ParagraphEditor({
             <PlusIcon className="w-4 h-4 text-gray-600" />
           )}
         </button>
-        <div className="flex-grow h-px bg-gray-200 ml-2" />
+        {!isEditing && (
+        <div className="flex-grow h-[1px] bg-gray-200 ml-2" />
+        )}
       </div>
 
       {isEditing && (
-        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out border border-[#94b347] rounded-2xl p-4">
+        <div className="mt-4 space-y-4 transition-all duration-300 ease-in-out border border-slate-300 rounded-2xl p-4">
           <input
             type="text"
             value={title}

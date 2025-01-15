@@ -28,7 +28,7 @@ import {
   getUserByClerkId,
   Notebook,
 } from "@/lib/firebase/firestore";
-import { User, } from "@clerk/nextjs/server";
+import { User } from "@clerk/nextjs/server";
 import { CircularProgress } from "@mui/material";
 import {
   BookOpen,
@@ -70,7 +70,7 @@ const items = [
   //   url: "#",
   //   icon: File,
   // },
-  
+
   // {
   //   title: "show me where i went wrong  with my exams",
   //   url: "#",
@@ -125,30 +125,29 @@ export function SidebarNav() {
                   <Skeleton className="h-24 my-5 w-full rounded-2xl" />
                 ) : (
                   <div className="text-slate-800 bg-slate-200   w-full rounded-2xl  font-semibold flex flex-col  justify-between">
-                  <div className="flex flex-col items-center justify-center  gap-2 p-4">
-                    <div className="flex flex-row items-center justify-center  gap-2 text-xl">
-                      <UserButton /> <p >{user?.username}</p>
-                    </div>
-                   
-                    <div className="flex flex-row items-center gap-2 text-sm text-slate-500">
-                    
-                      {user?.firstName} {user?.lastName}
-                    </div>
-                  </div>
+                    <div className="flex flex-col items-center justify-center  gap-2 p-4">
+                      <div className="flex flex-row items-center justify-center  gap-2 text-xl">
+                        <UserButton /> <p>{user?.username}</p>
+                      </div>
 
-                  {/* Buttons */}
-                  <div className="flex flex-row items-center justify-between  px-4 pb-2">
-                    <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-slate-100 hover:bg-slate-300 rounded-lg shadow-none">
-                      <Settings className="text-[#94b347] text-[30px]" />
-                      Settings
-                    </Button>
-                    <SignOutButton>
-                    <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-slate-100 hover:bg-slate-300 rounded-lg shadow-none">
-                      <LogOut className="text-[#94b347] text-[30px]" />
-                      Logout
+                      <div className="flex flex-row items-center gap-2 text-sm text-slate-500">
+                        {user?.firstName} {user?.lastName}
+                      </div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex flex-row items-center justify-between  px-4 pb-2">
+                      <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-slate-100 hover:bg-slate-300 rounded-lg shadow-none">
+                        <Settings className="text-[#94b347] text-[30px]" />
+                        Settings
                       </Button>
+                      <SignOutButton>
+                        <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-slate-100 hover:bg-slate-300 rounded-lg shadow-none">
+                          <LogOut className="text-[#94b347] text-[30px]" />
+                          Logout
+                        </Button>
                       </SignOutButton>
-                  </div>
+                    </div>
                   </div>
                 )}
 
@@ -161,24 +160,24 @@ export function SidebarNav() {
                       <SidebarMenuItem className=" text-xl w-full py-2 border-t border-b ">
                         <SidebarMenuButton
                           asChild
-                        className={`w-full py-2 rounded-lg text-slate-400  text-sm items-center bg-slate-100  p-5 ${
-                          pathname === item.url ? "bg-slate-200 hover:bg-slate-200" : "hover:bg-slate-100  "
-                        }`}
-                      >
-                        <Link
-                          href={item.url}
-                          className="flex items-center gap-2 p-2"
+                          className={`w-full py-2 rounded-lg text-slate-400  text-sm items-center bg-slate-100  p-5 ${
+                            pathname === item.url
+                              ? "bg-slate-200 hover:bg-slate-200"
+                              : "hover:bg-slate-100  "
+                          }`}
                         >
-                          <item.icon
-                            className={`text-[30px] text-[#94b347]`}
-                          />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                          <Link
+                            href={item.url}
+                            className="flex items-center gap-2 p-2"
+                          >
+                            <item.icon
+                              className={`text-[30px] text-[#94b347]`}
+                            />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
                     )}
-
-                   
                   </div>
                 ))}
 
@@ -187,62 +186,66 @@ export function SidebarNav() {
                   {isLoading ? (
                     <Skeleton className="h-36 w-full " />
                   ) : (
-                  <Collapsible
-                    open={isOpen}
-                    onOpenChange={setIsOpen}
-                    className={`w-full justify-center  bg-slate-100 ${
-                      pathname.includes("/notes/")
-                        ? "bg-slate-200 text-slate-400 rounded-lg" : " "
+                    <Collapsible
+                      open={isOpen}
+                      onOpenChange={setIsOpen}
+                      className={`w-full justify-center  my-2 bg-slate-100 ${
+                        pathname.includes("/notes/")
+                          ? "bg-slate-200 text-slate-400 rounded-lg"
+                          : " "
                       } `}
-                  >
-                    <CollapsibleTrigger className={`flex items-center gap-2 py-2  my-1 rounded-lg w-full hover:bg-slate-200 px-4 ` }>
-                      <BookOpen className="text-[#94b347]  h-4" />
-                      <span>Notebooks</span>
-                      <ChevronDown
-                        className={`ml-auto transform transition-transform duration-200 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      {isLoading ? (
-                        <div className="flex flex-col  items-center justify-center h-5 w-full   gap-2">
-                        
-                          <CircularProgress
-                            size={20}
-                        
-                            sx={{
-                              color: "#94b347",
-                            
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        notebooks.map((notebook) => (
-                          <SidebarMenuItem
-                          key={notebook.id}
-                          className={`  w-full border-t ` }
-                        >
-                       
-
-                          <SidebarMenuButton asChild>
-                            <Link
-                              href={`/notes/${notebook.id}`}
-                              className={`flex items-center gap-2  pl-10 justify-start  hover:bg-slate-300 rounded-lg ${
-                                pathname === `/notes/${notebook.id}`
-                                  ? "bg-[#d2e4a2] text-white"
-                                  : "hover:bg-slate-300  "
-                              } `}
+                    >
+                      <CollapsibleTrigger
+                        className={`flex items-center gap-2 py-2  my-1 rounded-lg w-full hover:bg-slate-200 px-4 `}
+                      >
+                        <BookOpen className="text-[#94b347]  h-4" />
+                        <span>Notebooks</span>
+                        <ChevronDown
+                          className={`ml-auto transform transition-transform duration-200 ${
+                            isOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {isLoading ? (
+                          <div className="flex flex-col  items-center justify-center h-5 w-full   gap-2">
+                            <CircularProgress
+                              size={20}
+                              sx={{
+                                color: "#94b347",
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          notebooks.map((notebook, index) => (
+                            <SidebarMenuItem
+                              key={notebook.id}
+                              className={`w-full border-t border-slate-300 rounded-none`}
                             >
-                              {" "}
-                              <FileText className="text-[#94b347]" />
-                              <span> {notebook.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        ))
-                      )}
-                    </CollapsibleContent>
+                              <SidebarMenuButton
+                                asChild
+                                className={`${
+                                  index === notebooks.length - 1
+                                    ? " rounded-t-none rounded-b-lg"
+                                    : "rounded-none"
+                                }`}
+                              >
+                                <Link
+                                  href={`/notes/${notebook.id}`}
+                                  className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 ${
+                                    pathname === `/notes/${notebook.id}`
+                                      ? "bg-[#bdcc97] text-white"
+                                      : "hover:bg-slate-300 "
+                                  }`}
+                                >
+                                  <FileText className="text-[#94b347]" />
+                                  <span>{notebook.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          ))
+                        )}
+                      </CollapsibleContent>
                     </Collapsible>
                   )}
                 </div>

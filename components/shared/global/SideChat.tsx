@@ -180,12 +180,12 @@ const SideChat = ({
   }
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
+    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="flex flex-row items-center justify-center">
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>
       
-      <div className="border c text-[#94b347] rounded-lg   p-4 m-4">
+      <div className="border border-slate-300 text-[#94b347] rounded-lg   p-4 m-4">
         
         <div className="m-2">
           {initialPrimeSentence ? (
@@ -291,10 +291,10 @@ const SideChat = ({
             )
         )}
       </div>
-      <div className="bg-white p-4  rounded-b-lg">
+      <div className="bg-slate-100 p-4  rounded-b-lg">
         <div className="flex  bg-slate-100 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
           <Textarea
-            className="w-full h-fit border shadow-none border-slate-200 rounded-lg bg-slate-100 text-slate-900 flex-grow"
+            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-100 text-slate-900 flex-grow"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}

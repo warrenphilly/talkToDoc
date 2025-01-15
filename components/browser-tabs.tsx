@@ -177,7 +177,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
   return (
     <div
-      className={cn("w-full h-full mx-auto rounded-lg bg-slate-200", className)}
+      className={cn("w-full h-full mx-auto rounded-lg bg-slate-100", className)}
     >
       <div className="flex items-center bg-slate-200  rounded-t-lg">
         {tabs.map((tab) => (
@@ -231,7 +231,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4  h-[calc(100vh-5.2rem)] rounded-b-xl rounded-r-xl bg-slate-100 overflow-hidden"
+          className="p-4  h-[calc(100vh-5.2rem)] rounded-xl bg-slate-100 overflow-hidden"
         >
           <ChatClient
             title={activeTab?.title || ""}

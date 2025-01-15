@@ -49,7 +49,7 @@ export const ResponseMessage = ({
   }
 
   return (
-    <div key={index} className="p-2 rounded mb-2 bg-white">
+    <div key={index} className="p-2 rounded mb-2 bg-slate-100">
       {msg.user === "AI" && (
         <div className="text-sm">
           {msg.text.map((section: Section, sectionIdx: number) => (
@@ -72,7 +72,7 @@ export const ResponseMessage = ({
                   }}
                 />
               ) : (
-                <div className="bg-white p-4 rounded-2xl transition-colors">
+                <div className="bg-slate-100 p-4 rounded-2xl transition-colors">
                   <div className="flex justify-between items-center mb-3">
                     <h3
                       className="text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer"
@@ -80,7 +80,7 @@ export const ResponseMessage = ({
                     >
                       {section.title}
                     </h3>
-                    <div className="flex  bg-white rounded-md border border-slate-200 ">
+                    <div className="flex  bg-slate-100 rounded-md border border-slate-200 ">
                       <Button
                         onClick={() => handleEditClick(sectionIdx)}
                         variant="ghost"
@@ -107,7 +107,7 @@ export const ResponseMessage = ({
                           key={sentenceIdx}
                           asChild
                           onClick={() => handleSentenceClick(sentence)}
-                          className="bg-white hover:border hover:bg-slate-300 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
+                          className="bg-slate-100 hover:border hover:bg-slate-300 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
                         >
                           <div className="px-1 rounded cursor-pointer transition-colors">
                             <p className="text-gray-800 text-md text-wrap">

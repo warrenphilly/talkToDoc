@@ -420,13 +420,13 @@ const ChatClient = ({
                 </div>
               )}
 
-              <div className="flex bg-white flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
-                <div className=" invisible hover:visible">
+              <div className="flex bg-slate-100 flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
+                
                 <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
                   messageIndex={0}
                   />
-                  </div>
+               
                 {messages.map((msg, index) => {
                   const sections = Array.isArray(msg.text) ? msg.text : [];
 
@@ -487,7 +487,7 @@ const ChatClient = ({
 
             {!(isNotebookFullscreen || isChatFullscreen || isQuizFullscreen) &&
               (showQuiz || showChat) && (
-                <ResizableHandle withHandle className="bg-slate-300 m-2" />
+                <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
             {/* Chat and Quiz panels */}
