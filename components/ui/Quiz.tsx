@@ -34,6 +34,7 @@ const Quiz: React.FC<QuizProps> = ({
   pageId,
   initialState,
 }) => {
+  const [quizId] = useState(initialState?.id || `quiz_${crypto.randomUUID()}`);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
     initialState?.currentQuestionIndex || 0
   );
@@ -59,7 +60,6 @@ const Quiz: React.FC<QuizProps> = ({
   >(initialState?.evaluationResults || {});
   const [aiVoice, setAiVoice] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState(false);
-  const [quizId] = useState(`quiz_${crypto.randomUUID()}`);
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -258,7 +258,7 @@ const Quiz: React.FC<QuizProps> = ({
       id: quizId,
       notebookId,
       pageId,
-      startedAt: new Date(),
+      startedAt: initialState?.startedAt || new Date(),
       lastUpdatedAt: new Date(),
       currentQuestionIndex,
       score,

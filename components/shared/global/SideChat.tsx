@@ -185,7 +185,7 @@ const SideChat = ({
       <h1 className='text-xl font-regular text-[#94b347]'>Talk to Notes</h1>
       </div>
       
-      <div className="border border-slate-300 text-[#94b347] rounded-lg   p-4 m-4">
+      <div className=" bg-slate-200 text-[#94b347] rounded-lg   p-4 m-4">
         
         <div className="m-2">
           {initialPrimeSentence ? (
