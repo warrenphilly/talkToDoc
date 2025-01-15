@@ -32,7 +32,12 @@ interface Message {
   files?: string[];
 }
 
-const QuizPanel = () => {
+interface QuizPanelProps {
+  notebookId: string;
+  pageId: string;
+}
+
+const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   // Add state for all user selections
   const [testFormat, setTestFormat] = useState<string>("");
   const [responseType, setResponseType] = useState<string>("");
@@ -56,16 +61,21 @@ const QuizPanel = () => {
         questionTypes: Object.entries(questionTypes)
           .filter(([_, enabled]) => enabled)
           .map(([type]) => type),
+        notebookId,
+        pageId
       };
 
       const formData = new FormData();
       formData.append('message', JSON.stringify(message));
-      formData.append('context', 'Generate a quiz with the following parameters');
 
       const response = await fetch('/api/quiz', {
         method: 'POST',
         body: formData,
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate quiz');
+      }
 
       const data = await response.json();
       setQuizData(data.quiz);

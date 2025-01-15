@@ -563,7 +563,10 @@ const ChatClient = ({
                         <Maximize2 size={16} />
                       )}
                     </Button>
-                    <QuizPanel />
+                    <QuizPanel 
+                      notebookId={notebookId} 
+                      pageId={tabId}
+                    />
                   </ResizablePanel>
                 )}
               </ResizablePanel>

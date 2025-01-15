@@ -29,7 +29,7 @@ export interface Page {
   markdownRefs?: {
     url: string;
     path: string;
-    timestamp: Date;
+    timestamp: string;
   }[];
 }
 
@@ -643,7 +643,7 @@ export const saveMarkdownToStorage = async (
     notebook.pages[pageIndex].markdownRefs.push({
       url: downloadUrl,
       path: markdownPath,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     });
 
     await updateDoc(notebookRef, {

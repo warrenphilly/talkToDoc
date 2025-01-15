@@ -108,8 +108,17 @@ export const sendMessage = async (
         throw new Error("Failed to save markdown file");
       }
 
-      const { path } = await initResponse.json();
-      markdownFilename = path;
+      const responseData = await initResponse.json();
+      // Convert the response data to ensure it's a plain object
+      const plainPath = {
+        path: responseData.path,
+        url: responseData.url,
+        timestamp: typeof responseData.timestamp === 'object' && responseData.timestamp !== null
+          ? new Date(responseData.timestamp.seconds * 1000).toISOString()
+          : responseData.timestamp
+      };
+
+      markdownFilename = plainPath.path;
     } catch (error) {
       console.error("Error saving markdown file:", error);
     }

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { doc, getDoc } from 'firebase/firestore';
+import { db, storage } from '@/firebase';
+import { getDownloadURL, ref } from 'firebase/storage';
+import { cleanMarkdownContent } from '@/lib/markdownUtils';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -17,6 +21,8 @@ export async function POST(request: Request) {
       totalQuestions,
       incorrectAnswers,
       questionType,
+      notebookId,
+      pageId
     } = body;
 
     // Only generate feedback for short answers or end of quiz
@@ -31,6 +37,40 @@ export async function POST(request: Request) {
       matchedConcepts: [] as string[],
     };
 
+    // Get the page's markdown content (only if needed for short answer evaluation)
+    let contextContent = '';
+    if (questionType === "shortAnswer") {
+      const notebookRef = doc(db, "notebooks", notebookId);
+      const notebookSnap = await getDoc(notebookRef);
+
+      if (notebookSnap.exists()) {
+        const notebook = notebookSnap.data();
+        const page = notebook.pages.find((p: any) => p.id === pageId);
+        
+        if (page?.markdownRefs) {
+          for (const markdownRef of page.markdownRefs) {
+            try {
+              const plainMarkdownRef = {
+                path: markdownRef.path,
+                url: markdownRef.url,
+                timestamp: typeof markdownRef.timestamp === 'object' && markdownRef.timestamp !== null
+                  ? new Date(markdownRef.timestamp.seconds * 1000).toISOString()
+                  : markdownRef.timestamp
+              };
+              
+              const storageRef = ref(storage, plainMarkdownRef.path);
+              const url = await getDownloadURL(storageRef);
+              const response = await fetch(url);
+              const content = await response.text();
+              contextContent += cleanMarkdownContent(content) + '\n\n';
+            } catch (error) {
+              console.error(`Error fetching markdown file ${markdownRef.path}:`, error);
+            }
+          }
+        }
+      }
+    }
+
     if (isLastQuestion) {
       prompt = `The user has completed the quiz with a score of ${score} out of ${totalQuestions}. 
         ${
@@ -44,6 +84,8 @@ export async function POST(request: Request) {
         3. Encouragement for future learning`;
     } else if (questionType === "shortAnswer") {
       const evaluationPrompt = `
+        Context: ${contextContent}
+        
         Question: "${question}"
         User's answer: "${userAnswer}"
         Expected concepts: "${correctAnswer}"

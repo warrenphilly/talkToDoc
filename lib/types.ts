@@ -19,3 +19,16 @@ export interface ParagraphData {
   user: string;
   text: Section[];
 }
+
+export interface Page {
+  id: string;
+  title: string;
+  content: string;
+  messages: Message[];
+  isOpen: boolean;
+  markdownRefs?: {
+    url: string;
+    path: string;
+    timestamp: string;
+  }[];
+}
