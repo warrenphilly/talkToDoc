@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Cpu, Globe, Zap, Code, Check, ChevronRight,ArrowRight, Play } from "lucide-react";
+import { Cpu, Globe, Zap, Code, Check, ChevronRight,ArrowRight, Play, PenTool, Brain, Target, Pointer, CircleCheckBig} from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -96,7 +96,7 @@ export default function Hero() {
            
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Globe className="h-8 w-8 mb-2" />
+                  <Zap className="h-8 w-8 mb-2" />
                   <CardTitle>AI-Powered Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -107,7 +107,7 @@ export default function Hero() {
               </Card>
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Zap className="h-8 w-8 mb-2" />
+                  <PenTool className="h-8 w-8 mb-2" />
                   <CardTitle>AI-Powered OCR</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -118,7 +118,7 @@ export default function Hero() {
               </Card>
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Code className="h-8 w-8 mb-2" />
+                  <CircleCheckBig  className="h-8 w-8 mb-2" />
                   <CardTitle className="text-white" >Test your knowledge</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -130,7 +130,7 @@ export default function Hero() {
               </Card>
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Globe className="h-8 w-8 mb-2" />
+                  <Pointer className="h-8 w-8 mb-2" />
                   <CardTitle>Interactive Learning</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -141,7 +141,7 @@ export default function Hero() {
               </Card>
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Zap className="h-8 w-8 mb-2" />
+                  <Brain className="h-8 w-8 mb-2" />
                   <CardTitle>PDF Intelligence</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -152,7 +152,7 @@ export default function Hero() {
               </Card>
               <Card className="bg-[#94b347] text-white">
                 <CardHeader>
-                  <Code className="h-8 w-8 mb-2" />
+                <Target  className="h-8 w-8 mb-2" />
                   <CardTitle>Progress Tracking</CardTitle>
                 </CardHeader>
                 <CardContent>
