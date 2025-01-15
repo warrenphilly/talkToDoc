@@ -97,9 +97,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   return (
     <div
-      className={` h-full bg-slate-100 rounded-xl p-6 ${
-        quizData ? "flex flex-col items-center w-fit" : "w-full"
-      }`}
+      className={` h-full bg-slate-100 rounded-xl p-6 w-full`}
     >
       <div className="flex flex-col items-center mb-4">
         <h1 className="text-2xl font-semibold text-slate-500">Quiz Panel</h1>
@@ -116,16 +114,16 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         />
 
         {!quizData ? (
-          <div className="flex flex-col gap-5 w-full max-w-md bg-slate-200 p-4 rounded-lg">
+          <div className="flex flex-col gap-5 w-full max-w-md bg-slate-200  p-4 rounded-xl">
             <div className="flex flex-col  items-center text-slate-500">
               <h1 className="text-md font-bold">Generate Quiz</h1>
             </div>
 
             <Select onValueChange={(value) => setQuestionCount(value)}>
-              <SelectTrigger className="w-full bg-slate-200 text-slate-500">
+              <SelectTrigger className="w-full bg-slate-100 text-slate-500">
                 <SelectValue placeholder="How many Questions?" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-300">
+              <SelectContent className="bg-slate-100">
                 <SelectItem
                   value="5"
                   className="text-slate-500 hover:bg-slate-300"
@@ -218,7 +216,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     !questionTypes.multipleChoice &&
                     !questionTypes.shortAnswer)
                 }
-                className="border border-slate-400 text-slate-500 bg-slate-200 hover:bg-slate-300  shadow-none p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
+                className="shadow-none text-slate-500 bg-slate-100 border border-slate-400 hover:bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
               >
                 {isLoading ? "Generating..." : "Generate Test"}
               </Button>

@@ -46,15 +46,15 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({ pageId, onQuizSelect }) =
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 w-full">
       <h3 className="text-lg font-semibold text-slate-700 mb-4">
         Recent Quizzes
       </h3>
-      <div className="space-y-4">
+      <div className="space-y-4 w-full">
         {quizzes.map((quiz) => (
           <div
             key={quiz.id}
-            className="bg-white rounded-lg shadow p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer"
+            className="bg-slate-100 border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-50 rounded-lg  p-4 flex items-center justify-between  cursor-pointer"
             onClick={() => onQuizSelect(quiz)}
           >
             <div className="flex-1">
