@@ -15,6 +15,8 @@ import Quiz from "@/components/ui/Quiz";
   // import { Quiz } from "@/components/ui/Quiz";
   import { Switch } from "@/components/ui/switch";
   import { QuizData } from "@/types/quiz";
+import { Separator } from "@/components/ui/separator";
+import { CircularProgress } from "@mui/material";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -87,18 +89,26 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   };
 
   return (
-    <div className="w-full h-full bg-white rounded-xl p-6">
-      <div className="w-full h-full">
-        {!quizData ? (
-          <div className="flex flex-col gap-5 w-full max-w-md">
-            
-         
+    <div className={` h-full bg-slate-100 rounded-xl p-6 ${quizData ? "flex flex-col items-center w-fit" : "w-full"}`}>
+      <div className="flex flex-col items-center mb-4"><h1 className="text-2xl font-semibold text-slate-500">Quiz Panel</h1></div>
 
-            <Select onValueChange={(value) => setQuestionCount(value)}>
-              <SelectTrigger className="w-full text-slate-500">
+     
+      <div className={`w-full h-full flex flex-col items-center ${quizData ? "w-full" : ""}`}>
+        <Separator className="w-full bg-slate-200 mb-4" orientation="horizontal" />
+        
+        
+        {!quizData ? (
+          <div className="flex flex-col gap-5 w-full max-w-md bg-slate-200 p-4 rounded-lg">
+            
+         <div className="flex flex-col  items-center text-slate-500">
+              <h1 className="text-md font-bold">Generate Quiz</h1>
+              </div>
+
+            <Select onValueChange={(value) => setQuestionCount(value)} >
+              <SelectTrigger className="w-full bg-slate-200 text-slate-500">
                 <SelectValue placeholder="How many Questions?" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-100">
+              <SelectContent className="bg-slate-300">
                 <SelectItem value="5" className="text-slate-500 hover:bg-slate-300">5</SelectItem>
                 <SelectItem value="10" className="text-slate-500 hover:bg-slate-300">10</SelectItem>
                 <SelectItem value="15" className="text-slate-500 hover:bg-slate-300">15</SelectItem>
@@ -127,7 +137,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     setQuestionTypes(prev => ({ ...prev, trueFalse: checked }))
                   }
                 />
-                <p>True/False</p>
+                <p className="text-slate-500 font-semibold">True/False</p>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <Switch 
@@ -136,7 +146,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     setQuestionTypes(prev => ({ ...prev, multipleChoice: checked }))
                   }
                 />
-                <p>Multiple choice</p>
+                  <p className="text-slate-500 font-semibold">Multiple choice</p>
               </div>
               <div className="flex flex-row gap-2 items-center">
                 <Switch 
@@ -145,18 +155,21 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     setQuestionTypes(prev => ({ ...prev, shortAnswer: checked }))
                   }
                 />
-                <p>Short answer</p>
+                <p className="text-slate-500 font-semibold">Short answer</p>
               </div>
             </div>
-
+<div className="flex flex-col items-center w-full">
             <Button 
               onClick={generateQuiz}
-              disabled={isLoading}
-              className="bg-[#94b347] hover:bg-[#a5c05f] text-white shadow-none p-5 rounded-lg text-xl w-full"
+              disabled={isLoading || !questionCount || (!questionTypes.trueFalse && !questionTypes.multipleChoice && !questionTypes.shortAnswer)}
+              className="border border-slate-400 text-slate-500 bg-slate-200 hover:bg-slate-300  shadow-none p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
             >
               {isLoading ? "Generating..." : "Generate Test"}
-            </Button>
+              </Button>
+            </div>
+         
           </div>
+
         ) : (
           <div className="w-full">
             <Button 
@@ -172,6 +185,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             />
           </div>
         )}
+           
+           {isLoading && <div className="flex flex-col items-center w-full">
+          <p className="text-slate-500 font-semibold">Generating...</p>
+          <CircularProgress />
+              </div>}
       </div>
     </div>
   );

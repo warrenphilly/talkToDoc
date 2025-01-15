@@ -12,6 +12,11 @@ import {
   Loader2,
   Trophy,
   XCircle,
+  MicOff,
+  Mic,
+  Volume,
+  Volume2,
+  VolumeOff,
 } from "lucide-react";
 import React, { useState } from "react";
 
@@ -35,6 +40,8 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
   const [evaluationResults, setEvaluationResults] = useState<
     Record<number, boolean>
   >({});
+  const [aiVoice, setAiVoice] = useState(false);
+  const [vocalAnswer, setVocalAnswer] = useState(false);
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -114,7 +121,6 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
           // You might want to add a new state for improvements
           // setImprovements(data.improvements);
         }
-
       } catch (error) {
         console.error("Error evaluating answer:", error);
       } finally {
@@ -172,16 +178,18 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
         <Button
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 p-2"
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 "
         >
-          <div className="flex items-center gap-3 " >
+          <div className="flex items-center gap-3 ">
             {isAnswered &&
               (isCorrectAnswer ? (
                 <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
               ) : (
                 <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
               ))}
-            <span className="font-medium text-slate-500 text-wrap ">{question.question}</span>
+            <span className="font-medium text-slate-500 text-wrap ">
+              {question.question}
+            </span>
           </div>
           {isOpen ? (
             <ChevronUp className="w-5 h-5 text-gray-500" />
@@ -194,7 +202,9 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
             {isAnswered ? (
               <>
                 <div className="mb-2">
-                  <span className="font-medium text-slate-500">Your answer: </span>
+                  <span className="font-medium text-slate-500">
+                    Your answer:{" "}
+                  </span>
                   <span
                     className={
                       isCorrectAnswer ? "text-green-600" : "text-red-600"
@@ -204,7 +214,9 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
                   </span>
                 </div>
                 <div className="mb-2">
-                  <span className="font-medium text-slate-500">Correct answer: </span>
+                  <span className="font-medium text-slate-500">
+                    Correct answer:{" "}
+                  </span>
                   <span className="text-green-600">
                     {question.correctAnswer}
                   </span>
@@ -224,18 +236,23 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
   };
 
   return (
-    <div className="bg-white w-full rounded-xl  p-8  w-full">
+    <div className="bg-white w-full rounded-xl  p-8  ">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-500" />
           <span className="font-medium text-slate-500">
             Score: {score}/{data.questions.length} |{" "}
-            {Math.round((score / data.questions.length) * 100)}% correct
+            {Math.round((score / data.questions.length) * 100)}%
           </span>
         </div>
-        
+
         <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
-          
+          <Button onClick={() => setAiVoice(!aiVoice)}>
+            {aiVoice ? <Volume2 className="w-5 h-5 text-yellow-500" /> : <VolumeOff className="w-5 h-5 text-yellow-500" />}
+          </Button>
+          <Button onClick={() => setVocalAnswer(!vocalAnswer)}>
+            {vocalAnswer ? <Mic className="w-5 h-5 text-yellow-500" /> : <MicOff className="w-5 h-5 text-yellow-500" />}
+          </Button>
 
           <Button
             onClick={() => setShowSummary(!showSummary)}
@@ -255,7 +272,6 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
       <div className="w-full  flex justify-end"></div>
       {showResults && (
         <div className="mt-6 text-center p-6  rounded-lg">
-         
           <h3 className="text-2xl font-bold text-slate-500 mb-2">
             Quiz Completed!
           </h3>
@@ -332,7 +348,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
                   </Button>
                 ))
               ) : currentQuestion.type === "multipleChoice" ? (
-                <div className="grid grid-cols-2 gap-2  w-fit p flex flex-col items-center justify-center">
+                <div className="grid grid-cols-2 gap-2  w-fit p">
                   {currentQuestion.options.map((option) => (
                     <Button
                       key={option}
@@ -344,7 +360,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
                           ? isCorrect
                             ? "border-green-500 bg-green-50 text-green-500"
                             : "border-red-500 bg-red-50 text-red-500"
-                          : " border border-slate-400 text-slate-400 bg-white text-slate-600"
+                          : " border border-slate-400 text-slate-400 bg-white"
                       }`}
                     >
                       <span className="font-medium">{option}</span>
@@ -419,7 +435,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
             </div>
           </div>
 
-          {showExplanation && (
+          {showExplanation && currentQuestion.type !== "shortAnswer" && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-700 mb-2">Explanation:</h3>
               <p className="text-gray-600">{currentQuestion.explanation}</p>
@@ -468,8 +484,6 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
           )}
         </div>
       )}
-
-     
     </div>
   );
 };
