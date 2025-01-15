@@ -2,6 +2,7 @@
 
 import { db, storage } from "@/firebase";
 import { Message } from "@/lib/types";
+import type { QuizState } from "@/types/quiz";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import {
   collection,
@@ -17,7 +18,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { getCurrentUserId } from "../auth";
 
 export interface Page {
@@ -598,22 +599,22 @@ export const saveMarkdownToStorage = async (
     // Create a reference to the markdown file in storage
     const timestamp = new Date().getTime();
     const markdownPath = `markdown/${notebookId}/${pageId}_${timestamp}.md`;
-    
+
     // Create storage reference
     const storageRef = ref(storage, markdownPath);
 
     // Log for debugging
-    console.log('Attempting to save to path:', markdownPath);
-    console.log('Storage bucket:', storage.app.options.storageBucket);
+    console.log("Attempting to save to path:", markdownPath);
+    console.log("Storage bucket:", storage.app.options.storageBucket);
 
     // Upload with metadata
-    await uploadString(storageRef, content, 'raw', {
-      contentType: 'text/markdown',
+    await uploadString(storageRef, content, "raw", {
+      contentType: "text/markdown",
       customMetadata: {
         notebookId,
         pageId,
-        timestamp: timestamp.toString()
-      }
+        timestamp: timestamp.toString(),
+      },
     });
 
     // Get the download URL
@@ -643,7 +644,7 @@ export const saveMarkdownToStorage = async (
     notebook.pages[pageIndex].markdownRefs.push({
       url: downloadUrl,
       path: markdownPath,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     await updateDoc(notebookRef, {
@@ -664,9 +665,88 @@ export const saveMarkdownToStorage = async (
         // @ts-ignore
         code: error.code,
         // @ts-ignore
-        serverResponse: error.serverResponse
+        serverResponse: error.serverResponse,
       });
     }
+    throw error;
+  }
+};
+
+export const saveQuizState = async (quizState: QuizState): Promise<string> => {
+  try {
+    const quizId = quizState.id || `quiz_${crypto.randomUUID()}`;
+    const quizRef = doc(db, "quizzes", quizId);
+
+    await setDoc(quizRef, {
+      ...quizState,
+      id: quizId,
+      startedAt: quizState.startedAt || new Date(),
+      lastUpdatedAt: new Date(),
+    });
+
+    return quizId;
+  } catch (error) {
+    console.error("Error saving quiz state:", error);
+    throw error;
+  }
+};
+
+export const getQuizState = async (
+  quizId: string
+): Promise<QuizState | null> => {
+  try {
+    const quizRef = doc(db, "quizzes", quizId);
+    const quizSnap = await getDoc(quizRef);
+
+    if (!quizSnap.exists()) {
+      return null;
+    }
+
+    return quizSnap.data() as QuizState;
+  } catch (error) {
+    console.error("Error getting quiz state:", error);
+    throw error;
+  }
+};
+
+export const getRecentQuizzes = async (
+  pageId: string
+): Promise<QuizState[]> => {
+  try {
+    const quizzesRef = collection(db, "quizzes");
+    let querySnapshot;
+
+    try {
+      // Try with ordering
+      const q = query(
+        quizzesRef,
+        where("pageId", "==", pageId),
+        orderBy("startedAt", "desc")
+      );
+      querySnapshot = await getDocs(q);
+    } catch (error) {
+      // Fallback: get without ordering if index isn't ready
+      console.warn("Falling back to unordered query while index builds");
+      const q = query(quizzesRef, where("pageId", "==", pageId));
+      querySnapshot = await getDocs(q);
+    }
+
+    return querySnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      startedAt: doc.data().startedAt?.toDate(),
+      lastUpdatedAt: doc.data().lastUpdatedAt?.toDate(),
+    })) as QuizState[];
+  } catch (error) {
+    console.error("Error getting recent quizzes:", error);
+    throw error;
+  }
+};
+
+export const deleteQuiz = async (quizId: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, "quizzes", quizId));
+  } catch (error) {
+    console.error("Error deleting quiz:", error);
     throw error;
   }
 };

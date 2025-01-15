@@ -17,6 +17,7 @@ import Quiz from "@/components/ui/Quiz";
   import { QuizData } from "@/types/quiz";
 import { Separator } from "@/components/ui/separator";
 import { CircularProgress } from "@mui/material";
+import RecentQuizzes from "@/components/ui/RecentQuizzes";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -189,7 +190,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
            {isLoading && <div className="flex flex-col items-center w-full">
           <p className="text-slate-500 font-semibold">Generating...</p>
           <CircularProgress />
-              </div>}
+        </div>}
+        <RecentQuizzes pageId={pageId} />
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { QuizData } from "@/types/quiz";
+import { saveQuizState } from "@/lib/firebase/firestore";
+import type { QuizData, QuizState } from "@/types/quiz";
 import {
   AlertCircle,
   ArrowRight,
@@ -10,15 +11,15 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Trophy,
-  XCircle,
-  MicOff,
   Mic,
+  MicOff,
+  Trophy,
   Volume,
   Volume2,
   VolumeOff,
+  XCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface QuizProps {
   data: QuizData;
@@ -42,6 +43,7 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
   >({});
   const [aiVoice, setAiVoice] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState(false);
+  const [quizId] = useState(`quiz_${crypto.randomUUID()}`);
 
   const currentQuestion = data.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === data.questions.length - 1;
@@ -234,6 +236,39 @@ const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
       </div>
     );
   };
+
+  const saveState = async () => {
+    const quizState: QuizState = {
+      id: quizId,
+      notebookId,
+      pageId,
+      startedAt: new Date(),
+      lastUpdatedAt: new Date(),
+      currentQuestionIndex,
+      score,
+      totalQuestions: data.questions.length,
+      userAnswers,
+      evaluationResults,
+      incorrectAnswers,
+      isComplete: showResults,
+      gptFeedback,
+      quizData: data
+    };
+
+    await saveQuizState(quizState);
+  };
+
+  useEffect(() => {
+    saveState();
+  }, [
+    currentQuestionIndex,
+    score,
+    userAnswers,
+    evaluationResults,
+    incorrectAnswers,
+    showResults,
+    gptFeedback
+  ]);
 
   return (
     <div className="bg-white w-full rounded-xl  p-8  ">

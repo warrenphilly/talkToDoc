@@ -27,3 +27,20 @@ export interface QuizData {
   questions: Question[];
 }
 
+export interface QuizState {
+  id: string;
+  notebookId: string;
+  pageId: string;
+  startedAt: Date;
+  lastUpdatedAt: Date;
+  currentQuestionIndex: number;
+  score: number;
+  totalQuestions: number;
+  userAnswers: Record<number, string>;
+  evaluationResults: Record<number, boolean>;
+  incorrectAnswers: number[];
+  isComplete: boolean;
+  gptFeedback: string;
+  quizData: QuizData;
+}
+
