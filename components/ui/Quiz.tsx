@@ -17,9 +17,11 @@ import React, { useState } from "react";
 
 interface QuizProps {
   data: QuizData;
+  notebookId: string;
+  pageId: string;
 }
 
-const Quiz: React.FC<QuizProps> = ({ data }) => {
+const Quiz: React.FC<QuizProps> = ({ data, notebookId, pageId }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [gptFeedback, setGptFeedback] = useState<string>("");
@@ -89,6 +91,8 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
             correctAnswer: currentQuestion.correctAnswer,
             isLastQuestion: false,
             questionType: "shortAnswer",
+            notebookId,
+            pageId,
           }),
         });
 
@@ -98,18 +102,19 @@ const Quiz: React.FC<QuizProps> = ({ data }) => {
         setShowExplanation(true);
         setUserAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }));
 
-        setEvaluationResults((prev) => ({
-          ...prev,
-          [currentQuestion.id]: data.isCorrect,
-        }));
-
         if (data.isCorrect) {
-          setScore((prev) => prev + 1);
+          setScore((prev) => prev + data.score);
         } else {
           setIncorrectAnswers((prev) => [...prev, currentQuestion.id]);
         }
 
         setGptFeedback(data.feedback);
+
+        if (data.improvements) {
+          // You might want to add a new state for improvements
+          // setImprovements(data.improvements);
+        }
+
       } catch (error) {
         console.error("Error evaluating answer:", error);
       } finally {

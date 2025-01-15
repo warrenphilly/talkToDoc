@@ -87,15 +87,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full  border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] overflow-y-auto">
-      <div className="flex flex-col items-center justify-center p-3 gap-4">
-        <h1 className="text-xl font-semibold text-[#94b347]">Quiz Me</h1>
-       
-      </div>
-
-      
-
-      <div className="text-white min-h-[400px] rounded-lg flex flex-col justify-between items-center p-4 m-4">
+    <div className="w-full h-full bg-white rounded-xl p-6">
+      <div className="w-full h-full">
         {!quizData ? (
           <div className="flex flex-col gap-5 w-full max-w-md">
             
@@ -172,7 +165,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             >
               Exit Quiz
             </Button>
-            <Quiz data={quizData} />
+            <Quiz 
+              data={quizData} 
+              notebookId={notebookId} 
+              pageId={pageId}
+            />
           </div>
         )}
       </div>
