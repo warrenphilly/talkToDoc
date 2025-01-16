@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { db } from "@/firebase";
 import { saveQuizState } from "@/lib/firebase/firestore";
 import type { QuizData, QuizState } from "@/types/quiz";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import {
   AlertCircle,
   ArrowRight,
@@ -59,7 +59,7 @@ const Quiz: React.FC<QuizProps> = ({
     initialState?.gptFeedback || ""
   );
   const [quizId] = useState<string>(
-    initialState?.id || `quiz_${crypto.randomUUID()}`
+    initialState?.id || `quiz_${pageId}_${new Date().toISOString().split('T')[0]}`
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -67,52 +67,32 @@ const Quiz: React.FC<QuizProps> = ({
   const [vocalAnswer, setVocalAnswer] = useState(false);
   const [isChangingQuestion, setIsChangingQuestion] = useState(false);
 
+  const questionsWithIds = data.questions.map((question, index) => ({
+    ...question,
+    id: question.id || index
+  }));
+
   const handleAnswer = async (answer: string) => {
     setSelectedAnswer(answer);
     const currentQuestion = data.questions[currentQuestionIndex];
     const correct = answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
     
-    // Batch state updates
-    const newScore = correct ? score + 1 : score;
-    const newIncorrectAnswers = correct ? incorrectAnswers : [...incorrectAnswers, currentQuestionIndex];
-    const newUserAnswers = { ...userAnswers, [currentQuestionIndex]: answer };
-    const newEvaluationResults = { ...evaluationResults, [currentQuestionIndex]: correct };
-
-    // Update all state at once
-    setScore(newScore);
-    setIncorrectAnswers(newIncorrectAnswers);
-    setUserAnswers(newUserAnswers);
-    setEvaluationResults(newEvaluationResults);
+    // Update local state
     setIsCorrect(correct);
     setShowExplanation(true);
 
-    // Save state once after all updates
+    // Update the quiz document with the new answer and evaluation
     try {
-      const quizState: QuizState = {
-        id: quizId,
-        notebookId,
-        pageId,
-        startedAt: initialState?.startedAt || new Date(),
+      const quizRef = doc(db, "quizzes", quizId);
+      await updateDoc(quizRef, {
+        [`userAnswers.${currentQuestionIndex}`]: answer,
+        [`evaluationResults.${currentQuestionIndex}`]: correct,
+        score: correct ? score + 1 : score,
         lastUpdatedAt: new Date(),
-        currentQuestionIndex,
-        score: newScore,
-        totalQuestions: data.questions.length,
-        userAnswers: newUserAnswers,
-        evaluationResults: newEvaluationResults,
-        incorrectAnswers: newIncorrectAnswers,
-        isComplete: showResults,
-        gptFeedback,
-        quizData: {
-          questions: data.questions,
-          format: data.format || 'standard',
-          numberOfQuestions: data.questions.length,
-          questionTypes: data.questions.map(q => q.type)
-        }
-      };
-
-      await saveQuizState(quizState);
+        incorrectAnswers: correct ? incorrectAnswers : [...incorrectAnswers, currentQuestionIndex]
+      });
     } catch (error) {
-      console.error("Error saving quiz state:", error);
+      console.error("Error updating quiz answer:", error);
     }
   };
 
@@ -120,38 +100,20 @@ const Quiz: React.FC<QuizProps> = ({
     setIsChangingQuestion(true);
     const newIndex = currentQuestionIndex + 1;
     
-    // Batch state updates
+    // Update local state
     setCurrentQuestionIndex(newIndex);
     setSelectedAnswer("");
     setGptFeedback("");
     setShowExplanation(false);
 
     try {
-      const quizState: QuizState = {
-        id: quizId,
-        notebookId,
-        pageId,
-        startedAt: initialState?.startedAt || new Date(),
-        lastUpdatedAt: new Date(),
+      const quizRef = doc(db, "quizzes", quizId);
+      await updateDoc(quizRef, {
         currentQuestionIndex: newIndex,
-        score,
-        totalQuestions: data.questions.length,
-        userAnswers,
-        evaluationResults,
-        incorrectAnswers,
-        isComplete: showResults,
-        gptFeedback,
-        quizData: {
-          questions: data.questions,
-          format: data.format || 'standard',
-          numberOfQuestions: data.questions.length,
-          questionTypes: data.questions.map(q => q.type)
-        }
-      };
-
-      await saveQuizState(quizState);
+        lastUpdatedAt: new Date()
+      });
     } catch (error) {
-      console.error("Error saving quiz state:", error);
+      console.error("Error updating current question:", error);
     } finally {
       setTimeout(() => {
         setIsChangingQuestion(false);
@@ -231,7 +193,7 @@ const Quiz: React.FC<QuizProps> = ({
     question,
     userAnswer,
   }: {
-    question: typeof currentQuestion;
+    question: typeof questionsWithIds[0];
     userAnswer?: string;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -239,7 +201,7 @@ const Quiz: React.FC<QuizProps> = ({
     const isCorrectAnswer = userAnswer === question.correctAnswer;
 
     return (
-      <div className="border rounded-lg mb-2 p-4 ">
+      <div key={`summary-question-${question.id}`} className="border rounded-lg mb-2 p-4">
         <Button
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
@@ -298,6 +260,21 @@ const Quiz: React.FC<QuizProps> = ({
         )}
       </div>
     );
+  };
+
+  const handleViewResults = async () => {
+    setShowResults(true);
+    setShowSummary(true);
+    
+    try {
+      const quizRef = doc(db, "quizzes", quizId);
+      await updateDoc(quizRef, {
+        isComplete: true,
+        lastUpdatedAt: new Date()
+      });
+    } catch (error) {
+      console.error("Error marking quiz as complete:", error);
+    }
   };
 
   return (
@@ -361,7 +338,7 @@ const Quiz: React.FC<QuizProps> = ({
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="font-semibold text-gray-800 mb-4">Question Summary</h3>
           <div className="space-y-2">
-            {data.questions.map((question) => (
+            {questionsWithIds.map((question) => (
               <div key={`question-${question.id}`}>
                 <QuestionSummary
                   question={question}
@@ -392,7 +369,7 @@ const Quiz: React.FC<QuizProps> = ({
             </div>
             <div className="w-full flex flex-col items-center justify-center bg-red-">
               <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {currentQuestion.question}
+                {questionsWithIds[currentQuestionIndex].question}
               </h2>
             </div>
 
@@ -530,10 +507,7 @@ const Quiz: React.FC<QuizProps> = ({
             isLastQuestion && (
               <div className="w-full flex flex-row items-center justify-end">
                 <Button
-                  onClick={() => {
-                    setShowResults(true);
-                    setShowSummary(true);
-                  }}
+                  onClick={handleViewResults}
                   className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
                 >
                   <span className="text-slate-100">View Results</span>

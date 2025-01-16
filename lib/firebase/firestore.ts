@@ -648,11 +648,14 @@ export const saveMarkdownToStorage = async (
 
 export const saveQuizState = async (quizState: QuizState): Promise<string> => {
   try {
-    // Deep clone and sanitize the quiz state to remove any undefined values
+    // Add validation
+    if (!quizState.notebookId || !quizState.pageId) {
+      throw new Error("Missing required fields: notebookId or pageId");
+    }
+
+    // Deep clone and sanitize the quiz state
     const sanitizedQuizState = {
-      id: quizState.id || `quiz_${crypto.randomUUID()}`,
-      notebookId: quizState.notebookId || "",
-      pageId: quizState.pageId || "",
+      ...quizState,
       startedAt: quizState.startedAt || new Date(),
       lastUpdatedAt: new Date(),
       currentQuestionIndex: quizState.currentQuestionIndex ?? 0,
@@ -663,38 +666,13 @@ export const saveQuizState = async (quizState: QuizState): Promise<string> => {
       incorrectAnswers: quizState.incorrectAnswers ?? [],
       isComplete: quizState.isComplete ?? false,
       gptFeedback: quizState.gptFeedback ?? "",
-      quizData: {
-        questions: (quizState.quizData?.questions ?? []).map((q) => ({
-          id: q.id ?? 0,
-          question: q.question ?? "",
-          type: q.type ?? "multipleChoice",
-          correctAnswer: q.correctAnswer ?? "",
-          explanation: q.explanation ?? "",
-          options: Array.isArray(q.options) ? q.options : [],
-        })),
-        format: quizState.quizData?.format ?? "standard",
-        numberOfQuestions: quizState.quizData?.questions?.length ?? 0,
-        questionTypes: (quizState.quizData?.questions ?? []).map(
-          (q) => q.type ?? "multipleChoice"
-        ),
-      },
     };
 
-    // Remove any remaining undefined values
-    const cleanData = JSON.parse(JSON.stringify(sanitizedQuizState));
-
-    // Convert dates to Firestore timestamps
-    const firestoreData = {
-      ...cleanData,
-      startedAt: serverTimestamp(),
-      lastUpdatedAt: serverTimestamp(),
-    };
-
-    // Save to Firestore
     const quizRef = doc(db, "quizzes", sanitizedQuizState.id);
-    await setDoc(quizRef, firestoreData);
+    
+    // Use setDoc with merge option to update existing document or create if it doesn't exist
+    await setDoc(quizRef, sanitizedQuizState, { merge: true });
 
-    console.log("Quiz state saved successfully:", sanitizedQuizState.id);
     return sanitizedQuizState.id;
   } catch (error) {
     console.error("Error saving quiz state:", error);
@@ -720,23 +698,21 @@ export const getQuizState = async (
   }
 };
 
-export const getRecentQuizzes = async (
-  pageId: string
-): Promise<QuizState[]> => {
+export const getRecentQuizzes = async (pageId: string): Promise<QuizState[]> => {
   try {
     const quizzesRef = collection(db, "quizzes");
     let querySnapshot;
 
     try {
-      // Try with ordering
+      // Query for quizzes with the specific pageId, ordered by startedAt
       const q = query(
         quizzesRef,
         where("pageId", "==", pageId),
-        orderBy("startedAt", "desc")
+        orderBy("startedAt", "desc"),
+        limit(5) // Limit to most recent 5 quizzes
       );
       querySnapshot = await getDocs(q);
     } catch (error) {
-      // Fallback: get without ordering if index isn't ready
       console.warn("Falling back to unordered query while index builds");
       const q = query(quizzesRef, where("pageId", "==", pageId));
       querySnapshot = await getDocs(q);

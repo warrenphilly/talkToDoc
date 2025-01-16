@@ -11,6 +11,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Image, Upload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
+import { saveQuizState } from "@/lib/firebase/firestore";
 
 // import { Quiz } from "@/components/ui/Quiz";
 import RecentQuizzes from "@/components/ui/RecentQuizzes";
@@ -82,7 +83,30 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       }
 
       const data = await response.json();
+      // Generate a deterministic quiz ID based on pageId and timestamp
+      const timestamp = new Date().toISOString().split('T')[0]; // Get current date YYYY-MM-DD
+      const quizId = `quiz_${pageId}_${timestamp}`;
+      
+      const initialQuizState: QuizState = {
+        id: quizId,
+        notebookId,
+        pageId,
+        startedAt: new Date(),
+        lastUpdatedAt: new Date(),
+        currentQuestionIndex: 0,
+        score: 0,
+        totalQuestions: data.quiz.questions.length,
+        userAnswers: {},
+        evaluationResults: {},
+        incorrectAnswers: [],
+        isComplete: false,
+        gptFeedback: "",
+        quizData: data.quiz
+      };
+      
+      await saveQuizState(initialQuizState);
       setQuizData(data.quiz);
+      
     } catch (error) {
       console.error("Error generating quiz:", error);
     } finally {
@@ -224,16 +248,19 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                      <div className="text-slate-400 text-xl font-semibold">
               Generating ...
             </div>
-            <CircularProgress
-              sx={{
-                color: "#94b347",
-              }}
-            />
+        
                   </>
                 ) : (
                   "Generate Test"
                 )}
               </Button>
+              {isLoading && (
+                <CircularProgress
+                  sx={{
+                    color: "#94b347",
+                  }}
+                />
+              )}
             </div>
           </div>
         ) : (

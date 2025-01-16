@@ -243,8 +243,8 @@ export function SidebarNav() {
                               <SidebarMenuButton
                                 asChild
                                 className={`${
-                                  index === notebooks.length 
-                                    ? " rounded-t-none rounded-b-xl"
+                                  index === notebooks.length - 1
+                                    ? "rounded-t-none rounded-b-xl"
                                     : "rounded-none"
                                 }`}
                               >
