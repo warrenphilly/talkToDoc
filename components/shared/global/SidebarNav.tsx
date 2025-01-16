@@ -117,7 +117,7 @@ export function SidebarNav() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarContent className="bg-slate-100 text-slate-400 py-4 pl-2 w-full ">
+        <SidebarContent className="bg-slate-200 text-slate-400 py-4 pl-2 w-full ">
           <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
             <SidebarGroupContent className="flex flex-col justify-between h-full w-full">
               <SidebarMenu className="h-fit rounded-2xl flex flex-col gap-0 w-full  ">
@@ -157,13 +157,13 @@ export function SidebarNav() {
                     {isLoading ? (
                       <Skeleton className="h-10 w-full " />
                     ) : (
-                      <SidebarMenuItem className=" text-xl w-full py-2 border-t border-b ">
+                      <SidebarMenuItem className=" text-xl w-full py-2 ">
                         <SidebarMenuButton
                           asChild
-                          className={`w-full py-2 rounded-lg text-slate-400  text-sm items-center bg-slate-100  p-5 ${
+                          className={`w-full py-2 rounded-xl text-slate-400  text-sm items-center bg-slate-200  p-5 ${
                             pathname === item.url
-                              ? "bg-slate-200 hover:bg-slate-200"
-                              : "hover:bg-slate-100  "
+                              ? "bg-[#bdcc97] hover:bg-[#bdcc97] text-white hover:text-white"
+                              : "hover:bg-slate-300"
                           }`}
                         >
                           <Link
@@ -171,7 +171,7 @@ export function SidebarNav() {
                             className="flex items-center gap-2 p-2"
                           >
                             <item.icon
-                              className={`text-[30px] text-[#94b347]`}
+                              className={`text-[30px] text-[#94b347] ${pathname === item.url ? "text-white" : ""}`}
                             />
                             <span>{item.title}</span>
                           </Link>
@@ -189,16 +189,16 @@ export function SidebarNav() {
                     <Collapsible
                       open={isOpen}
                       onOpenChange={setIsOpen}
-                      className={`w-full justify-center  my-2 bg-slate-100 ${
+                      className={`w-full h-fit justify-center   my-2 bg-slate-200 rounded-xl ${
                         pathname.includes("/notes/")
-                          ? "bg-slate-200 text-slate-400 rounded-lg"
+                          ? "bg-[#bdcc97] text-slate-400 rounded-lg"
                           : " "
                       } `}
                     >
                       <CollapsibleTrigger
-                        className={`flex items-center gap-2 py-2  my-1 rounded-lg w-full hover:bg-slate-200 px-4 `}
+                        className={`flex items-center gap-2 hover:bg-slate-300  py-2 rounded-lg w-full bg-none px-4  `}
                       >
-                        <BookOpen className="text-[#94b347]  h-4" />
+                        <BookOpen className="text-[#94b347]  h-4"  />
                         <span>Notebooks</span>
                         <ChevronDown
                           className={`ml-auto transform transition-transform duration-200 ${
@@ -220,25 +220,25 @@ export function SidebarNav() {
                           notebooks.map((notebook, index) => (
                             <SidebarMenuItem
                               key={notebook.id}
-                              className={`w-full border-t border-slate-300 rounded-none`}
+                              className={`w-full border-t py-1 rounded-none`}
                             >
                               <SidebarMenuButton
                                 asChild
                                 className={`${
                                   index === notebooks.length - 1
-                                    ? " rounded-t-none rounded-b-lg"
+                                    ? " rounded-t-none rounded-b-xl"
                                     : "rounded-none"
                                 }`}
                               >
                                 <Link
                                   href={`/notes/${notebook.id}`}
-                                  className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 ${
+                                  className={`flex items-center gap-2 pl-10  justify-start hover:bg-slate-300 ${
                                     pathname === `/notes/${notebook.id}`
                                       ? "bg-[#bdcc97] text-white"
                                       : "hover:bg-slate-300 "
                                   }`}
                                 >
-                                  <FileText className="text-[#94b347]" />
+                                  <FileText className={`text-[#94b347] ${pathname === `/notes/${notebook.id}` ? "text-white" : ""}`} />
                                   <span>{notebook.title}</span>
                                 </Link>
                               </SidebarMenuButton>
