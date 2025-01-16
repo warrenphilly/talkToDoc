@@ -36,15 +36,28 @@ interface Message {
   systemFiles?: string[];
 }
 
+interface ContextSection {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+
 interface SideChatProps {
-  primeSentence: string | null;
-  setPrimeSentence: (primeSentence: string | null) => void;
   notebookId: string;
   pageId: string;
+  primeSentence: string | null;
+  setPrimeSentence: (sentence: string | null) => void;
+}
+
+interface SideChatProps {
+  notebookId: string;
+  pageId: string;
+  primeSentence: string | null;
+  setPrimeSentence: (sentence: string | null) => void;
 }
 
 const SideChat = ({
-  primeSentence: initialPrimeSentence,
+  primeSentence,
   setPrimeSentence,
   notebookId,
   pageId,
@@ -54,23 +67,86 @@ const SideChat = ({
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [primeSentence, setPrimeSentenceLocal] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [contextSections, setContextSections] = useState<ContextSection[]>([]);
 
   const { user } = useUser();
 
-  // Update both local and parent state when prime sentence changes
-  const updatePrimeSentence = (newPrimeSentence: string | null) => {
-    setPrimeSentenceLocal(newPrimeSentence);
-    setPrimeSentence(newPrimeSentence);
+  // Add new context section
+  const addContextSection = async (text: string) => {
+    if (contextSections.length >= 3) {
+      alert("Maximum of 3 context sections allowed. Please remove one first.");
+      return;
+    }
+
+    const newSection: ContextSection = {
+      id: crypto.randomUUID(),
+      text,
+      timestamp: Date.now(),
+    };
+
+    // Update local state immediately
+    setContextSections(prev => [...prev, newSection]);
+
+    try {
+      if (sideChatId) {
+        await updateSideChat(sideChatId, [...contextSections, newSection], messages);
+      } else {
+        const newSideChatId = await saveSideChat(
+          notebookId,
+          pageId,
+          [newSection],
+          []
+        );
+        setSideChatId(newSideChatId);
+      }
+    } catch (error) {
+      // Revert local state if update fails
+      setContextSections(prev => prev.filter(section => section.id !== newSection.id));
+      console.error("Error adding context section:", error);
+    }
   };
 
+  // Remove context section
+  const removeContextSection = async (sectionId: string) => {
+    // Store previous state in case we need to revert
+    const previousSections = [...contextSections];
+    
+    // Update local state immediately
+    setContextSections(prev => prev.filter(section => section.id !== sectionId));
+
+    try {
+      if (sideChatId) {
+        const updatedSections = contextSections.filter(
+          section => section.id !== sectionId
+        );
+        await updateSideChat(sideChatId, updatedSections, messages);
+        
+        // If this was the last context section, clear the prime sentence
+        if (updatedSections.length === 0) {
+          setPrimeSentence(null);
+        }
+      }
+    } catch (error) {
+      // Revert local state if update fails
+      setContextSections(previousSections);
+      console.error("Error removing context section:", error);
+    }
+  };
+
+  // Effect to handle primeSentence changes
+  useEffect(() => {
+    if (primeSentence) {
+      addContextSection(primeSentence);
+    }
+  }, [primeSentence]);
+
+  // Initialize side chat
   useEffect(() => {
     const initializeSideChat = async () => {
       console.log("Initializing side chat with:", {
         notebookId,
         pageId,
-        initialPrimeSentence,
+        primeSentence,
       });
 
       setIsLoading(true);
@@ -81,21 +157,7 @@ const SideChat = ({
           console.log("Loading existing side chat:", existingSideChat);
           setSideChatId(existingSideChat.id);
           setMessages(existingSideChat.messages || []);
-          updatePrimeSentence(existingSideChat.primeSentence);
-        } else if (initialPrimeSentence) {
-          console.log("Creating new side chat with prime sentence");
-          const newSideChatId = await saveSideChat(
-            notebookId,
-            pageId,
-            initialPrimeSentence,
-            []
-          );
-          console.log("Created new side chat with ID:", newSideChatId);
-          setSideChatId(newSideChatId);
-          updatePrimeSentence(initialPrimeSentence);
-          setMessages([]);
-        } else {
-          console.log("No prime sentence available, waiting for selection");
+          setContextSections(existingSideChat.contextSections || []);
         }
       } catch (error) {
         console.error("Error initializing side chat:", error);
@@ -106,10 +168,8 @@ const SideChat = ({
 
     if (notebookId && pageId) {
       initializeSideChat();
-    } else {
-      console.warn("Missing required IDs:", { notebookId, pageId });
     }
-  }, [notebookId, pageId, initialPrimeSentence]);
+  }, [notebookId, pageId]);
 
   const sendMessage = async (messageText: string = input) => {
     if (!messageText.trim() && files.length === 0) return;
@@ -120,13 +180,18 @@ const SideChat = ({
         notebookId,
         pageId,
         sideChatId,
-        initialPrimeSentence,
+        primeSentence,
       });
 
       const formData = new FormData();
       formData.append("userMessage", messageText);
       formData.append("notebookId", notebookId);
       formData.append("pageId", pageId);
+      
+      // Add context sections to the request
+      const contextText = contextSections.map(section => section.text).join("\n\n");
+      formData.append("contextSections", contextText);
+
       formData.append("systemMessage", `You are a helpful Teacher...`);
 
       const userMessage: Message = {
@@ -154,6 +219,7 @@ const SideChat = ({
       const aiMessage = {
         user: "AI",
         text: data.reply,
+        usedExternalContext: data.usedExternalContext // Track if external context was used
       };
 
       const finalMessages = [...newMessages, aiMessage];
@@ -163,13 +229,13 @@ const SideChat = ({
         if (sideChatId) {
           console.log("Updating existing side chat:", {
             sideChatId,
-            primeSentence: initialPrimeSentence || "",
+            contextSections: contextSections,
             messagesCount: finalMessages.length,
           });
 
           await updateSideChat(
             sideChatId,
-            initialPrimeSentence || "",
+            contextSections,
             finalMessages
           );
           console.log("Side chat updated successfully");
@@ -177,20 +243,20 @@ const SideChat = ({
           console.log("Creating new side chat:", {
             notebookId,
             pageId,
-            primeSentence: initialPrimeSentence,
+            contextSections: contextSections,
             messagesCount: finalMessages.length,
           });
 
-          if (!initialPrimeSentence) {
+          if (!primeSentence) {
             console.warn(
-              "No prime sentence available, creating with empty string"
+              "No selected text available, creating with empty string"
             );
           }
 
           const newSideChatId = await saveSideChat(
             notebookId,
             pageId,
-            initialPrimeSentence || "",
+            contextSections,
             finalMessages
           );
           console.log("New side chat created with ID:", newSideChatId);
@@ -213,15 +279,51 @@ const SideChat = ({
   const handleClearChat = async () => {
     try {
       if (sideChatId) {
+        // Clear local state immediately
+        setMessages([]);
+        setContextSections([]);
+        setPrimeSentence(null);
+        
+        // Delete the entire side chat from the database
         await deleteSideChat(sideChatId);
         setSideChatId(null);
-        setMessages([]);
-        updatePrimeSentence(null);
       }
     } catch (error) {
       console.error("Error clearing chat:", error);
+      // Optionally restore state if deletion fails
+      const existingSideChat = await getSideChat(notebookId, pageId);
+      if (existingSideChat) {
+        setMessages(existingSideChat.messages || []);
+        setContextSections(existingSideChat.contextSections || []);
+      }
     }
   };
+
+  // Render context sections with animation
+  const renderContextSections = () => (
+    <div className="m-2">
+      {contextSections.length > 0 ? (
+        <div className="space-y-2">
+          {contextSections.map((section) => (
+            <div
+              key={section.id}
+              className="relative bg-white rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
+            >
+              <p className="pr-8">"{section.text}"</p>
+              <button
+                onClick={() => removeContextSection(section.id)}
+                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500 text-center">Click text to add context (max 3)</p>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -237,7 +339,7 @@ const SideChat = ({
       <Button
             className="bg-slate-100 hover:bg-red-600 text-white w-fit ml-4 rounded-full border border-red-600 text-red-600"
             onClick={handleClearChat}
-            disabled={!sideChatId}
+            
           >
             Clear Chat
           </Button>
@@ -247,13 +349,8 @@ const SideChat = ({
       </div>
 
       <div className=" bg-slate-200 text-[#94b347] rounded-lg   p-4 m-4">
-        <div className="m-2">
-          {initialPrimeSentence ? (
-            <p>"{initialPrimeSentence}"</p>
-          ) : (
-            <p className="text-gray-500">Click a Sentence to add context</p>
-          )}
-        </div>
+        {renderContextSections()}
+        
         <div className="h-px bg-slate-300" />
         <div className="flex flex-col items-center justify-center mt-4">
           <h1 className="text-sm font-semibold text-slate-400">Actions</h1>
@@ -263,40 +360,40 @@ const SideChat = ({
           <Button
             className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
             onClick={() => sendMessage("Explain this in simple terms to make it easier to understand")}
-            disabled={initialPrimeSentence == null}
+            disabled={primeSentence == null}
           >
             Explain{" "}
           </Button>
           <Button
             className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
             onClick={() => sendMessage("Expand on this in greater detail")}
-            disabled={initialPrimeSentence == null}
+            disabled={primeSentence == null}
           >
             Expand{" "}
           </Button>
           <Button
             className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
             onClick={() => sendMessage("Give me a step-by-step example")}
-            disabled={initialPrimeSentence == null}
+            disabled={primeSentence == null}
           >
             Example{" "}
           </Button>
           <Button
             className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
-            onClick={() => sendMessage("Give me a step-by-step example")}
-            disabled={initialPrimeSentence == null}
+            onClick={() => sendMessage("Reword this in a way that is easier to understand")}
+            disabled={primeSentence == null}
           >
             Reword{" "}
           </Button>
-          
-          
           <Button
             className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
-            onClick={() => setPrimeSentence(null)}
-            disabled={initialPrimeSentence == null}
+            onClick={() => sendMessage("Summarize this in a way that is easier to understand, give me the main points")}
+            disabled={primeSentence == null}
           >
-            Clear Context{" "}
+            Summarize{" "}
           </Button>
+          
+         
         
         </div>
       </div>

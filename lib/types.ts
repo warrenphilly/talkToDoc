@@ -32,3 +32,20 @@ export interface Page {
     timestamp: string;
   }[];
 }
+
+export interface ContextSection {
+  id: string;
+  text: string;
+  timestamp: number;
+  isHighlighted?: boolean;
+}
+
+export interface SideChat {
+  id: string;
+  notebookId: string;
+  pageId: string;
+  contextSections: ContextSection[];
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
+}

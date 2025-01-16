@@ -10,7 +10,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Textarea } from "@/components/ui/textarea";
-import { Message, Section } from "@/lib/types";
+import { Message, Section, ContextSection } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
 import {
   Image,
@@ -37,6 +37,9 @@ import {
   deletePage,
   getNote,
   saveNote,
+  getSideChat,
+  saveSideChat,
+  updateSideChat,
 } from "@/lib/firebase/firestore";
 import { ParagraphData } from "@/lib/types";
 import {
@@ -103,12 +106,43 @@ const ChatClient = ({
     sentenceClick(sentence, setPrimeSentence, setShowChat);
   };
 
-  const handleSectionClick = (
+  const handleSectionClick = async (
     section: Section,
     setPrimeSentence: (sentence: string) => void,
     setShowChat: (show: boolean) => void
   ) => {
-    sectionClick(section, setPrimeSentence, setShowChat);
+    try {
+      // Get the section text
+      const sectionText = section.sentences.map((sentence) => sentence.text).join(" ");
+      
+      // Update UI state
+      setPrimeSentence(sectionText);
+      setShowChat(true);
+      
+      // Get or create side chat
+      let sideChat = await getSideChat(notebookId, tabId);
+      
+      const newContextSection: ContextSection = {
+        id: crypto.randomUUID(),
+        text: sectionText,
+        timestamp: Date.now(),
+        isHighlighted: true
+      };
+      
+      if (!sideChat) {
+        // Create new side chat if it doesn't exist
+        await saveSideChat(notebookId, tabId, [newContextSection], []);
+      } else {
+        // Update existing side chat with new context section
+        const updatedContextSections = [
+          ...sideChat.contextSections,
+          newContextSection
+        ];
+        await updateSideChat(sideChat.id, updatedContextSections, sideChat.messages);
+      }
+    } catch (error) {
+      console.error("Error updating side chat:", error);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -290,7 +324,7 @@ const ChatClient = ({
           <div className="flex flex-row gap-2 items-center justify-between px-7">
             <Button
               onClick={() => setShowUpload(!showUpload)}
-              className={`bg-slate-100 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-50 text-slate-500 rounded-2xl w-fit ${
+              className={`bg-slate-100 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 text-slate-500 rounded-2xl w-fit ${
                 messages.length > 0 ? "block" : "hidden"
               }`}
             >
@@ -308,9 +342,9 @@ const ChatClient = ({
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:bg-slate-50 hover:border-[#94b347] hover:text-[#94b347]  rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-            Study Cards
+              Generate Study Cards
             </Button>
             <Button
               onClick={() => {
@@ -321,9 +355,9 @@ const ChatClient = ({
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-50 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-              {showQuiz ? "Close Quiz" : "Quiz Me"}
+              Quiz Me
             </Button>
 
             <Button
@@ -335,14 +369,14 @@ const ChatClient = ({
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-50 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-slate-100 rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-500">
+                <Button className="bg-slate-100 rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100">
                   <MoreVertical />
                 </Button>
               </DropdownMenuTrigger>
@@ -525,10 +559,10 @@ const ChatClient = ({
                       )}
                     </Button>
                     <SideChat
-                      primeSentence={primeSentence}
-                      setPrimeSentence={setPrimeSentence}
                       notebookId={notebookId}
                       pageId={tabId}
+                      primeSentence={primeSentence}
+                      setPrimeSentence={setPrimeSentence}
                     />
                   </ResizablePanel>
                 )}
@@ -563,7 +597,10 @@ const ChatClient = ({
                         <Maximize2 size={16} />
                       )}
                     </Button>
-                    <QuizPanel notebookId={notebookId} pageId={tabId} />
+                    <QuizPanel
+                      notebookId={notebookId}
+                      pageId={tabId}
+                    />
                   </ResizablePanel>
                 )}
               </ResizablePanel>

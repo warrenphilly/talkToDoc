@@ -12,13 +12,15 @@ export async function POST(req: NextRequest) {
     const notebookId = formData.get("notebookId") as string;
     const pageId = formData.get("pageId") as string;
     const files = formData.getAll("files");
+    const contextSections = formData.get("contextSections") as string;
 
     // Debug logs
     console.log("Received parameters:", {
       userMessage,
       notebookId,
       pageId,
-      systemMessage: systemMessage?.slice(0, 50) + "...", // Log first 50 chars of system message
+      contextSections,
+      systemMessage: systemMessage?.slice(0, 50) + "...",
     });
 
     // Validate required inputs with more specific error messages
@@ -137,22 +139,42 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    // Create messages for OpenAI API with context
+    // Create messages for OpenAI API with prioritized context
     const messages = [
       {
         role: "system",
-        content: `You are a helpful Teacher. Use the following content as context for answering questions:
+        content: `You are a helpful Teacher. Your primary focus is to explain and discuss the following specific context:
 
+${contextSections || "No specific context provided."}
+
+Additional document context is available if needed:
 ${allContent}
 
-When explaining content, first understand the context provided, then address the user's specific request. 
-Provide detailed yet concise explanations that are easy to understand. If you're asked to explain something, 
-make sure to break it down into simple terms and provide relevant examples when appropriate. 
-Please respond in complete paragraphs.`,
+Instructions:
+1. Always prioritize explaining and answering questions about the specific context provided.
+2. If the specific context is insufficient to fully answer the question:
+   - First, provide what you can explain from the specific context
+   - Then, clearly indicate when you're supplementing with information from the broader document
+   - Use phrases like "Additionally, from the broader document..." or "To provide more context..."
+3. If the question is completely unrelated to the specific context:
+   - Acknowledge this fact
+   - Suggest refocusing on the provided context
+   - Only if necessary, provide an answer using the broader document content
+
+Remember to:
+- Break down complex concepts into simple terms
+- Provide relevant examples when appropriate
+- Respond in clear, complete paragraphs
+- Always maintain focus on the specific context when possible
+- unless told otherwise, keep reponses as short as possible without losing information`,
       },
       { role: "user", content: userMessage },
-      { role: "system", content: systemMessage },
     ];
+
+    // Add system message if provided
+    if (systemMessage) {
+      messages.push({ role: "system", content: systemMessage });
+    }
 
     console.log("Sending request to OpenAI");
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -193,15 +215,19 @@ Please respond in complete paragraphs.`,
       );
     }
 
+    // Add metadata about context usage to the response
+    const aiResponse = data.choices[0].message.content;
+    const usedExternalContext = aiResponse.toLowerCase().includes("from the broader document");
+
     return NextResponse.json({
-      reply: data.choices[0].message.content,
+      reply: aiResponse,
+      usedExternalContext,
     });
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json(
       {
-        reply:
-          "An error occurred while processing your request. Please try again.",
+        reply: "An error occurred while processing your request. Please try again.",
       },
       { status: 500 }
     );
