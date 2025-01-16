@@ -77,6 +77,8 @@ interface SideChat {
   updatedAt: number;
 }
 
+// export const notebooksCollection = collection(db, "notebooks");
+
 export const saveNote = async (
   notebookId: string,
   pageId: string,

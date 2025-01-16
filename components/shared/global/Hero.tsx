@@ -17,7 +17,7 @@ export default function Hero() {
       <header className="px-4 bg-[#e2e9ce] lg:px-6 h-14 flex items-center text-[#8b976e]">
         <Link className="flex items-center justify-center" href="#">
           <Cpu className="h-6 w-6" />
-          <span className="sr-only">Studyo</span>
+          <span className="sr-only">GammaNote</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link
@@ -48,7 +48,7 @@ export default function Hero() {
             <div className="flex flex-col  items-center space-y-4 text-center">
               <div className="space-y-2">
                 <h1 className="text-3xl text-[#94b347] h-full font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Welcome to Studyo
+                  Welcome to GammaNote
                 </h1>
                 <h1 className="text-3xl text-[#8b976e] h-full font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
                   The world's most powerful notebook.

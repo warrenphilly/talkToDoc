@@ -221,8 +221,14 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
               >
                 {isLoading ? (
                   <>
-                    Generating...
-                    <CircularProgress className="bg-[#94b347]" />
+                     <div className="text-slate-400 text-xl font-semibold">
+              Generating ...
+            </div>
+            <CircularProgress
+              sx={{
+                color: "#94b347",
+              }}
+            />
                   </>
                 ) : (
                   "Generate Test"

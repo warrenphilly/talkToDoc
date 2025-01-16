@@ -47,6 +47,9 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { db } from '@/firebase';
+
 // Menu items.
 const items = [
   {
@@ -86,34 +89,49 @@ export function SidebarNav() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNotebooks = async () => {
+    const fetchUserAndSetupNotebooksListener = async () => {
       try {
-        // Get Clerk ID
         const clerkUserId = await getCurrentUserId();
         if (!clerkUserId) return;
 
-        // Get Firestore user
         const firestoreUser = await getUserByClerkId(clerkUserId);
-
         setUser(firestoreUser);
 
-        // if (!firestoreUser) return;
-
-        // // Get notebooks using Firestore user ID
         if (!firestoreUser) return;
-        const userNotebooks = await getNotebooksByFirestoreUserId(
-          firestoreUser.id
+
+        const notebooksRef = collection(db, 'notebooks');
+        const notebooksQuery = query(
+          notebooksRef,
+          where('userId', '==', firestoreUser.id)
         );
-        setNotebooks(userNotebooks);
-        setIsLoading(false);
+
+        const unsubscribe = onSnapshot(notebooksQuery, (snapshot) => {
+          const updatedNotebooks = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title,
+              createdAt: data.createdAt?.toDate() || new Date(),
+              userId: data.userId,
+              pages: data.pages,
+            } as Notebook;
+          });
+          updatedNotebooks.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          setNotebooks(updatedNotebooks);
+          setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+
       } catch (error) {
-        console.error("Error fetching notebooks:", error);
+        console.error("Error setting up notebooks listener:", error);
+        setIsLoading(false);
       }
     };
 
-    fetchNotebooks();
-    console.log(notebooks);
+    fetchUserAndSetupNotebooksListener();
   }, []);
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -220,12 +238,12 @@ export function SidebarNav() {
                           notebooks.map((notebook, index) => (
                             <SidebarMenuItem
                               key={notebook.id}
-                              className={`w-full border-t py-1 rounded-none`}
+                              className={`w-full border-t pt-1 rounded-none`}
                             >
                               <SidebarMenuButton
                                 asChild
                                 className={`${
-                                  index === notebooks.length - 1
+                                  index === notebooks.length 
                                     ? " rounded-t-none rounded-b-xl"
                                     : "rounded-none"
                                 }`}
@@ -234,7 +252,7 @@ export function SidebarNav() {
                                   href={`/notes/${notebook.id}`}
                                   className={`flex items-center gap-2 pl-10  justify-start hover:bg-slate-300 ${
                                     pathname === `/notes/${notebook.id}`
-                                      ? "bg-[#bdcc97] text-white"
+                                      ? "bg-[#bdcc97] hover:bg-[#bdcc97] text-white hover:text-white"
                                       : "hover:bg-slate-300 "
                                   }`}
                                 >

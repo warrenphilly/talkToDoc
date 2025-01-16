@@ -419,7 +419,7 @@ const SideChat = ({
               >
                 {msg.user === "AI" ? (
                   <div className="text-md font-semibold ">
-                  <strong>Mr. Beck (AI):</strong> <span>{String(msg.text)}</span>
+                  <strong>Mr. Chudd (AI):</strong> <span>{String(msg.text)}</span>
                 
                 </div>
                 ) : (
