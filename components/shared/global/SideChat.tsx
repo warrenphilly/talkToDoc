@@ -158,6 +158,13 @@ const SideChat = ({
           setSideChatId(existingSideChat.id);
           setMessages(existingSideChat.messages || []);
           setContextSections(existingSideChat.contextSections || []);
+          
+          // Set primeSentence to the most recent context section if it exists
+          if (existingSideChat.contextSections?.length > 0) {
+            const mostRecentContext = existingSideChat.contextSections
+              .sort((a, b) => b.timestamp - a.timestamp)[0];
+            setPrimeSentence(mostRecentContext.text);
+          }
         }
       } catch (error) {
         console.error("Error initializing side chat:", error);
@@ -307,9 +314,9 @@ const SideChat = ({
           {contextSections.map((section) => (
             <div
               key={section.id}
-              className="relative bg-white rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
+              className="relative bg-slate-100 rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
             >
-              <p className="pr-8">"{section.text}"</p>
+              <p className="pr-8 text-slate-400">"{section.text}"</p>
               <button
                 onClick={() => removeContextSection(section.id)}
                 className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200"
@@ -328,7 +335,7 @@ const SideChat = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        
       </div>
     );
   }
@@ -337,7 +344,7 @@ const SideChat = ({
     <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="grid grid-cols-3 items-center ">
       <Button
-            className="bg-slate-100 hover:bg-red-600 text-white w-fit ml-4 rounded-full border border-red-600 text-red-600"
+            className="bg-slate-100 hover:bg-red-200 text-white w-fit ml-4 rounded-full border border-red-600 text-red-600"
             onClick={handleClearChat}
             
           >
@@ -358,39 +365,39 @@ const SideChat = ({
         
         <div className="flex flex-row gap-2 w-full items-center justify-center m-4">
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
-            onClick={() => sendMessage("Explain this in simple terms to make it easier to understand")}
-            disabled={primeSentence == null}
+            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            onClick={() => sendMessage("Explain this in simple terms")}
+            disabled={contextSections.length === 0}
           >
-            Explain{" "}
+            Explain
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
-            onClick={() => sendMessage("Expand on this in greater detail")}
-            disabled={primeSentence == null}
+            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            onClick={() => sendMessage("Expand on this")}
+            disabled={contextSections.length === 0}
           >
-            Expand{" "}
+            Expand
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
+            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
             onClick={() => sendMessage("Give me a step-by-step example")}
-            disabled={primeSentence == null}
+            disabled={contextSections.length === 0}
           >
-            Example{" "}
+            Example
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
+            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
             onClick={() => sendMessage("Reword this in a way that is easier to understand")}
-            disabled={primeSentence == null}
+            disabled={contextSections.length === 0}
           >
-            Reword{" "}
+            Reword
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none "
-            onClick={() => sendMessage("Summarize this in a way that is easier to understand, give me the main points")}
-            disabled={primeSentence == null}
+            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            onClick={() => sendMessage("Summarize this in a way that is easier to understand, 100 words or less")}
+            disabled={contextSections.length === 0}
           >
-            Summarize{" "}
+            Summarize
           </Button>
           
          
