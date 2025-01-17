@@ -232,7 +232,13 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
               </div>
             </div>
             <div className="flex flex-col items-center w-full">
-              <Button
+            {isLoading ? (
+          <div className="flex flex-col items-center w-full">
+            <p className="text-slate-500 font-semibold">Generating...</p>
+            <CircularProgress />
+          </div>
+        ) : (
+          <Button
                 onClick={generateQuiz}
                 disabled={
                   isLoading ||
@@ -254,13 +260,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   "Generate Test"
                 )}
               </Button>
-              {isLoading && (
-                <CircularProgress
-                  sx={{
-                    color: "#94b347",
-                  }}
-                />
               )}
+            
             </div>
           </div>
         ) : (
@@ -284,12 +285,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex flex-col items-center w-full">
-            <p className="text-slate-500 font-semibold">Generating...</p>
-            <CircularProgress />
-          </div>
-        )}
+       
         <RecentQuizzes pageId={pageId} onQuizSelect={handleQuizSelect} />
       </div>
     </div>
