@@ -402,14 +402,14 @@ const Quiz: React.FC<QuizProps> = ({
                   </Button>
                 ))
               ) : currentQuestion.type === "multipleChoice" ? (
-                <div className="grid grid-cols-2 gap-2 w-fit p">
+                <div className="flex flex-col items-center w-fit p-4">
                   {(currentQuestion.options || []).map((option) => (
                     <Button
                       key={option}
                       onClick={() => !selectedAnswer && handleAnswer(option)}
                       disabled={!!selectedAnswer}
                       variant="outline"
-                      className={`w-fit min-w-[270px] p-4 hover:bg-slate-300 justify-between ${
+                      className={`w-fit min-w-[400px]  max-w-[600px] p-4 hover:bg-slate-300 justify-between my-1 ${
                         selectedAnswer === option
                           ? isCorrect
                             ? "border-green-500 bg-green-50 text-green-500"
@@ -489,7 +489,7 @@ const Quiz: React.FC<QuizProps> = ({
             </div>
           </div>
 
-          {showExplanation && currentQuestion.type === "shortAnswer" && (
+          {showExplanation && currentQuestion.type !== "shortAnswer" && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-semibold text-gray-700 mb-2">Explanation:</h3>
               <p className="text-gray-600">{currentQuestion.explanation}</p>
