@@ -173,7 +173,7 @@ export function SidebarNav() {
                 {items.map((item) => (
                   <div key={item.title} className="w-full  text-xl mt-3">
                     {isLoading ? (
-                      <Skeleton className="h-10 w-full " />
+                      <Skeleton className="h-10 w-full rounded-xl" />
                     ) : (
                       <SidebarMenuItem className=" text-xl w-full py-2 ">
                         <SidebarMenuButton
@@ -202,19 +202,23 @@ export function SidebarNav() {
                 {/* Notebooks collapsible section */}
                 <div className="  flex flex-col gap-6 w-full ">
                   {isLoading ? (
-                    <Skeleton className="h-36 w-full " />
+                    <Skeleton className="h-10 w-full my-2 rounded-xl" />
                   ) : (
                     <Collapsible
                       open={isOpen}
                       onOpenChange={setIsOpen}
-                      className={`w-full h-fit justify-center   my-2 bg-slate-200 rounded-xl ${
+                      className={`w-full h-fit justify-center    bg-slate-200 rounded-xl ${
                         pathname.includes("/notes/")
                           ? "bg-[#bdcc97] text-slate-400 rounded-lg"
                           : " "
                       } `}
                     >
                       <CollapsibleTrigger
-                        className={`flex items-center gap-2 hover:bg-slate-300  py-2 rounded-lg w-full bg-none px-4  `}
+                        className={`flex items-center gap-2   py-2 rounded-lg w-full bg-none px-4 ${
+                          pathname.includes("/notes/")
+                            ? " text-slate-400 rounded-lg hover:bg-slate-200"
+                            : "hover:bg-slate-300 "
+                        }  `}
                       >
                         <BookOpen className="text-[#94b347]  h-4"  />
                         <span>Notebooks</span>
@@ -250,9 +254,9 @@ export function SidebarNav() {
                               >
                                 <Link
                                   href={`/notes/${notebook.id}`}
-                                  className={`flex items-center gap-2 pl-10  justify-start hover:bg-slate-300 ${
+                                  className={`flex items-center gap-2 pl-10  justify-start  ${
                                     pathname === `/notes/${notebook.id}`
-                                      ? "bg-[#bdcc97] hover:bg-[#bdcc97] text-white hover:text-white"
+                                      ? "bg-[#bdcc97]  text-white hover:text-white hover:bg-[#8da34f]"
                                       : "hover:bg-slate-300 "
                                   }`}
                                 >

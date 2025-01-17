@@ -235,7 +235,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             {isLoading ? (
           <div className="flex flex-col items-center w-full">
             <p className="text-slate-500 font-semibold">Generating...</p>
-            <CircularProgress />
+            <CircularProgress
+              sx={{
+                color: "#94b347",
+              }}
+            />
           </div>
         ) : (
           <Button
@@ -272,7 +276,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   setSelectedQuiz(null);
                   
               }}
-              className="mb-4 bg-slate-100 shadow-none border border-slate-400 text-slate-400 hover:bg-slate-100 hover:border-[#94b347] p-5 rounded-full hover:text-[#94b347] text-md"
+              className="mb-4 bg-white shadow-none border border-slate-400 text-red-400 hover:bg-slate-200 hover:border-red-400 p-5 rounded-full hover:text-red-400 text-md"
             >
               Exit Quiz
             </Button>

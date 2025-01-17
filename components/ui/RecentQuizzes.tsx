@@ -143,11 +143,11 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
             {quizzes.map((quiz) => (
               <div
                 key={quiz.id}
-                className={`bg-slate-100 border border-slate-400 rounded-lg p-4 flex items-center justify-between cursor-pointer
+                className={`bg-white border border-slate-400 rounded-lg p-4 flex items-center justify-between cursor-pointer
                   ${
                     quiz.isComplete
                       ? "hover:bg-slate-200"
-                      : "hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-50"
+                      : "hover:bg-slate-200"
                   }`}
                 onClick={() => handleQuizClick(quiz)}
               >

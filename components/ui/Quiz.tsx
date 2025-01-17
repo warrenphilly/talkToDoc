@@ -278,7 +278,23 @@ const Quiz: React.FC<QuizProps> = ({
   };
 
   return (
-    <div className="bg-white w-full rounded-xl  p-8  ">
+    <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
+      <div className=" relative bottom-[87px] left-[460px] flex flex-row items-center gap-2">
+      <Button className="border border-slate-400 bg-white hover:bg-slate-200" onClick={() => setAiVoice(!aiVoice)}>
+            {aiVoice ? (
+              <Volume2 className="w-5 h-5 text-[#94b347]" />
+            ) : (
+              <VolumeOff className="w-5 h-5 text-red-400" />
+            )}
+          </Button>
+          <Button className="border border-slate-400 bg-white hover:bg-slate-200" onClick={() => setVocalAnswer(!vocalAnswer)}>
+            {vocalAnswer ? (
+              <Mic className="w-5 h-5 text-[#94b347]" />
+            ) : (
+              <MicOff className="w-5 h-5 text-red-400" />
+            )}
+          </Button>
+      </div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-500" />
@@ -289,20 +305,7 @@ const Quiz: React.FC<QuizProps> = ({
         </div>
 
         <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
-          <Button onClick={() => setAiVoice(!aiVoice)}>
-            {aiVoice ? (
-              <Volume2 className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <VolumeOff className="w-5 h-5 text-yellow-500" />
-            )}
-          </Button>
-          <Button onClick={() => setVocalAnswer(!vocalAnswer)}>
-            {vocalAnswer ? (
-              <Mic className="w-5 h-5 text-yellow-500" />
-            ) : (
-              <MicOff className="w-5 h-5 text-yellow-500" />
-            )}
-          </Button>
+          
 
           <Button
             onClick={() => setShowSummary(!showSummary)}
