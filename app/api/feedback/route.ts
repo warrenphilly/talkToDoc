@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
-import { cleanMarkdownContent } from "@/lib/markdownUtils";
 
 export async function POST(req: NextRequest) {
   try {
+    // Parse the JSON body
     const body = await req.json();
     const {
       question,
@@ -14,69 +13,42 @@ export async function POST(req: NextRequest) {
       totalQuestions,
       incorrectAnswers,
       questionType,
-      notebookId,
-      pageId
     } = body;
 
-    // Fetch the document content for context
-    const notebookRef = adminDb.collection('notebooks').doc(notebookId);
-    const notebookSnap = await notebookRef.get();
-    
-    if (!notebookSnap.exists) {
-      throw new Error("Notebook not found");
+    // Validate required fields
+    if (!question || !userAnswer || !correctAnswer) {
+      throw new Error("Missing required fields");
     }
 
-    const notebookData = notebookSnap.data();
-    const page = notebookData?.pages?.find((p: any) => p.id === pageId);
-    
-    if (!page) {
-      throw new Error("Page not found");
-    }
-
-    // Fetch content from markdown files
-    let documentContent = '';
-    if (page.markdownRefs && page.markdownRefs.length > 0) {
-      for (const markdownRef of page.markdownRefs) {
-        try {
-          const cleanPath = markdownRef.path.replace(/^gs:\/\/[^\/]+\//, '');
-          const bucket = adminStorage.bucket();
-          const file = bucket.file(cleanPath);
-          const [content] = await file.download();
-          documentContent += cleanMarkdownContent(content.toString()) + '\n\n';
-        } catch (error) {
-          console.error(`Error fetching markdown file ${markdownRef.path}:`, error);
-        }
-      }
-    }
-
-    let prompt;
-    if (questionType === 'shortAnswer') {
-      prompt = `You are an expert evaluator. Evaluate this short answer response using the provided context.
-
-Context from document:
-${documentContent}
+    // Create the prompt based on question type
+    let prompt = "";
+    if (questionType === "shortAnswer") {
+      prompt = `You are an expert evaluator. Evaluate this short answer response.
 
 Question: ${question}
 Correct Answer: ${correctAnswer}
 User's Answer: ${userAnswer}
 
-Evaluate the answer's accuracy and provide constructive feedback. Consider:
-1. Key concepts mentioned
-2. Accuracy of information
-3. Completeness of response
+Evaluate the answer's accuracy and provide constructive feedback. Be lenient and consider partial credit:
+- Award "isCorrect: true" if the answer captures the main concepts and is at least 70% accurate
+- Consider key concepts, core ideas, and overall understanding
+- Minor missing details or slight inaccuracies should not result in a completely incorrect assessment
+
+Scoring guidelines:
+- 0.9-1.0: Excellent answer with all key points
+- 0.8-0.9: Very good answer with minor omissions
+- 0.7-0.8: Good answer with some missing details but demonstrates understanding
+- <0.7: Significant gaps or misunderstandings
 
 Respond in JSON format:
 {
-  "isCorrect": boolean,
-  "feedback": "detailed feedback here",
+  "isCorrect": boolean (true if score >= 0.7),
+  "feedback": "detailed feedback here, highlighting both correct elements and areas for improvement",
   "score": number between 0 and 1,
   "improvements": ["specific improvement suggestions"]
 }`;
     } else if (isLastQuestion) {
       prompt = `You are an educational coach. Review this quiz performance and provide personalized feedback.
-
-Context from document:
-${documentContent}
 
 Quiz Performance:
 - Score: ${score} out of ${totalQuestions}
@@ -87,52 +59,49 @@ Provide comprehensive feedback including:
 1. Overall performance assessment
 2. Areas of strength
 3. Areas needing improvement
-4. Specific study recommendations based on the document content
+4. Specific study recommendations
 
 Respond in JSON format:
 {
   "feedback": "detailed feedback here",
   "strengths": ["list of strengths"],
   "improvementAreas": ["areas to improve"],
-  "studyRecommendations": ["specific topics to review"],
-  "nextSteps": ["suggested actions"]
+  "studyRecommendations": ["specific topics to review"]
 }`;
-    } else {
-      prompt = `Evaluate this answer:
-Question: ${question}
-Correct Answer: ${correctAnswer}
-User's Answer: ${userAnswer}
-
-Provide brief, constructive feedback.`;
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    // Make OpenAI API call
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
-        messages: [{ role: 'system', content: prompt }],
+        model: "gpt-4",
+        messages: [{ role: "system", content: prompt }],
         temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get feedback from OpenAI');
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const feedbackData = JSON.parse(data.choices[0].message.content);
 
-    return NextResponse.json(result);
-
+    // Return the feedback
+    return NextResponse.json(feedbackData);
   } catch (error) {
-    console.error('Feedback generation error:', error);
-    return NextResponse.json({ 
-      error: "Failed to generate feedback",
-      message: error instanceof Error ? error.message : "Unknown error occurred"
-    }, { status: 500 });
+    console.error("Feedback generation error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to generate feedback",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      },
+      { status: 500 }
+    );
   }
 }

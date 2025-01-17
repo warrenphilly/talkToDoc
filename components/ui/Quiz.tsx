@@ -59,7 +59,8 @@ const Quiz: React.FC<QuizProps> = ({
     initialState?.gptFeedback || ""
   );
   const [quizId] = useState<string>(
-    initialState?.id || `quiz_${pageId}_${new Date().toISOString().split('T')[0]}`
+    initialState?.id ||
+      `quiz_${pageId}_${new Date().toISOString().split("T")[0]}`
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
@@ -69,19 +70,63 @@ const Quiz: React.FC<QuizProps> = ({
 
   const questionsWithIds = data.questions.map((question, index) => ({
     ...question,
-    id: question.id || index
+    id: question.id || index,
   }));
 
   const handleAnswer = async (answer: string) => {
     setSelectedAnswer(answer);
     const currentQuestion = data.questions[currentQuestionIndex];
-    const correct = answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
-    
-    // Update local state
+
+    if (currentQuestion.type === "shortAnswer") {
+      setIsLoading(true);
+      try {
+        // Get GPT feedback for short answer
+        const feedbackResponse = await getGPTFeedback(
+          currentQuestion.question,
+          answer,
+          currentQuestion.correctAnswer,
+          isLastQuestion,
+          currentQuestion.type
+        );
+
+        console.log("Feedback response:", feedbackResponse); // Debug log
+
+        // Extract isCorrect and feedback from the response
+        const isCorrect = feedbackResponse.isCorrect;
+        const feedback = feedbackResponse.feedback;
+        const score = feedbackResponse.score || 0;
+
+        // Update states
+        setGptFeedback(feedback);
+        setIsCorrect(isCorrect);
+        setShowExplanation(true);
+
+        // Update database
+        const quizRef = doc(db, "quizzes", quizId);
+        await updateDoc(quizRef, {
+          [`userAnswers.${currentQuestionIndex}`]: answer,
+          [`evaluationResults.${currentQuestionIndex}`]: isCorrect,
+          score: isCorrect ? score + 1 : score,
+          lastUpdatedAt: new Date(),
+          incorrectAnswers: isCorrect
+            ? incorrectAnswers.filter((i) => i !== currentQuestionIndex)
+            : [...new Set([...incorrectAnswers, currentQuestionIndex])],
+          gptFeedback: feedback,
+        });
+      } catch (error) {
+        console.error("Error processing short answer:", error);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Handle non-short answer questions as before
+    const correct =
+      answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
     setIsCorrect(correct);
     setShowExplanation(true);
 
-    // Update the quiz document with the new answer and evaluation
     try {
       const quizRef = doc(db, "quizzes", quizId);
       await updateDoc(quizRef, {
@@ -89,7 +134,9 @@ const Quiz: React.FC<QuizProps> = ({
         [`evaluationResults.${currentQuestionIndex}`]: correct,
         score: correct ? score + 1 : score,
         lastUpdatedAt: new Date(),
-        incorrectAnswers: correct ? incorrectAnswers : [...incorrectAnswers, currentQuestionIndex]
+        incorrectAnswers: correct
+          ? incorrectAnswers
+          : [...incorrectAnswers, currentQuestionIndex],
       });
     } catch (error) {
       console.error("Error updating quiz answer:", error);
@@ -99,7 +146,7 @@ const Quiz: React.FC<QuizProps> = ({
   const nextQuestion = async () => {
     setIsChangingQuestion(true);
     const newIndex = currentQuestionIndex + 1;
-    
+
     // Update local state
     setCurrentQuestionIndex(newIndex);
     setSelectedAnswer("");
@@ -110,7 +157,7 @@ const Quiz: React.FC<QuizProps> = ({
       const quizRef = doc(db, "quizzes", quizId);
       await updateDoc(quizRef, {
         currentQuestionIndex: newIndex,
-        lastUpdatedAt: new Date()
+        lastUpdatedAt: new Date(),
       });
     } catch (error) {
       console.error("Error updating current question:", error);
@@ -159,9 +206,20 @@ const Quiz: React.FC<QuizProps> = ({
     correctAnswer: string,
     isLastQ: boolean,
     questionType: string
-  ) => {
-    setIsLoading(true);
+  ): Promise<{
+    isCorrect: boolean;
+    feedback: string;
+    score: number;
+    improvements?: string[];
+  }> => {
     try {
+      console.log("Sending feedback request:", {
+        question,
+        userAnswer,
+        correctAnswer,
+        questionType,
+      }); // Debug log
+
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: {
@@ -179,13 +237,16 @@ const Quiz: React.FC<QuizProps> = ({
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Failed to get feedback: ${response.status}`);
+      }
+
       const feedbackData = await response.json();
-      setGptFeedback(feedbackData.feedback);
+      console.log("Received feedback data:", feedbackData); // Debug log
+      return feedbackData;
     } catch (error) {
       console.error("Error getting feedback:", error);
-      setGptFeedback("Unable to get AI feedback at this time.");
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
@@ -193,15 +254,21 @@ const Quiz: React.FC<QuizProps> = ({
     question,
     userAnswer,
   }: {
-    question: typeof questionsWithIds[0];
+    question: (typeof questionsWithIds)[0];
     userAnswer?: string;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const isAnswered = userAnswer !== undefined;
-    const isCorrectAnswer = userAnswer === question.correctAnswer;
+    const isCorrectAnswer =
+      question.type === "shortAnswer"
+        ? !incorrectAnswers.includes(question.id)
+        : userAnswer === question.correctAnswer;
 
     return (
-      <div key={`summary-question-${question.id}`} className="border rounded-lg mb-2 p-4">
+      <div
+        key={`summary-question-${question.id}`}
+        className="border rounded-lg mb-2 p-4"
+      >
         <Button
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
@@ -225,7 +292,7 @@ const Quiz: React.FC<QuizProps> = ({
           )}
         </Button>
         {isOpen && (
-          <div className="p-4  bg-gray-50">
+          <div className="p-4 bg-gray-50">
             {isAnswered ? (
               <>
                 <div className="mb-2">
@@ -248,6 +315,15 @@ const Quiz: React.FC<QuizProps> = ({
                     {question.correctAnswer}
                   </span>
                 </div>
+                {question.type === "shortAnswer" &&
+                  evaluationResults[question.id] !== undefined && (
+                    <div className="mt-2">
+                      <span className="font-medium text-slate-500">
+                        AI Feedback:{" "}
+                      </span>
+                      <span className="text-slate-500">{gptFeedback}</span>
+                    </div>
+                  )}
               </>
             ) : (
               <div className="mb-2 text-gray-500 italic">Not answered yet</div>
@@ -265,12 +341,12 @@ const Quiz: React.FC<QuizProps> = ({
   const handleViewResults = async () => {
     setShowResults(true);
     setShowSummary(true);
-    
+
     try {
       const quizRef = doc(db, "quizzes", quizId);
       await updateDoc(quizRef, {
         isComplete: true,
-        lastUpdatedAt: new Date()
+        lastUpdatedAt: new Date(),
       });
     } catch (error) {
       console.error("Error marking quiz as complete:", error);
@@ -280,20 +356,26 @@ const Quiz: React.FC<QuizProps> = ({
   return (
     <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
       <div className=" relative bottom-[87px] left-[460px] flex flex-row items-center gap-2">
-      <Button className="border border-slate-400 bg-white hover:bg-slate-200" onClick={() => setAiVoice(!aiVoice)}>
-            {aiVoice ? (
-              <Volume2 className="w-5 h-5 text-[#94b347]" />
-            ) : (
-              <VolumeOff className="w-5 h-5 text-red-400" />
-            )}
-          </Button>
-          <Button className="border border-slate-400 bg-white hover:bg-slate-200" onClick={() => setVocalAnswer(!vocalAnswer)}>
-            {vocalAnswer ? (
-              <Mic className="w-5 h-5 text-[#94b347]" />
-            ) : (
-              <MicOff className="w-5 h-5 text-red-400" />
-            )}
-          </Button>
+        <Button
+          className="border border-slate-400 bg-white hover:bg-slate-200"
+          onClick={() => setAiVoice(!aiVoice)}
+        >
+          {aiVoice ? (
+            <Volume2 className="w-5 h-5 text-[#94b347]" />
+          ) : (
+            <VolumeOff className="w-5 h-5 text-red-400" />
+          )}
+        </Button>
+        <Button
+          className="border border-slate-400 bg-white hover:bg-slate-200"
+          onClick={() => setVocalAnswer(!vocalAnswer)}
+        >
+          {vocalAnswer ? (
+            <Mic className="w-5 h-5 text-[#94b347]" />
+          ) : (
+            <MicOff className="w-5 h-5 text-red-400" />
+          )}
+        </Button>
       </div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
@@ -305,8 +387,6 @@ const Quiz: React.FC<QuizProps> = ({
         </div>
 
         <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
-          
-
           <Button
             onClick={() => setShowSummary(!showSummary)}
             variant="outline"
@@ -439,7 +519,10 @@ const Quiz: React.FC<QuizProps> = ({
                   />
                   {selectedAnswer && !isLoading && (
                     <Button
-                      onClick={() => handleAnswer(selectedAnswer)}
+                      onClick={(e) => {
+                        e.preventDefault(); // Prevent form submission
+                        handleAnswer(selectedAnswer);
+                      }}
                       disabled={
                         isLoading || selectedAnswer === "" || showExplanation
                       }
@@ -456,27 +539,20 @@ const Quiz: React.FC<QuizProps> = ({
                       </span>
                     </div>
                   )}
-                  {gptFeedback && (
-                    <div className={`p-4 rounded-lg bg-slate-50`}>
+                  {currentQuestion.type === "shortAnswer" && gptFeedback && (
+                    <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
                       <div className="flex items-center gap-2 mb-2">
-                        {userAnswers[currentQuestion.id] &&
-                        !incorrectAnswers.includes(currentQuestion.id) ? (
+                        {isCorrect ? (
                           <CheckCircle className="w-5 h-5 text-green-500" />
                         ) : (
                           <XCircle className="w-5 h-5 text-red-500" />
                         )}
                         <span
                           className={`font-medium ${
-                            userAnswers[currentQuestion.id] &&
-                            !incorrectAnswers.includes(currentQuestion.id)
-                              ? "text-green-700"
-                              : "text-red-700"
+                            isCorrect ? "text-green-700" : "text-red-700"
                           }`}
                         >
-                          {userAnswers[currentQuestion.id] &&
-                          !incorrectAnswers.includes(currentQuestion.id)
-                            ? "Correct!"
-                            : "Incorrect"}
+                          {isCorrect ? "Correct!" : "Needs Improvement"}
                         </span>
                       </div>
                       <p className="text-slate-700 whitespace-pre-line">
