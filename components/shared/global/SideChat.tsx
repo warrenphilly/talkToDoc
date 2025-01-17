@@ -344,7 +344,7 @@ const SideChat = ({
     <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
       <div className="grid grid-cols-3 items-center ">
       <Button
-            className="bg-slate-100 hover:bg-red-200 text-white w-fit ml-4 rounded-full border border-red-600 text-red-600"
+            className="bg-slate-100 hover:bg-red-200 w-fit ml-4 rounded-full border border-red-600 text-red-600"
             onClick={handleClearChat}
             
           >

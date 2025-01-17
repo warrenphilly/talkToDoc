@@ -89,6 +89,7 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
   const handleQuizClick = (quiz: QuizState) => {
     if (quiz.isComplete) {
       setSelectedCompletedQuiz(quiz);
+      onQuizSelect(quiz);
     } else {
       onQuizSelect(quiz);
     }
