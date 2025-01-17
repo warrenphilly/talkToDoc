@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Upload } from "lucide-react"; // Import icons
+import { Image, Upload, Volume2, VolumeOff, Mic, MicOff } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
 import { saveQuizState } from "@/lib/firebase/firestore";
 
@@ -55,6 +55,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizState | null>(null);
+  const [aiVoice, setAiVoice] = useState(false);
+  const [vocalAnswer, setVocalAnswer] = useState(false);
 
   const generateQuiz = async () => {
     setIsLoading(true);
@@ -84,9 +86,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       const data = await response.json();
       // Generate a deterministic quiz ID based on pageId and timestamp
-      const timestamp = new Date().toISOString().split('T')[0]; // Get current date YYYY-MM-DD
+      const timestamp = new Date().toISOString().split("T")[0]; // Get current date YYYY-MM-DD
       const quizId = `quiz_${pageId}_${timestamp}`;
-      
+
       const initialQuizState: QuizState = {
         id: quizId,
         notebookId,
@@ -101,12 +103,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         incorrectAnswers: [],
         isComplete: false,
         gptFeedback: "",
-        quizData: data.quiz
+        quizData: data.quiz,
       };
-      
+
       await saveQuizState(initialQuizState);
       setQuizData(data.quiz);
-      
     } catch (error) {
       console.error("Error generating quiz:", error);
     } finally {
@@ -118,7 +119,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     setSelectedQuiz(quiz);
     setQuizData(quiz.quizData);
   };
-
 
   return (
     <div
@@ -232,64 +232,85 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
               </div>
             </div>
             <div className="flex flex-col items-center w-full">
-            {isLoading ? (
-          <div className="flex flex-col items-center w-full">
-            <p className="text-slate-500 font-semibold">Generating...</p>
-            <CircularProgress
-              sx={{
-                color: "#94b347",
-              }}
-            />
-          </div>
-        ) : (
-          <Button
-                onClick={generateQuiz}
-                disabled={
-                  isLoading ||
-                  !questionCount ||
-                  (!questionTypes.trueFalse &&
-                    !questionTypes.multipleChoice &&
-                    !questionTypes.shortAnswer)
-                }
-                className="shadow-none text-slate-500 bg-slate-100 border border-slate-400 hover:bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                     <div className="text-slate-400 text-xl font-semibold">
-              Generating ...
-            </div>
-        
-                  </>
-                ) : (
-                  "Generate Test"
-                )}
-              </Button>
+              {isLoading ? (
+                <div className="flex flex-col items-center w-full">
+                  <p className="text-slate-500 font-semibold">Generating...</p>
+                  <CircularProgress
+                    sx={{
+                      color: "#94b347",
+                    }}
+                  />
+                </div>
+              ) : (
+                <Button
+                  onClick={generateQuiz}
+                  disabled={
+                    isLoading ||
+                    !questionCount ||
+                    (!questionTypes.trueFalse &&
+                      !questionTypes.multipleChoice &&
+                      !questionTypes.shortAnswer)
+                  }
+                  className="shadow-none text-slate-500 bg-slate-100 border border-slate-400 hover:bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] p-3 rounded-full text-lg w-fit cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="text-slate-400 text-xl font-semibold">
+                        Generating ...
+                      </div>
+                    </>
+                  ) : (
+                    "Generate Test"
+                  )}
+                </Button>
               )}
-            
             </div>
           </div>
         ) : (
           <div className="w-full">
-            <Button
-              onClick={() => {
-                setQuizData(null);
+            <div className="flex flex-row items-center justify-between">
+              <Button
+                onClick={() => {
+                  setQuizData(null);
                   setSelectedQuiz(null);
-                  
-              }}
-              className="mb-4 bg-white shadow-none border border-slate-400 text-red-400 hover:bg-slate-200 hover:border-red-400 p-5 rounded-full hover:text-red-400 text-md"
-            >
-              Exit Quiz
-            </Button>
+                }}
+                className="mb-4 bg-white shadow-none border border-slate-400 text-red-400 hover:bg-slate-200 hover:border-red-400 p-5 rounded-full hover:text-red-400 text-md"
+              >
+                Exit Quiz
+                </Button>
+                <div className="  flex flex-row items-center gap-2">
+              {/* <Button
+                className="border border-slate-400 bg-white hover:bg-slate-200"
+                onClick={() => setAiVoice(!aiVoice)}
+              >
+                {aiVoice ? (
+                  <Volume2 className="w-5 h-5 text-[#94b347]" />
+                ) : (
+                  <VolumeOff className="w-5 h-5 text-red-400" />
+                )}
+              </Button>
+              <Button
+                className="border border-slate-400 bg-white hover:bg-slate-200"
+                onClick={() => setVocalAnswer(!vocalAnswer)}
+              >
+                {vocalAnswer ? (
+                  <Mic className="w-5 h-5 text-[#94b347]" />
+                ) : (
+                  <MicOff className="w-5 h-5 text-red-400" />
+                )}
+              </Button> */}
+            </div>
+            </div>
             <Quiz
               data={quizData}
               notebookId={notebookId}
               pageId={pageId}
               initialState={selectedQuiz}
             />
+           
           </div>
         )}
 
-       
         <RecentQuizzes pageId={pageId} onQuizSelect={handleQuizSelect} />
       </div>
     </div>

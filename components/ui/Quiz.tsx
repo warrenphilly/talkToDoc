@@ -355,28 +355,6 @@ const Quiz: React.FC<QuizProps> = ({
 
   return (
     <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
-      <div className=" relative bottom-[87px] left-[460px] flex flex-row items-center gap-2">
-        <Button
-          className="border border-slate-400 bg-white hover:bg-slate-200"
-          onClick={() => setAiVoice(!aiVoice)}
-        >
-          {aiVoice ? (
-            <Volume2 className="w-5 h-5 text-[#94b347]" />
-          ) : (
-            <VolumeOff className="w-5 h-5 text-red-400" />
-          )}
-        </Button>
-        <Button
-          className="border border-slate-400 bg-white hover:bg-slate-200"
-          onClick={() => setVocalAnswer(!vocalAnswer)}
-        >
-          {vocalAnswer ? (
-            <Mic className="w-5 h-5 text-[#94b347]" />
-          ) : (
-            <MicOff className="w-5 h-5 text-red-400" />
-          )}
-        </Button>
-      </div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-500" />
@@ -539,27 +517,31 @@ const Quiz: React.FC<QuizProps> = ({
                       </span>
                     </div>
                   )}
-                  {currentQuestion.type === "shortAnswer" && gptFeedback && (
-                    <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        {isCorrect ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                        <span
-                          className={`font-medium ${
-                            isCorrect ? "text-green-700" : "text-red-700"
-                          }`}
-                        >
-                          {isCorrect ? "Correct!" : "Needs Improvement"}
-                        </span>
+                  {currentQuestion.type === "shortAnswer" &&
+                    gptFeedback &&
+                    currentQuestion.correctAnswer !== null &&
+                    selectedAnswer &&
+                    showExplanation && (
+                      <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {isCorrect ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          )}
+                          <span
+                            className={`font-medium ${
+                              isCorrect ? "text-green-700" : "text-red-700"
+                            }`}
+                          >
+                            {isCorrect ? "Correct!" : "Needs Improvement"}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 whitespace-pre-line">
+                          {gptFeedback}
+                        </p>
                       </div>
-                      <p className="text-slate-700 whitespace-pre-line">
-                        {gptFeedback}
-                      </p>
-                    </div>
-                  )}
+                    )}
                 </div>
               ) : null}
             </div>
