@@ -168,7 +168,22 @@ const Quiz: React.FC<QuizProps> = ({
     }
   };
 
-  // Keep only the real-time listener useEffect
+  useEffect(() => {
+    // When changing questions, check if there's an existing answer
+    if (userAnswers[currentQuestionIndex] !== undefined) {
+      setSelectedAnswer(userAnswers[currentQuestionIndex]);
+      setIsCorrect(evaluationResults[currentQuestionIndex]);
+      setShowExplanation(true);
+    } else {
+      // Reset states for new questions
+      setSelectedAnswer("");
+      setIsCorrect(null);
+      setShowExplanation(false);
+      setGptFeedback("");
+    }
+  }, [currentQuestionIndex, userAnswers, evaluationResults]);
+
+  // Update the real-time listener useEffect to include gptFeedback
   useEffect(() => {
     if (!quizId) return;
 
@@ -178,14 +193,20 @@ const Quiz: React.FC<QuizProps> = ({
       (doc) => {
         if (doc.exists() && !isChangingQuestion) {
           const data = doc.data() as QuizState;
-          // Only update if we're not in the middle of a manual change
           setScore(data.score);
           setCurrentQuestionIndex(data.currentQuestionIndex);
           setUserAnswers(data.userAnswers);
           setEvaluationResults(data.evaluationResults);
           setIncorrectAnswers(data.incorrectAnswers);
-          setGptFeedback(data.gptFeedback);
+          setGptFeedback(data.gptFeedback || "");
           setShowResults(data.isComplete);
+
+          // If there's an answer for the current question, show the explanation
+          if (data.userAnswers[data.currentQuestionIndex] !== undefined) {
+            setSelectedAnswer(data.userAnswers[data.currentQuestionIndex]);
+            setIsCorrect(data.evaluationResults[data.currentQuestionIndex]);
+            setShowExplanation(true);
+          }
         }
       },
       (error) => {
@@ -490,25 +511,39 @@ const Quiz: React.FC<QuizProps> = ({
                   <Input
                     type="text"
                     placeholder="Type your answer here..."
-                    value={selectedAnswer || ""}
+                    value={
+                      userAnswers[currentQuestionIndex] || selectedAnswer || ""
+                    }
                     onChange={(e) => setSelectedAnswer(e.target.value)}
-                    disabled={isLoading}
-                    className="w-full p-2 text-slate-500"
+                    disabled={
+                      isLoading ||
+                      userAnswers[currentQuestionIndex] !== undefined
+                    }
+                    className={`w-full p-2 text-slate-500 ${
+                      userAnswers[currentQuestionIndex] !== undefined
+                        ? "bg-gray-100 cursor-not-allowed"
+                        : ""
+                    }`}
                   />
-                  {selectedAnswer && !isLoading && (
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault(); // Prevent form submission
-                        handleAnswer(selectedAnswer);
-                      }}
-                      disabled={
-                        isLoading || selectedAnswer === "" || showExplanation
-                      }
-                      className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
-                    >
-                      Submit Answer
-                    </Button>
-                  )}
+                  {selectedAnswer &&
+                    !isLoading &&
+                    !userAnswers[currentQuestionIndex] && (
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleAnswer(selectedAnswer);
+                        }}
+                        disabled={
+                          isLoading ||
+                          selectedAnswer === "" ||
+                          showExplanation ||
+                          userAnswers[currentQuestionIndex] !== undefined
+                        }
+                        className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
+                      >
+                        Submit Answer
+                      </Button>
+                    )}
                   {isLoading && (
                     <div className="flex items-center justify-center">
                       <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
