@@ -25,13 +25,13 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
         </div>
 
         <div className="space-y-4">
-          {quiz.quizData.questions.map((question) => {
-            const userAnswer = quiz.userAnswers[question.id];
-            const isCorrect = quiz.evaluationResults[question.id];
+          {quiz.quizData.questions.map((question, index) => {
+            const userAnswer = quiz.userAnswers[index];
+            const isCorrect = quiz.evaluationResults[index];
 
             return (
               <div
-                key={`summary-question-${question.id}-${quiz.id}`}
+                key={`summary-question-${index}-${quiz.id}`}
                 className={`p-4 rounded-lg border ${
                   isCorrect
                     ? "border-green-200 bg-green-50"
@@ -61,8 +61,15 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
                           </span>
                         </p>
                       )}
+                      {question.type === "shortAnswer" && quiz.gptFeedback && (
+                        <p className="text-slate-500 mt-2">
+                          <span className="font-medium">AI Feedback: </span>
+                          {quiz.gptFeedback}
+                        </p>
+                      )}
                       {question.explanation && (
                         <p className="text-slate-500 mt-2">
+                          <span className="font-medium">Explanation: </span>
                           {question.explanation}
                         </p>
                       )}
@@ -76,7 +83,9 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
 
         {quiz.gptFeedback && (
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h5 className="font-semibold text-blue-700 mb-2">AI Feedback</h5>
+            <h5 className="font-semibold text-blue-700 mb-2">
+              Overall Feedback
+            </h5>
             <p className="text-slate-700">{quiz.gptFeedback}</p>
           </div>
         )}
