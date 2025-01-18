@@ -52,6 +52,7 @@ import { CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
+import StudyMaterialTabs from "@/components/StudyMaterialTabs";
 
 interface ChatClientProps {
   title: string;
@@ -87,6 +88,8 @@ const ChatClient = ({
   const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
   const [isChatFullscreen, setIsChatFullscreen] = useState(false);
   const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
+  const [isStudyMaterialFullscreen, setIsStudyMaterialFullscreen] = useState(false);
+  const [showStudyMaterial, setShowStudyMaterial] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -324,7 +327,7 @@ const ChatClient = ({
   return (
     <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
       {/* hydration error is here */}
-      <div className="flex flex-col bg-slate-100 w-full mx-2 overflow-hidden">
+      <div className="flex flex-col bg-white w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
           {/* Primary notebook buttons */}
           <div className="flex flex-row gap-2 items-center justify-between px-7">
@@ -342,9 +345,10 @@ const ChatClient = ({
          
             <Button
               onClick={() => {
-                setShowQuiz(!showQuiz);
+                setShowStudyMaterial(!showStudyMaterial);
 
                 setShowChat(false);
+                setShowQuiz(false);
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
@@ -609,6 +613,34 @@ const ChatClient = ({
                       pageId={tabId}
                     />
                   </ResizablePanel>
+
+                )}
+                {showStudyMaterial && !isChatFullscreen && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showStudyMaterial
+                        ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        : "hidden"
+                    }`}
+                    defaultSize={isStudyMaterialFullscreen ? 100 : 50}
+                  >
+                    <Button
+                      onClick={() => setIsStudyMaterialFullscreen(!isStudyMaterialFullscreen)}
+                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                      size="icon"
+                    >
+                      {isQuizFullscreen ? (
+                        <Minimize2 size={16} />
+                      ) : (
+                        <Maximize2 size={16} />
+                      )}
+                    </Button>
+                    <StudyMaterialTabs
+                      notebookId={notebookId}
+                      pageId={tabId}
+                    />
+                  </ResizablePanel>
+                  
                 )}
               </ResizablePanel>
             )}
