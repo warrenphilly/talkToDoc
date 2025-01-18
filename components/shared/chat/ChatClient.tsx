@@ -119,26 +119,32 @@ const ChatClient = ({
       setPrimeSentence(sectionText);
       setShowChat(true);
       
-      // Get or create side chat
-      let sideChat = await getSideChat(notebookId, tabId);
+      // First check if a sidechat already exists
+      const existingSideChat = await getSideChat(notebookId, tabId);
+      console.log("existingSideChat", existingSideChat);
       
-      const newContextSection: ContextSection = {
-        id: crypto.randomUUID(),
-        text: sectionText,
-        timestamp: Date.now(),
-        isHighlighted: true
-      };
-      
-      if (!sideChat) {
-        // Create new side chat if it doesn't exist
+      if (existingSideChat) {
+        // If sidechat exists, just add the new context section to it
+        const newContextSection: ContextSection = {
+          id: crypto.randomUUID(),
+          text: sectionText,
+          timestamp: Date.now(),
+          isHighlighted: true
+        };
+        
+        const updatedContextSections = [...existingSideChat.contextSections, newContextSection];
+        await updateSideChat(existingSideChat.id, updatedContextSections, existingSideChat.messages);
+       } 
+       else {
+        // Only create new sidechat if one doesn't exist
+        const newContextSection: ContextSection = {
+          id: crypto.randomUUID(),
+          text: sectionText,
+          timestamp: Date.now(),
+          isHighlighted: true
+        };
+        
         await saveSideChat(notebookId, tabId, [newContextSection], []);
-      } else {
-        // Update existing side chat with new context section
-        const updatedContextSections = [
-          ...sideChat.contextSections,
-          newContextSection
-        ];
-        await updateSideChat(sideChat.id, updatedContextSections, sideChat.messages);
       }
     } catch (error) {
       console.error("Error updating side chat:", error);
@@ -174,12 +180,12 @@ const ChatClient = ({
     setPrimeSentence(null);
   };
 
-  useEffect(() => {
-    console.log(
-      "messages(this value will be stores in the database):",
-      messages
-    );
-  }, [messages]);
+  // useEffect(() => {
+  //   console.log(
+  //     "messages(this value will be stores in the database):",
+  //     messages
+  //   );
+  // }, [messages]);
 
   // Load messages when component mounts
   useEffect(() => {
@@ -333,6 +339,7 @@ const ChatClient = ({
           </div>
 
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
+         
             <Button
               onClick={() => {
                 setShowQuiz(!showQuiz);
@@ -344,7 +351,7 @@ const ChatClient = ({
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-              Generate Study Cards
+              Study Set(cards and guides)
             </Button>
             <Button
               onClick={() => {

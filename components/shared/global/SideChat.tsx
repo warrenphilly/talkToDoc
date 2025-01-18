@@ -87,31 +87,32 @@ const SideChat = ({
     // Update local state immediately
     setContextSections(prev => [...prev, newSection]);
 
-    try {
-      if (sideChatId) {
-        await updateSideChat(sideChatId, [...contextSections, newSection], messages);
-      } else {
-        const newSideChatId = await saveSideChat(
-          notebookId,
-          pageId,
-          [newSection],
-          []
-        );
-        setSideChatId(newSideChatId);
-      }
+     try {
+       if (sideChatId) {
+         await updateSideChat(sideChatId, [...contextSections, newSection], messages);
+       } 
+       //else {
+    //     const newSideChatId = await saveSideChat(
+    //       notebookId,
+    //       pageId,
+    //       [newSection],
+    //       []
+    //     );
+    //     setSideChatId(newSideChatId);
+    //   }
     } catch (error) {
       // Revert local state if update fails
       setContextSections(prev => prev.filter(section => section.id !== newSection.id));
       console.error("Error adding context section:", error);
-    }
+   }
   };
 
   // Remove context section
-  const removeContextSection = async (sectionId: string) => {
-    // Store previous state in case we need to revert
-    const previousSections = [...contextSections];
+   const removeContextSection = async (sectionId: string) => {
+  //   // Store previous state in case we need to revert
+     const previousSections = [...contextSections];
     
-    // Update local state immediately
+  //   // Update local state immediately
     setContextSections(prev => prev.filter(section => section.id !== sectionId));
 
     try {
@@ -136,7 +137,15 @@ const SideChat = ({
   // Effect to handle primeSentence changes
   useEffect(() => {
     if (primeSentence) {
-      addContextSection(primeSentence);
+      // Check if the primeSentence already exists in contextSections
+      const sentenceExists = contextSections.some(
+        section => section.text === primeSentence
+      );
+      
+      // Only add if the sentence doesn't already exist
+      if (!sentenceExists) {
+        addContextSection(primeSentence);
+      }
     }
   }, [primeSentence]);
 
@@ -151,21 +160,43 @@ const SideChat = ({
 
       setIsLoading(true);
       try {
+        // First check if a sidechat exists for this page
         const existingSideChat = await getSideChat(notebookId, pageId);
+        console.log("existingSideChat ttttttttt", existingSideChat);
 
         if (existingSideChat) {
           console.log("Loading existing side chat:", existingSideChat);
-          setSideChatId(existingSideChat.id);
-          setMessages(existingSideChat.messages || []);
-          setContextSections(existingSideChat.contextSections || []);
+          setSideChatId(existingSideChat?.id || null  );
+          setMessages(existingSideChat?.messages || []);
+          setContextSections(existingSideChat?.contextSections || []);
           
           // Set primeSentence to the most recent context section if it exists
-          if (existingSideChat.contextSections?.length > 0) {
-            const mostRecentContext = existingSideChat.contextSections
+          if (existingSideChat?.contextSections?.length && existingSideChat?.contextSections?.length > 0) {
+            const mostRecentContext = existingSideChat?.contextSections
               .sort((a, b) => b.timestamp - a.timestamp)[0];
-            setPrimeSentence(mostRecentContext.text);
+            setPrimeSentence(mostRecentContext?.text || null);
           }
         }
+        // else if (primeSentence) {
+        //   // Create new sidechat only if we have a primeSentence
+
+        //   console.log("Creating new side chat with primeSentence:", primeSentence);
+        //   // const newContextSection: ContextSection = {
+        //   //   id: crypto.randomUUID(),
+        //   //   text: primeSentence,
+        //   //   timestamp: Date.now()
+        //   // };
+          
+        //   // const newSideChatId = await saveSideChat(
+        //   //   notebookId,
+        //   //   pageId,
+        //   //   [newContextSection],
+        //   //   []
+        //   // );
+          
+        //   // setSideChatId(newSideChatId);
+        //   // setContextSections([newContextSection]);
+        // }
       } catch (error) {
         console.error("Error initializing side chat:", error);
       } finally {

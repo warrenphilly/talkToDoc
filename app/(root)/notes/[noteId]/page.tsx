@@ -23,7 +23,7 @@ export async function generateMetadata({
 
 async function getNotebookData(noteId: string): Promise<Notebook | null> {
   try {
-    console.log("Fetching notebook with ID:", noteId);
+    // console.log("Fetching notebook with ID:", noteId);
     const docRef = doc(db, "notebooks", noteId);
     const docSnap = await getDoc(docRef);
 
@@ -37,7 +37,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
       ...docSnap.data(),
     } as Notebook;
 
-    console.log("Found notebook:", data);
+    // console.log("Found notebook:", data);
     return data;
   } catch (error) {
     console.error("Error fetching notebook:", error);
@@ -47,7 +47,7 @@ async function getNotebookData(noteId: string): Promise<Notebook | null> {
 
 const NotePage = async ({ params, searchParams }: PageProps) => {
   const resolvedParams = await params;
-  console.log("Received params:", { noteId: resolvedParams.noteId });
+  // console.log("Received params:", { noteId: resolvedParams.noteId });
   const notebook = await getNotebookData(resolvedParams.noteId);
 
   if (!notebook) {
@@ -55,7 +55,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
     notFound();
   }
 
-  console.log("Creating tabs from notebook:", notebook);
+  // console.log("Creating tabs from notebook:", notebook);
 
   const tabs = notebook.pages.map((page: Page) => ({
     id: page.id,
