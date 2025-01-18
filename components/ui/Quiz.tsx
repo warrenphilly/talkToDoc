@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import QuizSummary from "./QuizSummary";
 
 interface QuizProps {
   data: QuizData;
@@ -65,6 +66,8 @@ const Quiz: React.FC<QuizProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [aiVoice, setAiVoice] = useState(false);
+  const [selectedCompletedQuiz, setSelectedCompletedQuiz] =
+    useState<QuizState | null>(null);
   const [vocalAnswer, setVocalAnswer] = useState(false);
   const [isChangingQuestion, setIsChangingQuestion] = useState(false);
 
@@ -94,7 +97,7 @@ const Quiz: React.FC<QuizProps> = ({
         // Extract isCorrect and feedback from the response
         const isCorrect = feedbackResponse.isCorrect;
         const feedback = feedbackResponse.feedback;
-        const score = feedbackResponse.score || 0;
+        // const score = feedbackResponse.score || 0;
 
         // Update states
         setGptFeedback(feedback);
@@ -403,17 +406,33 @@ const Quiz: React.FC<QuizProps> = ({
       </div>
       <div className="w-full  flex justify-end"></div>
       {showResults && (
-        <div className="mt-6 text-center p-6  rounded-lg">
-          <h3 className="text-2xl font-bold text-slate-500 mb-2">
-            Quiz Completed!
-          </h3>
-          <p className="text-slate-500 mb-2">
-            Final Score: {score} out of {data.questions.length}
-          </p>
-          <p className="text-slate-500">
-            Accuracy: {Math.round(scorePercentage)}%
-          </p>
-        </div>
+        <>
+          <div className="mt-6 text-center p-6 rounded-lg">
+            <h3 className="text-2xl font-bold text-slate-500 mb-2">
+              Quiz Completed!
+            </h3>
+          
+          </div>
+          <QuizSummary
+            quiz={{
+              id: quizId,
+              notebookId,
+              pageId,
+              startedAt: new Date(),
+              lastUpdatedAt: new Date(),
+              currentQuestionIndex,
+              score,
+              totalQuestions: data.questions.length,
+              userAnswers,
+              evaluationResults,
+              incorrectAnswers,
+              isComplete: true,
+              gptFeedback,
+              quizData: data,
+            }}
+            onClose={() => setShowResults(false)}
+          />
+        </>
       )}
 
       {showSummary && (

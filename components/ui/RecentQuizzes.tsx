@@ -116,26 +116,7 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
 
   return (
     <div className="mt-6 w-full">
-      {selectedCompletedQuiz ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-700">
-              Quiz Summary
-            </h3>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedCompletedQuiz(null)}
-              className="bg-slate-100 border border-slate-400 hover:bg-slate-200 rounded-full"
-            >
-              Back to Recent Quizzes
-            </Button>
-          </div>
-          <QuizSummary
-            quiz={selectedCompletedQuiz}
-            onClose={() => setSelectedCompletedQuiz(null)}
-          />
-        </div>
-      ) : (
+    
         <>
           <h3 className="text-lg font-semibold text-slate-700 mb-4">
             Recent Quizzes
@@ -189,7 +170,7 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
             ))}
           </div>
         </>
-      )}
+      
     </div>
   );
 };

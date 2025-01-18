@@ -51,8 +51,8 @@ Respond in JSON format:
       prompt = `You are an educational coach. Review this quiz performance and provide personalized feedback.
 
 Quiz Performance:
-- Score: ${score} out of ${totalQuestions}
-- Accuracy: ${Math.round((score / totalQuestions) * 100)}%
+- Score: ${score} 
+- Accuracy: ${Math.round((score ) )}%
 - Number of incorrect answers: ${incorrectAnswers.length}
 
 Provide comprehensive feedback including:

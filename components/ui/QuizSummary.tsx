@@ -8,7 +8,7 @@ interface QuizSummaryProps {
 
 const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg  p-6">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -81,14 +81,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
           })}
         </div>
 
-        {quiz.gptFeedback && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h5 className="font-semibold text-blue-700 mb-2">
-              Overall Feedback
-            </h5>
-            <p className="text-slate-700">{quiz.gptFeedback}</p>
-          </div>
-        )}
+   
       </div>
     </div>
   );
