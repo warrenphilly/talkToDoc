@@ -32,6 +32,11 @@ export interface Page {
     path: string;
     timestamp: string;
   }[];
+  studyGuide?: {
+    content: string;
+    updatedAt: Date;
+  };
+  studyCardSetRefs?: string[];
 }
 
 export interface Notebook {
@@ -75,6 +80,35 @@ interface SideChat {
   messages: Message[];
   createdAt: number;
   updatedAt: number;
+}
+
+// New interfaces
+interface StudyCard {
+  id: string;
+  pageId: string;
+  notebookId: string;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface StudyGuide {
+  content: string;
+  updatedAt: Date;
+}
+
+// New interfaces for study card sets
+interface StudyCardSet {
+  id: string;
+  pageId: string;
+  notebookId: string;
+  title: string;
+  createdAt: string;
+  cards: Array<{
+    title: string;
+    content: string;
+  }>;
 }
 
 // export const notebooksCollection = collection(db, "notebooks");
@@ -734,6 +768,219 @@ export const deleteQuiz = async (quizId: string): Promise<void> => {
     await deleteDoc(doc(db, "quizzes", quizId));
   } catch (error) {
     console.error("Error deleting quiz:", error);
+    throw error;
+  }
+};
+
+// New functions for study materials
+export const saveStudyCard = async (
+  notebookId: string,
+  pageId: string,
+  title: string,
+  content: string
+): Promise<string> => {
+  try {
+    const cardId = `card_${crypto.randomUUID()}`;
+    const cardRef = doc(db, "studyCards", cardId);
+    
+    const studyCard: StudyCard = {
+      id: cardId,
+      pageId,
+      notebookId,
+      title,
+      content,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    await setDoc(cardRef, studyCard);
+    return cardId;
+  } catch (error) {
+    console.error("Error saving study card:", error);
+    throw error;
+  }
+};
+
+export const getStudyCards = async (pageId: string): Promise<StudyCard[]> => {
+  try {
+    const cardsRef = collection(db, "studyCards");
+    const q = query(cardsRef, where("pageId", "==", pageId));
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => doc.data() as StudyCard);
+  } catch (error) {
+    console.error("Error getting study cards:", error);
+    throw error;
+  }
+};
+
+export const saveStudyGuide = async (
+  notebookId: string,
+  pageId: string,
+  content: string
+): Promise<void> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) throw new Error("Notebook not found");
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+
+    if (pageIndex === -1) throw new Error("Page not found");
+
+    // Add or update study guide
+    notebook.pages[pageIndex].studyGuide = {
+      content,
+      updatedAt: new Date()
+    };
+
+    await updateDoc(notebookRef, { pages: notebook.pages });
+  } catch (error) {
+    console.error("Error saving study guide:", error);
+    throw error;
+  }
+};
+
+// Save a set of study cards
+export const saveStudyCardSet = async (
+  notebookId: string,
+  pageId: string,
+  cards: Array<{ title: string; content: string; }>
+): Promise<string> => {
+  try {
+    const setId = `cardset_${crypto.randomUUID()}`;
+    const cardSetRef = doc(db, "studyCardSets", setId);
+    
+    const studyCardSet: StudyCardSet = {
+      id: setId,
+      pageId,
+      notebookId,
+      title: `Study Set ${new Date().toLocaleDateString()}`,
+      createdAt: new Date().toISOString(),
+      cards
+    };
+    
+    await setDoc(cardSetRef, studyCardSet);
+
+    // Add reference to the page
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) throw new Error("Notebook not found");
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+
+    if (pageIndex === -1) throw new Error("Page not found");
+
+    // Initialize studyCardSetRefs array if it doesn't exist
+    if (!notebook.pages[pageIndex].studyCardSetRefs) {
+      notebook.pages[pageIndex].studyCardSetRefs = [];
+    }
+
+    // Add reference to the new set
+    notebook.pages[pageIndex].studyCardSetRefs.push(setId);
+
+    await updateDoc(notebookRef, { pages: notebook.pages });
+
+    return setId;
+  } catch (error) {
+    console.error("Error saving study card set:", error);
+    throw error;
+  }
+};
+
+// Get all study card sets for a page
+export const getStudyCardSets = async (pageId: string): Promise<StudyCardSet[]> => {
+  try {
+    const setsRef = collection(db, "studyCardSets");
+    let querySnapshot;
+
+    try {
+      const q = query(
+        setsRef, 
+        where("pageId", "==", pageId),
+        orderBy("createdAt", "desc")
+      );
+      querySnapshot = await getDocs(q);
+    } catch (error) {
+      console.warn("Falling back to unordered query while index builds");
+      const q = query(setsRef, where("pageId", "==", pageId));
+      querySnapshot = await getDocs(q);
+    }
+    
+    // Convert Firestore documents to plain objects
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Create a new plain object with all the fields we need
+      const plainObject: StudyCardSet = {
+        id: data.id,
+        pageId: data.pageId,
+        notebookId: data.notebookId,
+        title: data.title,
+        // Convert Firestore Timestamp to ISO string
+        createdAt: data.createdAt?.toDate?.() 
+          ? data.createdAt.toDate().toISOString() 
+          : new Date().toISOString(),
+        // Ensure cards are also plain objects
+        cards: data.cards.map((card: any) => ({
+          title: card.title,
+          content: card.content
+        }))
+      };
+      
+      return plainObject;
+    });
+  } catch (error) {
+    console.error("Error getting study card sets:", error);
+    throw error;
+  }
+};
+
+// Get a specific study card set
+export const getStudyCardSet = async (setId: string): Promise<StudyCardSet | null> => {
+  try {
+    const setRef = doc(db, "studyCardSets", setId);
+    const setSnap = await getDoc(setRef);
+    
+    if (!setSnap.exists()) return null;
+    return setSnap.data() as StudyCardSet;
+  } catch (error) {
+    console.error("Error getting study card set:", error);
+    throw error;
+  }
+};
+
+export const deleteStudyCardSet = async (
+  notebookId: string,
+  pageId: string,
+  setId: string
+): Promise<void> => {
+  try {
+    // Delete the study card set document
+    const cardSetRef = doc(db, "studyCardSets", setId);
+    await deleteDoc(cardSetRef);
+
+    // Remove the reference from the notebook page
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) throw new Error("Notebook not found");
+
+    const notebook = notebookSnap.data() as Notebook;
+    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+
+    if (pageIndex === -1) throw new Error("Page not found");
+
+    // Filter out the deleted set ID from studyCardSetRefs
+    notebook.pages[pageIndex].studyCardSetRefs = 
+      notebook.pages[pageIndex].studyCardSetRefs?.filter(ref => ref !== setId) || [];
+
+    await updateDoc(notebookRef, { pages: notebook.pages });
+  } catch (error) {
+    console.error("Error deleting study card set:", error);
     throw error;
   }
 };

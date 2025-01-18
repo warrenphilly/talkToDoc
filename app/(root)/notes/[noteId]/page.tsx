@@ -68,7 +68,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
   }));
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-200 p-4">
+    <div className="flex flex-col h-screen w-full bg-slate-100 p-4">
       <BrowserTabs notebookId={notebook.id} initialTabs={tabs} />
     </div>
   );

@@ -325,7 +325,7 @@ const ChatClient = ({
   }, [isSmallScreen]);
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-slate-100 w-full rounded-xl overflow-hidden">
+    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl overflow-hidden">
       {/* hydration error is here */}
       <div className="flex flex-col bg-white w-full mx-2 overflow-hidden">
         <div className="flex flex-row items-center justify-between w-full py-2">
@@ -355,7 +355,7 @@ const ChatClient = ({
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-              Study Set(cards and guides)
+              Study Set
             </Button>
             <Button
               onClick={() => {
@@ -465,7 +465,7 @@ const ChatClient = ({
                 </div>
               )}
 
-              <div className="flex bg-slate-100 flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
+              <div className="flex bg-white flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
                 
                 <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
@@ -530,16 +530,16 @@ const ChatClient = ({
               </div>
             </ResizablePanel>
 
-            {!(isNotebookFullscreen || isChatFullscreen || isQuizFullscreen) &&
-              (showQuiz || showChat) && (
+            {!(isNotebookFullscreen || isChatFullscreen || isQuizFullscreen || isStudyMaterialFullscreen) &&
+              (showQuiz || showChat || showStudyMaterial) && (
                 <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
             {/* Chat and Quiz panels */}
-            {!isNotebookFullscreen && (showChat || showQuiz) && (
+            {!isNotebookFullscreen && (showChat || showQuiz || showStudyMaterial) && (
               <ResizablePanel
                 className={`relative ${
-                  showChat || showQuiz
+                  showChat || showQuiz || showStudyMaterial
                     ? "translate-x-0 my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px]"
                     : "hidden"
                 } ${
@@ -553,7 +553,7 @@ const ChatClient = ({
                   <ResizablePanel
                     className={`relative ${
                       showChat
-                        ? "translate-x-0 bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
                         : "hidden"
                     }`}
                     defaultSize={isChatFullscreen ? 100 : 50}
@@ -578,17 +578,9 @@ const ChatClient = ({
                   </ResizablePanel>
                 )}
 
-                {!isChatFullscreen &&
-                  !isQuizFullscreen &&
-                  showQuiz &&
-                  showChat && (
-                    <ResizableHandle
-                      withHandle
-                      className="bg-slate-300 w-full"
-                    />
-                  )}
+               
 
-                {showQuiz && !isChatFullscreen && (
+                {showQuiz && !isChatFullscreen && !isStudyMaterialFullscreen && (
                   <ResizablePanel
                     className={`relative ${
                       showQuiz
@@ -615,7 +607,7 @@ const ChatClient = ({
                   </ResizablePanel>
 
                 )}
-                {showStudyMaterial && !isChatFullscreen && (
+                {showStudyMaterial && !isStudyMaterialFullscreen && !isChatFullscreen && !isQuizFullscreen && (
                   <ResizablePanel
                     className={`relative ${
                       showStudyMaterial
@@ -629,12 +621,13 @@ const ChatClient = ({
                       className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
                       size="icon"
                     >
-                      {isQuizFullscreen ? (
+                      {isStudyMaterialFullscreen ? (
                         <Minimize2 size={16} />
                       ) : (
                         <Maximize2 size={16} />
                       )}
                     </Button>
+             
                     <StudyMaterialTabs
                       notebookId={notebookId}
                       pageId={tabId}

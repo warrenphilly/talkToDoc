@@ -345,7 +345,7 @@ const SideChat = ({
           {contextSections.map((section) => (
             <div
               key={section.id}
-              className="relative bg-slate-100 rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
+              className="relative border border-slate-300 rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
             >
               <p className="pr-8 text-slate-400">"{section.text}"</p>
               <button
@@ -372,10 +372,10 @@ const SideChat = ({
   }
 
   return (
-    <div className="flex flex-col h-full w-full border-3 bg-slate-100 rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto">
+    <div className="flex  flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto auto-scroll">
       <div className="grid grid-cols-3 items-center ">
       <Button
-            className="bg-slate-100 hover:bg-red-200 w-fit ml-4 rounded-full border border-red-600 text-red-600"
+            className="bg-white hover:bg-red-200 w-fit ml-4 text-slate-400 border-slate-400 rounded-full border hover:border-red-600 hover:text-red-600"
             onClick={handleClearChat}
             
           >
@@ -386,45 +386,44 @@ const SideChat = ({
       </div>
       </div>
 
-      <div className=" bg-slate-200 text-[#94b347] rounded-lg   p-4 m-4">
+      <div className=" bg-slate-100 text-[#94b347] rounded-lg   p-4 m-4">
         {renderContextSections()}
         
-        <div className="h-px bg-slate-300" />
         <div className="flex flex-col items-center justify-center mt-4">
           <h1 className="text-sm font-semibold text-slate-400">Actions</h1>
         </div>
         
         <div className="flex flex-row gap-2 w-full items-center justify-center m-4">
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            className="bg-slate-100 border border-slate-400 text-slate-400 hover:bg-white hover:text-[#94b347] rounded-full shadow-none"
             onClick={() => sendMessage("Explain this in simple terms")}
             disabled={contextSections.length === 0}
           >
             Explain
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
             onClick={() => sendMessage("Expand on this")}
             disabled={contextSections.length === 0}
           >
             Expand
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
             onClick={() => sendMessage("Give me a step-by-step example")}
             disabled={contextSections.length === 0}
           >
             Example
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
             onClick={() => sendMessage("Reword this in a way that is easier to understand")}
             disabled={contextSections.length === 0}
           >
             Reword
           </Button>
           <Button
-            className="bg-slate-200 border border-slate-400 text-slate-400 hover:bg-slate-100 rounded-full shadow-none"
+            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
             onClick={() => sendMessage("Summarize this in a way that is easier to understand, 100 words or less")}
             disabled={contextSections.length === 0}
           >
@@ -435,7 +434,7 @@ const SideChat = ({
         
         </div>
       </div>
-      <div className="flex-grow overflow-y-auto p-4 auto-scroll">
+      <div className="flex-grow  p-4 ">
         {messages.map(
           (msg, index) =>
             msg.text &&
@@ -463,8 +462,8 @@ const SideChat = ({
             )
         )}
       </div>
-      <div className="bg-slate-100 p-4  rounded-b-lg">
-        <div className="flex  bg-slate-100 rounded-lg  p-2 flex-row items-center gap-3 h-fit">
+      <div className="bg-white p-4  rounded-b-lg">
+        <div className="flex  bg-white rounded-lg  p-2 flex-row items-center gap-3 h-fit">
           <Textarea
             className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-100 text-slate-900 flex-grow"
             placeholder="Type your message..."

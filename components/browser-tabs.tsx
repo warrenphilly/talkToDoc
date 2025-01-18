@@ -179,7 +179,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     <div
       className={cn("w-full h-full mx-auto rounded-lg bg-slate-100", className)}
     >
-      <div className="flex items-center bg-slate-200  rounded-t-lg">
+      <div className="flex items-center bg-slate-100  rounded-t-lg">
         {tabs.map((tab) => (
           <motion.div
             key={tab.id}
@@ -187,7 +187,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             className={cn(
               "flex items-center px-3 py-2 text-sm font-medium rounded-t-lg cursor-pointer",
               activeTabId === tab.id
-                ? " text-foreground bg-slate-100 shadow-x-md"
+                ? " text-foreground bg-white shadow-x-md"
                 : "text-muted-foreground bg-slate-300"
             )}
             onClick={() => setActiveTabId(tab.id)}
@@ -231,7 +231,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4  h-[calc(100vh-5.2rem)] rounded-xl bg-slate-100 overflow-hidden"
+          className="p-4  h-[calc(100vh-5.2rem)] rounded-r-xl bg-white overflow-hidden"
         >
           <ChatClient
             title={activeTab?.title || ""}

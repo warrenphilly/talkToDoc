@@ -122,7 +122,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   return (
     <div
-      className={` h-full bg-slate-100 rounded-xl p-6 w-full overflow-y-auto`}
+      className={` h-full bg-white rounded-xl p-6 w-full overflow-y-auto`}
     >
       <div className="flex flex-col items-center mb-4">
         <h1 className="text-2xl font-semibold text-slate-500">Quiz Panel</h1>
@@ -133,13 +133,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           quizData ? "w-full" : ""
         }`}
       >
-        <Separator
-          className="w-full bg-slate-200 mb-4"
-          orientation="horizontal"
-        />
+      
 
         {!quizData ? (
-          <div className="flex flex-col gap-5 w-full max-w-[800px] border border-slate-400 bg-slate-200  p-4 rounded-xl">
+          <div className="flex flex-col gap-5 w-full max-w-[800px] border border-slate-400 bg-slate-50  p-4 rounded-xl">
             <div className="flex flex-col  items-center text-slate-500">
               <h1 className="text-md font-bold">Generate Quiz</h1>
             </div>
@@ -181,16 +178,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 </SelectItem>
               </SelectContent>
             </Select>
-            {/* <Select onValueChange={(value) => setQuestionScope(value)}>
-              <SelectTrigger className="w-full text-slate-500">
-                <SelectValue placeholder="What do you want to be tested on?" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                <SelectItem value="this page" className="text-slate-500 hover:bg-slate-300">this page</SelectItem>
-                <SelectItem value="all pages" className="text-slate-500 hover:bg-slate-300">all pages</SelectItem>
-              
-              </SelectContent>
-            </Select> */}
+         
 
             <div className="flex flex-col gap-2 items-start text-slate-500">
               <h1 className="text-md font-bold">Question Type</h1>
