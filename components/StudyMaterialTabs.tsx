@@ -1,18 +1,60 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { PlusCircle, RefreshCw, Trash2, BookOpen, ArrowLeft } from 'lucide-react'
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { getStudyCards, saveStudyCard, saveStudyGuide, getStudyCardSets, saveStudyCardSet, deleteStudyCardSet } from "@/lib/firebase/firestore"
-import { StudyCard, StudyCardSet } from "@/types/studyCards"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { db } from "@/firebase";
+import {
+  deleteStudyCardSet,
+  getAllNotebooks,
+  getStudyCards,
+  getStudyCardSets,
+  saveStudyCard,
+  saveStudyCardSet,
+  saveStudyGuide,
+} from "@/lib/firebase/firestore";
+import { Notebook, Page } from "@/types/notebooks";
+import { StudyCard, StudyCardSet } from "@/types/studyCards";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import {
+  ArrowLeft,
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  PlusCircle,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
   pageId: string;
+}
+
+interface StudySetMetadata {
+  name: string;
+  createdAt: Date;
+  sourceNotebooks: {
+    notebookId: string;
+    notebookTitle: string;
+    pages: {
+      pageId: string;
+      pageTitle: string;
+    }[];
+  }[];
+  cardCount: number;
 }
 
 const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
@@ -21,10 +63,26 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [numCards, setNumCards] = useState(5);
   const [showAnswer, setShowAnswer] = useState<Record<string, boolean>>({});
+  const [showNotebookModal, setShowNotebookModal] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<{
+    [notebookId: string]: string[];
+  }>({});
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
+    new Set()
+  );
+  const [setName, setSetName] = useState<string>("");
 
   useEffect(() => {
     loadCardSets();
   }, [pageId]);
+
+  useEffect(() => {
+    if (showNotebookModal) {
+      loadAllNotebooks();
+    }
+  }, [showNotebookModal]);
 
   const loadCardSets = async () => {
     try {
@@ -35,46 +93,171 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
     }
   };
 
+  const loadAllNotebooks = async () => {
+    try {
+      setIsLoadingNotebooks(true);
+      console.log("Fetching notebooks...");
+
+      // Get reference to notebooks collection
+      const notebooksRef = collection(db, "notebooks");
+
+      // Create query to get all notebooks
+      const q = query(notebooksRef, orderBy("createdAt", "desc"));
+
+      // Get notebooks
+      const querySnapshot = await getDocs(q);
+
+      // Map the documents to Notebook objects
+      const fetchedNotebooks: Notebook[] = querySnapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date(),
+          } as Notebook)
+      );
+
+      console.log("Fetched notebooks:", fetchedNotebooks);
+      setNotebooks(fetchedNotebooks);
+    } catch (error) {
+      console.error("Error loading notebooks:", error);
+    } finally {
+      setIsLoadingNotebooks(false);
+    }
+  };
+
+  const handlePageSelection = (
+    notebookId: string,
+    pageId: string,
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => {
+      const updatedPages = { ...prev };
+      if (!updatedPages[notebookId]) {
+        updatedPages[notebookId] = [];
+      }
+
+      if (isSelected) {
+        updatedPages[notebookId] = [...updatedPages[notebookId], pageId];
+      } else {
+        updatedPages[notebookId] = updatedPages[notebookId].filter(
+          (id) => id !== pageId
+        );
+      }
+
+      return updatedPages;
+    });
+  };
+
+  const handleSelectAllPages = (notebookId: string, isSelected: boolean) => {
+    setSelectedPages((prev) => {
+      const updatedPages = { ...prev };
+      const notebook = notebooks.find((n) => n.id === notebookId);
+
+      if (notebook) {
+        if (isSelected) {
+          updatedPages[notebookId] = notebook.pages.map((p: Page) => p.id);
+        } else {
+          updatedPages[notebookId] = [];
+        }
+      }
+
+      return updatedPages;
+    });
+  };
+
   const handleGenerateCards = async () => {
     try {
-      setIsGenerating(true);
-      const formData = new FormData();
-      formData.append('message', JSON.stringify({
-        notebookId,
-        pageId,
-        numberOfCards: numCards,
-      }));
+      if (!setName.trim()) {
+        alert("Please enter a name for the study set");
+        return;
+      }
 
-      const response = await fetch('/api/studycards', {
-        method: 'POST',
+      setIsGenerating(true);
+      console.log("Starting card generation with:", {
+        selectedPages,
+        numCards,
+        setName,
+      });
+
+      // Collect metadata about selected notebooks and pages
+      const sourceNotebooks = await Promise.all(
+        Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
+          const notebook = notebooks.find((n) => n.id === notebookId);
+          if (!notebook) return null;
+
+          return {
+            notebookId,
+            notebookTitle: notebook.title,
+            pages: pageIds.map((pageId) => {
+              const page = notebook.pages.find((p) => p.id === pageId);
+              return {
+                pageId,
+                pageTitle: page?.title || "Unknown Page",
+              };
+            }),
+          };
+        })
+      );
+
+      const metadata: StudySetMetadata = {
+        name: setName,
+        createdAt: new Date(),
+        sourceNotebooks: sourceNotebooks.filter(
+          (n): n is NonNullable<typeof n> => n !== null
+        ),
+        cardCount: numCards,
+      };
+
+      const formData = new FormData();
+      const messageData = {
+        selectedPages,
+        numberOfCards: numCards,
+        metadata,
+      };
+
+      console.log("Sending data to API:", messageData);
+      formData.append("message", JSON.stringify(messageData));
+
+      const response = await fetch("/api/studycards", {
+        method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Failed to generate cards');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to generate cards");
+      }
 
       const data = await response.json();
-      
-      // Save the card set to the database
-      await saveStudyCardSet(notebookId, pageId, data.cards);
+
+      // Pass metadata to saveStudyCardSet
+      await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
+
       await loadCardSets();
-      
+      setShowNotebookModal(false);
+      setSelectedPages({});
+      setSetName("");
     } catch (error) {
       console.error("Error generating study cards:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     } finally {
       setIsGenerating(false);
     }
   };
 
   const toggleAnswer = (cardIndex: number) => {
-    setShowAnswer(prev => ({
+    setShowAnswer((prev) => ({
       ...prev,
-      [cardIndex]: !prev[cardIndex]
+      [cardIndex]: !prev[cardIndex],
     }));
   };
 
   const handleDeleteSet = async (setId: string) => {
     try {
-      if (window.confirm('Are you sure you want to delete this study set?')) {
+      if (window.confirm("Are you sure you want to delete this study set?")) {
         await deleteStudyCardSet(notebookId, pageId, setId);
         await loadCardSets(); // Reload the list after deletion
         if (selectedSet?.id === setId) {
@@ -86,44 +269,226 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
     }
   };
 
+  const toggleNotebookExpansion = (notebookId: string) => {
+    setExpandedNotebooks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(notebookId)) {
+        newSet.delete(notebookId);
+      } else {
+        newSet.add(notebookId);
+      }
+      return newSet;
+    });
+  };
+
+  const isNotebookFullySelected = (notebookId: string, pages: Page[]) => {
+    return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
+  };
+
+  const handleNotebookSelection = (
+    notebookId: string,
+    pages: Page[],
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({
+      ...prev,
+      [notebookId]: isSelected ? pages.map((p) => p.id) : [],
+    }));
+  };
+
+  const renderNotebookList = () => {
+    if (isLoadingNotebooks) {
+      return (
+        <div className="flex items-center justify-center p-4">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+
+    if (notebooks.length === 0) {
+      return (
+        <div className="text-center p-4 text-gray-500">
+          No notebooks found. Please create a notebook first.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {notebooks.map((notebook) => (
+          <div key={notebook.id} className="border rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleNotebookExpansion(notebook.id)}
+                  className="p-1 hover:bg-slate-200 rounded"
+                >
+                  {expandedNotebooks.has(notebook.id) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="font-medium">{notebook.title}</span>
+              </div>
+              <button
+                onClick={() =>
+                  handleNotebookSelection(
+                    notebook.id,
+                    notebook.pages,
+                    !isNotebookFullySelected(notebook.id, notebook.pages)
+                  )
+                }
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-slate-100 hover:bg-slate-200"
+                }`}
+              >
+                {isNotebookFullySelected(notebook.id, notebook.pages) ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "Added"
+                    : "Add All"}
+                </span>
+              </button>
+            </div>
+
+            {expandedNotebooks.has(notebook.id) && notebook.pages && (
+              <div className="pl-8 pr-3 py-2 space-y-1 border-t">
+                {notebook.pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span className="text-sm">{page.title}</span>
+                    <button
+                      onClick={() =>
+                        handlePageSelection(
+                          notebook.id,
+                          page.id,
+                          !selectedPages[notebook.id]?.includes(page.id)
+                        )
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
+                        selectedPages[notebook.id]?.includes(page.id)
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-slate-100 hover:bg-slate-200"
+                      }`}
+                    >
+                      {selectedPages[notebook.id]?.includes(page.id) ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      <span>
+                        {selectedPages[notebook.id]?.includes(page.id)
+                          ? "Added"
+                          : "Add"}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <Card className="bg-slate-50 flex flex-col gap-4 p-4 items-center justify-center">
+    <Card className=" shadow-none  w-full bg-white flex flex-col gap-4 p-4 items-center justify-center">
       <CardHeader className="flex flex-col items-center justify-center">
-        <CardTitle className="text-2xl font-bold text-[#94b347]">Study Cards</CardTitle>
+        <CardTitle className="text-2xl font-bold text-[#94b347]">
+          Study Cards
+        </CardTitle>
         <CardDescription>Create and review study card sets</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Generate</span>
-            <select
-              value={numCards}
-              onChange={(e) => setNumCards(Number(e.target.value))}
-              className="border rounded p-1"
-            >
-              {[3, 5, 10, 15, 20].map(num => (
-                <option key={num} value={num}>{num} cards</option>
-              ))}
-            </select>
-          </div>
-          <Button 
-            onClick={handleGenerateCards}
-            className="hover:text-[#94b347] hover:bg-slate-100 hover:border-[#a5c05f] rounded-full text-slate-600 bg-slate-100 border border-slate-400 shadow-none "
-            disabled={isGenerating}
+          <Button
+            onClick={() => setShowNotebookModal(true)}
+            className="hover:text-[#94b347] hover:bg-slate-100 hover:border-[#a5c05f] rounded-full text-slate-600 bg-white border border-slate-400 shadow-none"
           >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Generate New Set
-              </>
-            )}
+            <BookOpen className="mr-2 h-4 w-4" />
+            Select Notes to Study
           </Button>
         </div>
+
+        {showNotebookModal && (
+          <div className="fixed p-6 inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <h2 className="text-xl font-bold mb-4">Create Study Set</h2>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Study Set Name
+                  </label>
+                  <Input
+                    type="text"
+                    value={setName}
+                    onChange={(e) => setSetName(e.target.value)}
+                    placeholder="Enter a name for this study set"
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Cards
+                  </label>
+                  <select
+                    value={numCards}
+                    onChange={(e) => setNumCards(Number(e.target.value))}
+                    className="w-full border rounded-md p-2"
+                  >
+                    {[3, 5, 10, 15, 20, 25, 30].map((num) => (
+                      <option key={num} value={num}>
+                        {num} cards
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Notes
+                  </label>
+                  {renderNotebookList()}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowNotebookModal(false);
+                    setSelectedPages({});
+                    setSetName("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleGenerateCards}
+                  disabled={
+                    isGenerating ||
+                    Object.keys(selectedPages).length === 0 ||
+                    !setName.trim()
+                  }
+                >
+                  {isGenerating ? "Generating..." : "Generate Cards"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {!selectedSet ? (
           // Show list of card sets
@@ -161,10 +526,7 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
           // Show selected set's cards
           <div>
             <div className="flex items-center justify-between mb-4">
-              <Button
-                onClick={() => setSelectedSet(null)}
-                variant="ghost"
-              >
+              <Button onClick={() => setSelectedSet(null)} variant="ghost">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Sets
               </Button>
@@ -178,23 +540,29 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
               </Button>
             </div>
             <div className="space-y-2">
-              {selectedSet.cards.map((card: { title: string; content: string; }, index: number) => (
-                <div
-                  key={index}
-                  onClick={() => toggleAnswer(index)}
-                  className="bg-secondary p-4 rounded cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <h3 className="font-bold">{card.title}</h3>
-                  <div className={`mt-2 ${showAnswer[index] ? 'block' : 'hidden'}`}>
-                    <p>{card.content}</p>
+              {selectedSet.cards.map(
+                (card: { title: string; content: string }, index: number) => (
+                  <div
+                    key={index}
+                    onClick={() => toggleAnswer(index)}
+                    className="bg-secondary p-4 rounded cursor-pointer hover:bg-slate-100 transition-colors"
+                  >
+                    <h3 className="font-bold">{card.title}</h3>
+                    <div
+                      className={`mt-2 ${
+                        showAnswer[index] ? "block" : "hidden"
+                      }`}
+                    >
+                      <p>{card.content}</p>
+                    </div>
+                    {!showAnswer[index] && (
+                      <p className="text-sm text-slate-500 mt-2">
+                        Click to reveal answer
+                      </p>
+                    )}
                   </div>
-                  {!showAnswer[index] && (
-                    <p className="text-sm text-slate-500 mt-2">
-                      Click to reveal answer
-                    </p>
-                  )}
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
         )}
@@ -232,7 +600,9 @@ const StudyGuide = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
             />
             <div className="flex gap-2">
               <Button onClick={handleSaveGuide}>Save Guide</Button>
-              <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
             </div>
           </div>
         ) : (
@@ -259,28 +629,32 @@ const StudyGuide = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
         </Button>
       </CardFooter>
     </Card>
-  )
-}
+  );
+};
 
-export default function StudyMaterialTabs({ notebookId, pageId }: StudyMaterialTabsProps) {
+export default function StudyMaterialTabs({
+  notebookId,
+  pageId,
+}: StudyMaterialTabsProps) {
   return (
     <div className="flex flex-col w-full max-w-3xl mx-auto">
       <div className="flex flex-row items-center justify-center">
-        <h1 className="text-xl font-semibold text-[#94b347] mb-8 mt-2">Study Material</h1>
+        <h1 className="text-xl font-semibold text-[#94b347] mb-8 mt-2">
+          Study Material
+        </h1>
       </div>
       <Tabs defaultValue="studycards" className="w-full max-w-3xl mx-auto">
         <TabsList className="grid w-full grid-cols-2 bg-slate-100 rounded-md">
           <TabsTrigger value="studycards">Study Cards</TabsTrigger>
-        <TabsTrigger value="studyguide">Study Guide</TabsTrigger>
-      </TabsList>
-      <TabsContent value="studycards">
-        <StudyCards notebookId={notebookId} pageId={pageId} />
-      </TabsContent>
-      <TabsContent value="studyguide">
-        <StudyGuide notebookId={notebookId} pageId={pageId} />
-      </TabsContent>
-    </Tabs>
+          <TabsTrigger value="studyguide">Study Guide</TabsTrigger>
+        </TabsList>
+        <TabsContent value="studycards">
+          <StudyCards notebookId={notebookId} pageId={pageId} />
+        </TabsContent>
+        <TabsContent value="studyguide">
+          <StudyGuide notebookId={notebookId} pageId={pageId} />
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }
-

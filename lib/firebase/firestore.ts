@@ -1,13 +1,15 @@
 "use server";
 
 import { db, storage } from "@/firebase";
-import { Message, ContextSection } from "@/lib/types";
+import { ContextSection, Message } from "@/lib/types";
 import type { QuizState } from "@/types/quiz";
+import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import {
   collection,
   deleteDoc,
   doc,
+  FieldValue,
   getDoc,
   getDocs,
   limit,
@@ -80,35 +82,6 @@ interface SideChat {
   messages: Message[];
   createdAt: number;
   updatedAt: number;
-}
-
-// New interfaces
-interface StudyCard {
-  id: string;
-  pageId: string;
-  notebookId: string;
-  title: string;
-  content: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface StudyGuide {
-  content: string;
-  updatedAt: Date;
-}
-
-// New interfaces for study card sets
-interface StudyCardSet {
-  id: string;
-  pageId: string;
-  notebookId: string;
-  title: string;
-  createdAt: string;
-  cards: Array<{
-    title: string;
-    content: string;
-  }>;
 }
 
 // export const notebooksCollection = collection(db, "notebooks");
@@ -526,17 +499,20 @@ export const updateSideChat = async (
   });
 };
 
-export const getSideChat = async (notebookId: string, pageId: string): Promise<SideChat | null> => {
+export const getSideChat = async (
+  notebookId: string,
+  pageId: string
+): Promise<SideChat | null> => {
   const sideChatsRef = collection(db, "sideChats");
   const q = query(
     sideChatsRef,
     where("notebookId", "==", notebookId),
     where("pageId", "==", pageId)
   );
-  
+
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
-  
+
   const data = snapshot.docs[0].data();
   return {
     id: snapshot.docs[0].id,
@@ -545,7 +521,7 @@ export const getSideChat = async (notebookId: string, pageId: string): Promise<S
     contextSections: data.contextSections || [],
     messages: data.messages || [],
     createdAt: data.createdAt,
-    updatedAt: data.updatedAt
+    updatedAt: data.updatedAt,
   } as SideChat;
 };
 
@@ -703,7 +679,7 @@ export const saveQuizState = async (quizState: QuizState): Promise<string> => {
     };
 
     const quizRef = doc(db, "quizzes", sanitizedQuizState.id);
-    
+
     // Use setDoc with merge option to update existing document or create if it doesn't exist
     await setDoc(quizRef, sanitizedQuizState, { merge: true });
 
@@ -732,7 +708,9 @@ export const getQuizState = async (
   }
 };
 
-export const getRecentQuizzes = async (pageId: string): Promise<QuizState[]> => {
+export const getRecentQuizzes = async (
+  pageId: string
+): Promise<QuizState[]> => {
   try {
     const quizzesRef = collection(db, "quizzes");
     let querySnapshot;
@@ -782,18 +760,23 @@ export const saveStudyCard = async (
   try {
     const cardId = `card_${crypto.randomUUID()}`;
     const cardRef = doc(db, "studyCards", cardId);
-    
+
+    // Only include the properties defined in StudyCard interface
     const studyCard: StudyCard = {
-      id: cardId,
-      pageId,
-      notebookId,
       title,
       content,
-      createdAt: new Date(),
-      updatedAt: new Date()
     };
-    
-    await setDoc(cardRef, studyCard);
+
+    // Store additional metadata in a separate object
+    const cardData = {
+      ...studyCard,
+      pageId,
+      notebookId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+
+    await setDoc(cardRef, cardData);
     return cardId;
   } catch (error) {
     console.error("Error saving study card:", error);
@@ -806,8 +789,8 @@ export const getStudyCards = async (pageId: string): Promise<StudyCard[]> => {
     const cardsRef = collection(db, "studyCards");
     const q = query(cardsRef, where("pageId", "==", pageId));
     const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => doc.data() as StudyCard);
+
+    return snapshot.docs.map((doc) => doc.data() as StudyCard);
   } catch (error) {
     console.error("Error getting study cards:", error);
     throw error;
@@ -826,14 +809,14 @@ export const saveStudyGuide = async (
     if (!notebookSnap.exists()) throw new Error("Notebook not found");
 
     const notebook = notebookSnap.data() as Notebook;
-    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
 
     if (pageIndex === -1) throw new Error("Page not found");
 
     // Add or update study guide
     notebook.pages[pageIndex].studyGuide = {
       content,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     await updateDoc(notebookRef, { pages: notebook.pages });
@@ -843,47 +826,63 @@ export const saveStudyGuide = async (
   }
 };
 
-// Save a set of study cards
+// Helper function to convert Firestore timestamp to Date
+const convertTimestampToDate = (timestamp: any): Date => {
+  if (timestamp?.toDate) {
+    return timestamp.toDate();
+  }
+  return new Date();
+};
+
 export const saveStudyCardSet = async (
   notebookId: string,
   pageId: string,
-  cards: Array<{ title: string; content: string; }>
-): Promise<string> => {
+  cards: StudyCard[],
+  metadata: Omit<StudySetMetadata, "createdAt">
+) => {
   try {
-    const setId = `cardset_${crypto.randomUUID()}`;
-    const cardSetRef = doc(db, "studyCardSets", setId);
-    
-    const studyCardSet: StudyCardSet = {
-      id: setId,
-      pageId,
-      notebookId,
-      title: `Study Set ${new Date().toLocaleDateString()}`,
-      createdAt: new Date().toISOString(),
-      cards
-    };
-    
-    await setDoc(cardSetRef, studyCardSet);
+    const user = await currentUser();
+    if (!user) throw new Error("User not authenticated");
 
-    // Add reference to the page
+    const studySetRef = doc(collection(db, "studyCardSets"));
+    const setId = studySetRef.id;
+
+    // Create timestamp
+    const timestamp = serverTimestamp();
+
+    const studySetData = {
+      id: setId,
+      title: metadata.name,
+      cards: cards.map(({ title, content }) => ({ title, content })), // Only include required properties
+      metadata: {
+        ...metadata,
+        createdAt: timestamp,
+      },
+      userId: user.id,
+      notebookId,
+      pageId,
+      createdAt: timestamp,
+    };
+
+    await setDoc(studySetRef, studySetData);
+
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
 
-    if (!notebookSnap.exists()) throw new Error("Notebook not found");
+    if (notebookSnap.exists()) {
+      const notebook = notebookSnap.data();
+      const pageIndex = notebook.pages.findIndex((p: any) => p.id === pageId);
 
-    const notebook = notebookSnap.data() as Notebook;
-    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+      if (pageIndex !== -1) {
+        const updatedPages = [...notebook.pages];
+        if (!updatedPages[pageIndex].studyCardSetRefs) {
+          updatedPages[pageIndex].studyCardSetRefs = [];
+        }
+        updatedPages[pageIndex].studyCardSetRefs.push(setId);
 
-    if (pageIndex === -1) throw new Error("Page not found");
-
-    // Initialize studyCardSetRefs array if it doesn't exist
-    if (!notebook.pages[pageIndex].studyCardSetRefs) {
-      notebook.pages[pageIndex].studyCardSetRefs = [];
+        await updateDoc(notebookRef, { pages: updatedPages });
+      }
     }
-
-    // Add reference to the new set
-    notebook.pages[pageIndex].studyCardSetRefs.push(setId);
-
-    await updateDoc(notebookRef, { pages: notebook.pages });
 
     return setId;
   } catch (error) {
@@ -892,46 +891,39 @@ export const saveStudyCardSet = async (
   }
 };
 
-// Get all study card sets for a page
-export const getStudyCardSets = async (pageId: string): Promise<StudyCardSet[]> => {
+export const getStudyCardSets = async (
+  pageId: string
+): Promise<StudyCardSet[]> => {
   try {
-    const setsRef = collection(db, "studyCardSets");
-    let querySnapshot;
+    const user = await currentUser();
+    if (!user) throw new Error("User not authenticated");
 
-    try {
-      const q = query(
-        setsRef, 
-        where("pageId", "==", pageId),
-        orderBy("createdAt", "desc")
-      );
-      querySnapshot = await getDocs(q);
-    } catch (error) {
-      console.warn("Falling back to unordered query while index builds");
-      const q = query(setsRef, where("pageId", "==", pageId));
-      querySnapshot = await getDocs(q);
-    }
-    
-    // Convert Firestore documents to plain objects
-    return querySnapshot.docs.map(doc => {
+    // Simplified query that doesn't require a composite index
+    const q = query(
+      collection(db, "studyCardSets"),
+      where("pageId", "==", pageId),
+      where("userId", "==", user.id)
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      // Create a new plain object with all the fields we need
-      const plainObject: StudyCardSet = {
-        id: data.id,
+      return {
+        id: doc.id,
+        title: data.title,
+        cards: data.cards.map(({ title, content }: StudyCard) => ({
+          title,
+          content,
+        })),
+        metadata: {
+          ...data.metadata,
+          createdAt: convertTimestampToDate(data.metadata.createdAt),
+        },
         pageId: data.pageId,
         notebookId: data.notebookId,
-        title: data.title,
-        // Convert Firestore Timestamp to ISO string
-        createdAt: data.createdAt?.toDate?.() 
-          ? data.createdAt.toDate().toISOString() 
-          : new Date().toISOString(),
-        // Ensure cards are also plain objects
-        cards: data.cards.map((card: any) => ({
-          title: card.title,
-          content: card.content
-        }))
+        createdAt: convertTimestampToDate(data.createdAt),
+        userId: data.userId,
       };
-      
-      return plainObject;
     });
   } catch (error) {
     console.error("Error getting study card sets:", error);
@@ -940,11 +932,13 @@ export const getStudyCardSets = async (pageId: string): Promise<StudyCardSet[]> 
 };
 
 // Get a specific study card set
-export const getStudyCardSet = async (setId: string): Promise<StudyCardSet | null> => {
+export const getStudyCardSet = async (
+  setId: string
+): Promise<StudyCardSet | null> => {
   try {
     const setRef = doc(db, "studyCardSets", setId);
     const setSnap = await getDoc(setRef);
-    
+
     if (!setSnap.exists()) return null;
     return setSnap.data() as StudyCardSet;
   } catch (error) {
@@ -970,13 +964,15 @@ export const deleteStudyCardSet = async (
     if (!notebookSnap.exists()) throw new Error("Notebook not found");
 
     const notebook = notebookSnap.data() as Notebook;
-    const pageIndex = notebook.pages.findIndex(p => p.id === pageId);
+    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
 
     if (pageIndex === -1) throw new Error("Page not found");
 
     // Filter out the deleted set ID from studyCardSetRefs
-    notebook.pages[pageIndex].studyCardSetRefs = 
-      notebook.pages[pageIndex].studyCardSetRefs?.filter(ref => ref !== setId) || [];
+    notebook.pages[pageIndex].studyCardSetRefs =
+      notebook.pages[pageIndex].studyCardSetRefs?.filter(
+        (ref) => ref !== setId
+      ) || [];
 
     await updateDoc(notebookRef, { pages: notebook.pages });
   } catch (error) {
