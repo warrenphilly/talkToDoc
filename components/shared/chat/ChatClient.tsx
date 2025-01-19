@@ -365,6 +365,7 @@ const ChatClient = ({
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
+                setIsStudyMaterialFullscreen(false);
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -379,6 +380,7 @@ const ChatClient = ({
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
+                setIsStudyMaterialFullscreen(false);
               }}
               className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -434,7 +436,7 @@ const ChatClient = ({
               className={`relative ${
                 isNotebookFullscreen ? "w-full" : "w-full p-2 min-w-[600px]"
               } ${
-                isChatFullscreen || isQuizFullscreen
+                isChatFullscreen || isQuizFullscreen || isStudyMaterialFullscreen
                   ? "hidden"
                   : "w-full p-2 min-w-[600px]"
               } flex flex-col gap-2 h-full overflow-hidden`}
@@ -607,7 +609,7 @@ const ChatClient = ({
                   </ResizablePanel>
 
                 )}
-                {showStudyMaterial && !isStudyMaterialFullscreen && !isChatFullscreen && !isQuizFullscreen && (
+                {showStudyMaterial  && !isChatFullscreen && !isQuizFullscreen && (
                   <ResizablePanel
                     className={`relative ${
                       showStudyMaterial

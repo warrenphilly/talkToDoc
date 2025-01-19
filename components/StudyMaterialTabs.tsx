@@ -299,7 +299,7 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
   const renderNotebookList = () => {
     if (isLoadingNotebooks) {
       return (
-        <div className="flex items-center justify-center p-4">
+        <div className="flex w-full items-center justify-center p-4">
           <RefreshCw className="h-6 w-6 animate-spin" />
         </div>
       );
@@ -637,13 +637,13 @@ export default function StudyMaterialTabs({
   pageId,
 }: StudyMaterialTabsProps) {
   return (
-    <div className="flex flex-col w-full max-w-3xl mx-auto">
+    <div className="flex flex-col w-full mx-auto">
       <div className="flex flex-row items-center justify-center">
         <h1 className="text-xl font-semibold text-[#94b347] mb-8 mt-2">
           Study Material
         </h1>
       </div>
-      <Tabs defaultValue="studycards" className="w-full max-w-3xl mx-auto">
+      <Tabs defaultValue="studycards" className="w-full  mx-auto">
         <TabsList className="grid w-full grid-cols-2 bg-slate-100 rounded-md">
           <TabsTrigger value="studycards">Study Cards</TabsTrigger>
           <TabsTrigger value="studyguide">Study Guide</TabsTrigger>
