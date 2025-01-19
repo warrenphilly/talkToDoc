@@ -409,11 +409,11 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
         </CardTitle>
         <CardDescription>Create and review study card sets</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="w-full flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-4 mb-6">
           <Button
             onClick={() => setShowNotebookModal(true)}
-            className="hover:text-[#94b347] hover:bg-slate-100 hover:border-[#a5c05f] rounded-full text-slate-600 bg-white border border-slate-400 shadow-none"
+            className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
           >
             <BookOpen className="mr-2 h-4 w-4" />
             Select Notes to Study
@@ -492,19 +492,19 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
 
         {!selectedSet ? (
           // Show list of card sets
-          <div className="space-y-2">
+          <div className="space-y-2 w-full max-w-lg ">
             {cardSets.map((set) => (
-              <div key={set.id} className="flex items-center gap-2">
+              <div key={set.id} className="flex items-center gap-2 p-2 w-full ">
                 <Button
                   onClick={() => setSelectedSet(set)}
                   variant="outline"
-                  className="w-full justify-between hover:bg-slate-50"
+                  className="w-full justify-between hover:bg-slate-50 text-slate-700 border rounded-md  bg-white p-2 shadow-none"
                 >
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-4 h-4" />
                     <span>{set.title}</span>
                   </div>
-                  <span className="text-sm text-slate-500">
+                  <span className="text-sm text-slate-400">
                     {set.cards.length} cards
                   </span>
                 </Button>

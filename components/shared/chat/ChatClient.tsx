@@ -333,7 +333,7 @@ const ChatClient = ({
           <div className="flex flex-row gap-2 items-center justify-between px-7">
             <Button
               onClick={() => setShowUpload(!showUpload)}
-              className={`bg-slate-100 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 text-slate-500 rounded-2xl w-fit ${
+              className={`bg-white0 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit ${
                 messages.length > 0 ? "block" : "hidden"
               }`}
             >
@@ -353,7 +353,7 @@ const ChatClient = ({
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               Study Set
             </Button>
@@ -367,7 +367,7 @@ const ChatClient = ({
                 setIsQuizFullscreen(false);
                 setIsStudyMaterialFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               Quiz Me
             </Button>
@@ -382,14 +382,14 @@ const ChatClient = ({
                 setIsQuizFullscreen(false);
                 setIsStudyMaterialFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-slate-100 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100 rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-slate-100 rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-slate-100">
+                <Button className="bg-white rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white">
                   <MoreVertical />
                 </Button>
               </DropdownMenuTrigger>
