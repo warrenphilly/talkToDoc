@@ -36,7 +36,12 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import FormUpload from "@/components/shared/global/formUpload";
+import { RefObject } from "react";
+import { Message } from "@/lib/types";
+import { fileUpload } from "@/lib/utils";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -73,6 +78,19 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
     new Set()
   );
   const [setName, setSetName] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [totalSections, setTotalSections] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
+
+
+  useEffect(() => {
+    setFilesToUpload([...filesToUpload, ...files]);
+  }, [files]);
 
   useEffect(() => {
     loadCardSets();
@@ -92,6 +110,23 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
       console.error("Error loading study card sets:", error);
     }
   };
+
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => {
+    fileUpload(event, setFiles);
+  };
+
+  const handleSendMessage = () => {
+    console.log("Sending message");
+  };
+
+  const handleClear = () => {
+    setMessages([]);
+    setFiles([]);
+  };
+
 
   const loadAllNotebooks = async () => {
     try {
@@ -167,85 +202,86 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
   };
 
   const handleGenerateCards = async () => {
-    try {
-      if (!setName.trim()) {
-        alert("Please enter a name for the study set");
-        return;
-      }
+    console.log("filesToUpload yalll imma be king of the pirates", filesToUpload);
+    // try {
+    //   if (!setName.trim()) {
+    //     alert("Please enter a name for the study set");
+    //     return;
+    //   }
 
-      setIsGenerating(true);
-      console.log("Starting card generation with:", {
-        selectedPages,
-        numCards,
-        setName,
-      });
+    //   setIsGenerating(true);
+    //   console.log("Starting card generation with:", {
+    //     selectedPages,
+    //     numCards,
+    //     setName,
+    //   });
 
-      // Collect metadata about selected notebooks and pages
-      const sourceNotebooks = await Promise.all(
-        Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
-          const notebook = notebooks.find((n) => n.id === notebookId);
-          if (!notebook) return null;
+    //   // Collect metadata about selected notebooks and pages
+    //   const sourceNotebooks = await Promise.all(
+    //     Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
+    //       const notebook = notebooks.find((n) => n.id === notebookId);
+    //       if (!notebook) return null;
 
-          return {
-            notebookId,
-            notebookTitle: notebook.title,
-            pages: pageIds.map((pageId) => {
-              const page = notebook.pages.find((p) => p.id === pageId);
-              return {
-                pageId,
-                pageTitle: page?.title || "Unknown Page",
-              };
-            }),
-          };
-        })
-      );
+    //       return {
+    //         notebookId,
+    //         notebookTitle: notebook.title,
+    //         pages: pageIds.map((pageId) => {
+    //           const page = notebook.pages.find((p) => p.id === pageId);
+    //           return {
+    //             pageId,
+    //             pageTitle: page?.title || "Unknown Page",
+    //           };
+    //         }),
+    //       };
+    //     })
+    //   );
 
-      const metadata: StudySetMetadata = {
-        name: setName,
-        createdAt: new Date(),
-        sourceNotebooks: sourceNotebooks.filter(
-          (n): n is NonNullable<typeof n> => n !== null
-        ),
-        cardCount: numCards,
-      };
+    //   const metadata: StudySetMetadata = {
+    //     name: setName,
+    //     createdAt: new Date(),
+    //     sourceNotebooks: sourceNotebooks.filter(
+    //       (n): n is NonNullable<typeof n> => n !== null
+    //     ),
+    //     cardCount: numCards,
+    //   };
 
-      const formData = new FormData();
-      const messageData = {
-        selectedPages,
-        numberOfCards: numCards,
-        metadata,
-      };
+    //   const formData = new FormData();
+    //   const messageData = {
+    //     selectedPages,
+    //     numberOfCards: numCards,
+    //     metadata,
+    //   };
 
-      console.log("Sending data to API:", messageData);
-      formData.append("message", JSON.stringify(messageData));
+    //   console.log("Sending data to API:", messageData);
+    //   formData.append("message", JSON.stringify(messageData));
 
-      const response = await fetch("/api/studycards", {
-        method: "POST",
-        body: formData,
-      });
+    //   const response = await fetch("/api/studycards", {
+    //     method: "POST",
+    //     body: formData,
+    //   });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to generate cards");
-      }
+    //   if (!response.ok) {
+    //     const errorData = await response.json();
+    //     throw new Error(errorData.details || "Failed to generate cards");
+    //   }
 
-      const data = await response.json();
+    //   const data = await response.json();
 
-      // Pass metadata to saveStudyCardSet
-      await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
+    //   // Pass metadata to saveStudyCardSet
+    //   await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
 
-      await loadCardSets();
-      setShowNotebookModal(false);
-      setSelectedPages({});
-      setSetName("");
-    } catch (error) {
-      console.error("Error generating study cards:", error);
-      alert(
-        error instanceof Error ? error.message : "Failed to generate cards"
-      );
-    } finally {
-      setIsGenerating(false);
-    }
+    //   await loadCardSets();
+    //   setShowNotebookModal(false);
+    //   setSelectedPages({});
+    //   setSetName("");
+    // } catch (error) {
+    //   console.error("Error generating study cards:", error);
+    //   alert(
+    //     error instanceof Error ? error.message : "Failed to generate cards"
+    //   );
+    // } finally {
+    //   setIsGenerating(false);
+    // }
   };
 
   const toggleAnswer = (cardIndex: number) => {
@@ -457,6 +493,17 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
                 </div>
 
                 <div>
+
+                <FormUpload 
+                messages={messages}
+                files={files}
+                showUpload={showUpload}
+                fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
+                handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                handleSendMessage={handleSendMessage}
+                handleClear={handleClear}
+                setShowUpload={setShowUpload}
+              />
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Select Notes
                   </label>
@@ -479,8 +526,9 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
                   onClick={handleGenerateCards}
                   disabled={
                     isGenerating ||
-                    Object.keys(selectedPages).length === 0 ||
-                    !setName.trim()
+                    (Object.keys(selectedPages).length === 0 &&
+                      !setName.trim() ||
+                      filesToUpload.length === 0)
                   }
                 >
                   {isGenerating ? "Generating..." : "Generate Cards"}
