@@ -28,7 +28,7 @@ const FormUpload = ({
   setShowUpload,
 }: UploadAreaProps) => {
 
-  
+
   const handleGenerateNotes = () => {
     
     console.log("filesToUpload frfrfr", filesToUpload);
@@ -143,14 +143,7 @@ const FormUpload = ({
               </div>
             </div>
 
-            <div className="flex flex-row items-center gap-3 p-2 rounded-2xl">
-              <Button
-                className="bg-[#dae9b6] text-slate-700 rounded-2xl w-fit shadow-none"
-                onClick={handleGenerateNotes}
-              >
-                Convert PDF to Text And Save to Bucket
-              </Button>
-            </div>
+            
           </div>
         </div>
       </div>

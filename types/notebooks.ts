@@ -1,9 +1,11 @@
+import { Message } from "@/lib/types";
+
 export interface Page {
   id: string;
   title: string;
   content: string;
+  messages: Message[];
   isOpen: boolean;
-  messages?: any[];
   markdownRefs?: {
     url: string;
     path: string;
@@ -14,6 +16,12 @@ export interface Page {
     updatedAt: Date;
   };
   studyCardSetRefs?: string[];
+  studyDocs?: {
+    url: string;
+    path: string;
+    name: string;
+    timestamp: string;
+  }[];
 }
 
 export interface Notebook {

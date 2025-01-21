@@ -39,6 +39,12 @@ export interface Page {
     updatedAt: Date;
   };
   studyCardSetRefs?: string[];
+  studyDocs?: {
+    url: string;
+    path: string;
+    name: string;
+    timestamp: string;
+  }[];
 }
 
 export interface Notebook {

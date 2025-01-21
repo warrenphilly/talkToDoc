@@ -42,6 +42,9 @@ import FormUpload from "@/components/shared/global/formUpload";
 import { RefObject } from "react";
 import { Message } from "@/lib/types";
 import { fileUpload } from "@/lib/utils";
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { storage } from '@/firebase';
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -202,86 +205,162 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
   };
 
   const handleGenerateCards = async () => {
-    console.log("filesToUpload yalll imma be king of the pirates", filesToUpload);
-    // try {
-    //   if (!setName.trim()) {
-    //     alert("Please enter a name for the study set");
-    //     return;
-    //   }
+    try {
+      if (!setName.trim()) {
+        alert("Please enter a name for the study set");
+        return;
+      }
 
-    //   setIsGenerating(true);
-    //   console.log("Starting card generation with:", {
-    //     selectedPages,
-    //     numCards,
-    //     setName,
-    //   });
+      // Check if we have either uploaded files or selected pages
+      if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
+        alert("Please either upload files or select notebook pages");
+        return;
+      }
 
-    //   // Collect metadata about selected notebooks and pages
-    //   const sourceNotebooks = await Promise.all(
-    //     Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
-    //       const notebook = notebooks.find((n) => n.id === notebookId);
-    //       if (!notebook) return null;
+      setIsGenerating(true);
+      const allText: string[] = [];
 
-    //       return {
-    //         notebookId,
-    //         notebookTitle: notebook.title,
-    //         pages: pageIds.map((pageId) => {
-    //           const page = notebook.pages.find((p) => p.id === pageId);
-    //           return {
-    //             pageId,
-    //             pageTitle: page?.title || "Unknown Page",
-    //           };
-    //         }),
-    //       };
-    //     })
-    //   );
+      // Process uploaded files if they exist
+      let uploadedDocs = [];
+      if (filesToUpload.length > 0) {
+        for (const file of filesToUpload) {
+          const formData = new FormData();
+          formData.append("file", file);
 
-    //   const metadata: StudySetMetadata = {
-    //     name: setName,
-    //     createdAt: new Date(),
-    //     sourceNotebooks: sourceNotebooks.filter(
-    //       (n): n is NonNullable<typeof n> => n !== null
-    //     ),
-    //     cardCount: numCards,
-    //   };
+          const response = await fetch("/api/convert", {
+            method: "POST",
+            body: formData,
+          });
 
-    //   const formData = new FormData();
-    //   const messageData = {
-    //     selectedPages,
-    //     numberOfCards: numCards,
-    //     metadata,
-    //   };
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
 
-    //   console.log("Sending data to API:", messageData);
-    //   formData.append("message", JSON.stringify(messageData));
+          const data = await response.json();
+          if (data.text) {
+            allText.push(`# ${file.name}\n\n${data.text}`);
+          }
+        }
 
-    //   const response = await fetch("/api/studycards", {
-    //     method: "POST",
-    //     body: formData,
-    //   });
+        // Save uploaded files to storage
+        if (allText.length > 0) {
+          const combinedText = allText.join('\n\n---\n\n');
+          const timestamp = new Date().getTime();
+          const markdownPath = `studydocs/${notebookId}/${pageId}_${timestamp}.md`;
+          
+          const storageRef = ref(storage, markdownPath);
+          await uploadString(storageRef, combinedText, 'raw', {
+            contentType: 'text/markdown',
+            customMetadata: {
+              notebookId,
+              pageId,
+              setName,
+              timestamp: timestamp.toString(),
+            }
+          });
 
-    //   if (!response.ok) {
-    //     const errorData = await response.json();
-    //     throw new Error(errorData.details || "Failed to generate cards");
-    //   }
+          const downloadUrl = await getDownloadURL(storageRef);
+          uploadedDocs.push({
+            url: downloadUrl,
+            path: markdownPath,
+            name: setName,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
 
-    //   const data = await response.json();
+      // Prepare metadata for study card generation
+      const sourceNotebooks = await Promise.all(
+        Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
+          const notebook = notebooks.find((n) => n.id === notebookId);
+          if (!notebook) return null;
 
-    //   // Pass metadata to saveStudyCardSet
-    //   await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
+          return {
+            notebookId,
+            notebookTitle: notebook.title,
+            pages: pageIds.map((pageId) => {
+              const page = notebook.pages.find((p) => p.id === pageId);
+              return {
+                pageId,
+                pageTitle: page?.title || "Unknown Page",
+              };
+            }),
+          };
+        })
+      );
 
-    //   await loadCardSets();
-    //   setShowNotebookModal(false);
-    //   setSelectedPages({});
-    //   setSetName("");
-    // } catch (error) {
-    //   console.error("Error generating study cards:", error);
-    //   alert(
-    //     error instanceof Error ? error.message : "Failed to generate cards"
-    //   );
-    // } finally {
-    //   setIsGenerating(false);
-    // }
+      const metadata: StudySetMetadata = {
+        name: setName,
+        createdAt: new Date(),
+        sourceNotebooks: sourceNotebooks.filter(
+          (n): n is NonNullable<typeof n> => n !== null
+        ),
+        cardCount: numCards,
+      };
+
+      // Send to API for card generation
+      const formData = new FormData();
+      const messageData = {
+        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        numberOfCards: numCards,
+        metadata,
+        uploadedDocs: uploadedDocs.length > 0 ? uploadedDocs : undefined,
+      };
+
+      formData.append("message", JSON.stringify(messageData));
+
+      const response = await fetch("/api/studycards", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to generate cards");
+      }
+
+      const data = await response.json();
+
+      // Save study card set and update notebook
+      await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
+
+      // Update the page with study docs references if we have uploaded files
+      if (uploadedDocs.length > 0) {
+        const notebookRef = doc(db, "notebooks", notebookId);
+        const notebookSnap = await getDoc(notebookRef);
+
+        if (notebookSnap.exists()) {
+          const notebook = notebookSnap.data() as Notebook;
+          const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+
+          if (pageIndex !== -1) {
+            if (!notebook.pages[pageIndex].studyDocs) {
+              notebook.pages[pageIndex].studyDocs = [];
+            }
+            notebook.pages[pageIndex].studyDocs.push(...uploadedDocs);
+
+            await updateDoc(notebookRef, {
+              pages: notebook.pages,
+            });
+          }
+        }
+      }
+
+      // Cleanup and refresh
+      await loadCardSets();
+      setShowNotebookModal(false);
+      setSelectedPages({});
+      setSetName("");
+      setFilesToUpload([]);
+      setFiles([]);
+      setMessages([]);
+      
+    } catch (error) {
+      console.error("Error generating study cards:", error);
+      alert(error instanceof Error ? error.message : "Failed to generate cards");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const toggleAnswer = (cardIndex: number) => {
@@ -526,9 +605,8 @@ const StudyCards = ({ notebookId, pageId }: StudyMaterialTabsProps) => {
                   onClick={handleGenerateCards}
                   disabled={
                     isGenerating ||
-                    (Object.keys(selectedPages).length === 0 &&
-                      !setName.trim() ||
-                      filesToUpload.length === 0)
+                    !setName.trim() ||
+                    (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)
                   }
                 >
                   {isGenerating ? "Generating..." : "Generate Cards"}

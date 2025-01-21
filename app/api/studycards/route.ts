@@ -24,99 +24,129 @@ export async function POST(req: NextRequest) {
       throw new Error("No message provided");
     }
 
-    const { selectedPages, numberOfCards, metadata } = JSON.parse(messageStr);
+    const { selectedPages, numberOfCards, metadata, uploadedDocs } = JSON.parse(messageStr);
 
     // Debug log
     console.log("Processing request with:", {
       selectedPages,
       numberOfCards,
+      uploadedDocs
     });
 
-    // Validate selected pages
-    if (!selectedPages || Object.keys(selectedPages).length === 0) {
-      throw new Error("No pages selected");
-    }
-
-    // Collect all content from selected pages across notebooks
+    // Initialize content collection
     let allContent = "";
 
-    // Iterate through each notebook
-    for (const notebookId of Object.keys(selectedPages)) {
-      const pageIds = selectedPages[notebookId];
+    // 1. Process uploaded docs if they exist
+    if (uploadedDocs && uploadedDocs.length > 0) {
+      console.log(`Processing ${uploadedDocs.length} uploaded documents`);
+      
+      for (const doc of uploadedDocs) {
+        try {
+          const cleanPath = doc.path.replace(/^gs:\/\/[^\/]+\//, "");
+          console.log("Processing uploaded file:", cleanPath);
 
-      // Get the notebook document
-      console.log("Fetching notebook:", notebookId);
-      const notebookRef = adminDb.collection("notebooks").doc(notebookId);
-      const notebookSnap = await notebookRef.get();
+          const bucket = adminStorage.bucket();
+          const file = bucket.file(cleanPath);
 
-      if (!notebookSnap.exists) {
-        console.warn(`Notebook ${notebookId} not found, skipping`);
-        continue;
+          const [exists] = await file.exists();
+          if (!exists) {
+            console.error("File does not exist:", cleanPath);
+            continue;
+          }
+
+          const [content] = await file.download();
+          const contentStr = content.toString();
+          allContent += `## ${doc.name}\n\n${cleanMarkdownContent(contentStr)}\n\n`;
+        } catch (error) {
+          console.error(`Error fetching uploaded file ${doc.path}:`, error);
+        }
       }
+    }
 
-      const notebookData = notebookSnap.data();
-      if (!notebookData) {
-        console.warn(`Notebook ${notebookId} data is empty, skipping`);
-        continue;
-      }
+    // 2. Process selected pages and their associated documents
+    if (selectedPages && Object.keys(selectedPages).length > 0) {
+      // Iterate through each notebook
+      for (const notebookId of Object.keys(selectedPages)) {
+        const pageIds = selectedPages[notebookId];
 
-      // Process each selected page in the notebook
-      for (const pageId of pageIds) {
-        const page = notebookData.pages?.find((p: any) => p.id === pageId);
-        if (!page) {
-          console.warn(
-            `Page ${pageId} not found in notebook ${notebookId}, skipping`
-          );
+        // Get the notebook document
+        console.log("Fetching notebook:", notebookId);
+        const notebookRef = adminDb.collection("notebooks").doc(notebookId);
+        const notebookSnap = await notebookRef.get();
+
+        if (!notebookSnap.exists) {
+          console.warn(`Notebook ${notebookId} not found, skipping`);
           continue;
         }
 
-        // Add page title as a section header
-        allContent += `## ${page.title}\n\n`;
-
-        // Add page content if it exists
-        if (page.content) {
-          allContent += `${page.content}\n\n`;
+        const notebookData = notebookSnap.data();
+        if (!notebookData) {
+          console.warn(`Notebook ${notebookId} data is empty, skipping`);
+          continue;
         }
 
-        // Fetch content from markdown files
-        if (page.markdownRefs && page.markdownRefs.length > 0) {
-          console.log(
-            `Found ${page.markdownRefs.length} markdownRefs for page ${pageId}`
-          );
+        // Process each selected page in the notebook
+        for (const pageId of pageIds) {
+          const page = notebookData.pages?.find((p: any) => p.id === pageId);
+          if (!page) {
+            console.warn(`Page ${pageId} not found in notebook ${notebookId}, skipping`);
+            continue;
+          }
 
-          for (const markdownRef of page.markdownRefs) {
-            try {
-              const cleanPath = markdownRef.path.replace(
-                /^gs:\/\/[^\/]+\//,
-                ""
-              );
-              console.log("Processing markdown file:", cleanPath);
+          // Add page title and content
+          allContent += `## ${page.title}\n\n`;
+          if (page.content) {
+            allContent += `${page.content}\n\n`;
+          }
 
-              const bucket = adminStorage.bucket();
-              const file = bucket.file(cleanPath);
+          // Process markdown references
+          if (page.markdownRefs && page.markdownRefs.length > 0) {
+            console.log(`Processing ${page.markdownRefs.length} markdown refs for page ${page.title}`);
+            for (const markdownRef of page.markdownRefs) {
+              try {
+                const cleanPath = markdownRef.path.replace(/^gs:\/\/[^\/]+\//, "");
+                const bucket = adminStorage.bucket();
+                const file = bucket.file(cleanPath);
 
-              const [exists] = await file.exists();
-              if (!exists) {
-                console.error("File does not exist:", cleanPath);
-                continue;
+                const [exists] = await file.exists();
+                if (!exists) continue;
+
+                const [content] = await file.download();
+                const contentStr = content.toString();
+                allContent += cleanMarkdownContent(contentStr) + "\n\n";
+              } catch (error) {
+                console.error(`Error fetching markdown file ${markdownRef.path}:`, error);
               }
+            }
+          }
 
-              const [content] = await file.download();
-              const contentStr = content.toString();
-              allContent += cleanMarkdownContent(contentStr) + "\n\n";
-            } catch (error) {
-              console.error(
-                `Error fetching markdown file ${markdownRef.path}:`,
-                error
-              );
+          // Process study documents
+          if (page.studyDocs && page.studyDocs.length > 0) {
+            console.log(`Processing ${page.studyDocs.length} study docs for page ${page.title}`);
+            for (const studyDoc of page.studyDocs) {
+              try {
+                const cleanPath = studyDoc.path.replace(/^gs:\/\/[^\/]+\//, "");
+                const bucket = adminStorage.bucket();
+                const file = bucket.file(cleanPath);
+
+                const [exists] = await file.exists();
+                if (!exists) continue;
+
+                const [content] = await file.download();
+                const contentStr = content.toString();
+                allContent += `## ${studyDoc.name}\n\n${cleanMarkdownContent(contentStr)}\n\n`;
+              } catch (error) {
+                console.error(`Error fetching study doc ${studyDoc.path}:`, error);
+              }
             }
           }
         }
       }
     }
 
+    // Validate that we have some content to work with
     if (!allContent.trim()) {
-      throw new Error("No content found in any of the selected documents");
+      throw new Error("No content found in uploaded documents or selected pages");
     }
 
     console.log("Collected content length:", allContent.length);
@@ -254,8 +284,7 @@ Important: Respond ONLY with the JSON object, no additional text or explanations
     return NextResponse.json(
       {
         error: "Failed to generate study cards",
-        details:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        details: error instanceof Error ? error.message : "Unknown error occurred",
       },
       { status: 500 }
     );
