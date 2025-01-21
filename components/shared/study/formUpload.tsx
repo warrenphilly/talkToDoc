@@ -44,9 +44,9 @@ const FormUpload = ({
   }, [files]);
 
   return (
-    <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full  px-6">
-      <div className="  md:items-start md:justify-between items-center justify-between rounded-2xl w-full px-4 py-4">
-        <div className="flex flex-row gap-2 items-start justify-start  rounded-2xl w-full">
+    <div className="flex flex-col gap-2  items-center justify-center rounded-2xl w-full  ">
+      <div className="  md:items-start md:justify-between items-center justify-between rounded-2xl w-full  py-4">
+        <div className="flex flex-row gap-2  items-start justify-start  rounded-2xl w-full">
           {messages.map(
             (msg, index) =>
               msg.files &&
@@ -100,8 +100,12 @@ const FormUpload = ({
               )
           )}
 
-          <div className=" bg-slate-100  flex flex-col gap-2 items-center justify-center rounded-2xl w-full  h-[200px] ">
-            <div className="flex gap-2 mb-2  ">
+          <div className=" bg-white  flex flex-col gap-2 items-start justify-center rounded-2xl w-full  h-fit ">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Upload your files (optional)
+                  </label>
+            <div className=" gap-2\ flex flex-row items-start w-full">
+              
               <input
                 type="file"
                 multiple
@@ -111,34 +115,35 @@ const FormUpload = ({
                 accept="image/*,.pdf,.doc,.docx"
               />
 
-              <div className="flex flex-row items-center gap-2">
-                <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                  <span className="text-sm text-gray-500 self-center">
-                    {files.length} file(s) selected
-                  </span>
+              <div className="flex flex-col items-start  w-full gap-1 ">
+                <div className="flex flex-col gap-2  items-center justify-center w-fit">
+             
                   <Button
                     variant="outline"
                     onClick={() => {
                       fileInputRef.current?.click();
                       console.log("files", files);
                     }}
-                    className="flex items-center gap-2  bg-white text-slate-600 border-none shadow-lg"
+                    className="flex items-center gap-2  bg-white text-slate-600 border border-slate-400 shadow-lg"
                   >
                     <UploadOutlined />
                     Upload Files ({filesToUpload.length})
                   </Button>
                 </div>
-                <Separator orientation="vertical" className="h-full bg-slate-300" />
-                <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full"></div>
+               
+              
+            
                 
                 {files.length > 0 && (
-
-                  <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-                    <p className="text-sm text-slate-600 self-center font-semibold ">Uploaded Files</p>
-                    {filesToUpload.map((file, index) => (
-                      <div className="text-sm text-gray-500 self-center" key={index}>{file.name}</div>
+                  <>
+                    <Separator orientation="vertical" className="h-full bg-slate-400" />
+                    <div className="flex flex-col gap-2 items-start  justify-start border border-slate-400 rounded-lg p-2 w-full">
+                      <p className="text-sm text-slate-600 self-start font-semibold ">Uploaded Files</p>
+                      {filesToUpload.map((file, index) => (
+                      <div className="text-sm text-gray-400 self-start" key={index}>{file.name}</div>
                     ))}
-                  </div>
+                    </div>
+                    </>
                 )}
               </div>
             </div>

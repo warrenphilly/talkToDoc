@@ -333,7 +333,7 @@ const ChatClient = ({
           <div className="flex flex-row gap-2 items-center justify-between px-7">
             <Button
               onClick={() => setShowUpload(!showUpload)}
-              className={`bg-white0 shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit ${
+              className={`bg-white0 shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit ${
                 messages.length > 0 ? "block" : "hidden"
               }`}
             >
@@ -620,7 +620,7 @@ const ChatClient = ({
                   >
                     <Button
                       onClick={() => setIsStudyMaterialFullscreen(!isStudyMaterialFullscreen)}
-                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                      className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
                       size="icon"
                     >
                       {isStudyMaterialFullscreen ? (
