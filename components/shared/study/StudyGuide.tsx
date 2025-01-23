@@ -32,10 +32,12 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Pencil,
   Plus,
   PlusCircle,
   RefreshCw,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -116,6 +118,10 @@ export default function StudyGuideComponent({
   const [expandedSections, setExpandedSections] = useState<{
     [guideId: string]: number[];
   }>({});
+
+  // Add state to track which guide is being edited in the list
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListTitle, setEditingListTitle] = useState<string>("");
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
@@ -905,26 +911,84 @@ export default function StudyGuideComponent({
                   key={guide.id}
                   className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-[#94b347] transition-colors"
                 >
-                  <button 
-                    onClick={() => setSelectedGuide(guide)}
-                    className="flex-1 flex items-center gap-4 text-left"
-                  >
-                    <div>
-                      <h3 className="font-medium text-slate-700">{guide.title}</h3>
-                      <p className="text-sm text-slate-500">
-                        {guide.createdAt.toLocaleDateString()}
-                      </p>
+                  {editingListId === guide.id ? (
+                    // Edit mode
+                    <div className="flex-1 flex items-center gap-2">
+                      <Input
+                        value={editingListTitle}
+                        onChange={(e) => setEditingListTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleUpdateTitle(guide.id, editingListTitle);
+                            setEditingListId(null);
+                          } else if (e.key === 'Escape') {
+                            setEditingListId(null);
+                          }
+                        }}
+                        className="text-slate-700"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            handleUpdateTitle(guide.id, editingListTitle);
+                            setEditingListId(null);
+                          }}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingListId(null)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteStudyGuide(guide.id);
-                    }}
-                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  ) : (
+                    // View mode
+                    <>
+                      <button 
+                        onClick={() => setSelectedGuide(guide)}
+                        className="flex-1 flex items-center gap-4 text-left"
+                      >
+                        <div className="flex flex-row items-center ">
+
+                        <Button onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingListId(guide.id);
+                              setEditingListTitle(guide.title);
+                            }} className="text-slate-500 text-sm bg-white shadow-none rounded-full hover:bg-white hover:text-[#94b347]" ><Pencil /></Button>
+                          <h3 
+                            className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer"
+                            
+                          >
+                            {guide.title}
+                          </h3>
+                          
+                          <p className="text-sm text-slate-500 mx-5">
+                            {guide.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStudyGuide(guide.id);
+                          }}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
 
