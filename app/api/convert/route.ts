@@ -1,82 +1,112 @@
 import { mkdir, writeFile } from "fs/promises";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import path from "path";
+import { Readable } from 'stream';
+import * as mammoth from 'mammoth';
+import { createWorker } from 'tesseract.js';
+import { parse } from 'csv-parse/sync';
+import JSZip from 'jszip';
+import { parseString } from 'xml2js';
+import { promisify } from 'util';
 
 // You should store this in your environment variables
 const API_KEY = process.env.PDF_CO_API_KEY as string;
 
-export async function POST(request: Request) {
+interface TextRun {
+  t: [string];
+}
+
+interface TextBody {
+  a?: { r: TextRun[] };
+  p?: { r: TextRun[] };
+}
+
+interface Shape {
+  txBody?: TextBody[];
+}
+
+interface SlideTree {
+  sp?: Shape[];
+}
+
+interface SlideContent {
+  p: {
+    sld: [{
+      cSld: [{
+        spTree: [SlideTree];
+      }];
+    }];
+  };
+}
+
+const parseXMLAsync = promisify(parseString);
+
+// Example placeholder for doc->docx conversion.
+// Right now it just returns the original buffer unmodified.
+// You must replace it with an actual doc->docx conversion.
+async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
+  // e.g. call an external CLI, an external API, or a library to do .doc -> .docx
+  console.log("This is just a placeholder. No real doc->docx conversion is happening!");
+  
+  // Return the same buffer for now
+  return docBuffer;
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const data = await request.formData();
-    const file: File | null = data.get("file") as unknown as File;
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
+    const fileType = file.type;
 
-    if (!file) {
-      return NextResponse.json({ success: false, error: "No file uploaded" });
+    let endpoint = '';
+
+    // Determine the appropriate conversion endpoint based on file type
+    if (fileType === "application/msword" || 
+        fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      endpoint = '/api/convert/docx';
+    }
+    else if (fileType === "application/pdf") {
+      endpoint = '/api/convert/pdf';
+    }
+    else if (fileType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
+      endpoint = '/api/convert/pptx';
+    }
+    else if (fileType.startsWith("image/")) {
+      endpoint = '/api/convert/image';
+    }
+    else {
+      throw new Error(`Unsupported file type: ${fileType}`);
     }
 
-    // 1. Get presigned URL for upload
-    const presignedUrlResponse = await fetch(
-      `https://api.pdf.co/v1/file/upload/get-presigned-url?contenttype=application/octet-stream&name=${file.name}`,
-      {
-        method: "GET",
-        headers: new Headers({
-          "x-api-key": API_KEY,
-        }),
-      }
-    );
-
-    const presignedData = await presignedUrlResponse.json();
-
-    if (presignedData.error) {
-      throw new Error(presignedData.message);
-    }
-
-    // 2. Upload the file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    await fetch(presignedData.presignedUrl, {
-      method: "PUT",
-      headers: new Headers({
-        "content-type": "application/octet-stream",
-        "x-api-key": API_KEY,
-      }),
-      body: buffer,
+    // Forward request to the appropriate conversion route
+    const response = await fetch(`${req.nextUrl.origin}${endpoint}`, {
+      method: 'POST',
+      body: formData,
     });
 
-    // 3. Convert PDF to Text using the simple endpoint
-    const convertResponse = await fetch(
-      "https://api.pdf.co/v1/pdf/convert/to/text-simple",
-      {
-        method: "POST",
-        headers: new Headers({
-          "x-api-key": API_KEY,
-          "Content-Type": "application/json",
-        }),
-        body: JSON.stringify({
-          url: presignedData.url,
-          inline: true,
-          async: false,
-        }),
-      }
-    );
-
-    const convertData = await convertResponse.json();
-
-    if (convertData.error) {
-      throw new Error(convertData.message);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.details || 'Conversion failed');
     }
 
-    return NextResponse.json({
-      success: true,
-      text: convertData.body,
-      pageCount: convertData.pageCount,
-    });
-  } catch (error) {
+    const result = await response.json();
+    return NextResponse.json(result);
+
+  } catch (err) {
+    const error = err as Error;
     console.error("Conversion error:", error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Conversion failed",
-    });
+    return NextResponse.json(
+      { 
+        error: "Failed to convert file",
+        details: error.message || "Unknown error occurred"
+      },
+      { status: 500 }
+    );
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};

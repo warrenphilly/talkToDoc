@@ -30,61 +30,59 @@ export const sendMessage = async (
   let markdownFilename: string | null = null;
   let allText = '';
 
+  // Process all files through the convert endpoint
   for (const file of files) {
-    if (file.type === "application/pdf") {
-      const pdfFormData = new FormData();
-      pdfFormData.append("file", file);
+    const fileFormData = new FormData();
+    fileFormData.append("file", file);
+    fileFormData.append("fileType", file.type);
 
-      const baseUrl = typeof window !== 'undefined' 
-        ? window.location.origin 
-        : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      try {
-        const pdfResponse = await fetch(`${baseUrl}/api/convert`, {
-          method: "POST",
-          body: pdfFormData,
-        });
+    const baseUrl = typeof window !== 'undefined' 
+      ? window.location.origin 
+      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      
+    try {
+      const response = await fetch(`${baseUrl}/api/convert`, {
+        method: "POST",
+        body: fileFormData,
+      });
 
-        if (!pdfResponse.ok) {
-          throw new Error("PDF conversion failed");
-        }
-
-        const data = await pdfResponse.json();
-        
-        // Accumulate all text from the PDF
-        if (data.text) {
-          allText += data.text + '\n\n';
-          
-          // Split into sections for processing
-          const SECTION_LENGTH = 500;
-          for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
-            const section = data.text.slice(i, i + SECTION_LENGTH);
-            textSections.push(section);
-          }
-        }
-      } catch (error) {
-        console.error("PDF conversion error:", error);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            user: "AI",
-            text: [
-              {
-                title: "Error",
-                sentences: [
-                  {
-                    id: 1,
-                    text: "Failed to convert PDF file. Please try again.",
-                  },
-                ],
-              },
-            ],
-          },
-        ]);
-        return;
+      if (!response.ok) {
+        throw new Error("File conversion failed");
       }
-    } else {
-      // For non-PDF files, append them as usual
-      formData.append("files", file);
+
+      const data = await response.json();
+      
+      // Accumulate all text from the converted file
+      if (data.text) {
+        allText += data.text + '\n\n';
+        
+        // Split into sections for processing
+        const SECTION_LENGTH = 500;
+        for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
+          const section = data.text.slice(i, i + SECTION_LENGTH);
+          textSections.push(section);
+        }
+      }
+    } catch (error) {
+      console.error("File conversion error:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          user: "AI",
+          text: [
+            {
+              title: "Error",
+              sentences: [
+                {
+                  id: 1,
+                  text: "Failed to convert file. Please try again.",
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+      return;
     }
   }
 

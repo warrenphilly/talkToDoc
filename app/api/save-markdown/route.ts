@@ -1,31 +1,31 @@
-import fs from "fs";
 import { NextResponse } from "next/server";
-import path from "path";
 import { saveMarkdownToStorage } from "@/lib/firebase/firestore";
+import { cleanMarkdownContent, splitIntoChunks } from "@/lib/markdownUtils";
 
 export async function POST(request: Request) {
   try {
-    const { section, filename, createNew, notebookId, pageId } = await request.json();
+    const { text = '', filename, createNew, notebookId, pageId, fileReferences } = await request.json();
     
-    // Clean up the section text
-    const cleanedSection = section
+    // Clean up the text if it exists, otherwise use empty string
+    const cleanedText = (text || '')
       .trim()
-      .replace(/\n+/g, ' ')
+      .replace(/\n+/g, '\n')
       .replace(/\s+/g, ' ');
 
-    if (!cleanedSection && !createNew) return NextResponse.json({ success: true });
+    if (!cleanedText && !createNew) return NextResponse.json({ success: true });
 
     // Save to Firebase Storage
     const { url, path } = await saveMarkdownToStorage(
       notebookId,
       pageId,
-      cleanedSection,
-      createNew
+      cleanedText,
+      fileReferences,
     );
 
     return NextResponse.json({ 
       path,
-      url
+      url,
+      content: cleanedText
     });
   } catch (error) {
     console.error("Error saving markdown:", error);

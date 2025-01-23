@@ -113,7 +113,7 @@ const UploadArea = ({
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   className="hidden"
-                  accept="image/*,.pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
                 />
 
                 <div className="flex flex-col items-center gap-2">
