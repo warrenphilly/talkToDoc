@@ -46,8 +46,10 @@ import { fileUpload } from "@/lib/utils";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
+import { StudyGuideCard } from "./StudyGuideCard";
 
-interface StudyGuideSubtopic {
+// Export the interfaces so they can be imported by StudyGuideCard
+export interface StudyGuideSubtopic {
   title: string;
   description: string;
   keyPoints: string[];
@@ -55,13 +57,13 @@ interface StudyGuideSubtopic {
   studyTips?: string[];
 }
 
-interface StudyGuideSection {
+export interface StudyGuideSection {
   topic: string;
   subtopics: StudyGuideSubtopic[];
   show: boolean;
 }
 
-interface StudyGuide {
+export interface StudyGuide {
   id: string;
   title: string;
   content: StudyGuideSection[];
@@ -107,6 +109,12 @@ export default function StudyGuideComponent({
   ) as RefObject<HTMLInputElement>;
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
+  const [selectedGuide, setSelectedGuide] = useState<StudyGuide | null>(null);
+
+  // Update the state to track expanded sections for each guide
+  const [expandedSections, setExpandedSections] = useState<{
+    [guideId: string]: number[];
+  }>({});
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
@@ -733,6 +741,26 @@ export default function StudyGuideComponent({
     }
   };
 
+  // Update the handleSectionToggle function
+  const handleSectionToggle = (guideId: string, sectionIndex: number) => {
+    setExpandedSections(prev => {
+      const currentExpanded = prev[guideId] || [];
+      const isCurrentlyExpanded = currentExpanded.includes(sectionIndex);
+      
+      if (isCurrentlyExpanded) {
+        return {
+          ...prev,
+          [guideId]: currentExpanded.filter(index => index !== sectionIndex)
+        };
+      } else {
+        return {
+          ...prev,
+          [guideId]: [...currentExpanded, sectionIndex]
+        };
+      }
+    });
+  };
+
   return (
     <Card className="h-full border-none shadow-none">
       
@@ -843,104 +871,63 @@ export default function StudyGuideComponent({
 
         {/* Study Guides List */}
         <div className="space-y-6">
-          {studyGuides.map((guide) => (
-            <Card key={guide.id} className="p-6 bg-white shadow-lg">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-[#94b347]">{guide.title}</h3>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteStudyGuide(guide.id)}
-                    className="text-red-500 hover:text-red-700"
+          {!selectedGuide ? (
+            // List view
+            <div className="space-y-2">
+              {studyGuides.map((guide) => (
+                <div 
+                  key={guide.id}
+                  className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-[#94b347] transition-colors"
+                >
+                  <button 
+                    onClick={() => setSelectedGuide(guide)}
+                    className="flex-1 flex items-center gap-4 text-left"
+                  >
+                    <div>
+                      <h3 className="font-medium text-slate-700">{guide.title}</h3>
+                      <p className="text-sm text-slate-500">
+                        {guide.createdAt.toLocaleDateString()}
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteStudyGuide(guide.id);
+                    }}
+                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </button>
                 </div>
+              ))}
+
+              {studyGuides.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  No study guides yet. Create one to get started!
+                </div>
+              )}
+            </div>
+          ) : (
+            // Single guide view
+            <div>
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedGuide(null)}
+                  className="flex items-center gap-2 text-slate-600 hover:text-[#94b347]"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to list
+                </Button>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
-                Created: {guide.createdAt.toLocaleDateString()}
-              </p>
-              
-              <div className="space-y-6">
-                {guide.content.map((section, sectionIndex) => (
-                  <div key={sectionIndex} className="border rounded-lg p-4 bg-slate-50">
-                    <button
-                      onClick={() => {
-                        const updatedGuides = studyGuides.map(g => {
-                          if (g.id === guide.id) {
-                            return {
-                              ...g,
-                              content: g.content.map((s, i) => 
-                                i === sectionIndex ? { ...s, show: !s.show } : s
-                              )
-                            };
-                          }
-                          return g;
-                        });
-                        setStudyGuides(updatedGuides);
-                      }}
-                      className="flex justify-between items-center w-full text-left"
-                    >
-                      <h4 className="text-lg font-semibold text-slate-800">{section.topic}</h4>
-                      <ChevronDown className={`h-5 w-5 transform transition-transform ${section.show ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    {section.show && (
-                      <div className="mt-4 space-y-4">
-                        {section.subtopics.map((subtopic, subtopicIndex) => (
-                          <div key={subtopicIndex} className="bg-white p-4 rounded-lg shadow-sm">
-                            <h5 className="text-md font-semibold text-[#94b347] mb-2">
-                              {subtopic.title}
-                            </h5>
-                            <p className="text-slate-600 mb-3">{subtopic.description}</p>
-                            
-                            {/* Key Points */}
-                            <div className="mb-3">
-                              <h6 className="text-sm font-semibold text-slate-700 mb-2">Key Points:</h6>
-                              <ul className="list-disc pl-5 space-y-1">
-                                {subtopic.keyPoints.map((point, index) => (
-                                  <li key={index} className="text-slate-600">{point}</li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Examples */}
-                            {subtopic.examples && subtopic.examples.length > 0 && (
-                              <div className="mb-3">
-                                <h6 className="text-sm font-semibold text-slate-700 mb-2">Examples:</h6>
-                                <ul className="list-disc pl-5 space-y-1">
-                                  {subtopic.examples.map((example, index) => (
-                                    <li key={index} className="text-slate-600">{example}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {/* Study Tips */}
-                            {subtopic.studyTips && subtopic.studyTips.length > 0 && (
-                              <div className="bg-[#dae9b6] p-3 rounded-lg mt-3">
-                                <h6 className="text-sm font-semibold text-slate-700 mb-2">Study Tips:</h6>
-                                <ul className="list-disc pl-5 space-y-1">
-                                  {subtopic.studyTips.map((tip, index) => (
-                                    <li key={index} className="text-slate-600">{tip}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
-          ))}
-
-          {studyGuides.length === 0 && (
-            <div className="text-center text-gray-500 py-8">
-              No study guides yet. Create one to get started!
+              <StudyGuideCard
+                guide={selectedGuide}
+                onDelete={(id) => {
+                  handleDeleteStudyGuide(id);
+                  setSelectedGuide(null);
+                }}
+              />
             </div>
           )}
         </div>
