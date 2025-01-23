@@ -3,8 +3,14 @@ import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { NextRequest, NextResponse } from "next/server";
 
 interface StudyGuideSection {
-  title: string;
-  text: string;
+  topic: string;
+  subtopics: {
+    title: string;
+    description: string;
+    keyPoints: string[];
+    examples?: string[];
+    studyTips?: string[];
+  }[];
   show: boolean;
 }
 
@@ -89,19 +95,37 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: `You are a skilled educator and study guide creator. Create a structured study guide that identifies and organizes the main topics and concepts.
-            
-            Format your response as follows:
-            1. Each main topic should start with "Topic: [Topic Name]"
-            2. Under each topic, list 2-3 key subtopics prefixed with "Subtopic: "
-            3. For each subtopic, provide 2-3 bullet points of essential information
-            4. Use clear, concise language
-            5. Focus on the most important concepts and their relationships
-            6. Include relevant examples where appropriate`
+            content: `You are a skilled educator and study guide creator. Create a comprehensive study guide that helps students understand and retain key concepts.
+
+Format the response as a structured JSON object with the following format:
+{
+  "sections": [
+    {
+      "topic": "Main Topic Name",
+      "subtopics": [
+        {
+          "title": "Subtopic Title",
+          "description": "Clear, concise explanation of the concept",
+          "keyPoints": ["Key point 1", "Key point 2", "Key point 3"],
+          "examples": ["Relevant example 1", "Relevant example 2"],
+          "studyTips": ["Specific study tip for this subtopic", "Memory aid or mnemonic if applicable"]
+        }
+      ]
+    }
+  ]
+}
+
+Guidelines:
+- Break down complex topics into manageable subtopics
+- Include practical examples where relevant
+- Provide specific study tips and memory aids
+- Focus on clarity and understanding
+- Highlight connections between concepts
+- Include key definitions and terminology`
           },
           {
             role: "user",
@@ -110,9 +134,6 @@ export async function POST(req: NextRequest) {
         ],
         temperature: 0.7,
         max_tokens: 4000,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
       }),
     });
 
@@ -121,27 +142,16 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    const studyGuideContent = data.choices[0].message.content;
+    const studyGuideContent = JSON.parse(data.choices[0].message.content);
 
-    // Parse the content into sections based on Topics
-    const sections = studyGuideContent.split(/(?=Topic:)/)
-      .filter((section: string) => section.trim())
-      .map((section: string) => {
-        const lines = section.split('\n');
-        const title = lines[0].replace(/^Topic:\s*/, '').trim();
-        const text = lines.slice(1).join('\n').trim();
-        return {
-          title,
-          text,
-          show: false
-        } as StudyGuideSection;
-      })
-      .filter((section: StudyGuideSection) => section.title && section.text); // Remove any empty sections
+    // Add show property to each section
+    const formattedSections = studyGuideContent.sections.map((section: any) => ({
+      ...section,
+      show: false
+    }));
 
     return NextResponse.json({
-      title: guideName,
-      content: sections,
-      rawContent: studyGuideContent
+      content: formattedSections
     });
 
   } catch (error) {

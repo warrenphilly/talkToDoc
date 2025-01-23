@@ -47,18 +47,27 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
 
+interface StudyGuideSubtopic {
+  title: string;
+  description: string;
+  keyPoints: string[];
+  examples?: string[];
+  studyTips?: string[];
+}
+
+interface StudyGuideSection {
+  topic: string;
+  subtopics: StudyGuideSubtopic[];
+  show: boolean;
+}
+
 interface StudyGuide {
   id: string;
   title: string;
-  content: {
-    title: string;
-    text: string;
-    show: boolean;
-  }[];
+  content: StudyGuideSection[];
   notebookId: string;
   pageId: string;
   createdAt: Date;
-  updatedAt?: Date;
 }
 
 interface StudyMaterialTabsProps {
@@ -688,8 +697,11 @@ export default function StudyGuideComponent({
       const guides = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          ...data,
           id: doc.id,
+          title: data.title,
+          content: data.content,
+          notebookId: data.notebookId,
+          pageId: data.pageId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date()
         } as StudyGuide;
@@ -722,7 +734,7 @@ export default function StudyGuideComponent({
   };
 
   return (
-    <Card className="h-full border-none shadow-none ">
+    <Card className="h-full border-none shadow-none">
       
       <CardContent className=" bg-white h-full p-4">
       <CardHeader className="flex flex-col items-center justify-center">
@@ -830,11 +842,11 @@ export default function StudyGuideComponent({
         )}
 
         {/* Study Guides List */}
-        <div className="space-y-4 overflow-y-auto">
+        <div className="space-y-6">
           {studyGuides.map((guide) => (
-            <Card key={guide.id} className="p-4  bg-red-500 h-full">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{guide.title}</h3>
+            <Card key={guide.id} className="p-6 bg-white shadow-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-[#94b347]">{guide.title}</h3>
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
@@ -846,12 +858,13 @@ export default function StudyGuideComponent({
                   </Button>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mb-4">
                 Created: {guide.createdAt.toLocaleDateString()}
               </p>
-              <div className="mt-4 space-y-4">
-                {guide.content.map((section, index) => (
-                  <div key={index} className="border rounded-lg p-4">
+              
+              <div className="space-y-6">
+                {guide.content.map((section, sectionIndex) => (
+                  <div key={sectionIndex} className="border rounded-lg p-4 bg-slate-50">
                     <button
                       onClick={() => {
                         const updatedGuides = studyGuides.map(g => {
@@ -859,7 +872,7 @@ export default function StudyGuideComponent({
                             return {
                               ...g,
                               content: g.content.map((s, i) => 
-                                i === index ? { ...s, show: !s.show } : s
+                                i === sectionIndex ? { ...s, show: !s.show } : s
                               )
                             };
                           }
@@ -869,12 +882,54 @@ export default function StudyGuideComponent({
                       }}
                       className="flex justify-between items-center w-full text-left"
                     >
-                      <h4 className="text-md font-medium">{section.title}</h4>
+                      <h4 className="text-lg font-semibold text-slate-800">{section.topic}</h4>
                       <ChevronDown className={`h-5 w-5 transform transition-transform ${section.show ? 'rotate-180' : ''}`} />
                     </button>
+                    
                     {section.show && (
-                      <div className="mt-2 pl-4 prose prose-sm max-w-none">
-                        {section.text}
+                      <div className="mt-4 space-y-4">
+                        {section.subtopics.map((subtopic, subtopicIndex) => (
+                          <div key={subtopicIndex} className="bg-white p-4 rounded-lg shadow-sm">
+                            <h5 className="text-md font-semibold text-[#94b347] mb-2">
+                              {subtopic.title}
+                            </h5>
+                            <p className="text-slate-600 mb-3">{subtopic.description}</p>
+                            
+                            {/* Key Points */}
+                            <div className="mb-3">
+                              <h6 className="text-sm font-semibold text-slate-700 mb-2">Key Points:</h6>
+                              <ul className="list-disc pl-5 space-y-1">
+                                {subtopic.keyPoints.map((point, index) => (
+                                  <li key={index} className="text-slate-600">{point}</li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            {/* Examples */}
+                            {subtopic.examples && subtopic.examples.length > 0 && (
+                              <div className="mb-3">
+                                <h6 className="text-sm font-semibold text-slate-700 mb-2">Examples:</h6>
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {subtopic.examples.map((example, index) => (
+                                    <li key={index} className="text-slate-600">{example}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Study Tips */}
+                            {subtopic.studyTips && subtopic.studyTips.length > 0 && (
+                              <div className="bg-[#dae9b6] p-3 rounded-lg mt-3">
+                                <h6 className="text-sm font-semibold text-slate-700 mb-2">Study Tips:</h6>
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {subtopic.studyTips.map((tip, index) => (
+                                    <li key={index} className="text-slate-600">{tip}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
