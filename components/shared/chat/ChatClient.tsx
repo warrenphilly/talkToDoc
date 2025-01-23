@@ -613,7 +613,7 @@ const ChatClient = ({
                   <ResizablePanel
                     className={`relative ${
                       showStudyMaterial
-                        ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
                         : "hidden"
                     }`}
                     defaultSize={isStudyMaterialFullscreen ? 100 : 50}

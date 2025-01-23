@@ -74,7 +74,7 @@ export default function StudyMaterialTabs({
   pageId,
 }: StudyMaterialTabsProps) {
   return (
-    <div className="flex flex-col w-full mx-auto">
+    <div className="flex flex-col w-full mx-auto h-full overflow-y-auto">
       <div className="flex flex-row items-center justify-center">
         <h1 className="text-xl font-semibold text-[#94b347] mb-8 mt-2">
           Study Material

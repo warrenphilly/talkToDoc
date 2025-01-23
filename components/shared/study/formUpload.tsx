@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { UploadOutlined } from "@ant-design/icons";
-import { LucideUpload } from "lucide-react";
+import { LucideFileText, LucideUpload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Message } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
@@ -136,11 +136,16 @@ const FormUpload = ({
                 
                 {files.length > 0 && (
                   <>
-                    <Separator orientation="vertical" className="h-full bg-slate-400" />
+                    
                     <div className="flex flex-col gap-2 items-start  justify-start border border-slate-400 rounded-lg p-2 w-full">
                       <p className="text-sm text-slate-600 self-start font-semibold ">Uploaded Files</p>
                       {filesToUpload.map((file, index) => (
-                      <div className="text-sm text-gray-400 self-start" key={index}>{file.name}</div>
+                      <div className="text-sm text-[#94b347] self-start" key={index}> 
+                      <div className="flex flex-row gap-2 items-center justify-center">
+                        <LucideFileText className="w-4 h-4 text-[#94b347]" />
+                        {file.name}
+                      </div>
+                      </div>
                     ))}
                     </div>
                     </>
