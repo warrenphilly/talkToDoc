@@ -32,7 +32,7 @@ export const TitleEditor: React.FC<TitleEditorProps> = ({
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center ">
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -44,7 +44,7 @@ export const TitleEditor: React.FC<TitleEditorProps> = ({
           }
         }}
         placeholder="Note Title"
-        className="text-4xl bg-transparent border-none shadow-none focus:ring-0 text-slate-900 font-bold"
+        className="text-4xl bg-transparent border border-slate-200 rounded-lg shadow-none focus:ring-0 text-slate-900 font-bold "
       />
       {isEditing && (
         <Button 

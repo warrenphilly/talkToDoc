@@ -1,36 +1,84 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ChevronDown, Trash2, Check, X } from "lucide-react";
 import { StudyGuide } from "./StudyGuide"; // Make sure to export the interface from StudyGuide.tsx
 
 interface StudyGuideCardProps {
   guide: StudyGuide;
   onDelete: (guideId: string) => void;
+  onUpdateTitle: (guideId: string, newTitle: string) => void;
 }
 
-export function StudyGuideCard({ guide, onDelete }: StudyGuideCardProps) {
+export function StudyGuideCard({ guide, onDelete, onUpdateTitle }: StudyGuideCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(guide.title);
+
+  const handleSave = () => {
+    if (editedTitle.trim()) {
+      onUpdateTitle(guide.id, editedTitle.trim());
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedTitle(guide.title);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
   return (
     <Card className="p-6 bg-white shadow-none border-none">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center justify-between gap-2 flex-row ">
-        <h3 className="text-xl font-bold text-[#94b347]">{guide.title}</h3>
-        <p className="text-sm text-gray-500 ">
-        Created: {guide.createdAt.toLocaleDateString()}
-      </p>
-      
-        </div>
-        
-
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(guide.id)}
-            className="text-red-500 hover:text-red-700"
+        {isEditing ? (
+          <div className="flex items-center gap-2 flex-1 mr-4 w-full max-w-[400px] ">
+            <Input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="text-xl font-bold text-[#94b347] p-2"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="text-green-600 hover:text-green-700 "
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCancel}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : (
+            <div className="flex items-center rounded-lg w-full max-w-[400px] border border-slate-200 hover:cursor-pointer"  onClick={() => setIsEditing(true)}>
+          <h3
+            className="text-xl font-bold text-[#94b347]  rounded-lg p-2 cursor-pointer hover:text-[#7a943a]"
+           
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+            {guide.title}
+          </h3>
+          </div>
+        )}
+        <p className="text-sm text-gray-500 ">
+          Created: {guide.createdAt.toLocaleDateString()}
+        </p>
       </div>
      
       <div className="space-y-6 shadow-none border-none">

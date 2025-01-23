@@ -21,6 +21,7 @@ import {
   saveStudyCard,
   saveStudyCardSet,
   saveStudyGuide,
+  updateStudyGuideTitle,
 } from "@/lib/firebase/firestore";
 import { Notebook, Page } from "@/types/notebooks";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
@@ -761,6 +762,31 @@ export default function StudyGuideComponent({
     });
   };
 
+  // Add a new function to handle title updates
+  const handleUpdateTitle = async (guideId: string, newTitle: string) => {
+    try {
+      // Update in your database
+      await updateStudyGuideTitle(guideId, newTitle);
+      
+      // Update local state
+      setStudyGuides(prevGuides =>
+        prevGuides.map(guide =>
+          guide.id === guideId
+            ? { ...guide, title: newTitle }
+            : guide
+        )
+      );
+
+      // If there's a selected guide, update it too
+      if (selectedGuide?.id === guideId) {
+        setSelectedGuide(prev => prev ? { ...prev, title: newTitle } : null);
+      }
+    } catch (error) {
+      console.error('Failed to update study guide title:', error);
+      // Handle error (show toast notification, etc.)
+    }
+  };
+
   return (
     <Card className="h-full border-none shadow-none">
       
@@ -927,6 +953,7 @@ export default function StudyGuideComponent({
                   handleDeleteStudyGuide(id);
                   setSelectedGuide(null);
                 }}
+                onUpdateTitle={handleUpdateTitle}
               />
             </div>
           )}

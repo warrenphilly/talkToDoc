@@ -987,3 +987,18 @@ export const deleteStudyCardSet = async (
   }
 };
 
+// Add this function to handle study guide title updates
+export const updateStudyGuideTitle = async (guideId: string, newTitle: string): Promise<void> => {
+  try {
+    const studyGuideRef = doc(db, "studyGuides", guideId);
+    
+    await updateDoc(studyGuideRef, {
+      title: newTitle,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error updating study guide title:", error);
+    throw error;
+  }
+};
+
