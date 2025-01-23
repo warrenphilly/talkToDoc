@@ -29,31 +29,43 @@ export const sendMessage = async (
   const textSections = [];
   let markdownFilename: string | null = null;
   let allText = '';
+  let messages: Message[] = [];
+
+  // Add user message first
+  const userMessage: Message = {
+    user: "User",
+    text: input,
+    files: files.map((file) => URL.createObjectURL(file)),
+  };
+  messages.push(userMessage);
+  setMessages((prevMessages) => [...prevMessages, userMessage]);
 
   // Process all files through the convert endpoint
   for (const file of files) {
     const fileFormData = new FormData();
     fileFormData.append("file", file);
-    fileFormData.append("fileType", file.type);
 
     const baseUrl = typeof window !== 'undefined' 
       ? window.location.origin 
       : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       
     try {
+      console.log("Converting file:", file.name, "Type:", file.type);
+      
       const response = await fetch(`${baseUrl}/api/convert`, {
         method: "POST",
         body: fileFormData,
       });
 
-      if (!response.ok) {
-        throw new Error("File conversion failed");
-      }
-
       const data = await response.json();
+      console.log("Conversion response:", data);
+
+      if (!response.ok || data.error) {
+        throw new Error(data.details || "File conversion failed");
+      }
       
-      // Accumulate all text from the converted file
       if (data.text) {
+        console.log("Received text content, length:", data.text.length);
         allText += data.text + '\n\n';
         
         // Split into sections for processing
@@ -62,40 +74,42 @@ export const sendMessage = async (
           const section = data.text.slice(i, i + SECTION_LENGTH);
           textSections.push(section);
         }
+      } else {
+        throw new Error("No text content received from conversion");
       }
     } catch (error) {
       console.error("File conversion error:", error);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          user: "AI",
-          text: [
-            {
-              title: "Error",
-              sentences: [
-                {
-                  id: 1,
-                  text: "Failed to convert file. Please try again.",
-                },
-              ],
-            },
-          ],
-        },
-      ]);
-      return;
+      const errorMessage: Message = {
+        user: "AI",
+        text: [
+          {
+            title: "Error",
+            sentences: [
+              {
+                id: 1,
+                text: error instanceof Error ? error.message : "Failed to convert file. Please try again.",
+              },
+            ],
+          },
+        ],
+      };
+      messages.push(errorMessage);
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      continue; // Continue with next file instead of returning
     }
   }
 
-  // Create single markdown file after processing all PDFs
-  if (allText) {
+  // Save markdown only if we have content
+  if (allText.trim()) {
     try {
+      console.log("Saving markdown content, length:", allText.length);
       const initResponse = await fetch("/api/save-markdown", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          section: allText,
+          text: allText, // Changed from section to text to match the API
           createNew: true,
           notebookId,
           pageId
@@ -107,179 +121,161 @@ export const sendMessage = async (
       }
 
       const responseData = await initResponse.json();
-      // Convert the response data to ensure it's a plain object
-      const plainPath = {
-        path: responseData.path,
-        url: responseData.url,
-        timestamp: typeof responseData.timestamp === 'object' && responseData.timestamp !== null
-          ? new Date(responseData.timestamp.seconds * 1000).toISOString()
-          : responseData.timestamp
-      };
-
-      markdownFilename = plainPath.path;
+      console.log("Markdown save response:", responseData);
+      
+      markdownFilename = responseData.path;
     } catch (error) {
       console.error("Error saving markdown file:", error);
     }
   }
 
-  console.log("formDatapleaseeeee", formData);
+  // Process sections only if we have content
+  if (textSections.length > 0) {
+    setProgress(0);
+    setIsProcessing(true);
+    setTotalSections(textSections.length);
 
-  const userMessage: Message = {
-    user: "User",
-    text: input,
-    files: files.map((file) => URL.createObjectURL(file)),
-  };
+    //send message logic begins here
+    const maxRetries = 3;
 
-  setMessages((prevMessages) => [...prevMessages, userMessage]);
-  setInput("");
-  setFiles([]);
+    console.log(" totaltextSections", textSections.length);
 
-  //send message logic begins here
-  const maxRetries = 3;
+    // Process each text section
+    for (let i = 0; i < textSections.length; i++) {
+      const section = textSections[i];
+      let attempt = 0;
+      let success = false;
 
-  console.log(" totaltextSections", textSections.length);
-
-  // Reset progress
-  setProgress(0);
-  setIsProcessing(true);
-
-  // After processing PDF and getting textSections
-  setTotalSections(textSections.length);
-
-  // Process each text section
-  for (let i = 0; i < textSections.length; i++) {
-    const section = textSections[i];
-    let attempt = 0;
-    let success = false;
-
-    while (attempt < maxRetries && !success) {
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          body: JSON.stringify({ message: section }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        const data = await response.json();
-        console.log("Raw API response for section:", data);
-
-        let parsedResponse;
-
+      while (attempt < maxRetries && !success) {
         try {
-          if (!data.replies) {
-            throw new Error("No replies in response");
-          }
-
-          parsedResponse =
-            typeof data.replies === "string"
-              ? JSON.parse(data.replies)
-              : data.replies;
-
-          console.log("Parsed response:", parsedResponse); // Debug log
-
-          if (!Array.isArray(parsedResponse)) {
-            throw new Error("Response is not an array");
-          }
-
-          // Iterate over each set of sections
-          parsedResponse.forEach((section) => {
-            console.log("Section received:", section); // Log the section for debugging
-
-            if (
-              typeof section.title !== "string" ||
-              !Array.isArray(section.sentences)
-            ) {
-              console.error("Invalid section structure:", section);
-              throw new Error("Invalid section structure");
-            }
-
-            const validSentences = section.sentences.every(
-              (sentence: Sentence) => {
-                console.log("Checking sentence:", sentence); // Log each sentence
-
-                if (
-                  typeof sentence.id !== "number" ||
-                  typeof sentence.text !== "string"
-                ) {
-                  console.error("Invalid sentence structure:", sentence);
-                  return false;
-                }
-                return true;
-              }
-            );
-
-            if (!validSentences) {
-              console.error("Invalid sentences found");
-              throw new Error("Invalid sentence structure");
-            }
-
-            // Send the section as a separate message
-            const aiMessage = {
-              user: "AI",
-              text: [section],
-            };
-
-            setMessages((prevMessages) => [...prevMessages, aiMessage]);
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            body: JSON.stringify({ message: section }),
+            headers: {
+              "Content-Type": "application/json",
+            },
           });
 
-          success = true;
-          setProgress(i + 1); // Update progress after successful processing
-        } catch (parseError) {
-          console.error("Parsing error:", parseError);
-          attempt++;
-          if (attempt >= maxRetries) {
-            const fallbackResponse = [
-              {
-                title: "Error",
-                sentences: [
-                  {
-                    id: 1,
-                    text: "Sorry, there was an error processing the response. Please try again.",
-                  },
-                ],
-              },
-            ];
+          const data = await response.json();
+          console.log("Raw API response for section:", data);
 
-            setMessages((prevMessages) => [
-              ...prevMessages,
-              {
+          let parsedResponse;
+
+          try {
+            if (!data.replies) {
+              throw new Error("No replies in response");
+            }
+
+            parsedResponse =
+              typeof data.replies === "string"
+                ? JSON.parse(data.replies)
+                : data.replies;
+
+            console.log("Parsed response:", parsedResponse); // Debug log
+
+            if (!Array.isArray(parsedResponse)) {
+              throw new Error("Response is not an array");
+            }
+
+            // Iterate over each set of sections
+            parsedResponse.forEach((section) => {
+              console.log("Section received:", section); // Log the section for debugging
+
+              if (
+                typeof section.title !== "string" ||
+                !Array.isArray(section.sentences)
+              ) {
+                console.error("Invalid section structure:", section);
+                throw new Error("Invalid section structure");
+              }
+
+              const validSentences = section.sentences.every(
+                (sentence: Sentence) => {
+                  console.log("Checking sentence:", sentence); // Log each sentence
+
+                  if (
+                    typeof sentence.id !== "number" ||
+                    typeof sentence.text !== "string"
+                  ) {
+                    console.error("Invalid sentence structure:", sentence);
+                    return false;
+                  }
+                  return true;
+                }
+              );
+
+              if (!validSentences) {
+                console.error("Invalid sentences found");
+                throw new Error("Invalid sentence structure");
+              }
+
+              // Send the section as a separate message
+              const aiMessage = {
+                user: "AI",
+                text: [section],
+              };
+
+              messages.push(aiMessage);
+              setMessages((prevMessages) => [...prevMessages, aiMessage]);
+            });
+
+            success = true;
+            setProgress(i + 1); // Update progress after successful processing
+          } catch (parseError) {
+            console.error("Parsing error:", parseError);
+            attempt++;
+            if (attempt >= maxRetries) {
+              const fallbackResponse = [
+                {
+                  title: "Error",
+                  sentences: [
+                    {
+                      id: 1,
+                      text: "Sorry, there was an error processing the response. Please try again.",
+                    },
+                  ],
+                },
+              ];
+
+              const fallbackMessage: Message = {
                 user: "AI",
                 text: fallbackResponse,
-              },
-            ]);
-            setShowUpload(false);
+              };
+              messages.push(fallbackMessage);
+              setMessages((prevMessages) => [...prevMessages, fallbackMessage]);
+              setShowUpload(false);
+            }
           }
-        }
-      } catch (error) {
-        console.error("Network error:", error);
-        const errorResponse = [
-          {
-            title: "Error",
-            sentences: [
-              {
-                id: 1,
-                text: "Sorry, there was a network error. Please try again.",
-              },
-            ],
-          },
-        ];
+        } catch (error) {
+          console.error("Network error:", error);
+          const errorResponse = [
+            {
+              title: "Error",
+              sentences: [
+                {
+                  id: 1,
+                  text: "Sorry, there was a network error. Please try again.",
+                },
+              ],
+            },
+          ];
 
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
+          const errorMessage: Message = {
             user: "AI",
             text: errorResponse,
-          },
-        ]);
-        break;
+          };
+          messages.push(errorMessage);
+          setMessages((prevMessages) => [...prevMessages, errorMessage]);
+          break;
+        }
       }
     }
-  }
 
-  // Reset processing state when done
-  setIsProcessing(false);
+    // Reset processing state when done
+    setIsProcessing(false);
+  } else {
+    setIsProcessing(false);
+  }
 };
 
 export const fileUpload = (

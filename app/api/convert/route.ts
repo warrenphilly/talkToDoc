@@ -63,6 +63,17 @@ export async function POST(req: NextRequest) {
     // Determine the appropriate conversion endpoint based on file type
     if (fileType === "application/msword" || 
         fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+      // Add file type validation
+      if (!file.name.toLowerCase().endsWith('.docx')) {
+        return NextResponse.json(
+          { 
+            error: true,
+            details: "Only .docx files are supported. Please convert .doc files to .docx format.",
+            text: null
+          },
+          { status: 400 }
+        );
+      }
       endpoint = '/api/convert/docx';
     }
     else if (fileType === "application/pdf") {
