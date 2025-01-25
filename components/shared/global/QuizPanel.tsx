@@ -9,7 +9,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Upload, Volume2, VolumeOff, Mic, MicOff, BookOpen, Plus, ChevronDown, ChevronRight, Loader2 } from "lucide-react"; // Import icons
+import {
+  Image,
+  Upload,
+  Volume2,
+  VolumeOff,
+  Mic,
+  MicOff,
+  BookOpen,
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Trash,
+} from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState, MutableRefObject } from "react";
 import { saveQuizState } from "@/lib/firebase/firestore";
 
@@ -23,10 +36,25 @@ import FormUpload from "../study/formUpload";
 import { Notebook } from "@/types/notebooks";
 import { getAllNotebooks } from "@/lib/firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { db } from "@/firebase";
-import { collection, onSnapshot, orderBy, query, where, addDoc, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 
@@ -59,7 +87,8 @@ interface SerializedTimestamp {
 }
 
 // Add interface for serialized quiz state
-interface SerializedQuizState extends Omit<QuizState, 'startedAt' | 'lastUpdatedAt'> {
+interface SerializedQuizState
+  extends Omit<QuizState, "startedAt" | "lastUpdatedAt"> {
   startedAt: SerializedTimestamp;
   lastUpdatedAt: SerializedTimestamp;
 }
@@ -67,9 +96,11 @@ interface SerializedQuizState extends Omit<QuizState, 'startedAt' | 'lastUpdated
 const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   // Quiz state
   const [quizzes, setQuizzes] = useState<QuizState[]>([]);
-  const [selectedQuiz, setSelectedQuiz] = useState<SerializedQuizState | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<SerializedQuizState | null>(
+    null
+  );
   const [quizData, setQuizData] = useState<QuizData | null>(null);
-  
+
   // Form state
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -83,10 +114,16 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Document selection state
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [selectedPages, setSelectedPages] = useState<{[notebookId: string]: string[]}>({});
-  const [expandedNotebooks, setExpandedNotebooks] = useState<{[key: string]: boolean}>({});
+  const [selectedPages, setSelectedPages] = useState<{
+    [notebookId: string]: string[];
+  }>({});
+  const [expandedNotebooks, setExpandedNotebooks] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [files, setFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
+  const fileInputRef = useRef<HTMLInputElement>(
+    null
+  ) as MutableRefObject<HTMLInputElement>;
 
   // Update the Firestore query
   useEffect(() => {
@@ -110,10 +147,12 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         const data = doc.data();
         let startedAtDate: Date;
         let lastUpdatedAtDate: Date;
-        
+
         // Handle startedAt timestamp
         if (data.startedAt instanceof Timestamp) {
-          startedAtDate = (data.startedAt as unknown as { toDate(): Date }).toDate();
+          startedAtDate = (
+            data.startedAt as unknown as { toDate(): Date }
+          ).toDate();
         } else if (data.startedAt?.seconds) {
           startedAtDate = new Date(data.startedAt.seconds * 1000);
         } else {
@@ -122,7 +161,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
         // Handle lastUpdatedAt timestamp
         if (data.lastUpdatedAt instanceof Timestamp) {
-          lastUpdatedAtDate = (data.lastUpdatedAt as unknown as { toDate(): Date }).toDate();
+          lastUpdatedAtDate = (
+            data.lastUpdatedAt as unknown as { toDate(): Date }
+          ).toDate();
         } else if (data.lastUpdatedAt?.seconds) {
           lastUpdatedAtDate = new Date(data.lastUpdatedAt.seconds * 1000);
         } else {
@@ -133,34 +174,36 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           ...data,
           id: doc.id,
           startedAt: startedAtDate,
-          notebookId: data.notebookId || '',
-          pageId: data.pageId || '',
+          notebookId: data.notebookId || "",
+          pageId: data.pageId || "",
           quizData: data.quizData || null,
           currentQuestionIndex: data.currentQuestionIndex || 0,
           answers: data.answers || [],
           score: data.score || 0,
           completed: data.completed || false,
           lastUpdatedAt: lastUpdatedAtDate,
-          userId: data.userId || '',
+          userId: data.userId || "",
           userAnswers: data.userAnswers || [],
           evaluationResults: data.evaluationResults || [],
           totalQuestions: data.totalQuestions || 0,
           isComplete: data.isComplete || false,
-          incorrectAnswers: data.incorrectAnswers || []
+          incorrectAnswers: data.incorrectAnswers || [],
         } as unknown as QuizState;
       });
 
       // Sort by startedAt
       quizList.sort((a, b) => {
         // Convert timestamps to milliseconds safely
-        const timeA = a.startedAt instanceof Date ? 
-          a.startedAt.getTime() : 
-          (a.startedAt as unknown as { toDate(): Date }).toDate().getTime();
-        
-        const timeB = b.startedAt instanceof Date ? 
-          b.startedAt.getTime() : 
-          (b.startedAt as unknown as { toDate(): Date }).toDate().getTime();
-        
+        const timeA =
+          a.startedAt instanceof Date
+            ? a.startedAt.getTime()
+            : (a.startedAt as unknown as { toDate(): Date }).toDate().getTime();
+
+        const timeB =
+          b.startedAt instanceof Date
+            ? b.startedAt.getTime()
+            : (b.startedAt as unknown as { toDate(): Date }).toDate().getTime();
+
         return timeB - timeA;
       });
 
@@ -180,22 +223,22 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   }, []);
 
   const toggleNotebook = (notebookId: string) => {
-    setExpandedNotebooks(prev => ({
+    setExpandedNotebooks((prev) => ({
       ...prev,
-      [notebookId]: !prev[notebookId]
+      [notebookId]: !prev[notebookId],
     }));
   };
 
   const togglePageSelection = (notebookId: string, pageId: string) => {
-    setSelectedPages(prev => {
+    setSelectedPages((prev) => {
       const currentPages = prev[notebookId] || [];
       const newPages = currentPages.includes(pageId)
-        ? currentPages.filter(id => id !== pageId)
+        ? currentPages.filter((id) => id !== pageId)
         : [...currentPages, pageId];
-      
+
       return {
         ...prev,
-        [notebookId]: newPages
+        [notebookId]: newPages,
       };
     });
   };
@@ -210,28 +253,30 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         for (const file of files) {
           const formData = new FormData();
           formData.append("file", file);
-          
+
           const convertResponse = await fetch("/api/convert", {
             method: "POST",
             body: formData,
           });
-          
+
           if (!convertResponse.ok) {
             throw new Error(`Failed to convert file ${file.name}`);
           }
-          
+
           const convertData = await convertResponse.json();
           console.log("Convert response:", convertData);
 
           if (!convertData.path && !convertData.text) {
-            throw new Error(`No content returned for converted file ${file.name}`);
+            throw new Error(
+              `No content returned for converted file ${file.name}`
+            );
           }
 
           uploadedDocs.push({
             path: convertData.path,
             text: convertData.text,
             name: file.name,
-            type: file.type
+            type: file.type,
           });
         }
       }
@@ -248,7 +293,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         uploadedDocs,
         notebookId,
         pageId,
-        quizName
+        quizName,
       };
 
       console.log("Quiz generation payload:", message);
@@ -274,9 +319,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       }
 
       // Create a new quiz state with required fields
-      const newQuiz: Omit<QuizState, 'id'> = {
+      const newQuiz: Omit<QuizState, "id"> = {
         notebookId: notebookId,
-        pageId: pageId || '',  // Provide empty string fallback
+        pageId: pageId || "", // Provide empty string fallback
         currentQuestionIndex: 0,
         score: 0,
         userAnswers: {},
@@ -286,7 +331,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         startedAt: Timestamp.now(),
         lastUpdatedAt: Timestamp.now(),
         totalQuestions: data.quiz.questions.length,
-        quizData: data.quiz
+        quizData: data.quiz,
       };
 
       // Save to Firestore
@@ -294,10 +339,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       console.log("Quiz saved with ID:", docRef.id);
 
       setShowQuizForm(false);
-
     } catch (error) {
       console.error("Error generating quiz:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate quiz");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate quiz"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -310,14 +356,28 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       // Convert timestamps to serializable format
       const serializedQuiz: SerializedQuizState = {
         ...quiz,
-        startedAt: quiz.startedAt instanceof Date ? 
-          { seconds: Math.floor(quiz.startedAt.getTime() / 1000), nanoseconds: 0 } : 
-          { seconds: quiz.startedAt.seconds, nanoseconds: quiz.startedAt.nanoseconds },
-        lastUpdatedAt: quiz.lastUpdatedAt instanceof Date ? 
-          { seconds: Math.floor(quiz.lastUpdatedAt.getTime() / 1000), nanoseconds: 0 } : 
-          { seconds: quiz.lastUpdatedAt.seconds, nanoseconds: quiz.lastUpdatedAt.nanoseconds }
+        startedAt:
+          quiz.startedAt instanceof Date
+            ? {
+                seconds: Math.floor(quiz.startedAt.getTime() / 1000),
+                nanoseconds: 0,
+              }
+            : {
+                seconds: quiz.startedAt.seconds,
+                nanoseconds: quiz.startedAt.nanoseconds,
+              },
+        lastUpdatedAt:
+          quiz.lastUpdatedAt instanceof Date
+            ? {
+                seconds: Math.floor(quiz.lastUpdatedAt.getTime() / 1000),
+                nanoseconds: 0,
+              }
+            : {
+                seconds: quiz.lastUpdatedAt.seconds,
+                nanoseconds: quiz.lastUpdatedAt.nanoseconds,
+              },
       };
-      
+
       setSelectedQuiz(serializedQuiz);
       setQuizData(quiz.quizData);
     } else {
@@ -335,8 +395,14 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   const getQuizState = (serializedQuiz: SerializedQuizState): QuizState => {
     return {
       ...serializedQuiz,
-      startedAt: new Timestamp(serializedQuiz.startedAt.seconds, serializedQuiz.startedAt.nanoseconds),
-      lastUpdatedAt: new Timestamp(serializedQuiz.lastUpdatedAt.seconds, serializedQuiz.lastUpdatedAt.nanoseconds)
+      startedAt: new Timestamp(
+        serializedQuiz.startedAt.seconds,
+        serializedQuiz.startedAt.nanoseconds
+      ),
+      lastUpdatedAt: new Timestamp(
+        serializedQuiz.lastUpdatedAt.seconds,
+        serializedQuiz.lastUpdatedAt.nanoseconds
+      ),
     };
   };
 
@@ -354,22 +420,24 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     <div className="w-full max-w-7xl mx-auto p-4">
       {/* Header with Create Quiz button */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Quizzes</h2>
-        {!selectedQuiz && !showQuizForm && (
-          <Button
-            onClick={() => setShowQuizForm(true)}
-            className="bg-[#94b347] hover:bg-[#7a943a]"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Quiz
-          </Button>
-        )}
+        <div className="flex flex-col justify-center items-center w-full gap-4 ">
+          <h2 className="text-2xl font-bold text-[#94b347]">Quiz Me</h2>
+          <p className="text-slate-600 text-gray-400">
+            Create and review quizzes
+          </p>
+          {!selectedQuiz && !showQuizForm && (
+            <Button
+              onClick={() => setShowQuizForm(true)}
+              className="bg-white border border-slate-400 text-slate-800 hover:bg-white hover:text-slate-800 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Quiz
+            </Button>
+          )}
+        </div>
+
         {(selectedQuiz || showQuizForm) && (
-          <Button
-            onClick={handleBackToList}
-            variant="outline"
-            className="mr-2"
-          >
+          <Button onClick={handleBackToList} variant="outline" className="mr-2">
             Back to List
           </Button>
         )}
@@ -377,43 +445,61 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz List */}
       {!showQuizForm && !selectedQuiz && (
-        <div className="space-y-4">
+        <div className=" w-full max-w-lg mx-auto">
           {quizzes.map((quiz) => (
-            <Card 
-              key={quiz.id} 
-              className="bg-white cursor-pointer hover:bg-gray-50 transition-colors shadow-none border border-gray-400"
-            >
-              <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle>{quiz.quizData?.title || "Untitled Quiz"}</CardTitle>
-                <Button
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-600"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteQuiz(quiz.id);
-                  }}
+            <div className="flex flex-row justify-between items-center">
+              <Card
+                key={quiz.id}
+                className="bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-gray-400"
+              >
+                <CardContent
+                  onClick={() => handleQuizSelect(quiz)}
+                  className="py-2 my-0"
                 >
-                  Delete
-                </Button>
-              </CardHeader>
-              <CardContent onClick={() => handleQuizSelect(quiz)}>
-                <div className="items-center flex flex-row justify-between">
-                  <p className="text-sm text-gray-600">
-                    Questions: {quiz.totalQuestions}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Created: {quiz.startedAt instanceof Date ? 
-                      quiz.startedAt.toLocaleDateString() : 
-                      new Date(quiz.startedAt.seconds * 1000).toLocaleDateString()}
-                  </p>
-                  {quiz.isComplete && (
+                  <div className="items-center flex flex-row justify-between">
+                    <div className="flex flex-col justify-between items-start gap-2">
+                      <h1 className="text-slate-800 text-lg font-bold">
+                        {quiz.quizData?.title || "Untitled Quiz"}
+                      </h1>
+                      <p className="text-sm text-gray-600">
+                        Questions: {quiz.totalQuestions}
+                      </p>
+                     
+
+                      {/* //TODO: add date created */}
+                      
+                    </div>
+                    <div className="flex flex-col justify-between items-end gap-2">
                     <p className="text-sm text-gray-600">
-                      Score: {quiz.score}/{quiz.totalQuestions}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                        Created:{" "}
+                        {quiz.startedAt instanceof Date
+                          ? quiz.startedAt.toLocaleDateString()
+                          : new Date(
+                              quiz.startedAt.seconds * 1000
+                            ).toLocaleDateString()}
+                      </p>
+                   
+                      
+                      {quiz.isComplete && (
+                        <p className="text-sm text-gray-600">
+                          Score: {quiz.score}/{quiz.totalQuestions}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Button
+                variant="ghost"
+                className="text-red-500 hover:text-red-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteQuiz(quiz.id);
+                }}
+              >
+                <Trash className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
           ))}
           {quizzes.length === 0 && (
             <div className="text-center py-8 text-gray-500">
@@ -425,10 +511,14 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz Generation Form */}
       {showQuizForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Create New Quiz</CardTitle>
+        <div className="fixed inset-0 bg-white flex items-center justify-center p-4 z-5">
+          <Card className="w-full bg-white shadow-none border-none h-full max-w-xl">
+            <CardHeader >
+              <div className="flex flex-row justify-center items-center">
+              <CardTitle className="text-[#94b347] text-xl font-bold">
+                Create New Quiz
+              </CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Quiz Name */}
@@ -440,6 +530,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   value={quizName}
                   onChange={(e) => setQuizName(e.target.value)}
                   placeholder="Enter quiz name"
+                  className="text-slate-600 rounded-md"
                 />
               </div>
 
@@ -452,10 +543,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   value={numberOfQuestions.toString()}
                   onValueChange={(value) => setNumberOfQuestions(Number(value))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-slate-600 rounded-md">
                     <SelectValue placeholder="Select number of questions" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="text-slate-600 rounded-md bg-white">
                     {[5, 10, 15, 20].map((num) => (
                       <SelectItem key={num} value={num.toString()}>
                         {num} questions
@@ -471,23 +562,29 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   Question Types
                 </label>
                 <div className="space-y-2">
-                  {Object.entries(selectedQuestionTypes).map(([type, selected]) => (
-                    <div key={type} className="flex items-center">
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={(checked) =>
-                          setSelectedQuestionTypes(prev => ({
-                            ...prev,
-                            [type]: checked === true
-                          }))
-                        }
-                        id={type}
-                      />
-                      <label htmlFor={type} className="ml-2 text-sm text-slate-600">
-                        {type.replace(/([A-Z])/g, ' $1').trim()}
-                      </label>
-                    </div>
-                  ))}
+                  {Object.entries(selectedQuestionTypes).map(
+                    ([type, selected]) => (
+                      <div key={type} className="flex items-center">
+                        <Checkbox
+                          checked={selected}
+                          className="data-[state=checked]:bg-[#94b347] data-[state=checked]:text-white"
+                          onCheckedChange={(checked) =>
+                            setSelectedQuestionTypes((prev) => ({
+                              ...prev,
+                              [type]: checked === true,
+                            }))
+                          }
+                          id={type}
+                        />
+                        <label
+                          htmlFor={type}
+                          className="ml-2 text-sm text-slate-600"
+                        >
+                          {type.replace(/([A-Z])/g, " $1").trim()}
+                        </label>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -515,8 +612,12 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                           {notebook.pages.map((page) => (
                             <div key={page.id} className="flex items-center">
                               <Checkbox
-                                checked={selectedPages[notebook.id]?.includes(page.id)}
-                                onCheckedChange={() => togglePageSelection(notebook.id, page.id)}
+                                checked={selectedPages[notebook.id]?.includes(
+                                  page.id
+                                )}
+                                onCheckedChange={() =>
+                                  togglePageSelection(notebook.id, page.id)
+                                }
                                 id={`${notebook.id}-${page.id}`}
                               />
                               <label
@@ -555,17 +656,19 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 />
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowQuizForm(false)}
-              >
+            <CardFooter className="flex justify-end space-x-2 ">
+              <div className="flex flex-row justify-between items-center w-full">
+              <Button variant="outline" onClick={() => setShowQuizForm(false)} className="text-red-500 bg-white rounded-full border border-red-500 hover:bg-white hover:text-red-500 hover:border-red-500 hover:text-red-500 hover:bg-red-200">
                 Cancel
               </Button>
               <Button
                 onClick={handleGenerateQuiz}
-                disabled={isGenerating || (!Object.values(selectedQuestionTypes).some(Boolean) || (!files.length && !Object.keys(selectedPages).length))}
-                className="bg-[#94b347] hover:bg-[#7a943a]"
+                disabled={
+                  isGenerating ||
+                  !Object.values(selectedQuestionTypes).some(Boolean) ||
+                  (!files.length && !Object.keys(selectedPages).length)
+                }
+                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
               >
                 {isGenerating ? (
                   <>
@@ -576,6 +679,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   "Generate Quiz"
                 )}
               </Button>
+              </div>
             </CardFooter>
           </Card>
         </div>
