@@ -40,7 +40,6 @@ export default {
   				DEFAULT: 'hsl(0, 70%, 50%)',
   				foreground: 'hsl(0, 70%, 90%)'
   			},
-  			
   			input: 'hsl(210, 10%, 55%)',
   			ring: 'hsl(210, 10%, 60%)',
   			chart: {
@@ -49,16 +48,17 @@ export default {
   				'3': 'hsl(210, 10%, 75%)',
   				'4': 'hsl(210, 10%, 80%)',
   				'5': 'hsl(210, 10%, 85%)'
-  			},navy: {
-				'navy-200': 'hsl(220, 50%, 90%)',
-				'navy-300': 'hsl(220, 50%, 80%)',
-				'navy-400': 'hsl(220, 50%, 70%)',
-				'navy-500': 'hsl(220, 50%, 60%)',
-				'navy-600': 'hsl(220, 50%, 50%)',
-				'navy-700': 'hsl(220, 50%, 40%)',
-				'navy-800': 'hsl(220, 50%, 30%)',
-				'navy-900': 'hsl(220, 50%, 20%)'
-			},
+  			},
+  			navy: {
+  				'navy-200': 'hsl(220, 50%, 90%)',
+  				'navy-300': 'hsl(220, 50%, 80%)',
+  				'navy-400': 'hsl(220, 50%, 70%)',
+  				'navy-500': 'hsl(220, 50%, 60%)',
+  				'navy-600': 'hsl(220, 50%, 50%)',
+  				'navy-700': 'hsl(220, 50%, 40%)',
+  				'navy-800': 'hsl(220, 50%, 30%)',
+  				'navy-900': 'hsl(220, 50%, 20%)'
+  			},
   			darkNavy: {
   				'100': 'hsl(220, 60%, 95%)',
   				'200': 'hsl(220, 60%, 85%)',
@@ -80,13 +80,32 @@ export default {
   				border: 'hsl(210, 10%, 50%)',
   				ring: 'hsl(210, 10%, 60%)'
   			}
-			
-		  },
-		  transitionDelay: {
-			'2000': '2000ms',
-		  },
-		  
-  
+  		},
+  		transitionDelay: {
+  			'2000': '2000ms'
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
+  		}
   	}
   },
   plugins: [require("tailwindcss-animate"),require("tailwindcss-animation-delay")],

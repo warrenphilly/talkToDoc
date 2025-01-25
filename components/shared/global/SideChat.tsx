@@ -12,6 +12,7 @@ import { Image, Upload } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import ChatActions from "./ChatActions";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -177,26 +178,7 @@ const SideChat = ({
             setPrimeSentence(mostRecentContext?.text || null);
           }
         }
-        // else if (primeSentence) {
-        //   // Create new sidechat only if we have a primeSentence
-
-        //   console.log("Creating new side chat with primeSentence:", primeSentence);
-        //   // const newContextSection: ContextSection = {
-        //   //   id: crypto.randomUUID(),
-        //   //   text: primeSentence,
-        //   //   timestamp: Date.now()
-        //   // };
-          
-        //   // const newSideChatId = await saveSideChat(
-        //   //   notebookId,
-        //   //   pageId,
-        //   //   [newContextSection],
-        //   //   []
-        //   // );
-          
-        //   // setSideChatId(newSideChatId);
-        //   // setContextSections([newContextSection]);
-        // }
+      
       } catch (error) {
         console.error("Error initializing side chat:", error);
       } finally {
@@ -338,41 +320,10 @@ const SideChat = ({
   };
 
   // Render context sections with animation
-  const renderContextSections = () => (
-    <div className="m-2">
-      {contextSections.length > 0 ? (
-        <div className="space-y-2">
-          {contextSections.map((section) => (
-            <div
-              key={section.id}
-              className="relative border border-slate-300 rounded-lg p-3 mb-2 transform transition-all duration-200 ease-in-out hover:scale-[1.02]"
-            >
-              <p className="pr-8 text-slate-400">"{section.text}"</p>
-              <button
-                onClick={() => removeContextSection(section.id)}
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors duration-200"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-gray-500 text-center">Click text to add context (max 3)</p>
-      )}
-    </div>
-  );
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        
-      </div>
-    );
-  }
 
   return (
-    <div className="flex  flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 overflow-y-auto auto-scroll">
+    <div className="flex  flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 ">
       <div className="grid grid-cols-3 items-center ">
       <Button
             className="bg-white hover:bg-red-200 w-fit ml-4 text-slate-400 border-slate-400 rounded-full border hover:border-red-600 hover:text-red-600"
@@ -386,55 +337,8 @@ const SideChat = ({
       </div>
       </div>
 
-      <div className=" bg-slate-100 text-[#94b347] rounded-lg   p-4 m-4">
-        {renderContextSections()}
-        
-        <div className="flex flex-col items-center justify-center mt-4">
-          <h1 className="text-sm font-semibold text-slate-400">Actions</h1>
-        </div>
-        
-        <div className="flex flex-row gap-2 w-full items-center justify-center m-4">
-          <Button
-            className="bg-slate-100 border border-slate-400 text-slate-400 hover:bg-white hover:text-[#94b347] rounded-full shadow-none"
-            onClick={() => sendMessage("Explain this in simple terms")}
-            disabled={contextSections.length === 0}
-          >
-            Explain
-          </Button>
-          <Button
-            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
-            onClick={() => sendMessage("Expand on this")}
-            disabled={contextSections.length === 0}
-          >
-            Expand
-          </Button>
-          <Button
-            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
-            onClick={() => sendMessage("Give me a step-by-step example")}
-            disabled={contextSections.length === 0}
-          >
-            Example
-          </Button>
-          <Button
-            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
-            onClick={() => sendMessage("Reword this in a way that is easier to understand")}
-            disabled={contextSections.length === 0}
-          >
-            Reword
-          </Button>
-          <Button
-            className="bg-slate-100 hover:bg-white border border-slate-400 text-slate-400 hover:text-[#94b347]  rounded-full shadow-none"
-            onClick={() => sendMessage("Summarize this in a way that is easier to understand, 100 words or less")}
-            disabled={contextSections.length === 0}
-          >
-            Summarize
-          </Button>
-          
-         
-        
-        </div>
-      </div>
-      <div className="flex-grow  p-4 ">
+   {messages.length > 0 ? (
+      <div className="flex-grow  p-4 overflow-y-auto auto-scroll">
         {messages.map(
           (msg, index) =>
             msg.text &&
@@ -462,10 +366,69 @@ const SideChat = ({
             )
         )}
       </div>
-      <div className="bg-white p-4  rounded-b-lg">
+      ) : (
+        <div className="flex-grow w-full h-full flex flex-col items-center justify-center p-4 overflow-y-auto auto-scroll">
+            <p className="text-gray-400 text-center max-w-sm">Hey there, my little academic weapon in the making. I'm Mr. Chudd, your AI tutor. Together, we shall pass! </p>
+           
+        </div>
+      )}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <div className=" m-2  bottom-0 w-full  border border-slate-300  rounded-lg p-2">
+   
+
+      <ChatActions sendMessage={sendMessage} contextSections={contextSections} removeContextSection={removeContextSection}/>
         <div className="flex  bg-white rounded-lg  p-2 flex-row items-center gap-3 h-fit">
+          
           <Textarea
-            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-100 text-slate-900 flex-grow"
+            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-50 text-slate-900 flex-grow"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -480,6 +443,7 @@ const SideChat = ({
             Send
           </Button>
         </div>
+        
       </div>
     </div>
   );
