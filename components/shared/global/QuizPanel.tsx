@@ -61,6 +61,7 @@ import {
 import { Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import { useUser } from "@clerk/nextjs";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
 
 // First, let's define our message types
 interface Sentence {
@@ -235,30 +236,38 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         throw new Error("No authenticated user");
       }
 
-      // Debug user info
-      console.log("Current user:", {
-        id: user.id,
-        email: user.primaryEmailAddress,
+      // First get the Firestore user
+      const firestoreUser = await getUserByClerkId(user.id);
+      
+      console.log("User IDs:", {
+        clerkUserId: user.id,
+        firestoreUserId: firestoreUser?.id
       });
+
+      if (!firestoreUser) {
+        console.error("No Firestore user found for Clerk ID:", user.id);
+        return;
+      }
 
       // Get reference to notebooks collection
       const notebooksRef = collection(db, "notebooks");
       
-      // First get ALL notebooks to see what's in the collection
+      // Get ALL notebooks for debugging
       const allNotebooks = await getDocs(collection(db, "notebooks"));
-      console.log("All notebooks in collection:", allNotebooks.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      console.log("All notebooks:", allNotebooks.docs.map(doc => ({
+        notebookId: doc.id,
+        userId: doc.data().userId,
+        title: doc.data().title
       })));
 
-      // Then try our filtered query
-      const q = query(notebooksRef, where("userId", "==", user.id));
+      // Query using Firestore user ID
+      const q = query(notebooksRef, where("userId", "==", firestoreUser.id));
       const querySnapshot = await getDocs(q);
 
-      console.log("Filtered notebooks:", querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })));
+      console.log("Query results for Firestore userId:", {
+        firestoreUserId: firestoreUser.id,
+        matchCount: querySnapshot.docs.length
+      });
 
       const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
         const data = doc.data();

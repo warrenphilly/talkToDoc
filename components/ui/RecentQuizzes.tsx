@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   where,
+  Timestamp,
 } from "firebase/firestore";
 import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -16,6 +17,11 @@ import { Button } from "./button";
 interface RecentQuizzesProps {
   pageId: string;
   onQuizSelect: (quiz: QuizState) => void;
+}
+
+interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds: number;
 }
 
 const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
@@ -27,17 +33,37 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
   const [selectedCompletedQuiz, setSelectedCompletedQuiz] =
     useState<QuizState | null>(null);
 
+  const getTimestamp = (timestamp: Timestamp | SerializedTimestamp | undefined): Timestamp => {
+    if (!timestamp) return Timestamp.now();
+    
+    if (timestamp instanceof Timestamp) {
+      return timestamp;
+    }
+    
+    if ('seconds' in timestamp) {
+      return new Timestamp(timestamp.seconds, timestamp.nanoseconds);
+    }
+    
+    return Timestamp.now();
+  };
+
+  const formatDate = (timestamp: Timestamp | SerializedTimestamp | undefined) => {
+    const date = getTimestamp(timestamp).toDate();
+    return {
+      date: date.toLocaleDateString(),
+      time: date.toLocaleTimeString()
+    };
+  };
+
   useEffect(() => {
     setIsLoading(true);
 
     try {
-      // Simpler query that doesn't require an index
       const quizzesQuery = query(
         collection(db, "quizzes"),
         where("pageId", "==", pageId)
       );
 
-      // Set up real-time listener
       const unsubscribe = onSnapshot(quizzesQuery, {
         next: (snapshot) => {
           const updatedQuizzes = snapshot.docs
@@ -46,21 +72,27 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
               return {
                 ...data,
                 id: doc.id,
-                startedAt: data.startedAt?.toDate(),
-                lastUpdatedAt: data.lastUpdatedAt?.toDate(),
-              } as QuizState;
+                startedAt: getTimestamp(data.startedAt),
+                lastUpdatedAt: getTimestamp(data.lastUpdatedAt),
+                notebookId: data.notebookId || "",
+                pageId: data.pageId || "",
+                quizData: data.quizData || [],
+                currentQuestionIndex: data.currentQuestionIndex || 0,
+                score: data.score || 0,
+                totalQuestions: data.totalQuestions || 0,
+                isComplete: data.isComplete || false,
+                userAnswers: data.userAnswers || [],
+                evaluationResults: data.evaluationResults || [],
+                incorrectAnswers: data.incorrectAnswers || []
+              } satisfies QuizState;
             })
-            // Sort in memory instead of using orderBy
             .sort((a, b) => {
-              const dateA = a.lastUpdatedAt?.getTime() || 0;
-              const dateB = b.lastUpdatedAt?.getTime() || 0;
-              return dateB - dateA; // descending order
+              return b.lastUpdatedAt.toMillis() - a.lastUpdatedAt.toMillis();
             });
 
           setQuizzes(updatedQuizzes);
           setIsLoading(false);
 
-          // Update selected quiz if it was modified
           if (selectedCompletedQuiz) {
             const updatedSelectedQuiz = updatedQuizzes.find(
               (quiz) => quiz.id === selectedCompletedQuiz.id
@@ -77,7 +109,6 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
         },
       });
 
-      // Cleanup listener on unmount
       return () => unsubscribe();
     } catch (error) {
       console.error("Error setting up quiz listener:", error);
@@ -139,8 +170,8 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
                       Score: {quiz.score}/{quiz.totalQuestions}
                     </span>
                     <span className="text-sm text-slate-500">
-                      {new Date(quiz.startedAt).toLocaleDateString()} at{" "}
-                      {new Date(quiz.startedAt).toLocaleTimeString()}
+                      {formatDate(quiz.startedAt).date} at{" "}
+                      {formatDate(quiz.startedAt).time}
                     </span>
                     <span
                       className={`text-sm px-2 py-1 rounded ${
