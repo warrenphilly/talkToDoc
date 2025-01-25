@@ -31,22 +31,25 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Pencil,
   Plus,
   PlusCircle,
   RefreshCw,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
 import FormUpload from "@/components/shared/study/formUpload";
 import StudyGuide from "@/components/shared/study/StudyGuide";
+import { Separator } from "@/components/ui/separator";
 import { storage } from "@/firebase";
 import { Message } from "@/lib/types";
 import { fileUpload } from "@/lib/utils";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
-import { Separator } from "@/components/ui/separator";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -80,6 +83,8 @@ export default function StudyCards({
   const [showUpload, setShowUpload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListTitle, setEditingListTitle] = useState("");
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
@@ -405,6 +410,21 @@ export default function StudyCards({
     }));
   };
 
+  const handleUpdateTitle = async (setId: string, newTitle: string) => {
+    try {
+      const setRef = doc(db, "studyCardSets", setId);
+      await updateDoc(setRef, {
+        title: newTitle,
+        updatedAt: serverTimestamp(),
+      });
+      setEditingListId(null);
+      await loadCardSets(); // Refresh the list
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast.error("Failed to update title");
+    }
+  };
+
   const renderNotebookList = () => {
     if (isLoadingNotebooks) {
       return (
@@ -632,44 +652,92 @@ export default function StudyCards({
                 key={set.id}
                 className="flex flex-row justify-between items-center"
               >
-                <Card className="flex flex-row  items-start justify-between p-2 bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-slate-300 rounded-lg">
-                  <CardContent
-                    onClick={() => setSelectedSet(set)}
-                    className=" py-2 flex flex-row justify-between items-center"
-                  >
-                    <div className="items-center flex flex-row justify-between">
-                      {/* edit title button */}
-                      
-                      <div className="flex flex-row  justify-center items-center  gap-4">
-                      <h1 className="text-slate-800 font-semibold text-lg ">
-                          {set.title}
-                        </h1>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Cards: {set.cards.length}
-                        </p>
+                <Card className="bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-gray-400">
+                  <CardContent className="py-2 my-0">
+                    {editingListId === set.id ? (
+                      // Edit mode
+                      <div className="flex-1 flex items-center gap-2">
+                        <Input
+                          value={editingListTitle}
+                          onChange={(e) => setEditingListTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleUpdateTitle(set.id, editingListTitle);
+                            } else if (e.key === "Escape") {
+                              setEditingListId(null);
+                            }
+                          }}
+                          className="text-slate-700"
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              handleUpdateTitle(set.id, editingListTitle);
+                            }}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingListId(null)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                     
-                    </div>
+                    ) : (
+                      // View mode
+                      <div className="items-center flex flex-row justify-between">
+                        <div className="flex flex-row items-center">
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingListId(set.id);
+                              setEditingListTitle(set.title);
+                            }}
+                            className="text-slate-500 text-sm bg-white shadow-none rounded-full hover:bg-white hover:text-[#94b347]"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <h3
+                            className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer"
+                            onClick={() => setSelectedSet(set)}
+                          >
+                            {set.title}
+                          </h3>
+                          <p className="text-sm text-slate-500 mx-5">
+                            {set.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex flex-row justify-end items-center gap-2">
+                          <p className="text-sm text-slate-500">
+                            Cards: {set.cards.length}
+                          </p>
+                          <Separator
+                            orientation="vertical"
+                            className="h-full bg-slate-300"
+                          />
+                          <Button
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-600 bg-white hover:bg-white"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSet(set.id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
-                  <div className="flex flex-row justify-end items-center gap-2 mt-1">
-                        <p className="text-sm text-gray-600">
-                          Created: {set.createdAt.toLocaleDateString()}
-                    </p>
-                    <Separator orientation="vertical" className="h-full bg-slate-300" />
-                    <Button
-                  variant="ghost"
-                  className="text-red-500 hover:text-red-600 bg-white hover:bg-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteSet(set.id);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                </Button>
-                      </div>
-            
                 </Card>
-            
               </div>
             ))}
 
