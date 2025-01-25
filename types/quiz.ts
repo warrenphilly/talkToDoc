@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase/firestore";
+
 export type QuestionType = "multipleChoice" | "trueFalse" | "shortAnswer";
 
 export interface BaseQuestion {
@@ -26,33 +28,74 @@ export type Question =
   | TrueFalseQuestion
   | ShortAnswerQuestion;
 
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  type: 'multipleChoice' | 'trueFalse' | 'shortAnswer';
+  options?: string[];
+  correctAnswer: string;
+  explanation: string;
+}
+
 export interface QuizData {
-  questions: Array<{
-    id: number;
-    question: string;
-    type: string;
-    correctAnswer: string;
-    explanation: string;
-    options?: string[];
-  }>;
-  format?: string;
-  numberOfQuestions?: number;
-  questionTypes?: string[];
+  title: string;
+  questions: QuizQuestion[];
+  description?: string;
+}
+
+export interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds: number;
 }
 
 export interface QuizState {
   id: string;
   notebookId: string;
   pageId: string;
-  startedAt: Date;
-  lastUpdatedAt: Date;
+  quizData: QuizData;
   currentQuestionIndex: number;
+  userAnswers: Record<number, string>;
+  evaluationResults: Record<number, boolean>;
   score: number;
   totalQuestions: number;
+  startedAt: Timestamp | SerializedTimestamp;
+  lastUpdatedAt: Timestamp | SerializedTimestamp;
+  isComplete: boolean;
+  incorrectAnswers: number[];
+  gptFeedback?: string;
+}
+
+// Add a type for the Firestore quiz document
+export interface QuizDocument {
+  id: string;
+  notebookId?: string;
+  pageId?: string;
+  currentQuestionIndex: number;
+  score: number;
   userAnswers: Record<number, string>;
   evaluationResults: Record<number, boolean>;
   incorrectAnswers: number[];
   isComplete: boolean;
-  gptFeedback: string;
-  quizData: QuizData;
+  gptFeedback?: string;
+  startedAt: Timestamp | SerializedTimestamp;
+  lastUpdatedAt: Timestamp | SerializedTimestamp;
+  totalQuestions: number;
+  quizData?: QuizData;
+}
+
+// Add a helper function to convert between Firestore and app types
+export function convertFirestoreQuizToQuizState(doc: FirebaseFirestore.DocumentData): QuizState {
+  return {
+    ...doc,
+    startedAt: doc.startedAt,
+    lastUpdatedAt: doc.lastUpdatedAt,
+  } as QuizState;
+}
+
+export function convertQuizStateToFirestore(quiz: QuizState): Omit<QuizDocument, 'id'> {
+  return {
+    ...quiz,
+    startedAt: quiz.startedAt instanceof Timestamp ? quiz.startedAt : new Timestamp(quiz.startedAt.seconds, quiz.startedAt.nanoseconds),
+    lastUpdatedAt: quiz.lastUpdatedAt instanceof Timestamp ? quiz.lastUpdatedAt : new Timestamp(quiz.lastUpdatedAt.seconds, quiz.lastUpdatedAt.nanoseconds),
+  };
 }

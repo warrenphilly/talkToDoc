@@ -8,6 +8,8 @@ import { parse } from 'csv-parse/sync';
 import JSZip from 'jszip';
 import { parseString } from 'xml2js';
 import { promisify } from 'util';
+import { v4 as uuidv4 } from "uuid";
+import { adminStorage } from "@/lib/firebase/firebaseAdmin";
 
 // You should store this in your environment variables
 const API_KEY = process.env.PDF_CO_API_KEY as string;
@@ -58,22 +60,15 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     const fileType = file.type;
 
+    let text = '';
+    const uniqueId = uuidv4();
+    const markdownPath = `converted/${uniqueId}.md`;
+
     let endpoint = '';
 
     // Determine the appropriate conversion endpoint based on file type
     if (fileType === "application/msword" || 
         fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      // Add file type validation
-      if (!file.name.toLowerCase().endsWith('.docx')) {
-        return NextResponse.json(
-          { 
-            error: true,
-            details: "Only .docx files are supported. Please convert .doc files to .docx format.",
-            text: null
-          },
-          { status: 400 }
-        );
-      }
       endpoint = '/api/convert/docx';
     }
     else if (fileType === "application/pdf") {
@@ -101,7 +96,26 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await response.json();
-    return NextResponse.json(result);
+    text = result.text;
+
+    // Save the converted text to Firebase Storage
+    const bucket = adminStorage.bucket();
+    const markdownFile = bucket.file(markdownPath);
+    await markdownFile.save(text, {
+      contentType: 'text/markdown',
+      metadata: {
+        originalName: file.name,
+        convertedAt: new Date().toISOString()
+      }
+    });
+
+    // Return both the path and the converted text
+    return NextResponse.json({
+      success: true,
+      path: markdownPath,
+      text: text,
+      originalName: file.name
+    });
 
   } catch (err) {
     const error = err as Error;

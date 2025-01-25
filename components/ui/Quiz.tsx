@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { db } from "@/firebase";
 import { saveQuizState } from "@/lib/firebase/firestore";
 import type { QuizData, QuizState } from "@/types/quiz";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, Timestamp, updateDoc } from "firebase/firestore";
 import {
   AlertCircle,
   ArrowRight,
@@ -77,13 +77,25 @@ const Quiz: React.FC<QuizProps> = ({
   }));
 
   const handleAnswer = async (answer: string) => {
+    console.log("Handling answer:", answer);
+    console.log("Current question index:", currentQuestionIndex);
+    console.log("User answers:", userAnswers);
+    console.log("Current question:", data.questions[currentQuestionIndex]);
+    console.log("Is last question:", isLastQuestion);
+    console.log("Quiz ID:", quizId);
+    console.log("Evaluation results:", evaluationResults);
+    console.log("Incorrect answers:", incorrectAnswers);
+    console.log("GPT feedback:", gptFeedback);
+    console.log("Score:", score);
+    ;
     setSelectedAnswer(answer);
     const currentQuestion = data.questions[currentQuestionIndex];
+
+    let isCorrect = false;
 
     if (currentQuestion.type === "shortAnswer") {
       setIsLoading(true);
       try {
-        // Get GPT feedback for short answer
         const feedbackResponse = await getGPTFeedback(
           currentQuestion.question,
           answer,
@@ -92,14 +104,11 @@ const Quiz: React.FC<QuizProps> = ({
           currentQuestion.type
         );
 
-        console.log("Feedback response:", feedbackResponse); // Debug log
+        console.log("Feedback response:", feedbackResponse);
 
-        // Extract isCorrect and feedback from the response
-        const isCorrect = feedbackResponse.isCorrect;
+        isCorrect = feedbackResponse.isCorrect;
         const feedback = feedbackResponse.feedback;
-        // const score = feedbackResponse.score || 0;
 
-        // Update states
         setGptFeedback(feedback);
         setIsCorrect(isCorrect);
         setShowExplanation(true);
@@ -121,28 +130,40 @@ const Quiz: React.FC<QuizProps> = ({
       } finally {
         setIsLoading(false);
       }
-      return;
-    }
+    } else {
+      // Handle multiple choice and true/false questions
+      console.log("Current question:", currentQuestion);
+      console.log("Answer:", answer);
+      console.log("Correct answer:", currentQuestion.correctAnswer);
+      
+      if (currentQuestion.type === "multipleChoice" && currentQuestion.options) {
+        // Get the index of the selected answer in the options array
+        const answerIndex = currentQuestion.options.indexOf(answer);
+        // Convert index to letter (0 = 'A', 1 = 'B', etc.)
+        const answerLetter = String.fromCharCode(65 + answerIndex);
+        isCorrect = answerLetter === currentQuestion.correctAnswer;
+      } else {
+        // For true/false questions, compare directly
+        isCorrect = answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+      }
 
-    // Handle non-short answer questions as before
-    const correct =
-      answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
-    setIsCorrect(correct);
-    setShowExplanation(true);
+      setIsCorrect(isCorrect);
+      setShowExplanation(true);
 
-    try {
-      const quizRef = doc(db, "quizzes", quizId);
-      await updateDoc(quizRef, {
-        [`userAnswers.${currentQuestionIndex}`]: answer,
-        [`evaluationResults.${currentQuestionIndex}`]: correct,
-        score: correct ? score + 1 : score,
-        lastUpdatedAt: new Date(),
-        incorrectAnswers: correct
-          ? incorrectAnswers
-          : [...incorrectAnswers, currentQuestionIndex],
-      });
-    } catch (error) {
-      console.error("Error updating quiz answer:", error);
+      try {
+        const quizRef = doc(db, "quizzes", quizId);
+        await updateDoc(quizRef, {
+          [`userAnswers.${currentQuestionIndex}`]: answer,
+          [`evaluationResults.${currentQuestionIndex}`]: isCorrect,
+          score: isCorrect ? score + 1 : score,
+          lastUpdatedAt: new Date(),
+          incorrectAnswers: isCorrect
+            ? incorrectAnswers.filter((i) => i !== currentQuestionIndex)
+            : [...new Set([...incorrectAnswers, currentQuestionIndex])],
+        });
+      } catch (error) {
+        console.error("Error updating quiz answer:", error);
+      }
     }
   };
 
@@ -418,8 +439,8 @@ const Quiz: React.FC<QuizProps> = ({
               id: quizId,
               notebookId,
               pageId,
-              startedAt: new Date(),
-              lastUpdatedAt: new Date(),
+              startedAt: new Timestamp(new Date().getTime() / 1000, 0),
+              lastUpdatedAt: new Timestamp(new Date().getTime() / 1000, 0),
               currentQuestionIndex,
               score,
               totalQuestions: data.questions.length,
