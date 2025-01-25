@@ -37,10 +37,8 @@ export async function POST(req: NextRequest) {
 
         try {
           if (doc.text) {
-            // If the converted text is already available, use it
             allContent += `\n\n--- From ${doc.name} ---\n\n${doc.text}`;
           } else if (doc.path) {
-            // Otherwise, fetch from storage
             const file = adminStorage.bucket().file(doc.path);
             const [exists] = await file.exists();
             if (!exists) {
@@ -58,45 +56,59 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Process selected notebook pages
+    // Process selected notebook pages and their specific markdown references
     if (message.selectedPages && Object.keys(message.selectedPages).length > 0) {
-      for (const [notebookId, pageIds] of Object.entries(message.selectedPages)) {
-        if (!pageIds.length) continue;
+      for (const notebookId of Object.keys(message.selectedPages)) {
+        const selectedPageIds = message.selectedPages[notebookId];
+        const notebookRef = adminDb.collection("notebooks").doc(notebookId);
+        const notebookSnap = await notebookRef.get();
 
-        try {
-          // Get notebook data
-          const notebookRef = adminDb.collection('notebooks').doc(notebookId);
-          const notebookSnap = await notebookRef.get();
-          
-          if (!notebookSnap.exists) {
-            console.warn(`Notebook ${notebookId} not found`);
+        if (!notebookSnap.exists) {
+          console.warn(`Notebook ${notebookId} not found`);
+          continue;
+        }
+
+        const notebookData = notebookSnap.data();
+        if (!notebookData?.pages) {
+          console.warn(`No pages found in notebook ${notebookId}`);
+          continue;
+        }
+
+        // Only process selected pages
+        for (const pageId of selectedPageIds) {
+          const page = notebookData.pages.find((p: any) => p.id === pageId);
+          if (!page) {
+            console.warn(`Page ${pageId} not found in notebook ${notebookId}`);
             continue;
           }
 
-          // Process each selected page
-          for (const pageId of pageIds) {
-            const markdownQuery = await adminDb
-              .collection('markdownFiles')
-              .where('notebookId', '==', notebookId)
-              .where('pageId', '==', pageId)
-              .get();
+          console.log(`Processing page ${page.title} (${pageId})`);
+          
+          // Add page content
+          allContent += `\n\nNotebook Page: ${page.title}\n${page.content}`;
 
-            for (const doc of markdownQuery.docs) {
-              const { path } = doc.data();
+          // Process markdown references for this specific page
+          if (page.markdownRefs?.length > 0) {
+            console.log(`Processing ${page.markdownRefs.length} markdown refs for page ${pageId}`);
+            
+            for (const ref of page.markdownRefs) {
               try {
-                const file = adminStorage.bucket().file(path);
+                const bucket = adminStorage.bucket();
+                const file = bucket.file(ref.path);
                 const [exists] = await file.exists();
-                if (!exists) continue;
+                if (!exists) {
+                  console.warn(`Markdown ref file does not exist: ${ref.path}`);
+                  continue;
+                }
 
                 const [content] = await file.download();
-                allContent += `\n\n${cleanMarkdownContent(content.toString())}`;
+                const cleanedContent = cleanMarkdownContent(content.toString());
+                allContent += `\n\n--- From ${ref.name || 'Referenced Document'} ---\n\n${cleanedContent}`;
               } catch (error) {
-                console.error(`Error fetching markdown file ${path}:`, error);
+                console.error(`Error processing markdown ref ${ref.path}:`, error);
               }
             }
           }
-        } catch (error) {
-          console.error(`Error processing notebook ${notebookId}:`, error);
         }
       }
     }
@@ -114,20 +126,41 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: "You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting.",
+          content: `You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting. 
+          
+For true/false questions:
+- Aim for a roughly equal distribution of true and false answers
+- Avoid obvious or trivial statements
+- Use clear, unambiguous language
+
+For multiple choice questions:
+- Randomize which option (A, B, C, or D) is correct
+- Make all distractors plausible
+- Avoid patterns in correct answer placement
+- Ensure options are mutually exclusive
+- Keep option lengths relatively consistent
+
+Return ONLY valid JSON with no additional text.`,
         },
         {
           role: "user",
           content: `Generate a quiz with ${message.numberOfQuestions} questions based on the following content.
-          Return ONLY a JSON object with the following structure, and no additional text or formatting:
+          Return ONLY a JSON object with the following structure:
           {
             "questions": [
               {
                 "id": 1,
                 "type": "multipleChoice",
                 "question": "question text here",
-                "options": ["option 1", "option 2", "option 3", "option 4"],
-                "correctAnswer": "option 1",
+                "options": ["correct answer", "distractor 1", "distractor 2", "distractor 3"],
+                "correctAnswer": "A/B/C/D (matching the correct answer's position)",
+                "explanation": "explanation text here"
+              },
+              {
+                "id": 2,
+                "type": "trueFalse",
+                "question": "statement to evaluate",
+                "correctAnswer": true/false,
                 "explanation": "explanation text here"
               }
             ]
@@ -135,12 +168,20 @@ export async function POST(req: NextRequest) {
           
           Include a mix of ${message.questionTypes.join(', ')} questions.
           Each question must have an explanation for the correct answer.
-          For multiple choice questions, use A, B, C, D for correctAnswer,and save the correct answer as the option "option 1".
+          For multiple choice questions:
+          - Randomly place the correct answer in any position (A, B, C, or D)
+          - Make all distractors equally plausible
+          - Avoid making the correct answer stand out by length or detail
+          
+          For true/false questions:
+          - Aim for approximately 50% true and 50% false answers
+          - Make statements specific and unambiguous
+          - Avoid absolute terms like "always" or "never"
           
           Content to generate questions from: ${chunks[0]}`,
         },
       ],
-      temperature: 0.7,
+      temperature: 0.8,
       response_format: { type: "json_object" }
     };
 
