@@ -1,5 +1,6 @@
 import { QuizState } from "@/types/quiz";
 import { CheckCircle, XCircle } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 interface QuizSummaryProps {
   quiz: QuizState;
@@ -7,6 +8,19 @@ interface QuizSummaryProps {
 }
 
 const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
+  // Helper function to handle timestamp conversion
+  const getFormattedDate = (timestamp: any) => {
+    if (timestamp instanceof Timestamp) {
+      return timestamp.toDate().toLocaleDateString();
+    }
+    // Handle serialized timestamp
+    if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString();
+    }
+    // Fallback
+    return new Date().toLocaleDateString();
+  };
+
   return (
     <div className="bg-white rounded-lg  p-6">
       <div className="space-y-6">
@@ -16,7 +30,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
               Final Score: {quiz.score}/{quiz.totalQuestions}
             </h4>
             <p className="text-slate-500">
-              Completed on {new Date(quiz.lastUpdatedAt).toLocaleDateString()}
+              Completed on {getFormattedDate(quiz.lastUpdatedAt)}
             </p>
           </div>
           <div className="text-2xl font-bold text-slate-700">

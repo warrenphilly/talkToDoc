@@ -22,6 +22,8 @@ import {
   ChevronRight,
   Loader2,
   Trash,
+  Check,
+  RefreshCw,
 } from "lucide-react"; // Import icons
 import React, { useEffect, useRef, useState, MutableRefObject } from "react";
 import { saveQuizState } from "@/lib/firebase/firestore";
@@ -33,7 +35,7 @@ import { Switch } from "@/components/ui/switch";
 import { QuizData, QuizState } from "@/types/quiz";
 import { CircularProgress } from "@mui/material";
 import FormUpload from "../study/formUpload";
-import { Notebook } from "@/types/notebooks";
+import { Notebook, Page } from "@/lib/firebase/firestore";
 import { getAllNotebooks } from "@/lib/firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -54,9 +56,11 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  getDocs,
 } from "firebase/firestore";
 import { Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
+import { useUser } from "@clerk/nextjs";
 
 // First, let's define our message types
 interface Sentence {
@@ -114,16 +118,18 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Document selection state
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [selectedPages, setSelectedPages] = useState<{
-    [notebookId: string]: string[];
-  }>({});
-  const [expandedNotebooks, setExpandedNotebooks] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
+  const [selectedPages, setSelectedPages] = useState<{ [notebookId: string]: string[] }>({});
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(
     null
   ) as MutableRefObject<HTMLInputElement>;
+
+  // Add these new state variables
+  const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
+
+  // Add the user hook
+  const { user } = useUser();
 
   // Update the Firestore query
   useEffect(() => {
@@ -213,33 +219,121 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     return () => unsubscribe();
   }, [notebookId, pageId]);
 
-  // Fetch notebooks
+  // Update useEffect to depend on user
   useEffect(() => {
-    const loadNotebooks = async () => {
-      const fetchedNotebooks = await getAllNotebooks();
-      setNotebooks(fetchedNotebooks);
-    };
-    loadNotebooks();
-  }, []);
+    if (user) {  // Only load notebooks when user is available
+      loadAllNotebooks();
+    }
+  }, [user]); // Add user to dependency array
 
-  const toggleNotebook = (notebookId: string) => {
-    setExpandedNotebooks((prev) => ({
+  const loadAllNotebooks = async () => {
+    try {
+      setIsLoadingNotebooks(true);
+      
+      if (!user) {
+        console.log("No user found");
+        throw new Error("No authenticated user");
+      }
+
+      // Debug user info
+      console.log("Current user:", {
+        id: user.id,
+        email: user.primaryEmailAddress,
+      });
+
+      // Get reference to notebooks collection
+      const notebooksRef = collection(db, "notebooks");
+      
+      // First get ALL notebooks to see what's in the collection
+      const allNotebooks = await getDocs(collection(db, "notebooks"));
+      console.log("All notebooks in collection:", allNotebooks.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })));
+
+      // Then try our filtered query
+      const q = query(notebooksRef, where("userId", "==", user.id));
+      const querySnapshot = await getDocs(q);
+
+      console.log("Filtered notebooks:", querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })));
+
+      const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title || "",
+          userId: data.userId || "",
+          pages: data.pages || [],
+          createdAt: data.createdAt?.toDate() || new Date(),
+        };
+      });
+
+      console.log("Final processed notebooks:", fetchedNotebooks);
+      setNotebooks(fetchedNotebooks);
+    } catch (error) {
+      console.error("Error loading notebooks:", error);
+      if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack
+        });
+      }
+    } finally {
+      setIsLoadingNotebooks(false);
+    }
+  };
+
+  // Add these helper functions
+  const toggleNotebookExpansion = (notebookId: string) => {
+    setExpandedNotebooks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(notebookId)) {
+        newSet.delete(notebookId);
+      } else {
+        newSet.add(notebookId);
+      }
+      return newSet;
+    });
+  };
+
+  const isNotebookFullySelected = (notebookId: string, pages: Page[]) => {
+    return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
+  };
+
+  const handleNotebookSelection = (
+    notebookId: string,
+    pages: Page[],
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({
       ...prev,
-      [notebookId]: !prev[notebookId],
+      [notebookId]: isSelected ? pages.map((p) => p.id) : [],
     }));
   };
 
-  const togglePageSelection = (notebookId: string, pageId: string) => {
+  const handlePageSelection = (
+    notebookId: string,
+    pageId: string,
+    isSelected: boolean
+  ) => {
     setSelectedPages((prev) => {
-      const currentPages = prev[notebookId] || [];
-      const newPages = currentPages.includes(pageId)
-        ? currentPages.filter((id) => id !== pageId)
-        : [...currentPages, pageId];
+      const updatedPages = { ...prev };
+      if (!updatedPages[notebookId]) {
+        updatedPages[notebookId] = [];
+      }
 
-      return {
-        ...prev,
-        [notebookId]: newPages,
-      };
+      if (isSelected) {
+        updatedPages[notebookId] = [...updatedPages[notebookId], pageId];
+      } else {
+        updatedPages[notebookId] = updatedPages[notebookId].filter(
+          (id) => id !== pageId
+        );
+      }
+
+      return updatedPages;
     });
   };
 
@@ -416,6 +510,111 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     }
   };
 
+  const renderNotebookList = () => {
+    if (isLoadingNotebooks) {
+      return (
+        <div className="flex w-full items-center justify-center p-4">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+
+    if (notebooks.length === 0) {
+      return (
+        <div className="text-center p-4 text-gray-500">
+          No notebooks found. Please create a notebook first.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 p-2">
+        {notebooks.map((notebook) => (
+          <div key={notebook.id} className="border rounded-xl p-1 bg-white border-slate-400">
+            <div className="flex items-center justify-between p-3 bg-white text-slate-600">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleNotebookExpansion(notebook.id)}
+                  className="p-1 hover:bg-slate-200 rounded"
+                >
+                  {expandedNotebooks.has(notebook.id) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="font-medium">{notebook.title}</span>
+              </div>
+              <button
+                onClick={() =>
+                  handleNotebookSelection(
+                    notebook.id,
+                    notebook.pages,
+                    !isNotebookFullySelected(notebook.id, notebook.pages)
+                  )
+                }
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-white hover:bg-slate-100"
+                }`}
+              >
+                {isNotebookFullySelected(notebook.id, notebook.pages) ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "Added"
+                    : "Add All"}
+                </span>
+              </button>
+            </div>
+
+            {expandedNotebooks.has(notebook.id) && notebook.pages && (
+              <div className="pl-8 pr-3 py-2 space-y-1 border-t text-slate-600">
+                {notebook.pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span className="text-sm">{page.title}</span>
+                    <button
+                      onClick={() =>
+                        handlePageSelection(
+                          notebook.id,
+                          page.id,
+                          !selectedPages[notebook.id]?.includes(page.id)
+                        )
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
+                        selectedPages[notebook.id]?.includes(page.id)
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-white hover:bg-slate-200"
+                      }`}
+                    >
+                      {selectedPages[notebook.id]?.includes(page.id) ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      <span>
+                        {selectedPages[notebook.id]?.includes(page.id)
+                          ? "Added"
+                          : "Add"}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
       {/* Header with Create Quiz button */}
@@ -447,9 +646,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {!showQuizForm && !selectedQuiz && (
         <div className=" w-full max-w-lg mx-auto">
           {quizzes.map((quiz) => (
-            <div className="flex flex-row justify-between items-center">
+            <div 
+              key={quiz.id}
+              className="flex flex-row justify-between items-center"
+            >
               <Card
-                key={quiz.id}
                 className="bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-gray-400"
               >
                 <CardContent
@@ -512,7 +713,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {/* Quiz Generation Form */}
       {showQuizForm && (
         <div className="fixed inset-0 bg-white flex items-center justify-center p-4 z-5">
-          <Card className="w-full bg-white shadow-none border-none h-full max-w-xl">
+          <Card className="w-full bg-white shadow-none border-none h-full max-w-xl ">
             <CardHeader >
               <div className="flex flex-row justify-center items-center">
               <CardTitle className="text-[#94b347] text-xl font-bold">
@@ -590,56 +791,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
               {/* Notebook Selection */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Select Content
-                </label>
-                <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {notebooks.map((notebook) => (
-                    <div key={notebook.id} className="mb-2">
-                      <div
-                        className="flex items-center cursor-pointer hover:bg-slate-50 p-2 rounded"
-                        onClick={() => toggleNotebook(notebook.id)}
-                      >
-                        {expandedNotebooks[notebook.id] ? (
-                          <ChevronDown className="w-4 h-4 mr-2" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 mr-2" />
-                        )}
-                        <span className="font-medium">{notebook.title}</span>
-                      </div>
-                      {expandedNotebooks[notebook.id] && notebook.pages && (
-                        <div className="ml-6 space-y-1">
-                          {notebook.pages.map((page) => (
-                            <div key={page.id} className="flex items-center">
-                              <Checkbox
-                                checked={selectedPages[notebook.id]?.includes(
-                                  page.id
-                                )}
-                                onCheckedChange={() =>
-                                  togglePageSelection(notebook.id, page.id)
-                                }
-                                id={`${notebook.id}-${page.id}`}
-                              />
-                              <label
-                                htmlFor={`${notebook.id}-${page.id}`}
-                                className="ml-2 text-sm text-slate-600"
-                              >
-                                {page.title}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg ">
+                  <h3> Select notes or upload files to study </h3>
                 </div>
-              </div>
-
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Upload Additional Files
-                </label>
                 <FormUpload
                   files={files}
                   handleFileUpload={(e) => {
@@ -654,6 +808,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   showUpload={true}
                   setShowUpload={() => {}}
                 />
+                {renderNotebookList()}
               </div>
             </CardContent>
             <CardFooter className="flex justify-end space-x-2 ">
