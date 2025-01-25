@@ -80,10 +80,10 @@ export default function StudyMaterialTabs({
           Study Material
         </h1>
       </div>
-      <Tabs defaultValue="studycards" className="w-full   mx-auto">
-        <div className="flex flex-row items-center justify-center">  <TabsList className="grid w-full grid-cols-2 max-w-xl bg-slate-100 rounded-md">
-          <TabsTrigger value="studycards" className="data-[state=active]:bg-[#dae9b6] data-[state=active]:text-slate-700">Study Cards</TabsTrigger>
-          <TabsTrigger value="studyguide" className="data-[state=active]:bg-[#dae9b6] data-[state=active]:text-slate-700">Study Guide</TabsTrigger>
+      <Tabs defaultValue="studycards" className="w-full bg-white  mx-auto ">
+        <div className="flex flex-row items-center justify-center  ">  <TabsList className="grid w-full grid-cols-2 max-w-xl bg-white rounded-md border border-slate-200 ">
+          <TabsTrigger value="studycards" className="mt-0  data-[state=active]:bg-[#dae9b6] data-[state=active]:text-white">Study Cards</TabsTrigger>
+          <TabsTrigger value="studyguide" className="mt-0  data-[state=active]:bg-[#dae9b6] data-[state=active]:text-white ">Study Guide</TabsTrigger>
         </TabsList></div>
       
         <TabsContent value="studycards">

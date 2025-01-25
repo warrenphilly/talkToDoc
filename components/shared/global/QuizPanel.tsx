@@ -9,59 +9,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { saveQuizState } from "@/lib/firebase/firestore";
 import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronRight,
   Image,
+  Loader2,
+  Mic,
+  MicOff,
+  Plus,
+  RefreshCw,
+  Trash,
   Upload,
   Volume2,
   VolumeOff,
-  Mic,
-  MicOff,
-  BookOpen,
-  Plus,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Trash,
-  Check,
-  RefreshCw,
 } from "lucide-react"; // Import icons
-import React, { useEffect, useRef, useState, MutableRefObject } from "react";
-import { saveQuizState } from "@/lib/firebase/firestore";
+import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 
 // import { Quiz } from "@/components/ui/Quiz";
-import RecentQuizzes from "@/components/ui/RecentQuizzes";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { QuizData, QuizState } from "@/types/quiz";
-import { CircularProgress } from "@mui/material";
-import FormUpload from "../study/formUpload";
-import { Notebook, Page } from "@/lib/firebase/firestore";
-import { getAllNotebooks } from "@/lib/firebase/firestore";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import RecentQuizzes from "@/components/ui/RecentQuizzes";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { db } from "@/firebase";
 import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
+  getAllNotebooks,
+  getUserByClerkId,
+  Notebook,
+  Page,
+} from "@/lib/firebase/firestore";
+import { QuizData, QuizState } from "@/types/quiz";
+import { useUser } from "@clerk/nextjs";
+import { CircularProgress } from "@mui/material";
+import {
   addDoc,
+  collection,
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  Timestamp,
+  where,
 } from "firebase/firestore";
-import { Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
-import { useUser } from "@clerk/nextjs";
-import { getUserByClerkId } from "@/lib/firebase/firestore";
+import FormUpload from "../study/formUpload";
 
 // First, let's define our message types
 interface Sentence {
@@ -119,8 +122,12 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Document selection state
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
-  const [selectedPages, setSelectedPages] = useState<{ [notebookId: string]: string[] }>({});
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedPages, setSelectedPages] = useState<{
+    [notebookId: string]: string[];
+  }>({});
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(
     null
@@ -222,7 +229,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Update useEffect to depend on user
   useEffect(() => {
-    if (user) {  // Only load notebooks when user is available
+    if (user) {
+      // Only load notebooks when user is available
       loadAllNotebooks();
     }
   }, [user]); // Add user to dependency array
@@ -230,7 +238,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   const loadAllNotebooks = async () => {
     try {
       setIsLoadingNotebooks(true);
-      
+
       if (!user) {
         console.log("No user found");
         throw new Error("No authenticated user");
@@ -238,10 +246,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // First get the Firestore user
       const firestoreUser = await getUserByClerkId(user.id);
-      
+
       console.log("User IDs:", {
         clerkUserId: user.id,
-        firestoreUserId: firestoreUser?.id
+        firestoreUserId: firestoreUser?.id,
       });
 
       if (!firestoreUser) {
@@ -251,14 +259,17 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // Get reference to notebooks collection
       const notebooksRef = collection(db, "notebooks");
-      
+
       // Get ALL notebooks for debugging
       const allNotebooks = await getDocs(collection(db, "notebooks"));
-      console.log("All notebooks:", allNotebooks.docs.map(doc => ({
-        notebookId: doc.id,
-        userId: doc.data().userId,
-        title: doc.data().title
-      })));
+      console.log(
+        "All notebooks:",
+        allNotebooks.docs.map((doc) => ({
+          notebookId: doc.id,
+          userId: doc.data().userId,
+          title: doc.data().title,
+        }))
+      );
 
       // Query using Firestore user ID
       const q = query(notebooksRef, where("userId", "==", firestoreUser.id));
@@ -266,7 +277,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       console.log("Query results for Firestore userId:", {
         firestoreUserId: firestoreUser.id,
-        matchCount: querySnapshot.docs.length
+        matchCount: querySnapshot.docs.length,
       });
 
       const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
@@ -287,7 +298,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       if (error instanceof Error) {
         console.error("Error details:", {
           message: error.message,
-          stack: error.stack
+          stack: error.stack,
         });
       }
     } finally {
@@ -539,7 +550,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     return (
       <div className="space-y-2 p-2">
         {notebooks.map((notebook) => (
-          <div key={notebook.id} className="border rounded-xl p-1 bg-white border-slate-400">
+          <div
+            key={notebook.id}
+            className="border rounded-xl p-1 bg-white border-slate-400"
+          >
             <div className="flex items-center justify-between p-3 bg-white text-slate-600">
               <div className="flex items-center gap-2">
                 <button
@@ -653,67 +667,57 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz List */}
       {!showQuizForm && !selectedQuiz && (
-        <div className=" w-full max-w-lg mx-auto">
+        <div className="w-full max-w-lg mx-auto">
           {quizzes.map((quiz) => (
-            <div 
+            <div
               key={quiz.id}
-              className="flex flex-row justify-between items-center"
+              className="border rounded-xl p-1 bg-white border-slate-400 mb-2"
             >
-              <Card
-                className="bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-gray-400"
-              >
-                <CardContent
-                  onClick={() => handleQuizSelect(quiz)}
-                  className="py-2 my-0"
-                >
-                  <div className="items-center flex flex-row justify-between">
-                    <div className="flex flex-col justify-between items-start gap-2">
-                      <h1 className="text-slate-800 text-lg font-bold">
+              <div className="flex items-center justify-between p-3 bg-white text-slate-600">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleQuizSelect(quiz)}
+                    className="flex-1 flex items-center gap-4 text-left"
+                  >
+                    <div className="flex flex-col">
+                      <h3 className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer">
                         {quiz.quizData?.title || "Untitled Quiz"}
-                      </h1>
-                      <p className="text-sm text-gray-600">
-                        Questions: {quiz.totalQuestions}
-                      </p>
-                     
-
-                      {/* //TODO: add date created */}
-                      
-                    </div>
-                    <div className="flex flex-col justify-between items-end gap-2">
-                    <p className="text-sm text-gray-600">
-                        Created:{" "}
-                        {quiz.startedAt instanceof Date
-                          ? quiz.startedAt.toLocaleDateString()
-                          : new Date(
-                              quiz.startedAt.seconds * 1000
-                            ).toLocaleDateString()}
-                      </p>
-                   
-                      
-                      {quiz.isComplete && (
-                        <p className="text-sm text-gray-600">
-                          Score: {quiz.score}/{quiz.totalQuestions}
+                      </h3>
+                      <div className="flex gap-4 text-sm text-slate-500">
+                        <p>Questions: {quiz.totalQuestions}</p>
+                        <p>
+                          Created:{" "}
+                          {quiz.startedAt instanceof Date
+                            ? quiz.startedAt.toLocaleDateString()
+                            : new Date(
+                                quiz.startedAt.seconds * 1000
+                              ).toLocaleDateString()}
                         </p>
-                      )}
+                        {quiz.isComplete && (
+                          <p>
+                            Score: {quiz.score}/{quiz.totalQuestions}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Button
-                variant="ghost"
-                className="text-red-500 hover:text-red-600"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteQuiz(quiz.id);
-                }}
-              >
-                <Trash className="w-4 h-4 mr-2" />
-              </Button>
+                  </button>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteQuiz(quiz.id);
+                  }}
+                  className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
+
           {quizzes.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No quizzes found. Create one to get started!
+            <div className="text-center p-4 text-gray-500">
+              No quizzes found. Please create a quiz first.
             </div>
           )}
         </div>
@@ -723,11 +727,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {showQuizForm && (
         <div className="fixed inset-0 bg-white flex items-center justify-center p-4 z-5">
           <Card className="w-full bg-white shadow-none border-none h-full max-w-xl ">
-            <CardHeader >
+            <CardHeader>
               <div className="flex flex-row justify-center items-center">
-              <CardTitle className="text-[#94b347] text-xl font-bold">
-                Create New Quiz
-              </CardTitle>
+                <CardTitle className="text-[#94b347] text-xl font-bold">
+                  Create New Quiz
+                </CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -822,27 +826,31 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             </CardContent>
             <CardFooter className="flex justify-end space-x-2 ">
               <div className="flex flex-row justify-between items-center w-full">
-              <Button variant="outline" onClick={() => setShowQuizForm(false)} className="text-red-500 bg-white rounded-full border border-red-500 hover:bg-white hover:text-red-500 hover:border-red-500 hover:text-red-500 hover:bg-red-200">
-                Cancel
-              </Button>
-              <Button
-                onClick={handleGenerateQuiz}
-                disabled={
-                  isGenerating ||
-                  !Object.values(selectedQuestionTypes).some(Boolean) ||
-                  (!files.length && !Object.keys(selectedPages).length)
-                }
-                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Generate Quiz"
-                )}
-              </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowQuizForm(false)}
+                  className="text-red-500 bg-white rounded-full border border-red-500 hover:bg-white hover:text-red-500 hover:border-red-500 hover:text-red-500 hover:bg-red-200"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleGenerateQuiz}
+                  disabled={
+                    isGenerating ||
+                    !Object.values(selectedQuestionTypes).some(Boolean) ||
+                    (!files.length && !Object.keys(selectedPages).length)
+                  }
+                  className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Quiz"
+                  )}
+                </Button>
               </div>
             </CardFooter>
           </Card>
