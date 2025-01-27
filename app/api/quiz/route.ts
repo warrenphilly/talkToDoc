@@ -3,6 +3,7 @@ import { adminDb, adminStorage } from '@/lib/firebase/firebaseAdmin';
 import { cleanMarkdownContent, splitIntoChunks } from '@/lib/markdownUtils';
 
 interface QuizMessage {
+  userId: string;
   format: string;
   numberOfQuestions: number;
   questionTypes: string[];
@@ -232,6 +233,7 @@ Return ONLY valid JSON with no additional text.`,
 
     // Create the quiz data with proper structure
     const quizData = {
+      userId: message.userId,
       quiz: {
         title: message.quizName,
         questions: parsedQuiz.questions.map((q: any, index: number) => ({
@@ -251,8 +253,7 @@ Return ONLY valid JSON with no additional text.`,
 
     console.log("Final quiz data:", quizData);
 
-    // Save quiz to Firestore
-    await adminDb.collection('quizzes').add(quizData);
+
 
     return NextResponse.json(quizData);
 

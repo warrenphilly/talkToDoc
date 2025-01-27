@@ -202,6 +202,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           totalQuestions: data.totalQuestions || 0,
           isComplete: data.isComplete || false,
           incorrectAnswers: data.incorrectAnswers || [],
+          uploadedDocs: data.uploadedDocs || [],
+          // userId: clerkId,
         } as unknown as QuizState;
       });
 
@@ -446,6 +448,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         lastUpdatedAt: Timestamp.now(),
         totalQuestions: data.quiz.questions.length,
         quizData: data.quiz,
+        userId: user?.id || "",
+        createdAt: Timestamp.now(),
       };
 
       // Save to Firestore

@@ -63,6 +63,8 @@ export interface QuizState {
   isComplete: boolean;
   incorrectAnswers: number[];
   gptFeedback?: string;
+  userId: string;
+  createdAt: Timestamp | SerializedTimestamp;
 }
 
 // Add a type for the Firestore quiz document

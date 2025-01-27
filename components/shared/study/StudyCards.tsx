@@ -293,6 +293,7 @@ export default function StudyCards({
           (n): n is NonNullable<typeof n> => n !== null
         ),
         cardCount: numCards,
+        
       };
 
       // Send to API for card generation

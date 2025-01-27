@@ -63,6 +63,9 @@ const Quiz: React.FC<QuizProps> = ({
     initialState?.id ||
       `quiz_${pageId}_${new Date().toISOString().split("T")[0]}`
   );
+  const [userId] = useState<string>(
+    initialState?.userId || ""
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [aiVoice, setAiVoice] = useState(false);
@@ -437,6 +440,7 @@ const Quiz: React.FC<QuizProps> = ({
           <QuizSummary
             quiz={{
               id: quizId,
+              userId: userId,
               notebookId,
               pageId,
               startedAt: new Timestamp(new Date().getTime() / 1000, 0),
@@ -450,6 +454,7 @@ const Quiz: React.FC<QuizProps> = ({
               isComplete: true,
               gptFeedback,
               quizData: data,
+              createdAt: new Timestamp(new Date().getTime() / 1000, 0),
             }}
             onClose={() => setShowResults(false)}
           />

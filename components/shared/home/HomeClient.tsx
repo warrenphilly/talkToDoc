@@ -53,17 +53,17 @@ const HomeClient = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-200 w-full">
-      <div className="flex flex-col h-full bg-slate-200  w-full mx-2">
+    <div className="flex flex-col md:flex-row h-screen bg-slate-100 w-full">
+      <div className="flex flex-col h-full bg-slate-100  w-full mx-2">
         <div className="flex flex-row items-center justify-between w-full ">
-          <div className="text-slate-900 p-4 bg-slate-100 rounded-2xl w-fit my-4 mx-4 font-semibold">
+          <div className="text-slate-900 p-4 bg-white rounded-2xl w-fit my-4 mx-4 font-semibold">
             <h1 className="text-xl font-regular">Home </h1>
           </div>
 
           <div className="flex gap-2 ">
             <Button
               onClick={() => setIsCreateModalOpen(true)}
-              className="text-slate-900 px-4 py-2 bg-slate-100 rounded-full border border-slate-300 shadow-none w-fit my-5 font-semibold mx-5"
+              className="text-slate-900 px-4 py-2 bg-white  rounded-full border border-slate-300 shadow-none w-fit my-5 font-semibold mx-5"
             >
               New Notebook
             </Button>
@@ -80,7 +80,7 @@ const HomeClient = () => {
 
               {/* end of surgery area */}
 
-              <div className="flex-grow overflow-y-auto p-4 bg-slate-100 rounded-2xl m-2 w-full h-full  max-h-[90vh] mt-10">
+              <div className="flex-grow overflow-y-auto p-4 bg-white rounded-2xl m-2 w-full h-full  max-h-[90vh] mt-10">
                 
                   <BentoDashboard listType="recent" />
               

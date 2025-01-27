@@ -137,12 +137,12 @@ export function SidebarNav() {
       <Sidebar>
         <SidebarContent className="bg-slate-100 text-slate-400 py-4 pl-2 w-full ">
           <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
-            <SidebarGroupContent className="flex flex-col justify-between h-full w-full">
-              <SidebarMenu className="h-fit rounded-2xl flex flex-col gap-0 w-full  ">
+            <SidebarGroupContent className="flex  flex-col justify-between h-full w-full">
+              <SidebarMenu className="h-full bg-white rounded-2xl  p-2 flex flex-col gap-0 w-full  ">
                 {isLoading ? (
                   <Skeleton className="h-24 my-5 w-full rounded-2xl" />
                 ) : (
-                  <div className="text-slate-800 bg-white   w-full rounded-2xl  font-semibold flex flex-col  justify-between">
+                  <div className="text-slate-800 bg-white border border-slate-300  w-full rounded-2xl  font-semibold flex flex-col  justify-between">
                     <div className="flex flex-col items-center justify-center  gap-2 p-4">
                       <div className="flex flex-row items-center justify-center  gap-2 text-xl">
                         <UserButton /> <p>{user?.username}</p>

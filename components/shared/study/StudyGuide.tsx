@@ -73,6 +73,7 @@ export interface StudyGuide {
   notebookId: string;
   pageId: string;
   createdAt: Date;
+  userId: string;
 }
 
 interface StudyMaterialTabsProps {
@@ -654,7 +655,9 @@ export default function StudyGuideComponent({
         content: data.content, // This will be an array of sections with title, text, and show properties
         notebookId,
         pageId,
-        createdAt: new Date()
+        createdAt: new Date(),
+        userId: user?.id || "",
+        
       };
 
       // Save to the studyGuides collection
@@ -719,6 +722,7 @@ export default function StudyGuideComponent({
           pageId: data.pageId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date()
+          
         } as StudyGuide;
       });
 

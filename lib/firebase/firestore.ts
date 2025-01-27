@@ -1,11 +1,13 @@
 "use server";
 
+import { StudyGuide } from "@/components/shared/study/StudyGuide";
 import { db, storage } from "@/firebase";
 import { ContextSection, Message } from "@/lib/types";
 import type { QuizState } from "@/types/quiz";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -17,10 +19,9 @@ import {
   query,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
-  addDoc,
-  Timestamp,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { getCurrentUserId } from "../auth";
@@ -47,6 +48,7 @@ export interface Page {
     name: string;
     timestamp: string;
   }[];
+  quizzes?: QuizState[];
 }
 
 export interface Notebook {
@@ -158,7 +160,8 @@ interface SerializedStudyDoc {
   timestamp: string | SerializedTimestamp;
 }
 
-interface SerializedPage extends Omit<Page, 'studyGuide' | 'markdownRefs' | 'studyDocs'> {
+interface SerializedPage
+  extends Omit<Page, "studyGuide" | "markdownRefs" | "studyDocs"> {
   studyGuide?: SerializedStudyGuide;
   markdownRefs?: SerializedMarkdownRef[];
   studyDocs?: SerializedStudyDoc[];
@@ -184,34 +187,47 @@ export const getNote = async (
     // Serialize timestamps and dates to plain objects
     const serializedPage: SerializedPage = {
       ...page,
-      studyGuide: page.studyGuide ? {
-        content: page.studyGuide.content,
-        updatedAt: page.studyGuide.updatedAt ? {
-          seconds: page.studyGuide.updatedAt instanceof Date ? 
-            Math.floor(page.studyGuide.updatedAt.getTime() / 1000) :
-            (page.studyGuide.updatedAt as TimestampLike).seconds,
-          nanoseconds: page.studyGuide.updatedAt instanceof Date ? 
-            0 : 
-            (page.studyGuide.updatedAt as TimestampLike).nanoseconds || 0
-        } : null
-      } : undefined,
-      markdownRefs: page.markdownRefs?.map(ref => ({
+      studyGuide: page.studyGuide
+        ? {
+            content: page.studyGuide.content,
+            updatedAt: page.studyGuide.updatedAt
+              ? {
+                  seconds:
+                    page.studyGuide.updatedAt instanceof Date
+                      ? Math.floor(page.studyGuide.updatedAt.getTime() / 1000)
+                      : (page.studyGuide.updatedAt as TimestampLike).seconds,
+                  nanoseconds:
+                    page.studyGuide.updatedAt instanceof Date
+                      ? 0
+                      : (page.studyGuide.updatedAt as TimestampLike)
+                          .nanoseconds || 0,
+                }
+              : null,
+          }
+        : undefined,
+      markdownRefs: page.markdownRefs?.map((ref) => ({
         url: ref.url,
         path: ref.path,
-        timestamp: typeof ref.timestamp === 'string' ? ref.timestamp : {
-          seconds: Math.floor(new Date(ref.timestamp).getTime() / 1000),
-          nanoseconds: 0
-        }
+        timestamp:
+          typeof ref.timestamp === "string"
+            ? ref.timestamp
+            : {
+                seconds: Math.floor(new Date(ref.timestamp).getTime() / 1000),
+                nanoseconds: 0,
+              },
       })),
-      studyDocs: page.studyDocs?.map(doc => ({
+      studyDocs: page.studyDocs?.map((doc) => ({
         url: doc.url,
         path: doc.path,
         name: doc.name,
-        timestamp: typeof doc.timestamp === 'string' ? doc.timestamp : {
-          seconds: Math.floor(new Date(doc.timestamp).getTime() / 1000),
-          nanoseconds: 0
-        }
-      }))
+        timestamp:
+          typeof doc.timestamp === "string"
+            ? doc.timestamp
+            : {
+                seconds: Math.floor(new Date(doc.timestamp).getTime() / 1000),
+                nanoseconds: 0,
+              },
+      })),
     };
 
     return serializedPage;
@@ -745,7 +761,11 @@ interface EvaluationResult {
   timestamp?: Date | Timestamp | SerializedTimestamp;
 }
 
-interface SerializedQuizState extends Omit<QuizState, 'startedAt' | 'lastUpdatedAt' | 'userAnswers' | 'evaluationResults'> {
+interface SerializedQuizState
+  extends Omit<
+    QuizState,
+    "startedAt" | "lastUpdatedAt" | "userAnswers" | "evaluationResults"
+  > {
   startedAt: SerializedTimestamp;
   lastUpdatedAt: SerializedTimestamp;
   userAnswers: Array<{
@@ -758,16 +778,18 @@ interface SerializedQuizState extends Omit<QuizState, 'startedAt' | 'lastUpdated
   }>;
 }
 
-const serializeTimestamp = (timestamp: Date | Timestamp | SerializedTimestamp): SerializedTimestamp => {
+const serializeTimestamp = (
+  timestamp: Date | Timestamp | SerializedTimestamp
+): SerializedTimestamp => {
   if (timestamp instanceof Date) {
     return {
       seconds: Math.floor(timestamp.getTime() / 1000),
-      nanoseconds: 0
+      nanoseconds: 0,
     };
   } else if (timestamp instanceof Timestamp) {
     return {
       seconds: timestamp.seconds,
-      nanoseconds: timestamp.nanoseconds
+      nanoseconds: timestamp.nanoseconds,
     };
   }
   return timestamp;
@@ -776,26 +798,32 @@ const serializeTimestamp = (timestamp: Date | Timestamp | SerializedTimestamp): 
 export const saveQuizState = async (quizState: QuizState): Promise<void> => {
   try {
     const quizRef = doc(db, "quizzes", quizState.id);
-    
+
     // Deep clone and serialize the quiz state
     const serializedState: SerializedQuizState = {
       ...quizState,
       startedAt: serializeTimestamp(quizState.startedAt),
       lastUpdatedAt: serializeTimestamp(new Date()),
       // Ensure nested objects are also serialized
-      quizData: quizState.quizData ? JSON.parse(JSON.stringify(quizState.quizData)) : null,
-      userAnswers: Array.isArray(quizState.userAnswers) 
+      quizData: quizState.quizData
+        ? JSON.parse(JSON.stringify(quizState.quizData))
+        : null,
+      userAnswers: Array.isArray(quizState.userAnswers)
         ? quizState.userAnswers.map((answer: QuizAnswer) => ({
             ...answer,
-            timestamp: answer.timestamp ? serializeTimestamp(answer.timestamp) : undefined
+            timestamp: answer.timestamp
+              ? serializeTimestamp(answer.timestamp)
+              : undefined,
           }))
         : [],
       evaluationResults: Array.isArray(quizState.evaluationResults)
         ? quizState.evaluationResults.map((result: EvaluationResult) => ({
             ...result,
-            timestamp: result.timestamp ? serializeTimestamp(result.timestamp) : undefined
+            timestamp: result.timestamp
+              ? serializeTimestamp(result.timestamp)
+              : undefined,
           }))
-        : []
+        : [],
     };
 
     // Remove any undefined or function values
@@ -1100,13 +1128,16 @@ export const deleteStudyCardSet = async (
 };
 
 // Add this function to handle study guide title updates
-export const updateStudyGuideTitle = async (guideId: string, newTitle: string): Promise<void> => {
+export const updateStudyGuideTitle = async (
+  guideId: string,
+  newTitle: string
+): Promise<void> => {
   try {
     const studyGuideRef = doc(db, "studyGuides", guideId);
-    
+
     await updateDoc(studyGuideRef, {
       title: newTitle,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   } catch (error) {
     console.error("Error updating study guide title:", error);
@@ -1117,10 +1148,12 @@ export const updateStudyGuideTitle = async (guideId: string, newTitle: string): 
 export async function saveQuiz(
   quiz: QuizState,
   metadata: any,
-  uploadedDocs: { path: string; name: string }[]
+  uploadedDocs: { path: string; name: string }[],
+  clerkId: string
 ): Promise<void> {
   await addDoc(collection(db, "quizzes"), {
     ...quiz,
+    userId: clerkId,
     metadata: {
       ...metadata,
       notebookId: quiz.notebookId,
@@ -1130,3 +1163,57 @@ export async function saveQuiz(
   });
 }
 
+export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizState[]> => {
+  const quizzesRef = collection(db, "quizzes");
+  const q = query(quizzesRef, where("userId", "==", userId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => doc.data() as QuizState);
+};
+
+export const getStudyGuidesByFirestoreUserId = async (userId: string): Promise<StudyGuide[]> => {
+  console.log("userId", userId);
+  const studyGuidesRef = collection(db, "studyGuides");
+  const q = query(studyGuidesRef, where("userId", "==", userId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => doc.data() as StudyGuide);
+};
+
+export const getStudyCardsByClerkId = async (clerkId: string): Promise<StudyCardSet[]> => {
+  const studyCardsRef = collection(db, "studyCardSets");
+  const q = query(studyCardsRef, where("userId", "==", clerkId));
+  const querySnapshot = await getDocs(q);
+
+  const studyCards = querySnapshot.docs.map((doc) => {
+    const data = doc.data();
+    
+    // Helper function to safely convert Firestore timestamps
+    const convertTimestamp = (timestamp: any) => {
+      if (!timestamp) return null;
+      if (timestamp.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      return timestamp;
+    };
+
+    const cardData = {
+      id: doc.id,
+      title: data.title,
+      cards: data.cards,
+      metadata: {
+        name: data.metadata.name,
+        createdAt: convertTimestamp(data.metadata.createdAt),
+        sourceNotebooks: data.metadata.sourceNotebooks,
+        cardCount: data.metadata.cardCount
+      },
+      pageId: data.pageId,
+      notebookId: data.notebookId,
+      createdAt: convertTimestamp(data.createdAt),
+      userId: data.userId
+    } as StudyCardSet;
+
+    // Parse and stringify to ensure complete serialization
+    return JSON.parse(JSON.stringify(cardData));
+  });
+
+  return studyCards;
+};
