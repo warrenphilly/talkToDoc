@@ -34,7 +34,7 @@ export default function RootLayout({
       >
         <div className="flex flex-row h-screen w-full">
           <div className="flex flex-col h-screen ">
-           poop
+          
           <SignedIn>
           <SidebarNav />
           </SignedIn>

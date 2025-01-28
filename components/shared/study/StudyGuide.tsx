@@ -50,6 +50,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
 import { StudyGuideCard } from "./StudyGuideCard";
+import { useUser } from "@clerk/nextjs";
 
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
@@ -114,7 +115,7 @@ export default function StudyGuideComponent({
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
   const [selectedGuide, setSelectedGuide] = useState<StudyGuide | null>(null);
-
+  
   // Update the state to track expanded sections for each guide
   const [expandedSections, setExpandedSections] = useState<{
     [guideId: string]: number[];
@@ -123,6 +124,9 @@ export default function StudyGuideComponent({
   // Add state to track which guide is being edited in the list
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListTitle, setEditingListTitle] = useState<string>("");
+
+  const user = useUser();
+  const userId = user?.user?.id;
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
@@ -656,8 +660,9 @@ export default function StudyGuideComponent({
         notebookId,
         pageId,
         createdAt: new Date(),
-        userId: user?.id || "",
-        
+        userId: userId || "",
+       
+
       };
 
       // Save to the studyGuides collection
@@ -721,7 +726,8 @@ export default function StudyGuideComponent({
           notebookId: data.notebookId,
           pageId: data.pageId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date()
+          updatedAt: data.updatedAt?.toDate?.() || new Date(),
+          userId: data.userId || ""
           
         } as StudyGuide;
       });

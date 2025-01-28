@@ -7,7 +7,7 @@ import HomeClient from "@/components/shared/home/HomeClient"
 import Hero from "@/components/shared/global/Hero"
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen w-full">
+    <div className="flex flex-col h-full w-full ">
       <SignedOut>
       <Hero />
       </SignedOut>

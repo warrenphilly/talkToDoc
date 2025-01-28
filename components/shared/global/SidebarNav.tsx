@@ -21,6 +21,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { db } from '@/firebase';
 import { getCurrentUserId } from "@/lib/auth";
 import {
   FirestoreUser,
@@ -30,6 +31,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { User } from "@clerk/nextjs/server";
 import { CircularProgress } from "@mui/material";
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import {
   BookOpen,
   BookOpenText,
@@ -47,8 +49,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
-import { db } from '@/firebase';
 
 // Menu items.
 const items = [
@@ -138,11 +138,11 @@ export function SidebarNav() {
         <SidebarContent className="bg-slate-100 text-slate-400 py-4 pl-2 w-full ">
           <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
             <SidebarGroupContent className="flex  flex-col justify-between h-full w-full">
-              <SidebarMenu className="h-full bg-white rounded-2xl  p-2 flex flex-col gap-0 w-full  ">
+              <SidebarMenu className="h-full bg-white rounded-2xl   flex flex-col gap-0 w-full  ">
                 {isLoading ? (
                   <Skeleton className="h-24 my-5 w-full rounded-2xl" />
                 ) : (
-                  <div className="text-slate-800 bg-white border border-slate-300  w-full rounded-2xl  font-semibold flex flex-col  justify-between">
+                  <div className="text-slate-800 bg-white   w-full rounded-2xl  font-semibold flex flex-col  justify-between">
                     <div className="flex flex-col items-center justify-center  gap-2 p-4">
                       <div className="flex flex-row items-center justify-center  gap-2 text-xl">
                         <UserButton /> <p>{user?.username}</p>
@@ -173,14 +173,14 @@ export function SidebarNav() {
                 {items.map((item) => (
                   <div key={item.title} className="w-full  text-xl mt-3">
                     {isLoading ? (
-                      <Skeleton className="h-10 w-full rounded-xl" />
+                      <Skeleton className="h-10 w-full " />
                     ) : (
-                      <SidebarMenuItem className=" text-xl w-full py-2 ">
+                      <SidebarMenuItem className=" text-xl w-full  ">
                         <SidebarMenuButton
                           asChild
-                          className={`w-full py-2 rounded-xl text-slate-400  text-sm items-center bg-white p-5 ${
+                          className={`w-full py-4 rounded-none border-t border-slate-300  text-slate-400  text-sm items-center bg-white p-5 ${
                             pathname === item.url
-                              ? "bg-[#bdcc97] hover:bg-[#bdcc97] text-white hover:text-white"
+                              ? "bg-[#f2f6e8] hover:bg-[#bdcc97] text-[#94b347] hover:text-white"
                               : "hover:bg-slate-300"
                           }`}
                         >
@@ -189,7 +189,7 @@ export function SidebarNav() {
                             className="flex items-center gap-2 p-2"
                           >
                             <item.icon
-                              className={`text-[30px] text-[#94b347] ${pathname === item.url ? "text-white" : ""}`}
+                              className={`text-[30px] text-[#94b347] `}
                             />
                             <span>{item.title}</span>
                           </Link>
@@ -214,9 +214,9 @@ export function SidebarNav() {
                       } `}
                     >
                       <CollapsibleTrigger
-                        className={`flex items-center gap-2   py-2 rounded-lg w-full bg-none px-4 ${
+                        className={`flex items-center gap-2 border-t border-slate-300 py-2  w-full bg-none px-4 ${
                           pathname.includes("/notes/")
-                            ? " text-slate-400 rounded-lg hover:bg-slate-50"
+                            ? " text-slate-400  bg-[#f2f6e8] hover:bg-slate-50"
                             : "hover:bg-slate-300 "
                         }  `}
                       >
@@ -228,7 +228,11 @@ export function SidebarNav() {
                           }`}
                         />
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
+                      <CollapsibleContent className={`${
+                        pathname.includes("/notes/")
+                          ? "bg-slate-50 text-slate-400 rounded-lg"
+                          : " "
+                      }`}>
                         {isLoading ? (
                           <div className="flex flex-col  items-center justify-center h-5 w-full   gap-2">
                             <CircularProgress
@@ -242,22 +246,26 @@ export function SidebarNav() {
                           notebooks.map((notebook, index) => (
                             <SidebarMenuItem
                               key={notebook.id}
-                              className={`w-full border-t pt-1 rounded-none`}
+                              className={`w-full border-t pl-2  rounded-none border-slate-200${
+                                pathname.includes("/notes/")
+                                  ? "bg-slate-100 text-slate-400 rounded-lg"
+                                  : " "
+                              } `}
                             >
                               <SidebarMenuButton
                                 asChild
-                                className={`${
-                                  index === notebooks.length - 1
-                                    ? "rounded-t-none rounded-b-xl"
-                                    : "rounded-none"
-                                }`}
+                                className={`rounded-none`}
                               >
                                 <Link
                                   href={`/notes/${notebook.id}`}
-                                  className={`flex items-center gap-2 pl-10  justify-start  ${
+                                  className={`flex items-center gap-2 pl-10 justify-start ${
                                     pathname === `/notes/${notebook.id}`
-                                      ? "bg-[#bdcc97]  text-white hover:text-white hover:bg-[#8da34f]"
-                                      : "hover:bg-slate-300 "
+                                      ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
+                                      : "hover:bg-slate-300"
+                                  } ${
+                                    pathname.includes("/notes/")
+                                      ? "bg-slate-50"
+                                      : "bg-white"
                                   }`}
                                 >
                                   <FileText className={`text-[#94b347] ${pathname === `/notes/${notebook.id}` ? "text-white" : ""}`} />

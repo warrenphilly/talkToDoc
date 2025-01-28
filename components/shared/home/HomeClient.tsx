@@ -8,13 +8,12 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
+import ContinuousSegmentSpinner from "@/components/continuous-segment-spinner";
 import SideChat from "@/components/shared/global/SideChat";
 import { createNewNotebook } from "@/lib/firebase/firestore";
-import BentoDashboard from "./bento-dashboard";
-import { CreateNotebookModal } from "@/components/shared/home/create-notebook-modal";
 import { useUser } from "@clerk/nextjs";
-import ContinuousSegmentSpinner from "@/components/continuous-segment-spinner"; 
-import CircularProgress from '@mui/material/CircularProgress';
+import CircularProgress from "@mui/material/CircularProgress";
+import BentoDashboard from "./bento-dashboard";
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -37,66 +36,30 @@ const HomeClient = () => {
   const [showUpload, setShowUpload] = useState(true);
   const [primeSentence, setPrimeSentence] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const {isLoaded, isSignedIn} = useUser()
+  const { isLoaded, isSignedIn } = useUser();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setTimeout(() => {
-        setIsLoading(true);
-      }, 1000);
-  }, [, ]);
-
+      setIsLoading(true);
+    }, 1000);
+  }, [,]);
 
   useEffect(() => {
     console.log("messages", messages);
   }, [messages]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-100 w-full">
-      <div className="flex flex-col h-full bg-slate-100  w-full mx-2">
-        <div className="flex flex-row items-center justify-between w-full ">
-          <div className="text-slate-900 p-4 bg-white rounded-2xl w-fit my-4 mx-4 font-semibold">
-            <h1 className="text-xl font-regular">Home </h1>
-          </div>
+    <div className="flex flex-col md:flex-row h-screen bg-slate-100 w-full overflow-hidden">
+      <div className="flex flex-col h-full bg-slate-100 w-full p-2 md:p-4">
+        
 
-          <div className="flex gap-2 ">
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="text-slate-900 px-4 py-2 bg-white  rounded-full border border-slate-300 shadow-none w-fit my-5 font-semibold mx-5"
-            >
-              New Notebook
-            </Button>
-          
+        <div className="flex flex-col md:flex-row justify-start h-full pb-12">
+          <div className="flex-grow overflow-y-auto p-2 md:p-4  bg-white rounded-2xl m-2 w-full h-full max-h-[calc(100vh-140px)] md:max-h-[88vh] mt-4 md:mt-10 mb-6 md:mb-10">
+            <BentoDashboard listType="recent" />
           </div>
         </div>
-
-
-        {/* recent notebooks */}
-        <div className="flex flex-col md:flex-row justify-start h-fit px-2">
-         
-            
-              {/* surgery area */}
-
-              {/* end of surgery area */}
-
-              <div className="flex-grow overflow-y-auto p-4 bg-white rounded-2xl m-2 w-full h-full  max-h-[90vh] mt-10">
-                
-                  <BentoDashboard listType="recent" />
-              
-              </div>
-          
-
-          
-        </div>
-
-        {/*all notebooks */}
-       
       </div>
-      <CreateNotebookModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
     </div>
   );
 };
