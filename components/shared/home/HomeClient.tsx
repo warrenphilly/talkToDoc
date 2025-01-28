@@ -55,7 +55,7 @@ const HomeClient = () => {
         
 
         <div className="flex flex-col md:flex-row justify-start h-full pb-12">
-          <div className="flex-grow overflow-y-auto p-2 md:p-4  bg-white rounded-2xl m-2 w-full h-full max-h-[calc(100vh-140px)] md:max-h-[88vh] mt-4 md:mt-10 mb-6 md:mb-10">
+          <div className="flex-grow overflow-y-auto p-2 md:p-4  bg-white rounded-2xl m-2 w-full h-full mt-4 md:mt-10 ">
             <BentoDashboard listType="recent" />
           </div>
         </div>

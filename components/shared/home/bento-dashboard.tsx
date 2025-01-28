@@ -21,6 +21,7 @@ import { FileText, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AccordionDemo } from "@/components/accordion-demo";
+import { Timestamp } from 'firebase/firestore';
 
 import {
   Accordion,
@@ -50,10 +51,36 @@ interface StudyCardPage {
   pageTitle: string;
 }
 
-interface FirestoreTimestamp {
+interface SerializedTimestamp {
   seconds: number;
   nanoseconds: number;
 }
+
+// Updated helper function to accept Date objects
+const formatDate = (
+  timestamp: Timestamp | SerializedTimestamp | string | Date | null | undefined
+) => {
+  if (!timestamp) return new Date().toLocaleDateString();
+  
+  if (timestamp instanceof Date) {
+    return timestamp.toLocaleDateString();
+  }
+  
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp).toLocaleDateString();
+  }
+  
+  if ('toDate' in timestamp) {
+    return timestamp.toDate().toLocaleDateString();
+  }
+  
+  // Handle SerializedTimestamp
+  if ('seconds' in timestamp) {
+    return new Date(timestamp.seconds * 1000).toLocaleDateString();
+  }
+  
+  return new Date().toLocaleDateString();
+};
 
 export default function BentoDashboard({ listType }: { listType: string }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
@@ -113,7 +140,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     <div className="container mx-auto">
       <div className="flex flex-col items-center justify-center h-full w-full">
         {" "}
-        <h1 className="text-3xl font-semibold text-[#94b347]">Home</h1>
+        <h1 className="text-3xl font-semibold text-[#94b347]">Dashboard</h1>
       </div>
 
       <div className="flex flex-col items-center justify-center h-full w-full">
@@ -160,9 +187,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                         {notebook.title}
                       </h2>
                       <p className="text-muted-foreground mt-2 flex-grow">
-                        {notebook.createdAt instanceof Date
-                          ? notebook.createdAt.toLocaleDateString()
-                          : new Date(notebook.createdAt).toLocaleDateString()}
+                        {formatDate(notebook.createdAt)}
                       </p>
                     </CardContent>
                   </Card>
@@ -206,11 +231,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                   </p>
                                 </div>
                                 <p className="text-muted-foreground text-sm">
-                                  {studyCard.createdAt instanceof Date
-                                    ? studyCard.createdAt.toLocaleDateString()
-                                    : new Date(
-                                        studyCard.createdAt
-                                      ).toLocaleDateString()}
+                                  {formatDate(studyCard.createdAt)}
                                 </p>
                               </CardContent>
                             </Card>
@@ -252,13 +273,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                 </div>
                                 <div className="flex flex-col items-end">
                                   <p className="text-muted-foreground text-sm">
-                                    {(() => {
-                                      const timestamp = studyGuide.createdAt as unknown as FirestoreTimestamp;
-                                      if (timestamp && typeof timestamp.seconds === 'number') {
-                                        return new Date(timestamp.seconds * 1000).toLocaleDateString();
-                                      }
-                                      return new Date().toLocaleDateString();
-                                    })()}
+                                    {formatDate(studyGuide.createdAt)}
                                   </p>
                                 </div>
                               </CardContent>
@@ -283,7 +298,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                       <div className="space-y-4">
                         {quizzes.map((quiz) => (
                           <Link key={quiz.id} href={`/quiz/${quiz.id}`}>
-                            <Card className="transition-transform  shadow-none bg-white border-none">
+                            <Card className="transition-transform shadow-none bg-white border-none">
                               <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
                                 <div className="p-2 rounded-full w-fit bg-[#8547b3]">
                                   <MessageSquare className="h-6 w-6 text-white" />
@@ -305,16 +320,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                       : "Not started"}
                                   </p>
                                   <p className="text-muted-foreground text-sm">
-                                    {quiz.createdAt
-                                      ? typeof quiz.createdAt === "object" &&
-                                        "seconds" in quiz.createdAt
-                                        ? new Date(
-                                            quiz.createdAt.seconds * 1000
-                                          ).toLocaleDateString()
-                                        : new Date(
-                                            quiz.createdAt
-                                          ).toLocaleDateString()
-                                      : new Date().toLocaleDateString()}
+                                    {formatDate(quiz.createdAt)}
                                   </p>
                                 </div>
                               </CardContent>

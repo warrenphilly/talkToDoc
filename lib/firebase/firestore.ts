@@ -1164,18 +1164,69 @@ export async function saveQuiz(
 }
 
 export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizState[]> => {
-  const quizzesRef = collection(db, "quizzes");
-  const q = query(quizzesRef, where("userId", "==", userId));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => doc.data() as QuizState);
+  try {
+    const quizzesRef = collection(db, "quizzes");
+    const q = query(quizzesRef, where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      
+      // Safely handle potentially undefined arrays
+      const userAnswers = Array.isArray(data.userAnswers) ? data.userAnswers : [];
+      const evaluationResults = Array.isArray(data.evaluationResults) ? data.evaluationResults : [];
+      
+      // Create a properly typed QuizState object
+      const quizState: QuizState = {
+        id: doc.id,
+        notebookId: data.notebookId || '',
+        pageId: data.pageId || '',
+        quizData: data.quizData || {},
+        currentQuestionIndex: data.currentQuestionIndex || 0,
+        startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
+        lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        userAnswers: userAnswers.map((answer: any) => ({
+          ...answer,
+          timestamp: answer.timestamp?.toDate?.()?.toISOString() || null,
+        })),
+        evaluationResults: evaluationResults.map((result: any) => ({
+          ...result,
+          timestamp: result.timestamp?.toDate?.()?.toISOString() || null,
+        })),
+        score: data.score || 0,
+        isComplete: data.isComplete || false,
+        incorrectAnswers: data.incorrectAnswers || [],
+        totalQuestions: data.totalQuestions || 0,
+        userId: data.userId || userId,
+      };
+
+      return quizState;
+    });
+  } catch (error) {
+    console.error("Error getting quizzes:", error);
+    throw error;
+  }
 };
 
 export const getStudyGuidesByFirestoreUserId = async (userId: string): Promise<StudyGuide[]> => {
-  console.log("userId", userId);
-  const studyGuidesRef = collection(db, "studyGuides");
-  const q = query(studyGuidesRef, where("userId", "==", userId));
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => doc.data() as StudyGuide);
+  try {
+    const studyGuidesRef = collection(db, "studyGuides");
+    const q = query(studyGuidesRef, where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      } as StudyGuide;
+    });
+  } catch (error) {
+    console.error("Error getting study guides:", error);
+    throw error;
+  }
 };
 
 export const getStudyCardsByClerkId = async (clerkId: string): Promise<StudyCardSet[]> => {
