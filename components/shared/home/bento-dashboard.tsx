@@ -20,6 +20,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { FileText, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AccordionDemo } from "@/components/accordion-demo";
 
 import {
   Accordion,
@@ -47,6 +48,11 @@ interface StudyCardNotebook {
 interface StudyCardPage {
   pageId: string;
   pageTitle: string;
+}
+
+interface FirestoreTimestamp {
+  seconds: number;
+  nanoseconds: number;
 }
 
 export default function BentoDashboard({ listType }: { listType: string }) {
@@ -177,165 +183,149 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Study Cards Section */}
             <section className="border border-slate-300 rounded-lg h-fit">
-              <Accordion type="single" collapsible>
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>
-                    <div className="flex flex-row items-center justify-center w-full">
-                      <h3 className="text-lg font-semibold text-slate-500 text-center">
-                        Study Guides
-                      </h3>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {studyCards.map((studyCard) => (
-                        <Link
-                          key={studyCard.id}
-                          href={`/study-cards/${studyCard.id}`}
-                        >
-                          <Card className="transition-transform  shadow-none bg-white border-none">
-                            <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
-                              <div className="p-2 rounded-full w-fit bg-[#94b347]">
-                                <MessageSquare className="h-6 w-6 text-white" />
-                              </div>
-                              <div className="flex flex-col items-start flex-grow mx-4">
-                                <h2 className="text-md font-semibold text-slate-600">
-                                  {studyCard.title}
-                                </h2>
-                                <p className="text-muted-foreground">
-                                  {studyCard.cards.length} cards
+              <AccordionDemo
+                sections={[
+                  {
+                    id: "study-cards",
+                    title: "Study Cards",
+                    content: (
+                      <div className="space-y-4">
+                        {studyCards.map((studyCard) => (
+                          <Link key={studyCard.id} href={`/study-cards/${studyCard.id}`}>
+                            <Card className="transition-transform shadow-none bg-white border-none">
+                              <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
+                                <div className="p-2 rounded-full w-fit bg-[#94b347]">
+                                  <MessageSquare className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="flex flex-col items-start flex-grow mx-4">
+                                  <h2 className="text-md font-semibold text-slate-600">
+                                    {studyCard.title}
+                                  </h2>
+                                  <p className="text-muted-foreground">
+                                    {studyCard.cards.length} cards
+                                  </p>
+                                </div>
+                                <p className="text-muted-foreground text-sm">
+                                  {studyCard.createdAt instanceof Date
+                                    ? studyCard.createdAt.toLocaleDateString()
+                                    : new Date(
+                                        studyCard.createdAt
+                                      ).toLocaleDateString()}
                                 </p>
-                              </div>
-                              <p className="text-muted-foreground text-sm">
-                                {studyCard.createdAt instanceof Date
-                                  ? studyCard.createdAt.toLocaleDateString()
-                                  : new Date(
-                                      studyCard.createdAt
-                                    ).toLocaleDateString()}
-                              </p>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        ))}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             </section>
 
             {/* Study Guides Section */}
             <section className="border border-slate-300 rounded-lg h-fit">
-              <Accordion type="single" collapsible>
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>
-                    <div className="flex flex-row items-center justify-center w-full">
-                      <h3 className="text-lg font-semibold  text-slate-500 text-center">
-                        Study Guides
-                      </h3>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {studyGuides.map(
-                        (studyGuide) =>
-                          studyGuide && (
-                            <Link
-                              key={studyGuide.id}
-                              href={`/study-guides/${studyGuide.id}`}
-                            >
-                              <Card className="transition-transform  shadow-none bg-white border-none">
-                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
-                                  <div className="p-2 rounded-full w-fit bg-[#b34747]">
-                                    <FileText className="h-6 w-6 text-white" />
-                                  </div>
-                                  <div className="flex flex-col ml-4">
-                                    <h2 className="text-md font-semibold text-slate-600">
-                                      Study Guide: {studyGuide.title}
-                                    </h2>
-                                    <p className="text-muted-foreground">
-                                      From notebook: {studyGuide.title}
-                                    </p>
-                                  </div>
-                                  <div className="flex flex-col items-end">
-                                    <p className="text-muted-foreground text-sm">
-                                      {studyGuide.createdAt instanceof Date
-                                        ? studyGuide.createdAt.toLocaleDateString()
-                                        : studyGuide.createdAt &&
-                                          "seconds" in studyGuide.createdAt
-                                        ? new Date(
-                                            studyGuide.createdAt.seconds * 1000
-                                          ).toLocaleDateString()
-                                        : new Date().toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          )
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <AccordionDemo
+                sections={[
+                  {
+                    id: "study-guides",
+                    title: "Study Guides",
+                    content: (
+                      <div className="space-y-4">
+                        {studyGuides.map((studyGuide) => (
+                          <Link
+                            key={studyGuide.id}
+                            href={`/study-guides/${studyGuide.id}`}
+                          >
+                            <Card className="transition-transform shadow-none bg-white border-none">
+                              <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
+                                <div className="p-2 rounded-full w-fit bg-[#b34747]">
+                                  <FileText className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="flex flex-col ml-4">
+                                  <h2 className="text-md font-semibold text-slate-600">
+                                    Study Guide: {studyGuide.title}
+                                  </h2>
+                                  <p className="text-muted-foreground">
+                                    From notebook: {studyGuide.title}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <p className="text-muted-foreground text-sm">
+                                    {(() => {
+                                      const timestamp = studyGuide.createdAt as unknown as FirestoreTimestamp;
+                                      if (timestamp && typeof timestamp.seconds === 'number') {
+                                        return new Date(timestamp.seconds * 1000).toLocaleDateString();
+                                      }
+                                      return new Date().toLocaleDateString();
+                                    })()}
+                                  </p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        ))}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             </section>
 
             {/* Quizzes Section */}
             <section className="border border-slate-300 rounded-lg h-fit">
-              <Accordion type="single" collapsible>
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>
-                  <div className="flex flex-row items-center justify-center w-full">
-                    <h3 className="text-md font-semibold text-slate-500 text-center">
-                      Study Guides
-                        </h3>
-                        </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {quizzes.map((quiz) => (
-                        <Link key={quiz.id} href={`/quiz/${quiz.id}`}>
-                          <Card className="transition-transform  shadow-none bg-white border-none">
-                            <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
-                              <div className="p-2 rounded-full w-fit bg-[#8547b3]">
-                                <MessageSquare className="h-6 w-6 text-white" />
-                              </div>
-                              <div className="flex flex-col ml-4 flex-grow">
-                                <h2 className="text-lg font-semibold text-slate-600">
-                                  {quiz.quizData.title}
-                                </h2>
-                                <p className="text-muted-foreground">
-                                  {quiz.totalQuestions} questions
-                                </p>
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <p className="text-muted-foreground text-sm">
-                                  {quiz.isComplete
-                                    ? "Completed"
-                                    : quiz.startedAt
-                                    ? "Started"
-                                    : "Not started"}
-                                </p>
-                                <p className="text-muted-foreground text-sm">
-                                  {quiz.createdAt
-                                    ? typeof quiz.createdAt === "object" &&
-                                      "seconds" in quiz.createdAt
-                                      ? new Date(
-                                          quiz.createdAt.seconds * 1000
-                                        ).toLocaleDateString()
-                                      : new Date(
-                                          quiz.createdAt
-                                        ).toLocaleDateString()
-                                    : new Date().toLocaleDateString()}
-                                </p>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <AccordionDemo
+                sections={[
+                  {
+                    id: "quizzes",
+                    title: "Quizzes",
+                    content: (
+                      <div className="space-y-4">
+                        {quizzes.map((quiz) => (
+                          <Link key={quiz.id} href={`/quiz/${quiz.id}`}>
+                            <Card className="transition-transform  shadow-none bg-white border-none">
+                              <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
+                                <div className="p-2 rounded-full w-fit bg-[#8547b3]">
+                                  <MessageSquare className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="flex flex-col ml-4 flex-grow">
+                                  <h2 className="text-lg font-semibold text-slate-600">
+                                    {quiz.quizData.title}
+                                  </h2>
+                                  <p className="text-muted-foreground">
+                                    {quiz.totalQuestions} questions
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <p className="text-muted-foreground text-sm">
+                                    {quiz.isComplete
+                                      ? "Completed"
+                                      : quiz.startedAt
+                                      ? "Started"
+                                      : "Not started"}
+                                  </p>
+                                  <p className="text-muted-foreground text-sm">
+                                    {quiz.createdAt
+                                      ? typeof quiz.createdAt === "object" &&
+                                        "seconds" in quiz.createdAt
+                                        ? new Date(
+                                            quiz.createdAt.seconds * 1000
+                                          ).toLocaleDateString()
+                                        : new Date(
+                                            quiz.createdAt
+                                          ).toLocaleDateString()
+                                      : new Date().toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        ))}
+                      </div>
+                    ),
+                  },
+                ]}
+              />
             </section>
           </div>
         </div>
