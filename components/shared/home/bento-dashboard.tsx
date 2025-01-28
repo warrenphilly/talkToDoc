@@ -181,7 +181,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 <AccordionItem value="item-1">
                   <AccordionTrigger>
                     <div className="flex flex-row items-center justify-center w-full">
-                      <h3 className="text-md font-semibold mb-4 text-slate-500 text-center">
+                      <h3 className="text-lg font-semibold text-slate-500 text-center">
                         Study Guides
                       </h3>
                     </div>
@@ -229,7 +229,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 <AccordionItem value="item-1">
                   <AccordionTrigger>
                     <div className="flex flex-row items-center justify-center w-full">
-                      <h3 className="text-md font-semibold mb-4 text-slate-500 text-center">
+                      <h3 className="text-lg font-semibold  text-slate-500 text-center">
                         Study Guides
                       </h3>
                     </div>
@@ -285,7 +285,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 <AccordionItem value="item-1">
                   <AccordionTrigger>
                   <div className="flex flex-row items-center justify-center w-full">
-                    <h3 className="text-md font-semibold mb-4 text-slate-500 text-center">
+                    <h3 className="text-md font-semibold text-slate-500 text-center">
                       Study Guides
                         </h3>
                         </div>
@@ -300,7 +300,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                 <MessageSquare className="h-6 w-6 text-white" />
                               </div>
                               <div className="flex flex-col ml-4 flex-grow">
-                                <h2 className="text-md font-semibold text-slate-600">
+                                <h2 className="text-lg font-semibold text-slate-600">
                                   {quiz.quizData.title}
                                 </h2>
                                 <p className="text-muted-foreground">
