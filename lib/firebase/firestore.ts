@@ -1172,10 +1172,6 @@ export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizS
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       
-      // Safely handle potentially undefined arrays
-      const userAnswers = Array.isArray(data.userAnswers) ? data.userAnswers : [];
-      const evaluationResults = Array.isArray(data.evaluationResults) ? data.evaluationResults : [];
-      
       // Create a properly typed QuizState object
       const quizState: QuizState = {
         id: doc.id,
@@ -1186,14 +1182,8 @@ export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizS
         startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
         lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        userAnswers: userAnswers.map((answer: any) => ({
-          ...answer,
-          timestamp: answer.timestamp?.toDate?.()?.toISOString() || null,
-        })),
-        evaluationResults: evaluationResults.map((result: any) => ({
-          ...result,
-          timestamp: result.timestamp?.toDate?.()?.toISOString() || null,
-        })),
+        userAnswers: data.userAnswers || [],
+        evaluationResults: data.evaluationResults || [],
         score: data.score || 0,
         isComplete: data.isComplete || false,
         incorrectAnswers: data.incorrectAnswers || [],
