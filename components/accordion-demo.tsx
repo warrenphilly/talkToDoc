@@ -27,9 +27,10 @@ export function AccordionDemo({ sections }: AccordionDemoProps) {
     <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full">
       {sections.map((section) => (
         <AccordionItem key={section.id} value={section.id}>
-          <AccordionTrigger>
-            <div className="flex flex-row items-center justify-center w-full">
+          <AccordionTrigger >
+            <div className="flex flex-col items-center justify-center w-full">
               <h2 className="text-lg font-semibold">{section.title}</h2>
+            
               
             </div>
           </AccordionTrigger>

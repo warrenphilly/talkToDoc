@@ -1,8 +1,9 @@
 import { SidebarNav } from "@/components/shared/global/SidebarNav";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,24 +27,30 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-    
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning={true}
-      >
-        <div className="flex flex-row h-screen w-full">
-          <div className="flex flex-col h-screen ">
-          
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning={true}
+        >
           <SignedIn>
+            <SidebarProvider defaultOpen={true}>
+              <div className="flex h-screen w-full">
+              <SidebarTrigger className="absolute top-4 left-4 z-50" />
                 <SidebarNav />
-              
+                <main className="flex-1 relative">
+                  
+                  {children}
+                </main>
+              </div>
+            </SidebarProvider>
           </SignedIn>
-          </div>
-          {children}
-        </div>
-      </body>
-    </html>
+          <SignedOut>
+            <main className="flex-1">
+              {children}
+            </main>
+          </SignedOut>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
