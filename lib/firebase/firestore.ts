@@ -1268,3 +1268,7 @@ export const getStudyCardsByClerkId = async (clerkId: string): Promise<StudyCard
 
   return studyCards;
 };
+
+export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
+  await deleteDoc(doc(db, "studyGuides", studyGuideId));
+};
