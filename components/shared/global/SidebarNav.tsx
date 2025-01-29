@@ -135,10 +135,10 @@ export function SidebarNav() {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarContent className="bg-slate-100 text-slate-400 py-4 pl-2 w-full ">
-          <SidebarGroup className=" bg-slate-100 h-full rounded-2xl flex flex-col justify-between w-full ">
-            <SidebarGroupContent className="flex  flex-col justify-between h-full w-full">
-              <SidebarMenu className="h-full bg-white rounded-2xl   flex flex-col gap-0 w-full  ">
+        <SidebarContent className="bg-white text-slate-400 py-4 pl-2 w-full ">
+          <SidebarGroup className=" bg-white h-full rounded-2xl flex flex-col  justify-between w-full ">
+            <SidebarGroupContent className="flex  flex-col justify-center h-full w-full items-center">
+              <SidebarMenu className="h-full  max-h-[calc(100vh-140px)] bg-white border border-slate-300 rounded-2xl   flex flex-col gap-0 w-full  ">
                 {isLoading ? (
                   <Skeleton className="h-24 my-5 w-full rounded-2xl" />
                 ) : (
@@ -214,7 +214,7 @@ export function SidebarNav() {
                       } `}
                     >
                       <CollapsibleTrigger
-                        className={`flex items-center gap-2 border-t border-slate-300 py-2  w-full bg-none px-4 ${
+                        className={`flex items-center gap-2 border-y border-b-slate-200 py-2  w-full bg-none px-4 ${
                           pathname.includes("/notes/")
                             ? " text-slate-400  bg-[#f2f6e8] hover:bg-slate-50"
                             : "hover:bg-slate-300 "
@@ -230,7 +230,7 @@ export function SidebarNav() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className={`${
                         pathname.includes("/notes/")
-                          ? "bg-slate-50 text-slate-400 rounded-lg"
+                          ? "bg-slate-50 text-slate-400"
                           : " "
                       }`}>
                         {isLoading ? (
@@ -246,9 +246,9 @@ export function SidebarNav() {
                           notebooks.map((notebook, index) => (
                             <SidebarMenuItem
                               key={notebook.id}
-                              className={`w-full border-t pl-2  rounded-none border-slate-200${
+                              className={`w-full border-b  rounded-none border-slate-200${
                                 pathname.includes("/notes/")
-                                  ? "bg-slate-100 text-slate-400 rounded-lg"
+                                  ? "bg-slate-100 text-slate-400 "
                                   : " "
                               } `}
                             >
@@ -262,11 +262,7 @@ export function SidebarNav() {
                                     pathname === `/notes/${notebook.id}`
                                       ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                       : "hover:bg-slate-300"
-                                  } ${
-                                    pathname.includes("/notes/")
-                                      ? "bg-slate-50"
-                                      : "bg-white"
-                                  }`}
+                                  } `}
                                 >
                                   <FileText className={`text-[#94b347] ${pathname === `/notes/${notebook.id}` ? "text-white" : ""}`} />
                                   <span>{notebook.title}</span>

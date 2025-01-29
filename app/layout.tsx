@@ -36,7 +36,8 @@ export default function RootLayout({
           <div className="flex flex-col h-screen ">
           
           <SignedIn>
-          <SidebarNav />
+                <SidebarNav />
+              
           </SignedIn>
           </div>
           {children}

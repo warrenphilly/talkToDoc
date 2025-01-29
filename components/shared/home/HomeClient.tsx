@@ -50,8 +50,8 @@ const HomeClient = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-100 w-full overflow-hidden">
-      <div className="flex flex-col h-full bg-slate-100 w-full p-2 md:p-4">
+    <div className="flex flex-col md:flex-row h-screen bg-white w-full overflow-hidden">
+      <div className="flex flex-col h-full bg-white w-full p-2 md:p-4">
         
 
         <div className="flex flex-col md:flex-row justify-start h-full pb-12">
