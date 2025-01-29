@@ -74,6 +74,8 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
                 id: doc.id,
                 startedAt: getTimestamp(data.startedAt),
                 lastUpdatedAt: getTimestamp(data.lastUpdatedAt),
+                createdAt: getTimestamp(data.createdAt || data.startedAt),
+                userId: data.userId || "",
                 notebookId: data.notebookId || "",
                 pageId: data.pageId || "",
                 quizData: data.quizData || [],

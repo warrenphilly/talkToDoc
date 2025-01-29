@@ -313,7 +313,7 @@ export function SidebarNav() {
                       >
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
-                            href={`/study-cards/${set.id}`}
+                            href={`study-cards/${set.id}`}
                             className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 py-2`}
                           >
                             <ScrollText className="text-[#94b347]" />
@@ -411,7 +411,7 @@ export function SidebarNav() {
                             className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 py-2`}
                           >
                             <FileText className="text-[#94b347]" />
-                            <span>{`Quiz ${quiz.score}%`}</span>
+                            <span>{`${quiz.quizData.title}`}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
