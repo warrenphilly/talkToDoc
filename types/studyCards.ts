@@ -20,10 +20,16 @@ export interface StudySetMetadata {
 export interface StudyCardSet {
   id: string;
   title: string;
-  cards: StudyCard[];
-  metadata: StudySetMetadata;
-  pageId: string;
+  createdAt: string;
+  updatedAt: string;
   notebookId: string;
-  createdAt: Date;
+  pageId: string;
   userId: string;
+  cards: StudyCard[];
+  metadata: {
+    name: string;
+    cardCount: number;
+    sourceNotebooks: string[];
+    createdAt: string;
+  };
 }

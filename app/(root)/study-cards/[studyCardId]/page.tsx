@@ -1,72 +1,252 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getStudyCardSet } from "@/lib/firebase/firestore";
+import { useEffect, useState, useRef, MutableRefObject, RefObject } from "react";
+import { useParams } from "next/navigation";
+import { getStudyCardSet, getAllNotebooks } from "@/lib/firebase/firestore";
 import { StudyCardSet } from "@/types/studyCards";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import FormUpload from "@/components/shared/study/formUpload";
+import { Message } from "@/lib/types";
+import { Notebook } from "@/types/notebooks";
+import { StudyCardCarousel } from "@/components/shared/study/StudyCardCarousel";
+import { StudyCardList } from "@/components/shared/study/StudyCardList";
+
+// Add CreateCardModal component
+interface CreateCardModalProps {
+  showNotebookModal: boolean;
+  setShowNotebookModal: (show: boolean) => void;
+  setName: string;
+  setSetName: (name: string) => void;
+  numCards: number;
+  setNumCards: (num: number) => void;
+  messages: Message[];
+  files: File[];
+  showUpload: boolean;
+  fileInputRef: RefObject<HTMLInputElement>;
+  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>, setFiles: (files: File[]) => void) => void;
+  handleSendMessage: () => void;
+  handleClear: () => void;
+  setShowUpload: (show: boolean) => void;
+  setFiles: (files: File[]) => void;
+  renderNotebookList: () => React.ReactNode;
+  handleGenerateCards: () => Promise<void>;
+  isGenerating: boolean;
+  selectedPages: { [notebookId: string]: string[] };
+  filesToUpload: File[];
+}
+
+function CreateCardModal({
+  showNotebookModal,
+  setShowNotebookModal,
+  setName,
+  setSetName,
+  numCards,
+  setNumCards,
+  messages,
+  files,
+  showUpload,
+  fileInputRef,
+  handleFileUpload,
+  handleSendMessage,
+  handleClear,
+  setShowUpload,
+  setFiles,
+  renderNotebookList,
+  handleGenerateCards,
+  isGenerating,
+  selectedPages,
+  filesToUpload,
+}: CreateCardModalProps) {
+  return (
+    <>
+      {showNotebookModal && (
+        <div className="fixed inset-0 bg-white flex items-center justify-center z-10 w-full">
+          <div className="bg-white p-6 rounded-lg h-full w-full overflow-y-auto max-w-xl">
+            <div className="flex flex-col gap-2 items-center justify-center">
+              <h2 className="text-xl font-bold mb-4 text-[#94b347]">
+                Create Study Cards
+              </h2>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Set Name
+                </label>
+                <Input
+                  type="text"
+                  value={setName}
+                  onChange={(e) => setSetName(e.target.value)}
+                  placeholder="Enter a name for this study set"
+                  className="w-full border rounded-md p-2 border-slate-600 text-slate-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Cards
+                </label>
+                <select
+                  value={numCards}
+                  onChange={(e) => setNumCards(Number(e.target.value))}
+                  className="w-full border rounded-md p-2 border-slate-600 text-slate-600"
+                >
+                  {[3, 5, 10, 15, 20, 25, 30].map((num) => (
+                    <option key={num} value={num}>
+                      {num} cards
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-6">
+                <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg">
+                  <h3>Select notes or upload files to study</h3>
+                </div>
+                <FormUpload
+                  messages={messages}
+                  files={files}
+                  showUpload={showUpload}
+                  fileInputRef={fileInputRef}
+                  handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                  handleSendMessage={handleSendMessage}
+                  handleClear={handleClear}
+                  setShowUpload={setShowUpload}
+                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Notes
+                </label>
+                {renderNotebookList()}
+              </div>
+            </div>
+
+            <div className="flex justify-center gap-2 mt-4 w-full">
+              <Button
+                variant="outline"
+                className="rounded-full bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500"
+                onClick={() => {
+                  setShowNotebookModal(false);
+                  setSetName("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleGenerateCards}
+                className="rounded-full bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+                disabled={
+                  isGenerating ||
+                  !setName.trim() ||
+                  (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)
+                }
+              >
+                {isGenerating ? "Generating..." : "Generate Cards"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function StudyCardPage() {
   const params = useParams();
-  const router = useRouter();
   const studyCardId = params?.studyCardId as string;
   const [studySet, setStudySet] = useState<StudyCardSet | null>(null);
-  const [showAnswer, setShowAnswer] = useState<{ [key: number]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  
+  // Add states for CreateCardModal
+  const [showNotebookModal, setShowNotebookModal] = useState(false);
+  const [setName, setSetName] = useState("");
+  const [numCards, setNumCards] = useState(5);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<{ [notebookId: string]: string[] }>({});
+  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
 
   useEffect(() => {
-    const loadStudySet = async () => {
-      try {
-        if (!studyCardId) {
-          setError("No study card ID provided");
-          return;
-        }
-
-        console.log("Fetching study card set with ID:", studyCardId);
-        const set = await getStudyCardSet(studyCardId);
-        
-        if (!set) {
-          setError("Study set not found");
-          return;
-        }
-
-        console.log("Retrieved study set:", set);
-        setStudySet(set);
-      } catch (error) {
-        console.error("Error loading study set:", error);
-        setError("Error loading study set");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadStudySet();
   }, [studyCardId]);
 
-  const toggleAnswer = (index: number) => {
-    setShowAnswer(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
+  const loadStudySet = async () => {
+    try {
+      if (!studyCardId) {
+        setError("No study card ID provided");
+        return;
+      }
 
-  const nextCard = () => {
-    if (studySet && currentCardIndex < studySet.cards.length - 1) {
-      setCurrentCardIndex(prev => prev + 1);
-      setShowAnswer({});  // Reset answer visibility when changing cards
+      console.log("Fetching study card set with ID:", studyCardId);
+      const set = await getStudyCardSet(studyCardId);
+      
+      if (!set) {
+        setError("Study set not found");
+        return;
+      }
+
+      console.log("Retrieved study set:", set);
+      setStudySet(set);
+    } catch (error) {
+      console.error("Error loading study set:", error);
+      setError("Error loading study set");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const previousCard = () => {
-    if (currentCardIndex > 0) {
-      setCurrentCardIndex(prev => prev - 1);
-      setShowAnswer({});  // Reset answer visibility when changing cards
-    }
+  // Add handlers for CreateCardModal
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => {
+    const files = Array.from(event.target.files || []);
+    setFiles(files);
+    setFilesToUpload(files);
+  };
+
+  const handleSendMessage = () => {
+    console.log("Sending message");
+  };
+
+  const handleClear = () => {
+    setMessages([]);
+    setFiles([]);
+  };
+
+  const handleGenerateCards = async () => {
+    setIsGenerating(true);
+    // Implement your card generation logic here
+    setIsGenerating(false);
+  };
+
+  const toggleNotebookExpansion = (notebookId: string) => {
+    setExpandedNotebooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(notebookId)) {
+        next.delete(notebookId);
+      } else {
+        next.add(notebookId);
+      }
+      return next;
+    });
+  };
+
+  const renderNotebookList = () => {
+    // Implement your notebook list rendering logic here
+    return <div>Notebook List</div>;
+  };
+
+  const handleStudySetUpdate = (updatedStudySet: StudyCardSet) => {
+    setStudySet(updatedStudySet);
   };
 
   if (isLoading) {
@@ -93,101 +273,41 @@ export default function StudyCardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 h-full">
-      <Card className="max-w-4xl mx-auto shadow-none border-none h-fit bg-white mb-8">
-        <CardHeader className="flex flex-row items-center justify-between h-fit">
-          <div>
-            <CardTitle className="text-4xl font-bold text-[#94b347] ">
-               Study Card Set: <span className="text-slate-500">{studySet.title}</span>
-            </CardTitle>
-            <p className="text-sm text-slate-500 mt-2">
-              Created: {new Date(studySet.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-       
-        </CardHeader>
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={() => setShowNotebookModal(true)}
+          className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Study Cards
+        </Button>
+      </div>
 
-        <CardContent className="space-y-4 h-full">
-          <div className="flex items-center justify-between mb-4">
-            <Button 
-              onClick={previousCard} 
-              disabled={currentCardIndex === 0}
-              variant="outline"
-            >
-              Previous
-            </Button>
-            <span className="text-slate-500">
-              Card {currentCardIndex + 1} of {studySet.cards.length}
-            </span>
-            <Button 
-              onClick={nextCard} 
-              disabled={currentCardIndex === studySet.cards.length - 1}
-              variant="outline"
-            >
-              Next
-            </Button>
-          </div>
-
-          <div
-            onClick={() => toggleAnswer(currentCardIndex)}
-            className="bg-white border border-slate-400 p-4 flex flex-col justify-center items-center py-8 rounded cursor-pointer hover:bg-slate-100 transition-colors"
-          >
-            <h3 className="font-bold text-[#94b347] text-2xl">
-              {studySet.cards[currentCardIndex].title}
-            </h3>
-            <div
-              className={`mt-2 text-xl text-slate-600 ${
-                showAnswer[currentCardIndex] ? "block" : "hidden"
-              }`}
-            >
-              <p>{studySet.cards[currentCardIndex].content}</p>
-            </div>
-            {!showAnswer[currentCardIndex] && (
-              <p className="text-sm text-slate-500 mt-2 text-xl">
-                Click to reveal answer
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="max-w-4xl mx-auto shadow-none border-none h-fit bg-white">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-slate-600">
-            All Study Cards
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {studySet?.cards.map((card, index) => (
-              <div
-                key={index}
-                onClick={() => {
-                  setCurrentCardIndex(index);
-                  setShowAnswer({});
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="bg-white border border-slate-200 p-4 rounded cursor-pointer hover:bg-slate-50 transition-colors"
-              >
-                <h3 className="font-semibold text-[#94b347]">
-                  {index + 1}. {card.title}
-                </h3>
-                <div className={`mt-2 text-slate-600 ${showAnswer[index] ? 'block' : 'hidden'}`}>
-                  <p>{card.content}</p>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleAnswer(index);
-                  }}
-                  className="text-sm text-slate-500 mt-2 hover:text-[#94b347]"
-                >
-                  {showAnswer[index] ? 'Hide Answer' : 'Show Answer'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <CreateCardModal
+        showNotebookModal={showNotebookModal}
+        setShowNotebookModal={setShowNotebookModal}
+        setName={setName}
+        setSetName={setSetName}
+        numCards={numCards}
+        setNumCards={setNumCards}
+        messages={messages}
+        files={files}
+        showUpload={showUpload}
+        fileInputRef={fileInputRef}
+        handleFileUpload={handleFileUpload}
+        handleSendMessage={handleSendMessage}
+        handleClear={handleClear}
+        setShowUpload={setShowUpload}
+        setFiles={setFiles}
+        renderNotebookList={renderNotebookList}
+        handleGenerateCards={handleGenerateCards}
+        isGenerating={isGenerating}
+        selectedPages={selectedPages}
+        filesToUpload={filesToUpload}
+      />
+      
+      <StudyCardCarousel studySet={studySet} />
+      <StudyCardList studySet={studySet} onUpdate={handleStudySetUpdate} />
     </div>
   );
 }

@@ -49,3 +49,12 @@ export interface SideChat {
   createdAt: number;
   updatedAt: number;
 }
+
+export interface Notebook {
+  id: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  pages: Page[];
+}
