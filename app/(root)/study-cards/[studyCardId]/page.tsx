@@ -2,10 +2,10 @@
 
 import { useEffect, useState, useRef, MutableRefObject, RefObject } from "react";
 import { useParams } from "next/navigation";
-import { getStudyCardSet, getAllNotebooks } from "@/lib/firebase/firestore";
+import { getStudyCardSet, getAllNotebooks, getUserByClerkId, getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
 import { StudyCardSet } from "@/types/studyCards";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, ChevronDown, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import FormUpload from "@/components/shared/study/formUpload";
@@ -13,6 +13,9 @@ import { Message } from "@/lib/types";
 import { Notebook } from "@/types/notebooks";
 import { StudyCardCarousel } from "@/components/shared/study/StudyCardCarousel";
 import { StudyCardList } from "@/components/shared/study/StudyCardList";
+import { getCurrentUserId } from "@/lib/auth";
+import { useAuth } from "@clerk/nextjs";
+import { User } from "@/types/users";
 
 // Add CreateCardModal component
 interface CreateCardModalProps {
@@ -63,8 +66,8 @@ function CreateCardModal({
   return (
     <>
       {showNotebookModal && (
-        <div className="fixed inset-0 bg-white flex items-center justify-center z-10 w-full">
-          <div className="bg-white p-6 rounded-lg h-full w-full overflow-y-auto max-w-xl">
+        <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
+          <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
                 Create Study Cards
@@ -170,13 +173,41 @@ export default function StudyCardPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedPages, setSelectedPages] = useState<{ [notebookId: string]: string[] }>({});
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
+  const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
-
+  const { userId } = useAuth();
+  const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
   useEffect(() => {
     loadStudySet();
   }, [studyCardId]);
+
+  useEffect(() => {
+    const loadFirestoreUser = async () => {
+      console.log("Loading user...");
+      if (!userId) return null;
+      
+      const user = await getUserByClerkId(userId);
+      console.log("User loaded:", user?.id);
+      setFirestoreUser(user);
+      console.log("User loaded:", user?.id);
+      if (user?.id) {
+        const userNotebooks = await getNotebooksByFirestoreUserId(
+          user?.id
+        );
+        setNotebooks(userNotebooks);
+        console.log("Notebooks loaded:", userNotebooks);
+      }
+    };
+
+    
+    loadFirestoreUser();
+   
+   
+    console.log("Notebooks loaded:", notebooks);
+    
+  }, [userId]);
 
   const loadStudySet = async () => {
     try {
@@ -240,9 +271,170 @@ export default function StudyCardPage() {
     });
   };
 
+  const handleNotebookSelection = (
+    notebookId: string,
+    pages: any[],
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({
+      ...prev,
+      [notebookId]: isSelected ? pages.map((p) => p.id) : [],
+    }));
+  };
+
+  const handlePageSelection = (
+    notebookId: string,
+    pageId: string,
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({ ...prev, [notebookId]: isSelected ? [pageId] : [] }));
+  };
+
+  const isNotebookFullySelected = (notebookId: string, pages: any[]) => {
+    return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
+  };
+
+  const isPageFullySelected = (notebookId: string, pageId: string) => {
+    return selectedPages[notebookId]?.includes(pageId);
+  };
+  
+
+
+  const loadAllNotebooks = async () => {
+    if (!firestoreUser) return;
+    
+    try {
+      setIsLoadingNotebooks(true);
+      console.log("Loading notebooks for user:", firestoreUser.id);
+      const userNotebooks = await getNotebooksByFirestoreUserId(
+        firestoreUser.id
+      );
+      console.log("Fetched notebooks:", userNotebooks);
+      
+      setNotebooks(userNotebooks);
+    } catch (error) {
+      console.error("Failed to load notebooks:", error);
+    } finally {
+      setIsLoadingNotebooks(false);
+    }
+  };
+
+
+
+
+  useEffect(() => {
+    if (showNotebookModal && userId) {
+      loadAllNotebooks();
+    }
+  }, [showNotebookModal, userId]);
+
+  // Add debug rendering for notebooks
   const renderNotebookList = () => {
-    // Implement your notebook list rendering logic here
-    return <div>Notebook List</div>;
+    if (isLoadingNotebooks) {
+      return (
+        <div className="flex w-full items-center justify-center p-4">
+          <RefreshCw className="h-6 w-6 animate-spin" />
+        </div>
+      );
+    }
+
+    if (notebooks.length === 0) {
+      return (
+        <div className="text-center p-4 text-gray-500">
+          No notebooks found. Please create a notebook first.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 p-2 ">
+        {notebooks.map((notebook) => (
+          <div
+            key={notebook.id}
+            className="border rounded-xl  p-1  bg-white border-slate-400"
+          >
+            <div className="flex items-center justify-between p-3 bg-white text-slate-600">
+              <div className="flex items-center gap-2 ">
+                <button
+                  onClick={() => toggleNotebookExpansion(notebook.id)}
+                  className="p-1 hover:bg-slate-200 rounded"
+                >
+                  {expandedNotebooks.has(notebook.id) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="font-medium">{notebook.title}</span>
+              </div>
+              <button
+                onClick={() =>
+                  handleNotebookSelection(
+                    notebook.id,
+                    notebook.pages,
+                    !isNotebookFullySelected(notebook.id, notebook.pages)
+                  )
+                }
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-white hover:bg-slate-100"
+                }`}
+              >
+                {isNotebookFullySelected(notebook.id, notebook.pages) ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "Added"
+                    : "Add All"}
+                </span>
+              </button>
+            </div>
+
+            {expandedNotebooks.has(notebook.id) && notebook.pages && (
+              <div className="pl-8 pr-3 py-2 space-y-1 border-t text-slate-600">
+                {notebook.pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span className="text-sm">{page.title}</span>
+                    <button
+                      onClick={() =>
+                        handlePageSelection(
+                          notebook.id,
+                          page.id,
+                          !selectedPages[notebook.id]?.includes(page.id)
+                        )
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
+                        selectedPages[notebook.id]?.includes(page.id)
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-white hover:bg-slate-200"
+                      }`}
+                    >
+                      {selectedPages[notebook.id]?.includes(page.id) ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      <span>
+                        {selectedPages[notebook.id]?.includes(page.id)
+                          ? "Added"
+                          : "Add"}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const handleStudySetUpdate = (updatedStudySet: StudyCardSet) => {
@@ -259,7 +451,7 @@ export default function StudyCardPage() {
 
   if (error || !studySet) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <div className="flex flex-col items-center justify-center  min-h-screen gap-4">
         <p className="text-slate-600">{error || "Study set not found"}</p>
         <Link href="/notes">
           <Button variant="outline">
@@ -272,7 +464,7 @@ export default function StudyCardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 h-full">
+    <div className="container mx-auto px-4 py-8 h-full ">
       <div className="flex justify-end mb-4">
         <Button
           onClick={() => setShowNotebookModal(true)}

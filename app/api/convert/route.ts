@@ -14,6 +14,7 @@ import { adminStorage } from "@/lib/firebase/firebaseAdmin";
 // You should store this in your environment variables
 const API_KEY = process.env.PDF_CO_API_KEY as string;
 
+
 interface TextRun {
   t: [string];
 }

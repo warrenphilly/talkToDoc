@@ -298,25 +298,37 @@ export const createNewNotebook = async (title: string): Promise<string> => {
 export const getAllNotebooks = async (): Promise<Notebook[]> => {
   try {
     const userId = await getCurrentUserId();
+    console.log("[getAllNotebooks] Fetching for userId:", userId);
 
     const notesCollection = collection(db, "notebooks");
-    const querySnapshot = await getDocs(notesCollection);
+    const q = query(
+      notesCollection,
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+    
+    console.log("[getAllNotebooks] Executing query...");
+    const querySnapshot = await getDocs(q);
+    console.log("[getAllNotebooks] Total documents found:", querySnapshot.size);
+    
+    // Log the raw data of each document
+    querySnapshot.forEach(doc => {
+      console.log("[getAllNotebooks] Document data:", {
+        id: doc.id,
+        userId: doc.data().userId,
+        data: doc.data()
+      });
+    });
+
     const notebooks = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Notebook[];
 
-    // Filter notebooks by userId
-    const userNotebooks = notebooks.filter(
-      (notebook) => notebook.userId === userId
-    );
-
-    return userNotebooks.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    console.log("[getAllNotebooks] Processed notebooks:", notebooks);
+    return notebooks;
   } catch (error) {
-    console.error("Error getting notebooks:", error);
+    console.error("[getAllNotebooks] Error:", error);
     throw error;
   }
 };
@@ -1086,7 +1098,41 @@ export const getStudyCardSet = async (
     const setSnap = await getDoc(setRef);
 
     if (!setSnap.exists()) return null;
-    return setSnap.data() as StudyCardSet;
+    
+    const data = setSnap.data();
+    
+    // Helper function to safely convert timestamps to ISO strings
+    const convertTimestamp = (timestamp: any): string => {
+      if (!timestamp) return new Date().toISOString();
+      if (timestamp.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      if (timestamp.seconds) {
+        return new Date(timestamp.seconds * 1000).toISOString();
+      }
+      return new Date(timestamp).toISOString();
+    };
+
+    // Create a serialized version of the study card set
+    const serializedSet = {
+      id: setSnap.id,
+      title: data.title,
+      cards: data.cards,
+      metadata: {
+        ...data.metadata,
+        createdAt: convertTimestamp(data.metadata?.createdAt),
+        sourceNotebooks: data.metadata?.sourceNotebooks || [],
+        cardCount: data.metadata?.cardCount || 0,
+      },
+      pageId: data.pageId,
+      notebookId: data.notebookId,
+      createdAt: convertTimestamp(data.createdAt),
+      updatedAt: convertTimestamp(data.updatedAt || data.createdAt),
+      userId: data.userId,
+    };
+
+    // Parse and stringify to ensure complete serialization of any nested timestamps
+    return JSON.parse(JSON.stringify(serializedSet));
   } catch (error) {
     console.error("Error getting study card set:", error);
     throw error;
