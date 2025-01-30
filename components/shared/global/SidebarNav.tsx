@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/collapsible";
 import { SignOutButton, UserButton, useUser } from "@clerk/nextjs";
 
-import { StudyGuide } from "@/components/shared/study/StudyGuide";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -95,6 +94,13 @@ const items = [
   //   icon: File,
   // },
 ];
+
+// Add this type definition
+type StudyGuide = {
+  id: string;
+  title: string;
+  // Add other properties that your StudyGuide type needs
+};
 
 export function SidebarNav() {
   const { user: clerkUser } = useUser();

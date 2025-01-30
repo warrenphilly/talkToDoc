@@ -1044,7 +1044,6 @@ export const getStudyCardSets = async (
     const user = await currentUser();
     if (!user) throw new Error("User not authenticated");
 
-    // Simplified query that doesn't require a composite index
     const q = query(
       collection(db, "studyCardSets"),
       where("pageId", "==", pageId),
@@ -1063,11 +1062,12 @@ export const getStudyCardSets = async (
         })),
         metadata: {
           ...data.metadata,
-          createdAt: convertTimestampToDate(data.metadata.createdAt),
+          createdAt: convertTimestampToDate(data.metadata.createdAt).toISOString(),
         },
         pageId: data.pageId,
         notebookId: data.notebookId,
-        createdAt: convertTimestampToDate(data.createdAt),
+        createdAt: convertTimestampToDate(data.createdAt).toISOString(),
+        updatedAt: convertTimestampToDate(data.updatedAt || data.createdAt).toISOString(),
         userId: data.userId,
       };
     });
@@ -1163,25 +1163,28 @@ export async function saveQuiz(
   });
 }
 
-export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizState[]> => {
+export const getQuizzesByFirestoreUserId = async (
+  userId: string
+): Promise<QuizState[]> => {
   try {
     const quizzesRef = collection(db, "quizzes");
     const q = query(quizzesRef, where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      
+
       // Create a properly typed QuizState object
       const quizState: QuizState = {
         id: doc.id,
-        notebookId: data.notebookId || '',
-        pageId: data.pageId || '',
+        notebookId: data.notebookId || "",
+        pageId: data.pageId || "",
         quizData: data.quizData || {},
         currentQuestionIndex: data.currentQuestionIndex || 0,
         startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
         lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt:
+          data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
         userAnswers: data.userAnswers || [],
         evaluationResults: data.evaluationResults || [],
         score: data.score || 0,
@@ -1199,18 +1202,21 @@ export const getQuizzesByFirestoreUserId = async (userId: string): Promise<QuizS
   }
 };
 
-export const getStudyGuidesByFirestoreUserId = async (userId: string): Promise<StudyGuide[]> => {
+export const getStudyGuidesByFirestoreUserId = async (
+  userId: string
+): Promise<StudyGuide[]> => {
   try {
     const studyGuidesRef = collection(db, "studyGuides");
     const q = query(studyGuidesRef, where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
-    
+
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         ...data,
         id: doc.id,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        createdAt:
+          data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       } as StudyGuide;
     });
   } catch (error) {
@@ -1219,14 +1225,16 @@ export const getStudyGuidesByFirestoreUserId = async (userId: string): Promise<S
   }
 };
 
-export const getStudyCardsByClerkId = async (clerkId: string): Promise<StudyCardSet[]> => {
+export const getStudyCardsByClerkId = async (
+  clerkId: string
+): Promise<StudyCardSet[]> => {
   const studyCardsRef = collection(db, "studyCardSets");
   const q = query(studyCardsRef, where("userId", "==", clerkId));
   const querySnapshot = await getDocs(q);
 
   const studyCards = querySnapshot.docs.map((doc) => {
     const data = doc.data();
-    
+
     // Helper function to safely convert Firestore timestamps
     const convertTimestamp = (timestamp: any) => {
       if (!timestamp) return null;
@@ -1244,12 +1252,12 @@ export const getStudyCardsByClerkId = async (clerkId: string): Promise<StudyCard
         name: data.metadata.name,
         createdAt: convertTimestamp(data.metadata.createdAt),
         sourceNotebooks: data.metadata.sourceNotebooks,
-        cardCount: data.metadata.cardCount
+        cardCount: data.metadata.cardCount,
       },
       pageId: data.pageId,
       notebookId: data.notebookId,
       createdAt: convertTimestamp(data.createdAt),
-      userId: data.userId
+      userId: data.userId,
     } as StudyCardSet;
 
     // Parse and stringify to ensure complete serialization
