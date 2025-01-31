@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import Quiz from "@/components/ui/Quiz";
+import PageQuiz from "@/components/ui/PageQuiz";
 import { getQuiz } from "@/lib/firebase/firestore";
 
 import { QuizState } from "@/types/quiz";
@@ -41,22 +41,26 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="mb-6">
+    <div className="max-w-4xl mx-auto p-4 mt-16">
+      <div className="mb-6 flex flex-row justify-between">
         <Link href="/">
           <Button variant="ghost" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
-        </Link>
+           </Link>
+           <h1 className="text-2xl font-bold">Quiz</h1>
+           <Button variant="ghost" className="gap-2">
+              Create Quiz
+           </Button>
       </div>
-      <Quiz
+      <PageQuiz
         data={quiz.quizData}
         notebookId={quiz.notebookId}
         pageId={quiz.pageId}
         initialState={quiz}
       />
-        this is where we build
+    
     </div>
   );
 } 
