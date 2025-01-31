@@ -306,17 +306,17 @@ export const getAllNotebooks = async (): Promise<Notebook[]> => {
       where("userId", "==", userId),
       orderBy("createdAt", "desc")
     );
-    
+
     console.log("[getAllNotebooks] Executing query...");
     const querySnapshot = await getDocs(q);
     console.log("[getAllNotebooks] Total documents found:", querySnapshot.size);
-    
+
     // Log the raw data of each document
-    querySnapshot.forEach(doc => {
+    querySnapshot.forEach((doc) => {
       console.log("[getAllNotebooks] Document data:", {
         id: doc.id,
         userId: doc.data().userId,
-        data: doc.data()
+        data: doc.data(),
       });
     });
 
@@ -1074,12 +1074,16 @@ export const getStudyCardSets = async (
         })),
         metadata: {
           ...data.metadata,
-          createdAt: convertTimestampToDate(data.metadata.createdAt).toISOString(),
+          createdAt: convertTimestampToDate(
+            data.metadata.createdAt
+          ).toISOString(),
         },
         pageId: data.pageId,
         notebookId: data.notebookId,
         createdAt: convertTimestampToDate(data.createdAt).toISOString(),
-        updatedAt: convertTimestampToDate(data.updatedAt || data.createdAt).toISOString(),
+        updatedAt: convertTimestampToDate(
+          data.updatedAt || data.createdAt
+        ).toISOString(),
         userId: data.userId,
       };
     });
@@ -1098,9 +1102,9 @@ export const getStudyCardSet = async (
     const setSnap = await getDoc(setRef);
 
     if (!setSnap.exists()) return null;
-    
+
     const data = setSnap.data();
-    
+
     // Helper function to safely convert timestamps to ISO strings
     const convertTimestamp = (timestamp: any): string => {
       if (!timestamp) return new Date().toISOString();
@@ -1321,5 +1325,15 @@ export const getQuiz = async (quizId: string): Promise<QuizState> => {
   if (!quizDoc.exists()) {
     throw new Error("Quiz not found");
   }
-  return quizDoc.data() as QuizState;
+
+  const data = quizDoc.data();
+
+  // Serialize timestamps to ISO strings
+  return {
+    ...data,
+    startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
+    lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
+    createdAt:
+      data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+  } as QuizState;
 };
