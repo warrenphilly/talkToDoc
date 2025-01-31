@@ -63,9 +63,7 @@ const PageQuiz: React.FC<QuizProps> = ({
     initialState?.id ||
       `quiz_${pageId}_${new Date().toISOString().split("T")[0]}`
   );
-  const [userId] = useState<string>(
-    initialState?.userId || ""
-  );
+  const [userId] = useState<string>(initialState?.userId || "");
   const [isLoading, setIsLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [aiVoice, setAiVoice] = useState(false);
@@ -90,7 +88,6 @@ const PageQuiz: React.FC<QuizProps> = ({
     console.log("Incorrect answers:", incorrectAnswers);
     console.log("GPT feedback:", gptFeedback);
     console.log("Score:", score);
-    ;
     setSelectedAnswer(answer);
     const currentQuestion = data.questions[currentQuestionIndex];
 
@@ -138,8 +135,11 @@ const PageQuiz: React.FC<QuizProps> = ({
       console.log("Current question:", currentQuestion);
       console.log("Answer:", answer);
       console.log("Correct answer:", currentQuestion.correctAnswer);
-      
-      if (currentQuestion.type === "multipleChoice" && currentQuestion.options) {
+
+      if (
+        currentQuestion.type === "multipleChoice" &&
+        currentQuestion.options
+      ) {
         // Get the index of the selected answer in the options array
         const answerIndex = currentQuestion.options.indexOf(answer);
         // Convert index to letter (0 = 'A', 1 = 'B', etc.)
@@ -147,7 +147,8 @@ const PageQuiz: React.FC<QuizProps> = ({
         isCorrect = answerLetter === currentQuestion.correctAnswer;
       } else {
         // For true/false questions, compare directly
-        isCorrect = answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
+        isCorrect =
+          answer.toLowerCase() === currentQuestion.correctAnswer.toLowerCase();
       }
 
       setIsCorrect(isCorrect);
@@ -402,262 +403,273 @@ const PageQuiz: React.FC<QuizProps> = ({
   };
 
   return (
-    <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-500" />
-          <span className="font-medium text-slate-500">
-            Score: {score}/{data.questions.length} |{" "}
-            {Math.round((score / data.questions.length) * 100)}%
-          </span>
-        </div>
-
-        <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
-          <Button
-            onClick={() => setShowSummary(!showSummary)}
-            variant="outline"
-            className="w-fit bg-slate-50 hover:bg-slate-200"
-          >
-            <BookOpen className="w-5 h-5 mr-2" />
-            <span>{showSummary ? "Hide" : "Show"} Question Summary</span>
-            {showSummary ? (
-              <ChevronUp className="w-5 h-5 ml-2" />
-            ) : (
-              <ChevronDown className="w-5 h-5 ml-2" />
-            )}
-          </Button>
-        </div>
-      </div>
-      <div className="w-full  flex justify-end"></div>
-      {showResults && (
-        <>
-          <div className="mt-6 text-center p-6 rounded-lg">
-            <h3 className="text-2xl font-bold text-slate-500 mb-2">
-              Quiz Completed!
-            </h3>
-          
+    <div className="flex flex-col items-center justify-start w-full">
+      <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            <span className="font-medium text-slate-500">
+              Score: {score}/{data.questions.length} |{" "}
+              {Math.round((score / data.questions.length) * 100)}%
+            </span>
           </div>
-          <QuizSummary
-            quiz={{
-              id: quizId,
-              userId: userId,
-              notebookId,
-              pageId,
-              startedAt: new Timestamp(new Date().getTime() / 1000, 0),
-              lastUpdatedAt: new Timestamp(new Date().getTime() / 1000, 0),
-              currentQuestionIndex,
-              score,
-              totalQuestions: data.questions.length,
-              userAnswers,
-              evaluationResults,
-              incorrectAnswers,
-              isComplete: true,
-              gptFeedback,
-              quizData: data,
-              createdAt: new Timestamp(new Date().getTime() / 1000, 0),
-            }}
-            onClose={() => setShowResults(false)}
-          />
-        </>
-      )}
 
-      {showSummary && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold text-gray-800 mb-4">Question Summary</h3>
-          <div className="space-y-2">
-            {questionsWithIds.map((question) => (
-              <div key={`question-${question.id}`}>
-                <QuestionSummary
-                  question={question}
-                  userAnswer={userAnswers[question.id]}
-                />
-              </div>
-            ))}
-          </div>
+     
         </div>
-      )}
-      {!showResults && (
-        <div className="flex flex-col items-center justify-center ">
-          <div className="mb-6 w-full">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm font-medium text-gray-500  ">
-                Question {currentQuestionIndex + 1} of {data.questions.length}
-              </span>
-              <div className="h-2 flex-1 mx-4 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#94b347] transition-all duration-300"
-                  style={{
-                    width: `${
-                      ((currentQuestionIndex + 1) / data.questions.length) * 100
-                    }%`,
-                  }}
-                />
-              </div>
+        <div className="w-full  flex justify-end"></div>
+        {showResults && (
+          <>
+            <div className="mt-6 text-center p-6 rounded-lg">
+              <h3 className="text-2xl font-bold text-slate-500 mb-2">
+                Quiz Completed!
+              </h3>
             </div>
-            <div className="w-full flex flex-col items-center justify-center bg-red-">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
-                {questionsWithIds[currentQuestionIndex].question}
-              </h2>
-            </div>
+            <QuizSummary
+              quiz={{
+                id: quizId,
+                userId: userId,
+                notebookId,
+                pageId,
+                startedAt: new Timestamp(new Date().getTime() / 1000, 0),
+                lastUpdatedAt: new Timestamp(new Date().getTime() / 1000, 0),
+                currentQuestionIndex,
+                score,
+                totalQuestions: data.questions.length,
+                userAnswers,
+                evaluationResults,
+                incorrectAnswers,
+                isComplete: true,
+                gptFeedback,
+                quizData: data,
+                createdAt: new Timestamp(new Date().getTime() / 1000, 0),
+              }}
+              onClose={() => setShowResults(false)}
+            />
+          </>
+        )}
 
-            <div className=" w-full flex flex-row  gap-6 items-center justify-center">
-              {currentQuestion.type === "trueFalse" ? (
-                ["True", "False"].map((answer) => (
-                  <Button
-                    key={answer}
-                    onClick={() => !selectedAnswer && handleAnswer(answer)}
-                    disabled={!!selectedAnswer}
-                    variant="outline"
-                    className={`w-fit justify-between ${
-                      selectedAnswer === answer
-                        ? isCorrect
-                          ? "border-green-600 bg-green-50 text-green-600"
-                          : "border-red-500 bg-red-50 text-red-500"
-                        : " border border-slate-400 text-slate-400 bg-white"
-                    }`}
-                  >
-                    <span className="font-medium">{answer}</span>
-                    {selectedAnswer === answer &&
-                      (isCorrect ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
-                      ))}
-                  </Button>
-                ))
-              ) : currentQuestion.type === "multipleChoice" ? (
-                <div className="flex flex-col items-center w-fit p-4">
-                  {(currentQuestion.options || []).map((option) => (
+        {!showResults && (
+          <div className="flex flex-col items-center justify-center ">
+            <div className="mb-6 w-full">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-sm font-medium text-gray-500  ">
+                  Question {currentQuestionIndex + 1} of {data.questions.length}
+                </span>
+                <div className="h-2 flex-1 mx-4 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[#94b347] transition-all duration-300"
+                    style={{
+                      width: `${
+                        ((currentQuestionIndex + 1) / data.questions.length) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="w-full flex flex-col items-center justify-center bg-red-">
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">
+                  {questionsWithIds[currentQuestionIndex].question}
+                </h2>
+              </div>
+
+              <div className=" w-full flex flex-row  gap-6 items-center justify-center">
+                {currentQuestion.type === "trueFalse" ? (
+                  ["True", "False"].map((answer) => (
                     <Button
-                      key={option}
-                      onClick={() => !selectedAnswer && handleAnswer(option)}
+                      key={answer}
+                      onClick={() => !selectedAnswer && handleAnswer(answer)}
                       disabled={!!selectedAnswer}
                       variant="outline"
-                      className={`w-fit min-w-[400px]  max-w-[600px] p-4 hover:bg-slate-300 justify-between my-1 ${
-                        selectedAnswer === option
+                      className={`w-fit justify-between ${
+                        selectedAnswer === answer
                           ? isCorrect
-                            ? "border-green-500 bg-green-50 text-green-500"
+                            ? "border-green-600 bg-green-50 text-green-600"
                             : "border-red-500 bg-red-50 text-red-500"
                           : " border border-slate-400 text-slate-400 bg-white"
                       }`}
                     >
-                      <span className="font-medium">{option}</span>
-                      {selectedAnswer === option &&
+                      <span className="font-medium">{answer}</span>
+                      {selectedAnswer === answer &&
                         (isCorrect ? (
                           <CheckCircle className="w-5 h-5 text-green-500" />
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-500 " />
+                          <XCircle className="w-5 h-5 text-red-500" />
                         ))}
                     </Button>
-                  ))}
-                </div>
-              ) : currentQuestion.type === "shortAnswer" ? (
-                <div className="space-y-4 w-full max-w-md">
-                  <Input
-                    type="text"
-                    placeholder="Type your answer here..."
-                    value={
-                      userAnswers[currentQuestionIndex] || selectedAnswer || ""
-                    }
-                    onChange={(e) => setSelectedAnswer(e.target.value)}
-                    disabled={
-                      isLoading ||
-                      userAnswers[currentQuestionIndex] !== undefined
-                    }
-                    className={`w-full p-2 text-slate-500 ${
-                      userAnswers[currentQuestionIndex] !== undefined
-                        ? "bg-gray-100 cursor-not-allowed"
-                        : ""
-                    }`}
-                  />
-                  {selectedAnswer &&
-                    !isLoading &&
-                    !userAnswers[currentQuestionIndex] && (
+                  ))
+                ) : currentQuestion.type === "multipleChoice" ? (
+                  <div className="flex flex-col items-center w-fit p-4">
+                    {(currentQuestion.options || []).map((option) => (
                       <Button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleAnswer(selectedAnswer);
-                        }}
-                        disabled={
-                          isLoading ||
-                          selectedAnswer === "" ||
-                          showExplanation ||
-                          userAnswers[currentQuestionIndex] !== undefined
-                        }
-                        className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
+                        key={option}
+                        onClick={() => !selectedAnswer && handleAnswer(option)}
+                        disabled={!!selectedAnswer}
+                        variant="outline"
+                        className={`w-fit min-w-[400px]  max-w-[600px] p-4 hover:bg-slate-300 justify-between my-1 ${
+                          selectedAnswer === option
+                            ? isCorrect
+                              ? "border-green-500 bg-green-50 text-green-500"
+                              : "border-red-500 bg-red-50 text-red-500"
+                            : " border border-slate-400 text-slate-400 bg-white"
+                        }`}
                       >
-                        Submit Answer
-                      </Button>
-                    )}
-                  {isLoading && (
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
-                      <span className="ml-2 text-slate-600">
-                        Evaluating your answer...
-                      </span>
-                    </div>
-                  )}
-                  {currentQuestion.type === "shortAnswer" &&
-                    gptFeedback &&
-                    currentQuestion.correctAnswer !== null &&
-                    selectedAnswer &&
-                    showExplanation && (
-                      <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {isCorrect ? (
+                        <span className="font-medium">{option}</span>
+                        {selectedAnswer === option &&
+                          (isCorrect ? (
                             <CheckCircle className="w-5 h-5 text-green-500" />
                           ) : (
-                            <XCircle className="w-5 h-5 text-red-500" />
-                          )}
-                          <span
-                            className={`font-medium ${
-                              isCorrect ? "text-green-700" : "text-red-700"
-                            }`}
-                          >
-                            {isCorrect ? "Correct!" : "Needs Improvement"}
-                          </span>
-                        </div>
-                        <p className="text-slate-700 whitespace-pre-line">
-                          {gptFeedback}
-                        </p>
+                            <XCircle className="w-5 h-5 text-red-500 " />
+                          ))}
+                      </Button>
+                    ))}
+                  </div>
+                ) : currentQuestion.type === "shortAnswer" ? (
+                  <div className="space-y-4 w-full max-w-md">
+                    <Input
+                      type="text"
+                      placeholder="Type your answer here..."
+                      value={
+                        userAnswers[currentQuestionIndex] ||
+                        selectedAnswer ||
+                        ""
+                      }
+                      onChange={(e) => setSelectedAnswer(e.target.value)}
+                      disabled={
+                        isLoading ||
+                        userAnswers[currentQuestionIndex] !== undefined
+                      }
+                      className={`w-full p-2 text-slate-500 ${
+                        userAnswers[currentQuestionIndex] !== undefined
+                          ? "bg-gray-100 cursor-not-allowed"
+                          : ""
+                      }`}
+                    />
+                    {selectedAnswer &&
+                      !isLoading &&
+                      !userAnswers[currentQuestionIndex] && (
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleAnswer(selectedAnswer);
+                          }}
+                          disabled={
+                            isLoading ||
+                            selectedAnswer === "" ||
+                            showExplanation ||
+                            userAnswers[currentQuestionIndex] !== undefined
+                          }
+                          className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
+                        >
+                          Submit Answer
+                        </Button>
+                      )}
+                    {isLoading && (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
+                        <span className="ml-2 text-slate-600">
+                          Evaluating your answer...
+                        </span>
                       </div>
                     )}
-                </div>
-              ) : null}
+                    {currentQuestion.type === "shortAnswer" &&
+                      gptFeedback &&
+                      currentQuestion.correctAnswer !== null &&
+                      selectedAnswer &&
+                      showExplanation && (
+                        <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            {isCorrect ? (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <XCircle className="w-5 h-5 text-red-500" />
+                            )}
+                            <span
+                              className={`font-medium ${
+                                isCorrect ? "text-green-700" : "text-red-700"
+                              }`}
+                            >
+                              {isCorrect ? "Correct!" : "Needs Improvement"}
+                            </span>
+                          </div>
+                          <p className="text-slate-700 whitespace-pre-line">
+                            {gptFeedback}
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          {showExplanation && currentQuestion.type !== "shortAnswer" && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-semibold text-gray-700 mb-2">Explanation:</h3>
-              <p className="text-gray-600">{currentQuestion.explanation}</p>
-            </div>
-          )}
+            {showExplanation && currentQuestion.type !== "shortAnswer" && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-gray-700 mb-2">
+                  Explanation:
+                </h3>
+                <p className="text-gray-600">{currentQuestion.explanation}</p>
+              </div>
+            )}
 
-          {selectedAnswer && !isLastQuestion ? (
-            <div className="w-full flex flex-row items-center justify-center ">
-              <Button
-                onClick={nextQuestion}
-                className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
-              >
-                <span className="text-slate-100">Next Question</span>
-                <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
-              </Button>
-            </div>
-          ) : (
-            isLastQuestion && (
-              <div className="w-full flex flex-row items-center justify-end">
+            {selectedAnswer && !isLastQuestion ? (
+              <div className="w-full flex flex-row items-center justify-center ">
                 <Button
-                  onClick={handleViewResults}
+                  onClick={nextQuestion}
                   className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
                 >
-                  <span className="text-slate-100">View Results</span>
+                  <span className="text-slate-100">Next Question</span>
                   <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
                 </Button>
               </div>
-            )
+            ) : (
+              isLastQuestion && (
+                <div className="w-full flex flex-row items-center justify-end">
+                  <Button
+                    onClick={handleViewResults}
+                    className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
+                  >
+                    <span className="text-slate-100">View Results</span>
+                    <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
+                  </Button>
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </div>
+      {!showResults && (
+        <>
+              <div className="w-full flex flex-row items-center justify-between gap-2 text-gray-500 my-2 p-4">
+              <h3 className="font-semibold text-gray-800 mb-4">Question Summary</h3>
+            <Button
+              onClick={() => setShowSummary(!showSummary)}
+              variant="outline"
+              className="w-fit bg-slate-50 hover:bg-slate-200"
+            >
+              <BookOpen className="w-5 h-5 mr-2" />
+              <span>{showSummary ? "Hide" : "Show"} Question Summary</span>
+              {showSummary ? (
+                <ChevronUp className="w-5 h-5 ml-2" />
+              ) : (
+                <ChevronDown className="w-5 h-5 ml-2" />
+              )}
+            </Button>
+          </div>
+          {showSummary && (
+            <div className="mb-6 p-4 bg-white rounded-lg w-full">
+              <div className="space-y-2">
+                {questionsWithIds.map((question) => (
+                  <div key={`question-${question.id}`}>
+                    <QuestionSummary
+                      question={question}
+                      userAnswer={userAnswers[question.id]}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

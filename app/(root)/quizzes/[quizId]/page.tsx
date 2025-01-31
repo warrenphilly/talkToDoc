@@ -41,19 +41,22 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 mt-1">
-      <div className="mb-6 flex flex-row justify-between">
+    <div className="mx-auto p-16 flex flex-col items-center justify-start  h-full" >
+      <div className="mb-6 flex flex-row justify-between w-full">
         <Link href="/">
           <Button variant="ghost" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
            </Link>
-           <h1 className="text-2xl font-bold">Quiz</h1>
-           <Button variant="ghost" className="gap-2">
-              Create Quiz
+           <h1 className="text-2xl font-bold ">Quiz:<span className="text-[#999]">{quiz.quizData.title}</span></h1>
+           <Button variant="ghost" className="gap-2 rounded-full border border-slate-400">
+              Create New Quiz
            </Button>
-      </div>
+        </div>
+        <div className="flex flex-col items-center justify-start w-full">
+           
+        </div>
       <PageQuiz
         data={quiz.quizData}
         notebookId={quiz.notebookId}
