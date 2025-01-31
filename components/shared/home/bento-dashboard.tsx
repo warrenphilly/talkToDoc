@@ -9,6 +9,7 @@ import {
   deleteNotebook,
   deleteQuiz,
   deleteStudyCardSet,
+  deleteStudyGuide,
   getNotebooksByFirestoreUserId,
   getQuizzesByFirestoreUserId,
   getStudyCardsByClerkId,
@@ -16,7 +17,6 @@ import {
   getUserByClerkId,
   Notebook,
   Page,
-  deleteStudyGuide,
 } from "@/lib/firebase/firestore";
 import type { Message } from "@/lib/types";
 import type { QuizState } from "@/types/quiz";
@@ -24,6 +24,7 @@ import { StudyCardSet } from "@/types/studyCards";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Timestamp } from "firebase/firestore";
 import {
+  ChevronRight,
   FileText,
   MessageCircleQuestion,
   MessageSquare,
@@ -68,11 +69,11 @@ interface SerializedTimestamp {
   nanoseconds: number;
 }
 
-// Updated helper function to accept Date objects
+// Helper function to safely format dates
 const formatDate = (
-  timestamp: Timestamp | SerializedTimestamp | string | Date | null | undefined
+  timestamp: Timestamp | Date | string | null | undefined
 ) => {
-  if (!timestamp) return new Date().toLocaleDateString();
+  if (!timestamp) return "";
 
   if (timestamp instanceof Date) {
     return timestamp.toLocaleDateString();
@@ -82,13 +83,9 @@ const formatDate = (
     return new Date(timestamp).toLocaleDateString();
   }
 
+  // Handle Firestore Timestamp
   if ("toDate" in timestamp) {
     return timestamp.toDate().toLocaleDateString();
-  }
-
-  // Handle SerializedTimestamp
-  if ("seconds" in timestamp) {
-    return new Date(timestamp.seconds * 1000).toLocaleDateString();
   }
 
   return new Date().toLocaleDateString();
@@ -194,12 +191,17 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       }
     }
   };
-  const handleDeleteStudyGuide = async (e: React.MouseEvent, studyGuideId: string) => {
+  const handleDeleteStudyGuide = async (
+    e: React.MouseEvent,
+    studyGuideId: string
+  ) => {
     e.preventDefault(); // Prevent navigation
     if (window.confirm("Are you sure you want to delete this study guide?")) {
       try {
         await deleteStudyGuide(studyGuideId);
-        setStudyGuides(studyGuides.filter((studyGuide) => studyGuide.id !== studyGuideId));
+        setStudyGuides(
+          studyGuides.filter((studyGuide) => studyGuide.id !== studyGuideId)
+        );
       } catch (error) {
         console.error("Error deleting study guide:", error);
       }
@@ -300,7 +302,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                             href={`/study-cards/${studyCard.id}`}
                           >
                             <Card className="transition-transform shadow-none bg-white border-none relative">
-                             
                               <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
                                 <div className="p-2 rounded-full w-fit bg-white">
                                   <PanelBottom className="h-6 w-6 text-[#94b347]" />
@@ -317,12 +318,14 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                   {formatDate(studyCard.createdAt)}
                                 </p>
                                 <div className="mx-2">
-                                <button
-                                onClick={(e) => handleDeleteQuiz(e, studyCard.id)}
-                                className=" p-2 hover:bg-red-100 rounded-full transition-colors"
-                              >
-                                <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                              </button>
+                                  <button
+                                    onClick={(e) =>
+                                      handleDeleteQuiz(e, studyCard.id)
+                                    }
+                                    className=" p-2 hover:bg-red-100 rounded-full transition-colors"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                                  </button>
                                 </div>
                               </CardContent>
                             </Card>
@@ -344,32 +347,25 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                     title: "Study Guides",
                     content: (
                       <div className="space-y-4">
-                        {studyGuides.map((studyGuide) => (
+                        {studyGuides.map((guide) => (
                           <Link
-                            key={studyGuide.id}
-                            href={`/study-guides/${studyGuide.id}`}
+                            key={guide.id}
+                            href={`/study-guides/${guide.id}`}
+                            className="transition-transform hover:scale-[1.02]"
                           >
-                            <Card className="transition-transform shadow-none bg-white border-none">
+                            <Card className="shadow-none bg-white border-none relative">
                               <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
-                                <div className="p-2 rounded-full w-fit bg-white">
-                                  <ScrollText className="h-6 w-6 text-[#94b347]" />
+                                <div className="flex flex-col gap-2">
+                                  <h3 className="font-medium text-slate-700">
+                                    {guide.title}
+                                  </h3>
+                                  <div className="flex gap-4 text-sm text-slate-500">
+                                    <p>
+                                      Created: {formatDate(guide.createdAt)}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="flex flex-col items-start flex-grow mx-4">
-                                  <h2 className="text-md font-semibold text-slate-600 line-clamp-1">
-                                    {studyGuide.title}
-                                  </h2>
-                                </div>
-                                <p className="text-muted-foreground text-sm">
-                                  {formatDate(studyGuide.createdAt)}
-                                </p>
-                                <div className="mx-2">
-                                <button
-                                onClick={(e) => handleDeleteStudyGuide(e, studyGuide.id)}
-                                className=" p-2 hover:bg-red-100 rounded-full transition-colors"
-                              >
-                                <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                              </button>
-                                </div>
+                                <ChevronRight className="h-5 w-5 text-slate-400" />
                               </CardContent>
                             </Card>
                           </Link>
@@ -389,43 +385,30 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                     id: "quizzes",
                     title: "Quizzes",
                     content: (
-                      <div className="">
+                      <div className="space-y-4">
                         {quizzes.map((quiz) => (
-                          <Link key={quiz.id} href={`/quiz/${quiz.id}`}>
-                            <Card className="transition-transform shadow-none bg-white border-none relative">
-                             
-                              <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-100 border-slate-300">
-                                <div className="p-2 rounded-full w-fit bg-white">
-                                  <MessageCircleQuestion className="h-6 w-6 text-[#94b347]" />
+                          <Link
+                            key={quiz.id}
+                            href={`/quizzes/${quiz.id}`}
+                            className="transition-transform hover:scale-[1.02]"
+                          >
+                            <Card className="shadow-none bg-white border-none relative">
+                              <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+                                <div className="flex flex-col gap-2">
+                                  <h3 className="font-medium text-slate-700">
+                                    {quiz.quizData?.title || "Untitled Quiz"}
+                                  </h3>
+                                  <div className="flex gap-4 text-sm text-slate-500">
+                                    <p>Questions: {quiz.totalQuestions}</p>
+                                    {quiz.isComplete && (
+                                      <p>
+                                        Score: {quiz.score}/
+                                        {quiz.totalQuestions}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex flex-col ml-4 flex-grow">
-                                  <h2 className="text-md font-semibold text-slate-600 line-clamp-1">
-                                    {quiz.quizData.title}
-                                  </h2>
-                                  <p className="text-muted-foreground">
-                                    {quiz.totalQuestions} questions
-                                  </p>
-                                </div>
-                                <div className="flex flex-col items-end">
-                                  <p className="text-muted-foreground text-sm">
-                                    {quiz.isComplete
-                                      ? "Completed"
-                                      : quiz.startedAt
-                                      ? "Started"
-                                      : "Not started"}
-                                  </p>
-                                  <p className="text-muted-foreground text-sm">
-                                    {formatDate(quiz.createdAt)}
-                                  </p>
-                                </div>
-                                <div className="mx-2">
-                                <button
-                                onClick={(e) => handleDeleteQuiz(e, quiz.id)}
-                                className=" p-2 hover:bg-red-100 rounded-full transition-colors"
-                              >
-                                <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                              </button>
-                                </div>
+                                <ChevronRight className="h-5 w-5 text-slate-400" />
                               </CardContent>
                             </Card>
                           </Link>

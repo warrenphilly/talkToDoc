@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StudyCardSet } from "@/types/studyCards";
 import { useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 interface StudyCardCarouselProps {
   studySet: StudyCardSet;
@@ -39,7 +40,7 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
           <CardTitle className="text-4xl my-4 font-bold text-[#94b347]">
             Study Deck: <span className="text-slate-500">{studySet.title}</span>
           </CardTitle>
-          <div className="flex w-full  flex-col items-start justify-between gap-5 w-full">
+          <div className="flex w-full  flex-col items-start justify-between gap-5 ">
             <p className="text-md text-slate-500 mt-2">
               Created: {new Date(studySet.createdAt).toLocaleDateString()}
             </p>
@@ -56,8 +57,9 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
             onClick={previousCard} 
             disabled={currentCardIndex === 0}
             variant="outline"
+            className="bg-white border border-[#94b347] rounded-full w-10 h-10 cursor-pointer hover:bg-slate-100 transition-colors"
           >
-            Previous
+           <ChevronLeftIcon className="w-4 h-4 text-[#94b347]" />
           </Button>
           <span className="text-slate-500">
             Card {currentCardIndex + 1} of {studySet.cards.length}
@@ -66,14 +68,15 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
             onClick={nextCard} 
             disabled={currentCardIndex === studySet.cards.length - 1}
             variant="outline"
+            className="bg-white border border-[#94b347] rounded-full w-10 h-10 cursor-pointer hover:bg-slate-100 transition-colors"
           >
-            Next
+            <ChevronRightIcon className="w-4 h-4 text-[#94b347]" /> 
           </Button>
         </div>
 
         <div
           onClick={() => toggleAnswer(currentCardIndex)}
-          className="bg-white border border-[#94b347] p-4 flex flex-col justify-center items-center py-32 rounded-xl rounded cursor-pointer hover:bg-slate-100 transition-colors"
+          className="bg-white border border-[#94b347] p-4 flex flex-col justify-center items-center py-32 rounded-xl  cursor-pointer  transition-colors"
         >
           <h3 className="font-bold text-[#94b347] text-2xl">
             {studySet.cards[currentCardIndex].title}
@@ -89,11 +92,11 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
             <p>{studySet.cards[currentCardIndex].content}</p>
           </div>
           {!showAnswer[currentCardIndex] ? (
-            <p className="text-sm text-slate-500 mt-2 text-xl">
+            <p className=" text-slate-500 mt-2 text-xl">
               Click to reveal answer
             </p>
           ) : (
-            <p className="text-sm text-slate-500 mt-2 text-xl">
+            <p className=" text-slate-500 mt-2 text-xl">
               Click to hide answer
             </p>
           )}

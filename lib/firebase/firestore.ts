@@ -1316,3 +1316,10 @@ export const getStudyCardsByClerkId = async (
 export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
   await deleteDoc(doc(db, "studyGuides", studyGuideId));
 };
+export const getQuiz = async (quizId: string): Promise<QuizState> => {
+  const quizDoc = await getDoc(doc(db, "quizzes", quizId));
+  if (!quizDoc.exists()) {
+    throw new Error("Quiz not found");
+  }
+  return quizDoc.data() as QuizState;
+};
