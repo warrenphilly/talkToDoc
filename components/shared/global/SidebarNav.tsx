@@ -105,9 +105,9 @@ type StudyGuide = {
 export function SidebarNav() {
   const { user: clerkUser } = useUser();
   const [notebooksOpen, setNotebooksOpen] = useState(true);
-  const [studyCardsOpen, setStudyCardsOpen] = useState(false);
-  const [studyGuidesOpen, setStudyGuidesOpen] = useState(false);
-  const [quizzesOpen, setQuizzesOpen] = useState(false);
+  const [studyCardsOpen, setStudyCardsOpen] = useState(true);
+  const [studyGuidesOpen, setStudyGuidesOpen] = useState(true);
+  const [quizzesOpen, setQuizzesOpen] = useState(true);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [studyCards, setStudyCards] = useState<StudyCardSet[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
@@ -128,13 +128,17 @@ export function SidebarNav() {
         if (!firestoreUser) return;
 
         // Fetch all data types
-        const userNotebooks = await getNotebooksByFirestoreUserId(firestoreUser.id);
+        const userNotebooks = await getNotebooksByFirestoreUserId(
+          firestoreUser.id
+        );
         console.log("Notebooks:", userNotebooks);
 
         const userStudyCards = await getStudyCardsByClerkId(clerkUser.id);
         console.log("Study Cards:", userStudyCards);
 
-        const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUser.id);
+        const userStudyGuides = await getStudyGuidesByFirestoreUserId(
+          clerkUser.id
+        );
         console.log("Study Guides:", userStudyGuides);
 
         const userQuizzes = await getQuizzesByFirestoreUserId(clerkUser.id);
@@ -320,9 +324,24 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`study-cards/${set.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 py-2`}
+                            className={`flex items-center gap-2 pl-10 justify-start ${
+                              pathname === `/study-cards/${set.id}`
+                                ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
+                                : "hover:bg-slate-300"
+                            } ${
+                              pathname.includes("/study-cards") &&
+                              pathname !== `/study-cards/${set.id}`
+                                ? "bg-slate-50 hover:bg-[#8da34f]"
+                                : "hover:bg-slate-100"
+                            } py-2`}
                           >
-                            <ScrollText className="text-[#94b347]" />
+                            <ScrollText
+                              className={`text-[#94b347] ${
+                                pathname === `/study-cards/${set.id}`
+                                  ? "text-white"
+                                  : ""
+                              }`}
+                            />
                             <span>{set.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -367,9 +386,24 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`/study-guides/${guide.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 py-2`}
+                            className={`flex items-center gap-2 pl-10 justify-start ${
+                              pathname === `/study-guides/${guide.id}`
+                                ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
+                                : "hover:bg-slate-300"
+                            } ${
+                              pathname.includes("/study-guides") &&
+                              pathname !== `/study-guides/${guide.id}`
+                                ? "bg-slate-50 hover:bg-[#8da34f]"
+                                : "hover:bg-slate-100"
+                            } py-2`}
                           >
-                            <FileText className="text-[#94b347]" />
+                            <FileText
+                              className={`text-[#94b347] ${
+                                pathname === `/study-guides/${guide.id}`
+                                  ? "text-white"
+                                  : ""
+                              }`}
+                            />
                             <span>{guide.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -414,9 +448,24 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`/quizzes/${quiz.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start hover:bg-slate-300 py-2`}
+                            className={`flex items-center gap-2 pl-10 justify-start ${
+                              pathname === `/quizzes/${quiz.id}`
+                                ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
+                                : "hover:bg-slate-300"
+                            } ${
+                              pathname.includes("/quizzes") &&
+                              pathname !== `/quizzes/${quiz.id}`
+                                ? "bg-slate-50 hover:bg-[#8da34f]"
+                                : "hover:bg-slate-100"
+                            } py-2`}
                           >
-                            <FileText className="text-[#94b347]" />
+                            <FileText
+                              className={`text-[#94b347] ${
+                                pathname === `/quizzes/${quiz.id}`
+                                  ? "text-white"
+                                  : ""
+                              }`}
+                            />
                             <span>{`${quiz.quizData.title}`}</span>
                           </Link>
                         </SidebarMenuButton>
