@@ -262,14 +262,14 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className={`rounded-none`}>
                           <Link
                             href={`/notes/${notebook.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start ${
+                            className={`flex items-center gap-2 bg-slate-50 pl-10 justify-start ${
                               pathname === `/notes/${notebook.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                 : "hover:bg-slate-300"
                             }  ${
                               pathname.includes("/notes") &&
                               pathname !== `/notes/${notebook.id}`
-                                ? "bg-slate-50  hover:bg-[#8da34f]"
+                                ? "  hover:bg-[#8da34f]"
                                 : "hover:bg-slate-100"
                             } `}
                           >
@@ -324,7 +324,7 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`study-cards/${set.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start ${
+                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
                               pathname === `/study-cards/${set.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                 : "hover:bg-slate-300"
@@ -386,7 +386,7 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`/study-guides/${guide.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start ${
+                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
                               pathname === `/study-guides/${guide.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                 : "hover:bg-slate-300"
@@ -448,7 +448,7 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`/quizzes/${quiz.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start ${
+                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
                               pathname === `/quizzes/${quiz.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                 : "hover:bg-slate-300"
