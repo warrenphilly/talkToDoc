@@ -1,8 +1,6 @@
 "use client";
 
-import { StudyGuideCard } from "@/components/shared/study/StudyGuideCard";
 import { Button } from "@/components/ui/button";
-
 import { db } from "@/firebase";
 import { StudyGuide } from "@/types/studyGuide";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
@@ -10,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { StudyGuidePage as StudyGuidePageComponent } from "@/components/shared/study/StudyGuidePage";
 import { useEffect, useState } from "react";
 
 export default function StudyGuidePage() {
@@ -96,16 +95,9 @@ export default function StudyGuidePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="mb-6">
-        <Link href="/">
-          <Button variant="ghost" className="gap-2">
-            <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
-      <StudyGuideCard
+    <div className="w-full mx-auto p-4">
+      
+      <StudyGuidePageComponent
         guide={studyGuide}
         onDelete={handleDelete}
         onUpdateTitle={handleUpdateTitle}

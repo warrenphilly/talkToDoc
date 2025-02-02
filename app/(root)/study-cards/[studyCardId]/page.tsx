@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { getStudyCardSet, getAllNotebooks, getUserByClerkId, getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
 import { StudyCardSet } from "@/types/studyCards";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, ChevronRight, ChevronDown, Plus, RefreshCw } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, ChevronDown, Plus, RefreshCw, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import FormUpload from "@/components/shared/study/formUpload";
@@ -464,11 +464,20 @@ export default function StudyCardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 h-full ">
-      <div className="flex justify-end mb-4">
+    <div className="container mx-auto px-4 py-8  h-full ">
+      <div className="flex justify-between my-8">
+        <Link href="/">
+          <Button variant="ghost" className="gap-2 text-slate-600 flex items-center justify-center w-fit  rounded-full hover:bg-slate-100">
+            <ChevronLeft className="h-4 w-4" />
+
+            Back to Dashboard
+          </Button>
+        </Link>
         <Button
           onClick={() => setShowNotebookModal(true)}
-          className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+
+
+          className="bg-white border border-slate-400 text-slate-600  hover:bg-white hover:border-[#94b347] rounded-full hover:text-[#94b347]"
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Study Cards

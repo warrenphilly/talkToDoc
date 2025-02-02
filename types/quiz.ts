@@ -46,6 +46,7 @@ export interface QuizData {
 export interface SerializedTimestamp {
   seconds: number;
   nanoseconds: number;
+  toLocaleDateString: () => string;
 }
 
 export interface QuizState {
