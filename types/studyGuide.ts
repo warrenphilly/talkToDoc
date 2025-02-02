@@ -18,6 +18,6 @@ export interface StudyGuide {
   content: StudyGuideSection[];
   notebookId: string;
   pageId: string;
-  createdAt: string;
+  createdAt: Date;
   userId: string;
 }

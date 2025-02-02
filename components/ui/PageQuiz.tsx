@@ -65,7 +65,7 @@ const PageQuiz: React.FC<QuizProps> = ({
   );
   const [userId] = useState<string>(initialState?.userId || "");
   const [isLoading, setIsLoading] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(true);
   const [aiVoice, setAiVoice] = useState(false);
   const [selectedCompletedQuiz, setSelectedCompletedQuiz] =
     useState<QuizState | null>(null);
