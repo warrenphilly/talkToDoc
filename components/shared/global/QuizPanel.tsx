@@ -65,6 +65,8 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
+import { ArrowLeft } from "lucide-react";
+
 
 // First, let's define our message types
 interface Sentence {
@@ -648,10 +650,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex flex-col justify-center items-center w-full gap-4 ">
           <h2 className="text-2xl font-bold text-[#94b347]">Quiz Me</h2>
-          <p className="text-slate-600 text-gray-400">
+          <p className="text-slate-600 ">
             Create and review quizzes
           </p>
-          {!selectedQuiz && !showQuizForm && (
+          
             <Button
               onClick={() => setShowQuizForm(true)}
               className="bg-white border border-slate-400 text-slate-800 hover:bg-white hover:text-slate-800 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
@@ -659,14 +661,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
               <Plus className="w-4 h-4 mr-2" />
               Create Quiz
             </Button>
-          )}
+        
         </div>
 
-        {(selectedQuiz || showQuizForm) && (
-          <Button onClick={handleBackToList} variant="outline" className="mr-2">
-            Back to List
-          </Button>
-        )}
+     
       </div>
 
       {/* Quiz List */}
@@ -675,16 +673,16 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           {quizzes.map((quiz) => (
             <div
               key={quiz.id}
-              className="border rounded-xl p-1 bg-white border-slate-400 mb-2"
+              className="border-t  p-1 bg-white border-slate-300  cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleQuizSelect(quiz)}
             >
-              <div className="flex items-center justify-between p-3 bg-white text-slate-600">
+              <div className="flex items-center justify-between p-3  text-slate-600">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleQuizSelect(quiz)}
                     className="flex-1 flex items-center gap-4 text-left"
                   >
                     <div className="flex flex-col">
-                      <h3 className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer">
+                      <h3 className="font-medium text-slate-700 ">
                         {quiz.quizData?.title || "Untitled Quiz"}
                       </h3>
                       <div className="flex gap-4 text-sm text-slate-500">
@@ -833,7 +831,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 <Button
                   variant="outline"
                   onClick={() => setShowQuizForm(false)}
-                  className="text-red-500 bg-white rounded-full border border-red-500 hover:bg-white hover:text-red-500 hover:border-red-500 hover:text-red-500 hover:bg-red-200"
+                  className="text-red-500 bg-white rounded-full border border-red-500  hover:text-red-500 hover:border-red-500  hover:bg-red-200"
                 >
                   Cancel
                 </Button>
@@ -864,6 +862,23 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {/* Quiz Display */}
       {selectedQuiz && quizData && !showQuizForm && (
         <div>
+            <Button onClick={handleBackToList}  variant="ghost" className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent">
+                <ArrowLeft className="w-4 h-4" /> 
+              
+
+            Back to List
+            </Button>
+          <div className="flex flex-col justify-between items-start my-2">
+          
+            <p className="text-lg font-semibold text-[#94b347]">{selectedQuiz.quizData?.title}</p>
+            <div className="flex flex-row justify-center items-center">
+              <p>Questions: {selectedQuiz.totalQuestions}</p>
+            
+            </div>
+            </div>
+
+        
+
           <Quiz
             data={quizData}
             notebookId={notebookId || ""}

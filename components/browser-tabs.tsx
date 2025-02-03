@@ -34,12 +34,14 @@ interface BrowserTabsProps {
   notebookId: string;
   initialTabs: Tab[];
   className?: string;
+  onNotebookDelete?: (notebookId: string) => void;
 }
 
 export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   notebookId,
   initialTabs,
   className,
+  onNotebookDelete,
 }) => {
   const [tabs, setTabs] = useState(initialTabs);
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
@@ -175,10 +177,15 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     }
   };
 
+  const handleDeletePage = async (pageId: string) => {
+    if (confirm("Are you sure you want to delete this page?")) {
+      await syncTabs(pageId);
+      setAllPages(allPages.filter((page) => page.id !== pageId));
+    }
+  };
+
   return (
-    <div
-      className={cn("w-full h-full mx-auto rounded-lg bg-white", className)}
-    >
+    <div className={cn("w-full h-full mx-auto rounded-lg bg-white", className)}>
       <div className="flex items-center bg-white rounded-t-lg">
         {tabs.map((tab) => (
           <motion.div
@@ -189,7 +196,6 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               activeTabId === tab.id
                 ? " text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300  bg-white shadow-x-md"
                 : "text-muted-foreground bg-slate-100"
-
             )}
             onClick={() => setActiveTabId(tab.id)}
           >
@@ -243,7 +249,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         </motion.div>
       </AnimatePresence>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
             <DialogTitle>All Pages</DialogTitle>
           </DialogHeader>
@@ -254,18 +260,41 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 className="flex items-center justify-between py-2 border-b"
               >
                 <span>{page.title}</span>
-                <button
-                  className="px-2 py-1 text-sm bg-slate-200 rounded hover:bg-slate-300"
-                  onClick={() => handlePageToggle(page.id)}
-                >
-                  {page.isOpen ? "Close" : "Open"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    className="px-2 py-1 text-sm bg-slate-200 rounded hover:bg-slate-300"
+                    onClick={() => handlePageToggle(page.id)}
+                  >
+                    {page.isOpen ? "Close" : "Open"}
+                  </button>
+                  <button
+                    className="px-2 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    onClick={() => handleDeletePage(page.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </ScrollArea>
+          <div className="mt-4 pt-4 border-t">
+            <button
+              className="w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+              onClick={() => {
+                if (
+                  confirm(
+                    "Are you sure you want to delete this notebook? This action cannot be undone."
+                  )
+                ) {
+                  onNotebookDelete?.(notebookId);
+                }
+              }}
+            >
+              Delete Notebook
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
-      
     </div>
   );
 };

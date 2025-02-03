@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-
 import { Notebook, Page } from "@/types/notebooks";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 
@@ -25,29 +24,30 @@ import {
   Plus,
   PlusCircle,
   RefreshCw,
+  Trash,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, MutableRefObject } from "react";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
 
 import { Message } from "@/lib/types";
 
-import CreateCardModal from "./CreateCardModal";
 import {
-  toggleAnswer,
-  handleDeleteSet,
-  toggleNotebookExpansion,
-  isNotebookFullySelected,
-  handleNotebookSelection,
-  handleUpdateTitle,
-  loadCardSets,
-  handleFileUpload,
   handleClear,
-  loadAllNotebooks,
+  handleDeleteSet,
+  handleFileUpload,
+  handleGenerateCards,
+  handleNotebookSelection,
   handlePageSelection,
   handleSelectAllPages,
-  handleGenerateCards,
+  handleUpdateTitle,
+  isNotebookFullySelected,
+  loadAllNotebooks,
+  loadCardSets,
+  toggleAnswer,
+  toggleNotebookExpansion,
 } from "@/lib/utils/studyCardsUtil";
+import CreateCardModal from "./CreateCardModal";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -79,7 +79,9 @@ export default function StudyCards({
   const [totalSections, setTotalSections] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
   const [showUpload, setShowUpload] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
+  const fileInputRef = useRef<HTMLInputElement>(
+    null
+  ) as MutableRefObject<HTMLInputElement>;
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListTitle, setEditingListTitle] = useState("");
@@ -106,11 +108,15 @@ export default function StudyCards({
     pageId: string,
     isSelected: boolean
   ) => {
-    setSelectedPages((prev) => handlePageSelection(notebookId, pageId, isSelected, prev));
+    setSelectedPages((prev) =>
+      handlePageSelection(notebookId, pageId, isSelected, prev)
+    );
   };
 
   const handleAllPagesSelect = (notebookId: string, isSelected: boolean) => {
-    setSelectedPages((prev) => handleSelectAllPages(notebookId, isSelected, notebooks, prev));
+    setSelectedPages((prev) =>
+      handleSelectAllPages(notebookId, isSelected, notebooks, prev)
+    );
   };
 
   const handleGenerateCardsClick = async () => {
@@ -153,7 +159,12 @@ export default function StudyCards({
   };
 
   const handleTitleUpdate = async (setId: string, newTitle: string) => {
-    await handleUpdateTitle(setId, newTitle, loadCardsetsWrapper, setEditingListId);
+    await handleUpdateTitle(
+      setId,
+      newTitle,
+      loadCardsetsWrapper,
+      setEditingListId
+    );
   };
 
   const handleNotebookSelect = (
@@ -217,22 +228,38 @@ export default function StudyCards({
                   handleNotebookSelect(
                     notebook.id,
                     notebook.pages,
-                    !isNotebookFullySelected(notebook.id, notebook.pages, selectedPages)
+                    !isNotebookFullySelected(
+                      notebook.id,
+                      notebook.pages,
+                      selectedPages
+                    )
                   )
                 }
                 className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  isNotebookFullySelected(notebook.id, notebook.pages, selectedPages)
+                  isNotebookFullySelected(
+                    notebook.id,
+                    notebook.pages,
+                    selectedPages
+                  )
                     ? "bg-green-100 text-green-700 hover:bg-green-200"
                     : "bg-white hover:bg-slate-100"
                 }`}
               >
-                {isNotebookFullySelected(notebook.id, notebook.pages, selectedPages) ? (
+                {isNotebookFullySelected(
+                  notebook.id,
+                  notebook.pages,
+                  selectedPages
+                ) ? (
                   <Check className="h-4 w-4" />
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
                 <span className="text-sm">
-                  {isNotebookFullySelected(notebook.id, notebook.pages, selectedPages)
+                  {isNotebookFullySelected(
+                    notebook.id,
+                    notebook.pages,
+                    selectedPages
+                  )
                     ? "Added"
                     : "Add All"}
                 </span>
@@ -332,62 +359,14 @@ export default function StudyCards({
                 key={set.id}
                 className="flex flex-row justify-between items-center"
               >
-                <Card className="bg-white cursor-pointer hover:bg-gray-50 transition-colors w-full shadow-none border border-gray-400">
-                  <CardContent className="py-2 my-0">
-                    {editingListId === set.id ? (
-                      // Edit mode
-                      <div className="flex-1 flex items-center gap-2">
-                        <Input
-                          value={editingListTitle}
-                          onChange={(e) => setEditingListTitle(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleTitleUpdate(set.id, editingListTitle);
-                            } else if (e.key === "Escape") {
-                              setEditingListId(null);
-                            }
-                          }}
-                          className="text-slate-700"
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              handleTitleUpdate(set.id, editingListTitle);
-                            }}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingListId(null)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      // View mode
-                      <div className="items-center flex flex-row justify-between">
+                <Card className="  bg-white border-none   transition-colors w-full shadow-none  rounded-none ">
+                  <CardContent className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer" onClick={() => setSelectedSet(set)}>
+                    <div className="flex flex-col items-start justify-between w-full">
+                      <div className="items-center flex flex-row justify-between w-full">
                         <div className="flex flex-row items-center">
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingListId(set.id);
-                              setEditingListTitle(set.title);
-                            }}
-                            className="text-slate-500 text-sm bg-white shadow-none rounded-full hover:bg-white hover:text-[#94b347]"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
                           <h3
-                            className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer"
-                            onClick={() => setSelectedSet(set)}
+                            className="font-medium text-slate-700 "
+                            
                           >
                             {set.title}
                           </h3>
@@ -398,17 +377,24 @@ export default function StudyCards({
                         <div className="flex flex-row justify-end items-center gap-2">
                           <Button
                             variant="ghost"
-                            className="text-red-500 hover:text-red-600 bg-white hover:bg-white"
+                             className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSetDeletion(set.id);
                             }}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash   className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
-                    )}
+
+                      <p className="text-sm text-slate-500">
+                        {" "}
+                        created {new Date(
+                          set.createdAt
+                        ).toLocaleDateString()}{" "}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -424,16 +410,16 @@ export default function StudyCards({
           // Show selected set's cards
           <div className="w-full">
             <div className="flex items-center justify-between mb-4 max-w-7xl mx-auto">
-              <Button onClick={() => setSelectedSet(null)} variant="ghost">
+              <Button onClick={() => setSelectedSet(null)} variant="ghost" className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Sets
               </Button>
               <Button
                 variant="ghost"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 "
                 onClick={() => handleSetDeletion(selectedSet.id)}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash className="h-4 w-4 mr-2" />
                 Delete Set
               </Button>
             </div>

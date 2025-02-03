@@ -10,7 +10,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { Textarea } from "@/components/ui/textarea";
-import { Message, Section, ContextSection } from "@/lib/types";
+import { ContextSection, Message, Section } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
 import {
   Image,
@@ -24,6 +24,7 @@ import { ResponseMessage } from "./ResponseMessage";
 
 import SideChat from "@/components/shared/global/SideChat";
 
+import StudyMaterialTabs from "@/components/StudyMaterialTabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,8 +37,8 @@ import {
   deleteNotebook,
   deletePage,
   getNote,
-  saveNote,
   getSideChat,
+  saveNote,
   saveSideChat,
   updateSideChat,
 } from "@/lib/firebase/firestore";
@@ -50,9 +51,10 @@ import {
 } from "@/lib/utils";
 import { CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
+import StudyCards from "../study/StudyCards";
+import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
-import StudyMaterialTabs from "@/components/StudyMaterialTabs";
 
 interface ChatClientProps {
   title: string;
@@ -88,8 +90,12 @@ const ChatClient = ({
   const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
   const [isChatFullscreen, setIsChatFullscreen] = useState(false);
   const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
-  const [isStudyMaterialFullscreen, setIsStudyMaterialFullscreen] = useState(false);
-  const [showStudyMaterial, setShowStudyMaterial] = useState(false);
+
+
+  const [showStudyCards, setShowStudyCards] = useState(false);
+  const [isStudyCardsFullscreen, setIsStudyCardsFullscreen] = useState(false);
+  const [showStudyGuides, setShowStudyGuides] = useState(false);
+  const [isStudyGuidesFullscreen, setIsStudyGuidesFullscreen] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -116,37 +122,45 @@ const ChatClient = ({
   ) => {
     try {
       // Get the section text
-      const sectionText = section.sentences.map((sentence) => sentence.text).join(" ");
-      
+      const sectionText = section.sentences
+        .map((sentence) => sentence.text)
+        .join(" ");
+
       // Update UI state
       setPrimeSentence(sectionText);
       setShowChat(true);
-      
+
       // First check if a sidechat already exists
       const existingSideChat = await getSideChat(notebookId, tabId);
       console.log("existingSideChat", existingSideChat);
-      
+
       if (existingSideChat) {
         // If sidechat exists, just add the new context section to it
         const newContextSection: ContextSection = {
           id: crypto.randomUUID(),
           text: sectionText,
           timestamp: Date.now(),
-          isHighlighted: true
+          isHighlighted: true,
         };
-        
-        const updatedContextSections = [...existingSideChat.contextSections, newContextSection];
-        await updateSideChat(existingSideChat.id, updatedContextSections, existingSideChat.messages);
-       } 
-       else {
+
+        const updatedContextSections = [
+          ...existingSideChat.contextSections,
+          newContextSection,
+        ];
+        await updateSideChat(
+          existingSideChat.id,
+          updatedContextSections,
+          existingSideChat.messages
+        );
+      } else {
         // Only create new sidechat if one doesn't exist
         const newContextSection: ContextSection = {
           id: crypto.randomUUID(),
           text: sectionText,
           timestamp: Date.now(),
-          isHighlighted: true
+          isHighlighted: true,
         };
-        
+
         await saveSideChat(notebookId, tabId, [newContextSection], []);
       }
     } catch (error) {
@@ -342,10 +356,12 @@ const ChatClient = ({
           </div>
 
           <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
-         
             <Button
               onClick={() => {
-                setShowStudyMaterial(!showStudyMaterial);
+             
+                setShowStudyCards(false);
+                setShowStudyGuides(!showStudyGuides);
+            
 
                 setShowChat(false);
                 setShowQuiz(false);
@@ -355,17 +371,41 @@ const ChatClient = ({
               }}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-              Study Set
+              Study guide
+            </Button>
+
+            <Button
+              onClick={() => {
+                setShowStudyCards(!showStudyCards);
+                console.log("showStudyCards", showStudyCards);
+
+                setShowStudyGuides(false);
+                setShowChat(false);
+                setShowQuiz(false);
+
+                setIsNotebookFullscreen(false);
+                setIsChatFullscreen(false);
+                setIsQuizFullscreen(false);
+              }}
+              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
+            >
+              Study cards
             </Button>
             <Button
               onClick={() => {
+         
                 setShowQuiz(!showQuiz);
 
+                setShowStudyCards(false);
+                setShowStudyGuides(false);
+             
                 setShowChat(false);
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
-                setIsStudyMaterialFullscreen(false);
+              
+                setIsStudyCardsFullscreen(false);
+                setIsStudyGuidesFullscreen(false);
               }}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
@@ -380,48 +420,15 @@ const ChatClient = ({
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
-                setIsStudyMaterialFullscreen(false);
+               
+                setShowStudyCards(false);
+                setShowStudyGuides(false);
+              
               }}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button className="bg-white rounded-full w-fit shadow-none border border-slate-400 text-slate-500 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white">
-                  <MoreVertical />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-slate-100 p-0">
-                <DropdownMenuItem className="w-full bg-green-500 p-0">
-                  <Button
-                    onClick={handleClear}
-                    className={`bg-slate-100 shadow-none text-red-500 hover:bg-red-200 rounded-none w-full`}
-                  >
-                    Clear Page
-                  </Button>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300" />
-                <DropdownMenuItem className="w-full hover:bg-red-500 p-0">
-                  <Button
-                    onClick={handleDeletePage}
-                    className={`bg-slate-100 shadow-none hover:bg-red-200 rounded-none m-0 text-red-500  w-full`}
-                  >
-                    Delete Page
-                  </Button>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="m-0 p-0 bg-slate-300" />
-                <DropdownMenuItem className="w-full hover:bg-red-500 p-0 m-0">
-                  <Button
-                    onClick={handleDeleteNotebook}
-                    className={`bg-slate-100 shadow-none hover:bg-red-200 text-red-500  rounded-none w-full `}
-                  >
-                    Delete Notebook
-                  </Button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
 
@@ -436,9 +443,14 @@ const ChatClient = ({
               className={`relative ${
                 isNotebookFullscreen ? "w-full" : "w-full p-2 min-w-[600px]"
               } ${
-                isChatFullscreen || isQuizFullscreen || isStudyMaterialFullscreen
+                isChatFullscreen ||
+                isQuizFullscreen ||
+               
+                isStudyCardsFullscreen ||
+                isStudyGuidesFullscreen
                   ? "hidden"
                   : "w-full p-2 min-w-[600px]"
+
               } flex flex-col gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
@@ -468,12 +480,11 @@ const ChatClient = ({
               )}
 
               <div className="flex bg-white flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
-                
                 <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
                   messageIndex={0}
-                  />
-               
+                />
+
                 {messages.map((msg, index) => {
                   const sections = Array.isArray(msg.text) ? msg.text : [];
 
@@ -532,113 +543,143 @@ const ChatClient = ({
               </div>
             </ResizablePanel>
 
-            {!(isNotebookFullscreen || isChatFullscreen || isQuizFullscreen || isStudyMaterialFullscreen) &&
-              (showQuiz || showChat || showStudyMaterial) && (
+            {!(
+              isNotebookFullscreen ||
+              isChatFullscreen ||
+              isQuizFullscreen ||
+             
+              isStudyCardsFullscreen ||
+              isStudyGuidesFullscreen
+            ) &&
+              (showQuiz || showChat || showStudyCards || showStudyGuides) && (
                 <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
+
             {/* Chat and Quiz panels */}
-            {!isNotebookFullscreen && (showChat || showQuiz || showStudyMaterial) && (
-              <ResizablePanel
-                className={`relative ${
-                  showChat || showQuiz || showStudyMaterial
-                    ? "translate-x-0 my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px]"
-                    : "hidden"
-                } ${
-                  isChatFullscreen || isQuizFullscreen
-                    ? "w-full"
-                    : "w-full p-2 min-w-[600px]"
-                }`}
-                defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
-              >
-                {showChat && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showChat
-                        ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                        : "hidden"
-                    }`}
-                    defaultSize={isChatFullscreen ? 100 : 50}
-                  >
-                    <Button
-                      onClick={() => setIsChatFullscreen(!isChatFullscreen)}
-                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
-                      size="icon"
-                    >
-                      {isChatFullscreen ? (
-                        <Minimize2 size={16} />
-                      ) : (
-                        <Maximize2 size={16} />
-                      )}
-                    </Button>
-                    <SideChat
-                      notebookId={notebookId}
-                      pageId={tabId}
-                      primeSentence={primeSentence}
-                      setPrimeSentence={setPrimeSentence}
-                    />
-                  </ResizablePanel>
-                )}
+            {!isNotebookFullscreen &&
+              (showChat || showQuiz || showStudyCards || showStudyGuides) && (
+                <ResizablePanel
+                  className={`relative ${
+                    showChat || showQuiz || showStudyCards || showStudyGuides
 
-               
-
-                {showQuiz && !isChatFullscreen && !isStudyMaterialFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showQuiz
-                        ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                        : "hidden"
-                    }`}
-                    defaultSize={isQuizFullscreen ? 100 : 50}
-                  >
-                    <Button
-                      onClick={() => setIsQuizFullscreen(!isQuizFullscreen)}
-                      className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
-                      size="icon"
+                      ? "translate-x-0 my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px]"
+                      : "hidden"
+                  } ${
+                    isChatFullscreen || isQuizFullscreen
+                      ? "w-full"
+                      : "w-full p-2 min-w-[600px]"
+                  }`}
+                  defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
+                >
+                  {showChat && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showChat
+                          ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                          : "hidden"
+                      }`}
+                      defaultSize={isChatFullscreen ? 100 : 50}
                     >
-                      {isQuizFullscreen ? (
-                        <Minimize2 size={16} />
-                      ) : (
-                        <Maximize2 size={16} />
-                      )}
-                    </Button>
-                    <QuizPanel
-                      notebookId={notebookId}
-                      pageId={tabId}
-                    />
-                  </ResizablePanel>
+                      <Button
+                        onClick={() => setIsChatFullscreen(!isChatFullscreen)}
+                        className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                        size="icon"
+                      >
+                        {isChatFullscreen ? (
+                          <Minimize2 size={16} />
+                        ) : (
+                          <Maximize2 size={16} />
+                        )}
+                      </Button>
+                      <SideChat
+                        notebookId={notebookId}
+                        pageId={tabId}
+                        primeSentence={primeSentence}
+                        setPrimeSentence={setPrimeSentence}
+                      />
+                    </ResizablePanel>
+                  )}
 
-                )}
-                {showStudyMaterial  && !isChatFullscreen && !isQuizFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showStudyMaterial
-                        ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
-                        : "hidden"
-                    }`}
-                    defaultSize={isStudyMaterialFullscreen ? 100 : 50}
-                  >
-                    <Button
-                      onClick={() => setIsStudyMaterialFullscreen(!isStudyMaterialFullscreen)}
-                      className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
-                      size="icon"
+                  {showQuiz &&
+                    !isChatFullscreen &&
+                    !isStudyCardsFullscreen &&
+                    !isStudyGuidesFullscreen && (
+                      <ResizablePanel
+                        className={`relative ${
+                          showQuiz
+                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+
+                            : "hidden"
+                        }`}
+                        defaultSize={isQuizFullscreen ? 100 : 50}
+                      >
+                        <Button
+                          onClick={() => setIsQuizFullscreen(!isQuizFullscreen)}
+                          className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                          size="icon"
+                        >
+                          {isQuizFullscreen ? (
+                            <Minimize2 size={16} />
+                          ) : (
+                            <Maximize2 size={16} />
+                          )}
+                        </Button>
+                        <QuizPanel notebookId={notebookId} pageId={tabId} />
+                      </ResizablePanel>
+                    )}
+                  {showStudyCards && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showStudyCards
+                          ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
+                          : "hidden"
+                      }`}
+                      defaultSize={isStudyCardsFullscreen ? 100 : 50}
                     >
-                      {isStudyMaterialFullscreen ? (
-                        <Minimize2 size={16} />
-                      ) : (
-                        <Maximize2 size={16} />
-                      )}
-                    </Button>
-             
-                    <StudyMaterialTabs
-                      notebookId={notebookId}
-                      pageId={tabId}
-                    />
-                  </ResizablePanel>
-                  
-                )}
-              </ResizablePanel>
-            )}
+                      <Button
+                        onClick={() =>
+                          setIsStudyCardsFullscreen(!isStudyCardsFullscreen)
+                        }
+                        className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
+                        size="icon"
+                      >
+                        {isStudyCardsFullscreen ? (
+                          <Minimize2 size={16} />
+                        ) : (
+                          <Maximize2 size={16} />
+                        )}
+                      </Button>
+                      <StudyCards notebookId={notebookId} pageId={tabId} />
+                    </ResizablePanel>
+                  )}
+                  {showStudyGuides && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showStudyGuides
+                          ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
+                          : "hidden"
+                      }`}
+                      defaultSize={isStudyGuidesFullscreen ? 100 : 50}
+                    >
+                      <Button
+                        onClick={() =>
+                          setIsStudyGuidesFullscreen(!isStudyGuidesFullscreen)
+                        }
+                        className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
+                        size="icon"
+                      >
+                        {isStudyGuidesFullscreen ? (
+                          <Minimize2 size={16} />
+                        ) : (
+                          <Maximize2 size={16} />
+                        )}
+                      </Button>
+                      <StudyGuide notebookId={notebookId} pageId={tabId} />
+                    </ResizablePanel>
+                  )}
+                </ResizablePanel>
+              )}
           </ResizablePanelGroup>
         </div>
       </div>

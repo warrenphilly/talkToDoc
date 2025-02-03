@@ -25,7 +25,16 @@ import {
 } from "@/lib/firebase/firestore";
 import { Notebook, Page } from "@/types/notebooks";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
-import { collection, getDocs, orderBy, query, where, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import {
   ArrowLeft,
   BookOpen,
@@ -36,6 +45,7 @@ import {
   Plus,
   PlusCircle,
   RefreshCw,
+  Trash,
   Trash2,
   X,
 } from "lucide-react";
@@ -46,11 +56,11 @@ import StudyGuide from "@/components/shared/study/StudyGuide";
 import { storage } from "@/firebase";
 import { Message } from "@/lib/types";
 import { fileUpload } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
 import { StudyGuideCard } from "./StudyGuideCard";
-import { useUser } from "@clerk/nextjs";
 
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
@@ -115,7 +125,7 @@ export default function StudyGuideComponent({
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
   const [selectedGuide, setSelectedGuide] = useState<StudyGuide | null>(null);
-  
+
   // Update the state to track expanded sections for each guide
   const [expandedSections, setExpandedSections] = useState<{
     [guideId: string]: number[];
@@ -124,6 +134,11 @@ export default function StudyGuideComponent({
   // Add state to track which guide is being edited in the list
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListTitle, setEditingListTitle] = useState<string>("");
+
+  // Add state for selected guide view
+  const [selectedGuideView, setSelectedGuideView] = useState<StudyGuide | null>(
+    null
+  );
 
   const user = useUser();
   const userId = user?.user?.id;
@@ -473,8 +488,8 @@ export default function StudyGuideComponent({
     return (
       <div className="space-y-2 p-2 ">
         <label className="block text-sm font-medium text-gray-700 ">
-                     Select Notes
-                   </label>
+          Select Notes
+        </label>
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
@@ -565,12 +580,7 @@ export default function StudyGuideComponent({
   };
 
   const renderNotebookSelection = () => {
-    return (
-      <div className="space-y-4">
-        
-        {renderNotebookList()}
-      </div>
-    );
+    return <div className="space-y-4">{renderNotebookList()}</div>;
   };
 
   const handleGenerateGuide = async () => {
@@ -581,7 +591,10 @@ export default function StudyGuideComponent({
       }
 
       // Check if we have either uploaded files or selected pages
-      if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
+      if (
+        filesToUpload.length === 0 &&
+        Object.keys(selectedPages).length === 0
+      ) {
         alert("Please either upload files or select notebook pages");
         return;
       }
@@ -632,9 +645,11 @@ export default function StudyGuideComponent({
       // Prepare the form data for study guide generation
       const formData = new FormData();
       const messageData = {
-        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         guideName,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -661,15 +676,13 @@ export default function StudyGuideComponent({
         pageId,
         createdAt: new Date(),
         userId: userId || "",
-       
-
       };
 
       // Save to the studyGuides collection
       const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
       await setDoc(studyGuideRef, {
         ...newStudyGuide,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
 
       // Refresh the study guides list
@@ -686,7 +699,11 @@ export default function StudyGuideComponent({
       alert("Study guide generated successfully!");
     } catch (error) {
       console.error("Error generating study guide:", error);
-      alert(error instanceof Error ? error.message : "Failed to generate study guide");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate study guide"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -717,7 +734,7 @@ export default function StudyGuideComponent({
         querySnapshot = await getDocs(q);
       }
 
-      const guides = querySnapshot.docs.map(doc => {
+      const guides = querySnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -727,14 +744,13 @@ export default function StudyGuideComponent({
           pageId: data.pageId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
           updatedAt: data.updatedAt?.toDate?.() || new Date(),
-          userId: data.userId || ""
-          
+          userId: data.userId || "",
         } as StudyGuide;
       });
 
       // Sort manually if using fallback query
       guides.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-      
+
       setStudyGuides(guides);
     } catch (error) {
       console.error("Error loading study guides:", error);
@@ -743,7 +759,9 @@ export default function StudyGuideComponent({
 
   const handleDeleteStudyGuide = async (guideId: string) => {
     try {
-      if (!window.confirm("Are you sure you want to delete this study guide?")) {
+      if (
+        !window.confirm("Are you sure you want to delete this study guide?")
+      ) {
         return;
       }
 
@@ -760,19 +778,19 @@ export default function StudyGuideComponent({
 
   // Update the handleSectionToggle function
   const handleSectionToggle = (guideId: string, sectionIndex: number) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const currentExpanded = prev[guideId] || [];
       const isCurrentlyExpanded = currentExpanded.includes(sectionIndex);
-      
+
       if (isCurrentlyExpanded) {
         return {
           ...prev,
-          [guideId]: currentExpanded.filter(index => index !== sectionIndex)
+          [guideId]: currentExpanded.filter((index) => index !== sectionIndex),
         };
       } else {
         return {
           ...prev,
-          [guideId]: [...currentExpanded, sectionIndex]
+          [guideId]: [...currentExpanded, sectionIndex],
         };
       }
     });
@@ -783,40 +801,35 @@ export default function StudyGuideComponent({
     try {
       // Update in your database
       await updateStudyGuideTitle(guideId, newTitle);
-      
+
       // Update local state
-      setStudyGuides(prevGuides =>
-        prevGuides.map(guide =>
-          guide.id === guideId
-            ? { ...guide, title: newTitle }
-            : guide
+      setStudyGuides((prevGuides) =>
+        prevGuides.map((guide) =>
+          guide.id === guideId ? { ...guide, title: newTitle } : guide
         )
       );
 
       // If there's a selected guide, update it too
       if (selectedGuide?.id === guideId) {
-        setSelectedGuide(prev => prev ? { ...prev, title: newTitle } : null);
+        setSelectedGuide((prev) =>
+          prev ? { ...prev, title: newTitle } : null
+        );
       }
     } catch (error) {
-      console.error('Failed to update study guide title:', error);
+      console.error("Failed to update study guide title:", error);
       // Handle error (show toast notification, etc.)
     }
   };
 
   return (
-    <Card className="h-full border-none shadow-none">
-      
+    <Card className="h-full bg-white border-none shadow-none overflow-y-auto">
       <CardContent className=" bg-white h-full p-4">
-      <CardHeader className="flex flex-col items-center justify-center">
-         <CardTitle className="text-2xl font-bold text-[#94b347] ">
-           Study Guides
-         </CardTitle>
-         <CardDescription>Create and review study guides</CardDescription>
-       </CardHeader>
-        {!selectedSet ? (
-          <div className="space-y-2 bg-white h-full">
-            <div className="flex flex-col justify-center items-center mb-4">
-             
+        <CardHeader className="flex flex-col items-center justify-center">
+          <CardTitle className="text-2xl font-bold text-[#94b347] ">
+            Study Guides
+          </CardTitle>
+          <CardDescription>Create and review study guides</CardDescription>
+          <div className="flex flex-col justify-center items-center ">
               <Button
                 onClick={() => setShowNotebookModal(true)}
                 className="flex items-center gap-2 m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
@@ -825,16 +838,32 @@ export default function StudyGuideComponent({
                 Generate Study Guide
               </Button>
             </div>
+        </CardHeader>
+        {selectedGuideView ? (
+          <StudyGuideCard
+            guide={selectedGuideView}
+            onDelete={handleDeleteStudyGuide}
+            onUpdateTitle={handleUpdateTitle}
+            onBack={() => setSelectedGuideView(null)}
+          />
+        ) : (
+          <div className="space-y-4">
+         
 
             {showNotebookModal && (
               <div className="fixed inset-0 bg-white flex items-center justify-center z-10 ">
                 <Card className="w-full h-full overflow-y-auto bg-white rounded-none border-none shadow-none  max-w-xl">
-               
                   <CardContent>
-                  <div className="flex flex-col gap-2  my-4 items-center justify-center"><h2 className="text-xl font-bold mb-4 text-[#94b347]">Create Study Guide</h2></div>
+                    <div className="flex flex-col gap-2  my-4 items-center justify-center">
+                      <h2 className="text-xl font-bold mb-4 text-[#94b347]">
+                        Create Study Guide
+                      </h2>
+                    </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Study Guide Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Study Guide Name
+                        </label>
                         <Input
                           placeholder="Study Guide Name"
                           value={guideName}
@@ -842,7 +871,9 @@ export default function StudyGuideComponent({
                           className="text-slate-600"
                         />
                       </div>
-                      <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg "><h3> Select notes or upload files to study </h3>  </div>
+                      <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg ">
+                        <h3> Select notes or upload files to study </h3>{" "}
+                      </div>
                       <FormUpload
                         files={files}
                         handleFileUpload={handleFileUpload}
@@ -854,7 +885,7 @@ export default function StudyGuideComponent({
                         setShowUpload={setShowUpload}
                       />
                       {/* Notebook selection content */}
-                     
+
                       {renderNotebookSelection()}
                     </div>
                   </CardContent>
@@ -868,7 +899,12 @@ export default function StudyGuideComponent({
                     </Button>
                     <Button
                       onClick={handleGenerateGuide}
-                      disabled={isGenerating || !guideName.trim() || (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)}
+                      disabled={
+                        isGenerating ||
+                        !guideName.trim() ||
+                        (filesToUpload.length === 0 &&
+                          Object.keys(selectedPages).length === 0)
+                      }
                       className="rounded-full bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
                     >
                       {isGenerating ? (
@@ -882,123 +918,36 @@ export default function StudyGuideComponent({
                 </Card>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">{selectedSet.title}</h2>
-              <Button
-                variant="ghost"
-                onClick={() => setSelectedSet(null)}
-                className="text-gray-500"
-              >
-                Back to List
-              </Button>
-            </div>
 
-            <div className="prose prose-slate max-w-none">
-              {selectedSet.cards.map(
-                (card: { title: string; content: string }, index: number) => (
-                  <div key={index} className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4">{card.title}</h3>
-                    <div className="whitespace-pre-line pl-4">
-                      {card.content}
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Study Guides List */}
-        <div className="space-y-6">
-          {!selectedGuide ? (
-            // List view
-            <div className="space-y-2">
+            {/* Study Guides List */}
+            <div className="">
               {studyGuides.map((guide) => (
-                <div 
+                <div
                   key={guide.id}
-                  className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-[#94b347] transition-colors"
+                  className="flex items-center justify-between p-4 bg-white border-t border-slate-200  hover:bg-slate-50 transition-colors "
                 >
-                  {editingListId === guide.id ? (
-                    // Edit mode
-                    <div className="flex-1 flex items-center gap-2">
-                      <Input
-                        value={editingListTitle}
-                        onChange={(e) => setEditingListTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleUpdateTitle(guide.id, editingListTitle);
-                            setEditingListId(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingListId(null);
-                          }
-                        }}
-                        className="text-slate-700"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            handleUpdateTitle(guide.id, editingListTitle);
-                            setEditingListId(null);
-                          }}
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingListId(null)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    // View mode
-                    <>
-                      <button 
-                        onClick={() => setSelectedGuide(guide)}
-                        className="flex-1 flex items-center gap-4 text-left"
-                      >
-                        <div className="flex flex-row items-center ">
-
-                        <Button onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingListId(guide.id);
-                              setEditingListTitle(guide.title);
-                            }} className="text-slate-500 text-sm bg-white shadow-none rounded-full hover:bg-white hover:text-[#94b347]" ><Pencil /></Button>
-                          <h3 
-                            className="font-medium text-slate-700 hover:text-[#94b347] cursor-pointer"
-                            
-                          >
-                            {guide.title}
-                          </h3>
-                          
-                          <p className="text-sm text-slate-500 mx-5">
-                            {guide.createdAt.toLocaleDateString()}
-                          </p>
-                        </div>
-                      </button>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteStudyGuide(guide.id);
-                          }}
-                          className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={() => setSelectedGuideView(guide)}
+                  >
+                    <h3 className="font-medium text-slate-700 ">
+                      {guide.title}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Created: {new Date(guide.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteStudyGuide(guide.id);
+                    }}
+                    className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
 
@@ -1008,30 +957,8 @@ export default function StudyGuideComponent({
                 </div>
               )}
             </div>
-          ) : (
-            // Single guide view
-            <div>
-              <div className="mb-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedGuide(null)}
-                  className="flex items-center gap-2 text-slate-600 hover:text-[#94b347]"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to list
-                </Button>
-              </div>
-              <StudyGuideCard
-                guide={selectedGuide}
-                onDelete={(id) => {
-                  handleDeleteStudyGuide(id);
-                  setSelectedGuide(null);
-                }}
-                onUpdateTitle={handleUpdateTitle}
-              />
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
