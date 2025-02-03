@@ -177,18 +177,19 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
   return (
     <div
-      className={cn("w-full h-full mx-auto rounded-lg bg-slate-100", className)}
+      className={cn("w-full h-full mx-auto rounded-lg bg-white", className)}
     >
-      <div className="flex items-center bg-slate-100  rounded-t-lg">
+      <div className="flex items-center bg-white rounded-t-lg">
         {tabs.map((tab) => (
           <motion.div
             key={tab.id}
             layout
             className={cn(
-              "flex items-center px-3 py-2 text-sm font-medium rounded-t-lg cursor-pointer",
+              "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer",
               activeTabId === tab.id
-                ? " text-foreground bg-white shadow-x-md"
-                : "text-muted-foreground bg-slate-300"
+                ? " text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300  bg-white shadow-x-md"
+                : "text-muted-foreground bg-slate-100"
+
             )}
             onClick={() => setActiveTabId(tab.id)}
           >
@@ -231,7 +232,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4  h-[calc(100vh-5.2rem)] rounded-r-xl bg-white overflow-hidden"
+          className="p-4  h-[calc(100vh-5.2rem)] rounded-r-xl rounded-b-xl bg-white overflow-hidden border border-slate-300"
         >
           <ChatClient
             title={activeTab?.title || ""}
