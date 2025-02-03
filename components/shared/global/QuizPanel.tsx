@@ -20,6 +20,7 @@ import {
   Mic,
   MicOff,
   Plus,
+  PlusCircle,
   RefreshCw,
   Trash,
   Upload,
@@ -656,9 +657,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           
             <Button
               onClick={() => setShowQuizForm(true)}
-              className="bg-white border border-slate-400 text-slate-800 hover:bg-white hover:text-slate-800 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
+              className="bg-white border border-slate-400 text-slate-800 hover:bg-white 0 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <PlusCircle className="h-4 w-4" />
               Create Quiz
             </Button>
         

@@ -323,8 +323,8 @@ export default function StudyCards({
             onClick={() => setShowNotebookModal(true)}
             className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
           >
-            <BookOpen className="mr-2 h-4 w-4" />
-            Select Notes to Study
+              <PlusCircle className="h-4 w-4" />
+            Create Study Cards
           </Button>
         </div>
 
