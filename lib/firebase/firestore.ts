@@ -1337,3 +1337,20 @@ export const getQuiz = async (quizId: string): Promise<QuizState> => {
       data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
   } as QuizState;
 };
+
+export const updateStudyCardSetTitle = async (
+  setId: string,
+  newTitle: string
+): Promise<void> => {
+  try {
+    const studyCardSetRef = doc(db, "studyCardSets", setId);
+    
+    await updateDoc(studyCardSetRef, {
+      title: newTitle,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error updating study card set title:", error);
+    throw error;
+  }
+};

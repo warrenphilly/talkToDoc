@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Check, ChevronLeft, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, Pencil, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { StudyGuide } from "./StudyGuide"; // Make sure to export the interface from StudyGuide.tsx
@@ -45,10 +45,11 @@ export function StudyGuideCard({
   };
 
   return (
-    <Card className="px-6 bg-white  border-none w-full h-full">
+    <Card className="px-6 bg-white  border-none w-full h-full shadow-none">
       <div className="flex justify-between items-center mb-4 w-full">
         <Button
           variant="ghost"
+
           className="gap-2 text-slate-400 flex items-center justify-center w-fit hover:bg-transparent hover:text-slate-600"
           onClick={onBack}
         >
@@ -95,10 +96,15 @@ export function StudyGuideCard({
             <div
               className="flex items-center rounded-lg w-fit  justify-center hover:cursor-pointer "
               onClick={() => setIsEditing(true)}
-            >
-              <h3 className="text-2xl font-bold text-[#94b347]  rounded-lg cursor-pointer hover:text-[#7a943a]">
+              >
+            
+              <h3 className="text-2xl font-bold text-[#94b347]  rounded-lg cursor-pointer ">
+
                 Study Guide: <span className="text-slate-500">{guide.title}</span>
-              </h3>
+                </h3>
+                <div className="flex items-center gap-2 h-6 w-6 justify-center rounded-lg ml-2"  onClick={() => setIsEditing(true)}>
+                  <Pencil className="h-4 w-4 text-slate-500 hover:text-[#7a943a]" />
+                  </div>
             </div>
           )}
         </div>

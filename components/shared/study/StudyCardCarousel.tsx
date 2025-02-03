@@ -34,11 +34,11 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto my-0 py-0 shadow-none border-none h-fit bg-white mb-8">
+    <Card className="max-w-4xl mx-auto my-0 py-0 shadow-none border-none h-fit bg-white mb-8 ">
       <CardHeader className="flex flex-row py-0 my-0  items-center justify-between h-fit">
         <div className="flex flex-col w-full items-center justify-center">
           <div className="flex flex-row  items-center justify-between w-full">
-          <CardTitle className="text-4xl font-bold text-[#94b347]">
+          <CardTitle className="text-2xl font-bold text-[#94b347]">
             Study Deck: <span className="text-slate-500">{studySet.title}</span>
           </CardTitle>
           </div>

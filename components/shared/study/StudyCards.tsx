@@ -48,6 +48,8 @@ import {
   toggleNotebookExpansion,
 } from "@/lib/utils/studyCardsUtil";
 import CreateCardModal from "./CreateCardModal";
+import { StudyCardCarousel } from "./StudyCardCarousel";
+import { StudyCardList } from "./StudyCardList";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -118,6 +120,12 @@ export default function StudyCards({
       handleSelectAllPages(notebookId, isSelected, notebooks, prev)
     );
   };
+
+  const handleStudySetUpdate = (updatedStudySet: StudyCardSet) => {
+    setSelectedSet(updatedStudySet);
+  };
+
+
 
   const handleGenerateCardsClick = async () => {
     await handleGenerateCards(
@@ -203,11 +211,11 @@ export default function StudyCards({
     }
 
     return (
-      <div className="space-y-2 p-2 ">
+      <div className="space-y-2 p-2 overflow-y-auto">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
-            className="border rounded-xl  p-1  bg-white border-slate-400"
+            className="border rounded-xl  p-1  bg-white border-slate-400 overflow-y-auto"
           >
             <div className="flex items-center justify-between p-3 bg-white text-slate-600">
               <div className="flex items-center gap-2 ">
@@ -310,14 +318,14 @@ export default function StudyCards({
   };
 
   return (
-    <Card className=" shadow-none border-none w-full bg-white flex flex-col gap-4 p-4 items-center justify-center">
+    <Card className=" shadow-none border-none w-full bg-white flex flex-col gap-4 p-4 items-center justify-center  ">
       <CardHeader className="flex flex-col items-center justify-center">
         <CardTitle className="text-2xl font-bold text-[#94b347]">
           Study Cards
         </CardTitle>
         <CardDescription>Create and review study card sets</CardDescription>
       </CardHeader>
-      <CardContent className="w-full flex flex-col items-center justify-center">
+      <CardContent className="w-full flex flex-col items-center justify-center h-full overflow-y-auto">
         <div className="flex flex-col items-center justify-center gap-4 mb-6">
           <Button
             onClick={() => setShowNotebookModal(true)}
@@ -353,7 +361,7 @@ export default function StudyCards({
 
         {!selectedSet ? (
           // Show list of card sets
-          <div className="w-full max-w-2xl mx-auto">
+          <div className="w-full max-w-2xl mx-auto overflow-y-auto h-full">
             {cardSets.map((set) => (
               <div
                 key={set.id}
@@ -408,7 +416,7 @@ export default function StudyCards({
           </div>
         ) : (
           // Show selected set's cards
-          <div className="w-full">
+          <div className="w-full h-full overflow-y-auto">
             <div className="flex items-center justify-between mb-4 max-w-7xl mx-auto">
               <Button onClick={() => setSelectedSet(null)} variant="ghost" className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -423,7 +431,9 @@ export default function StudyCards({
                 Delete Set
               </Button>
             </div>
-            <div className="space-y-2 w-full ">
+              <div className="space-y-2 w-full overflow-y-auto h-full">
+              <StudyCardCarousel studySet={selectedSet} />
+              <StudyCardList studySet={selectedSet} onUpdate={handleStudySetUpdate} />
               {selectedSet.cards.map(
                 (card: { title: string; content: string }, index: number) => (
                   <div
