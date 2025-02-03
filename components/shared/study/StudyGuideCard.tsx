@@ -45,7 +45,7 @@ export function StudyGuideCard({
   };
 
   return (
-    <Card className="px-6 bg-white shadow-xl border-none w-full h-full">
+    <Card className="px-6 bg-white  border-none w-full h-full">
       <div className="flex justify-between items-center mb-4 w-full">
         <Button
           variant="ghost"
