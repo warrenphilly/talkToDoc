@@ -160,7 +160,9 @@ export function SidebarNav() {
 
   return (
     <Sidebar>
+       
       <SidebarContent className="bg-white text-slate-400 py-4 pl-2 w-full">
+   
         <SidebarGroup className="bg-white h-full rounded-2xl flex flex-col justify-between w-full">
           <SidebarGroupContent className="flex flex-col justify-center h-full w-full items-center">
             <SidebarMenu className="h-full max-h-[calc(100vh-140px)] bg-white border border-slate-300 rounded-2xl flex flex-col gap-0 w-full">
@@ -189,6 +191,13 @@ export function SidebarNav() {
                   </SignOutButton>
                 </div>
               </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <CircularProgress size={20} sx={{ color: "#94b347" }} />
+                </div>
+              ) : (
+
+              <>
 
               {/* Regular menu items */}
               {items.map((item) => (
@@ -324,10 +333,10 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
                             href={`study-cards/${set.id}`}
-                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
+                            className={`flex items-center gap-2 pl-10 justify-start ${
                               pathname === `/study-cards/${set.id}`
-                                ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
-                                : "hover:bg-slate-300"
+                                ? "bg-slate-200 text-slate-800 hover:text-slate-800 hover:bg-[#8da34f]"
+                                : "hover:bg-slate-300 "
                             } ${
                               pathname.includes("/study-cards") &&
                               pathname !== `/study-cards/${set.id}`
@@ -338,7 +347,7 @@ export function SidebarNav() {
                             <ScrollText
                               className={`text-[#94b347] ${
                                 pathname === `/study-cards/${set.id}`
-                                  ? "text-white"
+                                  ? "text-white "
                                   : ""
                               }`}
                             />
@@ -414,9 +423,10 @@ export function SidebarNav() {
               </Collapsible>
 
               {/* Quizzes Section */}
-              <Collapsible
-                open={quizzesOpen}
-                onOpenChange={setQuizzesOpen}
+             
+                <Collapsible
+                  open={quizzesOpen}
+                  onOpenChange={setQuizzesOpen}
                 className="w-full h-fit justify-center bg-white rounded-xl"
               >
                 <CollapsibleTrigger
@@ -435,12 +445,8 @@ export function SidebarNav() {
                   />
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center p-4">
-                      <CircularProgress size={20} sx={{ color: "#94b347" }} />
-                    </div>
-                  ) : (
-                    quizzes.map((quiz) => (
+                   
+                    {quizzes.map((quiz) => (
                       <SidebarMenuItem
                         key={quiz.id}
                         className="w-full border-b rounded-none border-slate-200"
@@ -471,13 +477,17 @@ export function SidebarNav() {
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))
-                  )}
+                  }
                 </CollapsibleContent>
               </Collapsible>
+              </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+              
       </SidebarContent>
+      
     </Sidebar>
   );
 }
