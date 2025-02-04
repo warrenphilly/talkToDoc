@@ -866,18 +866,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           {/* Study Materials Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Study Cards Section */}
-            <section className=" rounded-lg h-fit">
-              <Button 
-                onClick={() => setShowCardModal(true)}
-                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
-              >
-                New Study Cards
-              </Button>
+            <section className="rounded-lg h-fit">
               <AccordionDemo
                 sections={[
                   {
                     id: "study-cards",
                     title: "Study Cards",
+                    button: {
+                      label: "New Study Cards",
+                      onClick: () => setShowCardModal(true)
+                    },
                     content: (
                       <div className="space-y-4">
                         {studyCards.map((studyCard) => (
@@ -923,18 +921,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             </section>
 
             {/* Study Guides Section */}
-            <section className=" rounded-lg h-fit">
-              <Button 
-                onClick={() => setShowStudyGuideModal(true)}
-                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
-              >
-                New Study Guide
-              </Button>
+            <section className="rounded-lg h-fit">
               <AccordionDemo
                 sections={[
                   {
                     id: "study-guides",
                     title: "Study Guides",
+                    button: {
+                      label: "New Study Guide",
+                      onClick: () => setShowStudyGuideModal(true)
+                    },
                     content: (
                       <div className="space-y-4">
                         {studyGuides.map((guide) => (
@@ -982,18 +978,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             </section>
 
             {/* Quizzes Section */}
-            <section className=" rounded-lg h-fit">
-              <Button 
-                onClick={() => setShowQuizForm(true)}
-                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
-              >
-                New Quiz
-              </Button>
+            <section className="rounded-lg h-fit">
               <AccordionDemo
                 sections={[
                   {
                     id: "quizzes",
                     title: "Quizzes",
+                    button: {
+                      label: "New Quiz",
+                      onClick: () => setShowQuizForm(true)
+                    },
                     content: (
                       <div className="space-y-4">
                         {quizzes.map((quiz) => (

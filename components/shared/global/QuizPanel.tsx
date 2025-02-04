@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { saveQuizState } from "@/lib/firebase/firestore";
+import { getQuizzesByFirestoreUserId, saveQuizState } from "@/lib/firebase/firestore";
 import {
   BookOpen,
   Check,
@@ -144,92 +144,13 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Update the Firestore query
   useEffect(() => {
-    if (!notebookId) return;
-
-    const quizzesRef = collection(db, "quizzes");
-    let q;
-
-    if (pageId) {
-      q = query(
-        quizzesRef,
-        where("notebookId", "==", notebookId),
-        where("pageId", "==", pageId)
-      );
-    } else {
-      q = query(quizzesRef, where("notebookId", "==", notebookId));
-    }
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const quizList = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        let startedAtDate: Date;
-        let lastUpdatedAtDate: Date;
-
-        // Handle startedAt timestamp
-        if (data.startedAt instanceof Timestamp) {
-          startedAtDate = (
-            data.startedAt as unknown as { toDate(): Date }
-          ).toDate();
-        } else if (data.startedAt?.seconds) {
-          startedAtDate = new Date(data.startedAt.seconds * 1000);
-        } else {
-          startedAtDate = new Date();
-        }
-
-        // Handle lastUpdatedAt timestamp
-        if (data.lastUpdatedAt instanceof Timestamp) {
-          lastUpdatedAtDate = (
-            data.lastUpdatedAt as unknown as { toDate(): Date }
-          ).toDate();
-        } else if (data.lastUpdatedAt?.seconds) {
-          lastUpdatedAtDate = new Date(data.lastUpdatedAt.seconds * 1000);
-        } else {
-          lastUpdatedAtDate = startedAtDate;
-        }
-
-        return {
-          ...data,
-          id: doc.id,
-          startedAt: startedAtDate,
-          notebookId: data.notebookId || "",
-          pageId: data.pageId || "",
-          quizData: data.quizData || null,
-          currentQuestionIndex: data.currentQuestionIndex || 0,
-          answers: data.answers || [],
-          score: data.score || 0,
-          completed: data.completed || false,
-          lastUpdatedAt: lastUpdatedAtDate,
-          userId: data.userId || "",
-          userAnswers: data.userAnswers || [],
-          evaluationResults: data.evaluationResults || [],
-          totalQuestions: data.totalQuestions || 0,
-          isComplete: data.isComplete || false,
-          incorrectAnswers: data.incorrectAnswers || [],
-          uploadedDocs: data.uploadedDocs || [],
-          // userId: clerkId,
-        } as unknown as QuizState;
-      });
-
-      // Sort by startedAt
-      quizList.sort((a, b) => {
-        // Convert timestamps to milliseconds safely
-        const timeA =
-          a.startedAt instanceof Date
-            ? a.startedAt.getTime()
-            : (a.startedAt as unknown as { toDate(): Date }).toDate().getTime();
-
-        const timeB =
-          b.startedAt instanceof Date
-            ? b.startedAt.getTime()
-            : (b.startedAt as unknown as { toDate(): Date }).toDate().getTime();
-
-        return timeB - timeA;
-      });
-
-      setQuizzes(quizList);
-    });
-
-    return () => unsubscribe();
+    const loadUserQuizzes = async () => {
+      if (user) {
+        const userQuizzes = await getQuizzesByFirestoreUserId(user.id);
+        setQuizzes(userQuizzes);
+      }
+    };
+    loadUserQuizzes();
   }, [notebookId, pageId]);
 
   // Update useEffect to depend on user

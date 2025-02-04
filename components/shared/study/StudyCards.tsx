@@ -50,6 +50,7 @@ import {
 import CreateCardModal from "./CreateCardModal";
 import { StudyCardCarousel } from "./StudyCardCarousel";
 import { StudyCardList } from "./StudyCardList";
+import { useUser } from "@clerk/nextjs";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -87,23 +88,25 @@ export default function StudyCards({
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListTitle, setEditingListTitle] = useState("");
+  const { user } = useUser();
+  const clerkUserId = user?.id || "";
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
   }, [files]);
 
   // Create a memoized version of loadCardSets with the correct signature
-  const loadCardsetsWrapper = loadCardSets(pageId, setCardSets);
+  const loadCardsetsWrapper = loadCardSets(pageId, setCardSets, clerkUserId);
 
   useEffect(() => {
     loadCardsetsWrapper();
   }, [pageId]);
 
   useEffect(() => {
-    if (showNotebookModal) {
-      loadAllNotebooks(setIsLoadingNotebooks, setNotebooks);
+    if (showNotebookModal && user) {
+      loadAllNotebooks(setIsLoadingNotebooks, setNotebooks, user);
     }
-  }, [showNotebookModal]);
+  }, [showNotebookModal, user]);
 
   const handlePageSelect = (
     notebookId: string,

@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CirclePlus, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button"
 
 interface AccordionDemoProps {
   sections: {
     id: string;
     title: string;
     content: React.ReactNode;
+    button?: {
+      label: string;
+      onClick: () => void;
+    };
   }[];
 }
 
@@ -27,11 +32,19 @@ export function AccordionDemo({ sections }: AccordionDemoProps) {
     <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full">
       {sections.map((section) => (
         <AccordionItem key={section.id} value={section.id}>
-          <AccordionTrigger >
-            <div className="flex flex-col items-center justify-center w-full">
-              <h2 className="text-lg font-semibold">{section.title}</h2>
+          <AccordionTrigger className="flex justify-between">
+            <div className="flex items-center justify-between w-full">
+            {section.button && (
             
-              
+                  <CirclePlus className="h-6 w-6 text-slate-400 hover:text-[#94b347] " onClick={(e) => {
+                    e.stopPropagation(); // Prevent accordion from toggling
+                    section.button?.onClick();
+                  }} />
+             
+              )}
+              <span>{section.title}</span>
+              <div></div>
+             
             </div>
           </AccordionTrigger>
           <AccordionContent>{section.content}</AccordionContent>

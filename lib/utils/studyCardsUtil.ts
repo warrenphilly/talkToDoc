@@ -1,11 +1,12 @@
 import { Page, Notebook } from "@/types/notebooks";
-import { doc, updateDoc, serverTimestamp, collection, getDocs, orderBy, query, getDoc } from "firebase/firestore";
+import { doc, updateDoc, serverTimestamp, collection, getDocs, orderBy, query, getDoc, where } from "firebase/firestore";
 import { db, storage } from "@/firebase";
 import { toast } from "react-hot-toast";
-import { deleteStudyCardSet, getStudyCardSets, saveStudyCardSet } from "@/lib/firebase/firestore";
+import { deleteStudyCardSet, getStudyCardsByClerkId, getStudyCardSets, getUserByClerkId, saveStudyCardSet } from "@/lib/firebase/firestore";
 import { fileUpload } from "@/lib/utils";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { StudySetMetadata } from "@/types/studyCards";
+import { UserResource } from "@clerk/types";
 
 export const toggleAnswer = (showAnswer: Record<string, boolean>, cardIndex: number) => {
   return {
@@ -88,11 +89,12 @@ export const handleUpdateTitle = async (
   }
 };
 
-export const loadCardSets = (pageId: string, setCardSets: (sets: any[]) => void) => {
+export const loadCardSets = (pageId: string, setCardSets: (sets: any[]) => void, clerkUserId: string) => {
   return async () => {
     try {
       const sets = await getStudyCardSets(pageId);
-      setCardSets(sets);
+      const userStudyCards = await getStudyCardsByClerkId(clerkUserId);
+      setCardSets(userStudyCards);
     } catch (error) {
       console.error("Error loading study card sets:", error);
     }
@@ -115,30 +117,72 @@ export const handleClear = (
 };
 
 export const loadAllNotebooks = async (
-  setIsLoadingNotebooks: (loading: boolean) => void,
-  setNotebooks: (notebooks: Notebook[]) => void
+  setIsLoadingNotebooks: (isLoading: boolean) => void, 
+  setNotebooks: (notebooks: Notebook[]) => void, 
+  user: UserResource | null | undefined
 ) => {
   try {
     setIsLoadingNotebooks(true);
-    console.log("Fetching notebooks...");
+
+    if (!user) {
+      console.log("No user found");
+      setNotebooks([]);
+      return;
+    }
+
+    const firestoreUser = await getUserByClerkId(user.id);
+
+    console.log("User IDs:", {
+      clerkUserId: user.id,
+      firestoreUserId: firestoreUser?.id,
+    });
+
+    if (!firestoreUser) {
+      console.error("No Firestore user found for Clerk ID:", user.id);
+      return;
+    }
 
     const notebooksRef = collection(db, "notebooks");
-    const q = query(notebooksRef, orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
 
-    const fetchedNotebooks: Notebook[] = querySnapshot.docs.map(
-      (doc) =>
-        ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-        } as Notebook)
+    const allNotebooks = await getDocs(collection(db, "notebooks"));
+    console.log(
+      "All notebooks:",
+      allNotebooks.docs.map((doc) => ({
+        notebookId: doc.id,
+        userId: doc.data().userId,
+        title: doc.data().title,
+      }))
     );
 
-    console.log("Fetched notebooks:", fetchedNotebooks);
+    const q = query(notebooksRef, where("userId", "==", firestoreUser.id));
+    const querySnapshot = await getDocs(q);
+
+    console.log("Query results for Firestore userId:", {
+      firestoreUserId: firestoreUser.id,
+      matchCount: querySnapshot.docs.length,
+    });
+
+    const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || "",
+        userId: data.userId || "",
+        pages: data.pages || [],
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
+
+    console.log("Final processed notebooks:", fetchedNotebooks);
     setNotebooks(fetchedNotebooks);
   } catch (error) {
     console.error("Error loading notebooks:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
   } finally {
     setIsLoadingNotebooks(false);
   }

@@ -53,8 +53,8 @@ export default function CreateCardModal({
   return (
     <>
       {showNotebookModal && (
-        <div className="fixed inset-0 bg-white flex items-center justify-center z-10 w-full">
-          <div className="bg-white p-6 rounded-lg h-full w-full overflow-y-auto max-w-xl">
+       <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
+          <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
                 Create Study Cards
