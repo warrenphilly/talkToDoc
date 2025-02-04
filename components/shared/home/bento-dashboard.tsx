@@ -53,6 +53,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import QuizForm from "@/components/shared/global/QuizForm";
+import CreateCardModal from "@/components/shared/study/CreateCardModal";
+import StudyGuideModal from "@/components/shared/study/StudyGuideModal";
+import { BookOpen } from "lucide-react";
 
 interface StudyCardData {
   title: string;
@@ -133,6 +136,18 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
     new Set()
   );
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [setName, setSetName] = useState("");
+  const [numCards, setNumCards] = useState(10);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [showUpload, setShowUpload] = useState(true);
+  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
+  const cardFileInputRef = useRef<HTMLInputElement>(null);
+  const [showStudyGuideModal, setShowStudyGuideModal] = useState(false);
+  const [guideName, setGuideName] = useState("");
+  const [studyGuideFiles, setStudyGuideFiles] = useState<File[]>([]);
+  const studyGuideFileInputRef = useRef<HTMLInputElement>(null);
+  const [isGeneratingGuide, setIsGeneratingGuide] = useState(false);
 
   // const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(true);
 
@@ -380,6 +395,131 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     }
   };
 
+  const handleFileUpload = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => {
+    if (event.target.files) {
+      setFiles(Array.from(event.target.files));
+    }
+  };
+
+  const handleGenerateCards = async () => {
+    try {
+      if (!setName.trim()) {
+        toast.error("Please enter a name for the study card set");
+        return;
+      }
+
+      if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
+        toast.error("Please either upload files or select notebook pages");
+        return;
+      }
+
+      setIsGenerating(true);
+
+      const firstNotebookId = Object.keys(selectedPages)[0];
+      const firstPageId = selectedPages[firstNotebookId]?.[0];
+
+      if (!firstNotebookId || !firstPageId) {
+        throw new Error("No notebook or page selected");
+      }
+
+      let uploadedDocsMetadata = [];
+      if (filesToUpload.length > 0) {
+        for (const file of filesToUpload) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/convert", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          if (data.text) {
+            const timestamp = new Date().getTime();
+            const path = `studycards/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            const storageRef = ref(storage, path);
+            await uploadString(storageRef, data.text, "raw", {
+              contentType: "text/markdown",
+            });
+
+            const url = await getDownloadURL(storageRef);
+
+            uploadedDocsMetadata.push({
+              path,
+              url,
+              name: file.name,
+              timestamp: timestamp.toString(),
+            });
+          }
+        }
+      }
+
+      const formData = new FormData();
+      const messageData = {
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        setName,
+        numCards,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+      };
+
+      formData.append("message", JSON.stringify(messageData));
+
+      const response = await fetch("/api/studycards", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to generate study cards");
+      }
+
+      const data = await response.json();
+
+      const newStudyCardSet = {
+        id: `studycards_${crypto.randomUUID()}`,
+        notebookId: firstNotebookId,
+        pageId: firstPageId,
+        title: setName,
+        cards: data.cards,
+        createdAt: serverTimestamp(),
+        userId: user?.id || "",
+      };
+
+      const studyCardRef = doc(db, "studyCards", newStudyCardSet.id);
+      await setDoc(studyCardRef, newStudyCardSet);
+
+      setSetName("");
+      setFilesToUpload([]);
+      setSelectedPages({});
+      setShowCardModal(false);
+
+      toast.success("Study cards generated successfully!");
+
+      // Refresh the study cards list
+      const clerkUserId = await getCurrentUserId();
+      if (clerkUserId) {
+        const userStudyCards = await getStudyCardsByClerkId(clerkUserId);
+        setStudyCards(userStudyCards);
+      }
+
+      router.push(`/study-cards/${newStudyCardSet.id}`);
+    } catch (error: any) {
+      console.error("Error generating study cards:", error);
+      toast.error(error.message || "Failed to generate study cards");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const toggleNotebookExpansion = (notebookId: string) => {
     setExpandedNotebooks((prev) => {
@@ -524,6 +664,127 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     );
   };
 
+  const handleStudyGuideFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setStudyGuideFiles(Array.from(event.target.files));
+    }
+  };
+
+  const handleGenerateGuide = async () => {
+    try {
+      if (!guideName.trim()) {
+        toast.error("Please enter a name for the study guide");
+        return;
+      }
+
+      if (studyGuideFiles.length === 0 && Object.keys(selectedPages).length === 0) {
+        toast.error("Please either upload files or select notebook pages");
+        return;
+      }
+
+      setIsGeneratingGuide(true);
+
+      const firstNotebookId = Object.keys(selectedPages)[0];
+      const firstPageId = selectedPages[firstNotebookId]?.[0];
+
+      if (!firstNotebookId || !firstPageId) {
+        throw new Error("No notebook or page selected");
+      }
+
+      let uploadedDocsMetadata = [];
+      if (studyGuideFiles.length > 0) {
+        for (const file of studyGuideFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/convert", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          if (data.text) {
+            const timestamp = new Date().getTime();
+            const path = `studyguides/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            const storageRef = ref(storage, path);
+            await uploadString(storageRef, data.text, "raw", {
+              contentType: "text/markdown",
+            });
+
+            const url = await getDownloadURL(storageRef);
+
+            uploadedDocsMetadata.push({
+              path,
+              url,
+              name: file.name,
+              timestamp: timestamp.toString(),
+            });
+          }
+        }
+      }
+
+      const formData = new FormData();
+      const messageData = {
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        guideName,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+      };
+
+      formData.append("message", JSON.stringify(messageData));
+
+      const response = await fetch("/api/studyguide", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to generate study guide");
+      }
+
+      const data = await response.json();
+
+      const newStudyGuide = {
+        id: `studyguide_${crypto.randomUUID()}`,
+        notebookId: firstNotebookId,
+        pageId: firstPageId,
+        title: guideName,
+        content: data.content,
+        createdAt: serverTimestamp(),
+        userId: user?.id || "",
+      };
+
+      const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
+      await setDoc(studyGuideRef, newStudyGuide);
+
+      setGuideName("");
+      setStudyGuideFiles([]);
+      setSelectedPages({});
+      setShowStudyGuideModal(false);
+
+      toast.success("Study guide generated successfully!");
+
+      // Refresh the study guides list
+      const clerkUserId = await getCurrentUserId();
+      if (clerkUserId) {
+        const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUserId);
+        setStudyGuides(userStudyGuides);
+      }
+
+      router.push(`/study-guides/${newStudyGuide.id}`);
+    } catch (error: any) {
+      console.error("Error generating study guide:", error);
+      toast.error(error.message || "Failed to generate study guide");
+    } finally {
+      setIsGeneratingGuide(false);
+    }
+  };
 
   return (
     <div className="container mx-auto">
@@ -606,6 +867,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Study Cards Section */}
             <section className=" rounded-lg h-fit">
+              <Button 
+                onClick={() => setShowCardModal(true)}
+                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
+              >
+                New Study Cards
+              </Button>
               <AccordionDemo
                 sections={[
                   {
@@ -657,6 +924,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
             {/* Study Guides Section */}
             <section className=" rounded-lg h-fit">
+              <Button 
+                onClick={() => setShowStudyGuideModal(true)}
+                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
+              >
+                New Study Guide
+              </Button>
               <AccordionDemo
                 sections={[
                   {
@@ -800,7 +1073,50 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           selectedPages={selectedPages}
         />
       )}
-      
+
+      <CreateCardModal
+        showNotebookModal={showCardModal}
+        setShowNotebookModal={setShowCardModal}
+        setName={setName}
+        setSetName={setSetName}
+        numCards={numCards}
+        setNumCards={setNumCards}
+        messages={messages}
+        files={filesToUpload}
+        showUpload={showUpload}
+        fileInputRef={cardFileInputRef as MutableRefObject<HTMLInputElement>}
+        handleFileUpload={handleFileUpload}
+        handleSendMessage={() => {}}
+        handleClear={() => setFilesToUpload([])}
+        setShowUpload={setShowUpload}
+        setFiles={setFilesToUpload}
+        renderNotebookList={renderNotebookList}
+        handleGenerateCards={handleGenerateCards}
+        isGenerating={isGenerating}
+        selectedPages={selectedPages}
+        filesToUpload={filesToUpload}
+      />
+
+      {showStudyGuideModal && (
+        <StudyGuideModal
+          guideName={guideName}
+          setGuideName={setGuideName}
+          files={studyGuideFiles}
+          handleFileUpload={handleStudyGuideFileUpload}
+          handleClear={() => setStudyGuideFiles([])}
+          fileInputRef={studyGuideFileInputRef as MutableRefObject<HTMLInputElement>}
+          messages={messages}
+          handleSendMessage={() => {}}
+          showUpload={showUpload}
+          setShowUpload={setShowUpload}
+          renderNotebookSelection={renderNotebookList}
+          onClose={() => setShowStudyGuideModal(false)}
+          handleGenerateGuide={handleGenerateGuide}
+          isGenerating={isGeneratingGuide}
+          filesToUpload={studyGuideFiles}
+          selectedPages={selectedPages}
+        />
+      )}
     </div>
   );
 }
