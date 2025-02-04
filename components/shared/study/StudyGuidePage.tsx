@@ -29,6 +29,7 @@ import { toast } from "react-hot-toast"; // Add this import
 import { v4 as uuidv4 } from "uuid"; // Add this for generating pageId
 import { StudyGuide } from "./StudyGuide"; // Make sure to export the interface from StudyGuide.tsx
 import StudyGuideModal from "./StudyGuideModal";
+import { useRouter } from "next/navigation";
 
 interface StudyGuidePageProps {
   guide: StudyGuide;
@@ -61,6 +62,7 @@ export function StudyGuidePage({
   );
   const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
   const { user } = useUser();
+  const router = useRouter();
 
   const handleSave = () => {
     if (editedTitle.trim()) {
@@ -105,10 +107,8 @@ export function StudyGuidePage({
       }
 
       // Check if we have either uploaded files or selected pages
-      if (
-        filesToUpload.length === 0 &&
-        Object.keys(selectedPages).length === 0
-      ) {
+      const hasSelectedPages = Object.values(selectedPages).some(pages => pages.length > 0);
+      if (filesToUpload.length === 0 && !hasSelectedPages) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
@@ -116,21 +116,22 @@ export function StudyGuidePage({
       setIsGenerating(true);
 
       // Get the first selected notebook and page for storage path
-      const firstNotebookId = Object.keys(selectedPages)[0];
-      const firstPageId = selectedPages[firstNotebookId]?.[0];
+      const firstNotebookId = Object.keys(selectedPages).find(
+        notebookId => selectedPages[notebookId]?.length > 0
+      );
+      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId][0] : null;
 
-      if (!firstNotebookId || !firstPageId) {
-        throw new Error("No notebook or page selected");
-      }
+      // Generate random IDs if using only uploaded files
+      const pageIdToUse = firstPageId || `page_${uuidv4()}`;
+      const notebookIdToUse = firstNotebookId || `notebook_${uuidv4()}`;
 
-      // First, upload files if any exist
+      // Handle file uploads
       let uploadedDocsMetadata = [];
       if (filesToUpload.length > 0) {
         for (const file of filesToUpload) {
           const formData = new FormData();
           formData.append("file", file);
 
-          // Convert file to text first
           const response = await fetch("/api/convert", {
             method: "POST",
             body: formData,
@@ -142,18 +143,14 @@ export function StudyGuidePage({
 
           const data = await response.json();
           if (data.text) {
-            // Save to Firebase Storage using first selected notebook/page
             const timestamp = new Date().getTime();
-            const path = `studydocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            const path = `studydocs/${notebookIdToUse}/${pageIdToUse}_${timestamp}.md`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
             });
 
-            // Get download URL
             const url = await getDownloadURL(storageRef);
-
-            // Add to metadata array
             uploadedDocsMetadata.push({
               path,
               url,
@@ -167,11 +164,9 @@ export function StudyGuidePage({
       // Prepare the form data for study guide generation
       const formData = new FormData();
       const messageData = {
-        selectedPages:
-          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages: hasSelectedPages ? selectedPages : undefined,
         guideName,
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -189,19 +184,18 @@ export function StudyGuidePage({
 
       const data = await response.json();
 
-      // Create a new study guide object with formatted content
+      // Create a new study guide object with a new ID
+      const newStudyGuideId = `guide_${uuidv4()}`;
       const newStudyGuide: StudyGuide = {
-        id: `guide_${crypto.randomUUID()}`,
+        id: newStudyGuideId,
         title: guideName,
         content: data.content,
-    
-        pageId: firstPageId,
+        pageId: pageIdToUse,
         createdAt: new Date(),
         userId: user?.id || "",
       };
 
-
-      // Save to the studyGuides collection
+      // Save to Firestore
       const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
       await setDoc(studyGuideRef, {
         ...newStudyGuide,
@@ -216,6 +210,10 @@ export function StudyGuidePage({
       setShowModal(false);
 
       toast.success("Study guide generated successfully!");
+
+      // Navigate to the new study guide's URL
+      router.push(`/study-guides/${newStudyGuideId}`);
+      
     } catch (error: any) {
       console.error("Error generating study guide:", error);
       toast.error(error.message || "Failed to generate study guide");
@@ -418,7 +416,7 @@ export function StudyGuidePage({
   };
 
   return (
-    <Card className="p-6 bg-white shadow-none border-none w-full">
+    <Card className="p-6 bg-white shadow-none border-none w-full h-full max-h-[calc(100vh-100px)]  px-8  mt-12">
       <div className="flex justify-between items-center mb-4 w-full">
         <Link href="/">
           <Button
@@ -439,8 +437,9 @@ export function StudyGuidePage({
         </Button>
       </div>
 
-      <div className="shadow-none border-none">
-        <div className="flex flex-row items-center justify-between w-full  px-4  pb-2">
+
+      <div className="shadow-none border-none p-4  h-full max-h-[calc(100vh-100px)] overflow-y-auto">
+        <div className="flex flex-row items-center justify-between w-full  px-4    pb-2">
           {isEditing ? (
             <div className="flex items-center gap-2 flex-1 mr-4 w-full  ">
               <Input
@@ -550,9 +549,10 @@ export function StudyGuidePage({
           </div>
         ))}
       </div>
-
+      <div className="bg-red-500 container mx-auto p-10 m-10">
       {showModal && (
-        <StudyGuideModal
+        
+          <StudyGuideModal
           guideName={guideName}
           setGuideName={setGuideName}
           files={files}
@@ -570,7 +570,10 @@ export function StudyGuidePage({
           filesToUpload={filesToUpload}
           selectedPages={selectedPages}
         />
+      
+        
       )}
+        </div>
     </Card>
   );
 }

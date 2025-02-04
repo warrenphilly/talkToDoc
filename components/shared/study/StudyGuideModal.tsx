@@ -45,9 +45,9 @@ export default function StudyGuideModal({
   selectedPages,
 }: StudyGuideModalProps) {
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center z-10">
-      <Card className="w-full h-full overflow-y-auto bg-white rounded-none border-none shadow-none max-w-xl">
-        <CardContent>
+    <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
+          <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
+
           <div className="flex flex-col gap-2 my-4 items-center justify-center">
             <h2 className="text-xl font-bold mb-4 text-[#94b347]">
               Create Study Guide
@@ -80,8 +80,8 @@ export default function StudyGuideModal({
             />
             {renderNotebookSelection()}
           </div>
-        </CardContent>
-        <CardFooter className="flex justify-between">
+        
+        <div className="flex justify-between mt-5">
           <Button
             variant="outline"
             onClick={onClose}
@@ -106,8 +106,8 @@ export default function StudyGuideModal({
             )}
             {isGenerating ? "Generating..." : "Generate"}
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

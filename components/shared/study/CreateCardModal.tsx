@@ -113,7 +113,7 @@ export default function CreateCardModal({
               </div>
             </div>
 
-            <div className="flex justify-center gap-2 mt-4 w-full">
+            <div className="flex justify-between gap-2 mt-4 w-full">
               <Button
                 variant="outline"
                 className="rounded-full bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500"
