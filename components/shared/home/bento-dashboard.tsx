@@ -40,6 +40,11 @@ import Link from "next/link";
 import { useEffect, useState, useRef, MutableRefObject } from "react";
 import { toast } from "react-hot-toast";
 import { RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db, storage } from "@/firebase";
+import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { useUser } from "@clerk/nextjs";
 
 import {
   Accordion,
@@ -103,6 +108,8 @@ const formatDate = (
 };
 
 export default function BentoDashboard({ listType }: { listType: string }) {
+  const { user } = useUser();
+  const router = useRouter();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
   const [studyCards, setStudyCards] = useState<StudyCardSet[]>([]);
@@ -250,7 +257,120 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       }
 
       setIsGenerating(true);
-      // ... rest of quiz generation logic ...
+
+      const firstNotebookId = Object.keys(selectedPages)[0];
+      const firstPageId = selectedPages[firstNotebookId]?.[0];
+
+      if (!firstNotebookId || !firstPageId) {
+        throw new Error("No notebook or page selected");
+      }
+
+      let uploadedDocsMetadata = [];
+      if (files.length > 0) {
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch("/api/convert", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          if (data.text) {
+            const timestamp = new Date().getTime();
+            const path = `quizdocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            const storageRef = ref(storage, path);
+            await uploadString(storageRef, data.text, "raw", {
+              contentType: "text/markdown",
+            });
+
+            const url = await getDownloadURL(storageRef);
+
+            uploadedDocsMetadata.push({
+              path,
+              url,
+              name: file.name,
+              timestamp: timestamp.toString(),
+            });
+          }
+        }
+      }
+
+      const formData = new FormData();
+      const messageData = {
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        quizName,
+        numberOfQuestions,
+        questionTypes: Object.entries(selectedQuestionTypes)
+          .filter(([_, selected]) => selected)
+          .map(([type]) => type),
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+      };
+
+      formData.append("message", JSON.stringify(messageData));
+
+      const response = await fetch("/api/quiz", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to generate quiz");
+      }
+
+      const data = await response.json();
+
+      const newQuiz: QuizState = {
+        id: `quiz_${crypto.randomUUID()}`,
+        notebookId: firstNotebookId,
+        pageId: firstPageId,
+        quizData: data.quiz,
+        currentQuestionIndex: 0,
+        startedAt: Timestamp.now(),
+        lastUpdatedAt: Timestamp.now(),
+        userAnswers: [],
+        evaluationResults: [],
+        score: 0,
+        isComplete: false,
+        incorrectAnswers: [],
+        totalQuestions: data.quiz.questions.length,
+        userId: user?.id || "",
+        createdAt: Timestamp.now(),
+      };
+
+      const quizRef = doc(db, "quizzes", newQuiz.id);
+      await setDoc(quizRef, {
+        ...newQuiz,
+        startedAt: serverTimestamp(),
+        lastUpdatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      });
+
+      setQuizName("");
+      setFiles([]);
+      setSelectedPages({});
+      setShowQuizForm(false);
+
+      toast.success("Quiz generated successfully!");
+      
+      // Add this to refresh the quizzes list
+      const clerkUserId = await getCurrentUserId();
+      if (clerkUserId) {
+        const firestoreUser = await getUserByClerkId(clerkUserId);
+        if (firestoreUser) {
+          const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
+          setQuizzes(userQuizzes);
+        }
+      }
+
       
     } catch (error: any) {
       console.error("Error generating quiz:", error);
@@ -680,6 +800,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           selectedPages={selectedPages}
         />
       )}
+      
     </div>
   );
 }
