@@ -397,7 +397,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="mx-auto p-16 flex flex-col items-center justify-start  h-full">
+    <div className="mx-auto p-16 flex flex-col items-center justify-start  h-full max-h-screen">
       <div className="mb-6 flex flex-row justify-between w-full">
         <Link href="/">
           <Button variant="ghost" className="gap-2">
@@ -436,7 +436,7 @@ export default function QuizPage() {
         />
       )}
 
-      <div className="flex flex-col items-center justify-start w-full max-w-4xl">
+      <div className="flex flex-col items-center justify-start w-full max-w-8xl overflow-y-auto px-16">
         <div></div>
         <div className="flex p-4 flex-col items-start justify-between w-full">
           <h1 className="text-2xl font-bold ">

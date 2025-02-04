@@ -82,6 +82,7 @@ export interface FirestoreUser {
   updatedAt: Date;
   notebooks: string[]; // Array of notebook IDs
   metadata?: Record<string, any>;
+  creditBalance?: number;
 }
 
 interface SideChat {
@@ -505,6 +506,7 @@ export const createFirestoreUser = async (clerkUser: {
   username?: string;
   imageUrl?: string;
   metadata?: Record<string, any>;
+  creditBalance?: number;
 }) => {
   try {
     // Generate a unique Firestore user ID
@@ -523,6 +525,7 @@ export const createFirestoreUser = async (clerkUser: {
       updatedAt: new Date(),
       notebooks: [], // Initialize empty notebooks array
       metadata: clerkUser.metadata || {},
+      creditBalance: 1000,
     };
 
     await setDoc(userRef, {
