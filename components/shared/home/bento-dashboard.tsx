@@ -25,16 +25,21 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { Timestamp } from "firebase/firestore";
 import {
   ChevronRight,
+  ChevronDown,
+  Check,
   FileText,
   MessageCircleQuestion,
   MessageSquare,
   NotebookPen,
   PanelBottom,
+  Plus,
   ScrollText,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, MutableRefObject } from "react";
+import { toast } from "react-hot-toast";
+import { RefreshCw } from "lucide-react";
 
 import {
   Accordion,
@@ -42,6 +47,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import QuizForm from "@/components/shared/global/QuizForm";
 
 interface StudyCardData {
   title: string;
@@ -103,6 +109,25 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
   const [quizzes, setQuizzes] = useState<QuizState[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [showQuizForm, setShowQuizForm] = useState(false);
+  const [quizName, setQuizName] = useState("");
+  const [numberOfQuestions, setNumberOfQuestions] = useState(10);
+  const [selectedQuestionTypes, setSelectedQuestionTypes] = useState({
+    multipleChoice: true,
+    trueFalse: true,
+    shortAnswer: true,
+  });
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedPages, setSelectedPages] = useState<{
+    [notebookId: string]: string[];
+  }>({});
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
+    new Set()
+  );
+
+  // const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(true);
 
   useEffect(() => {
     const fetchNotebooks = async () => {
@@ -211,6 +236,174 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       }
     }
   };
+
+  const handleGenerateQuiz = async () => {
+    try {
+      if (!quizName.trim()) {
+        toast.error("Please enter a name for the quiz");
+        return;
+      }
+
+      if (files.length === 0 && Object.keys(selectedPages).length === 0) {
+        toast.error("Please either upload files or select notebook pages");
+        return;
+      }
+
+      setIsGenerating(true);
+      // ... rest of quiz generation logic ...
+      
+    } catch (error: any) {
+      console.error("Error generating quiz:", error);
+      toast.error(error.message || "Failed to generate quiz");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+
+  const toggleNotebookExpansion = (notebookId: string) => {
+    setExpandedNotebooks((prev) => {
+      const next = new Set(prev);
+      if (next.has(notebookId)) {
+        next.delete(notebookId);
+      } else {
+        next.add(notebookId);
+      }
+      return next;
+    });
+  };
+
+  const handleNotebookSelection = (
+    notebookId: string,
+    pages: any[],
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({
+      ...prev,
+      [notebookId]: isSelected ? pages.map((p) => p.id) : [],
+    }));
+  };
+
+  const handlePageSelection = (
+    notebookId: string,
+    pageId: string,
+    isSelected: boolean
+  ) => {
+    setSelectedPages((prev) => ({
+      ...prev,
+      [notebookId]: isSelected
+        ? [...(prev[notebookId] || []), pageId]
+        : (prev[notebookId] || []).filter((id) => id !== pageId),
+    }));
+  };
+
+  const isNotebookFullySelected = (notebookId: string, pages: any[]) => {
+    return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
+  };
+  const renderNotebookList = () => {
+    console.log("Rendering notebooks:", notebooks); // Debug log
+
+    
+
+    if (!notebooks || notebooks.length === 0) {
+      return (
+        <div className="text-center p-4 text-gray-500">
+          No notebooks found. Please create a notebook first.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 p-2">
+        {notebooks.map((notebook) => (
+          <div
+            key={notebook.id}
+            className="border rounded-xl p-1 bg-white border-slate-400"
+          >
+            <div className="flex items-center justify-between p-3 bg-white text-slate-600">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleNotebookExpansion(notebook.id)}
+                  className="p-1 hover:bg-slate-200 rounded"
+                >
+                  {expandedNotebooks.has(notebook.id) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                <span className="font-medium">{notebook.title}</span>
+              </div>
+              <button
+                onClick={() =>
+                  handleNotebookSelection(
+                    notebook.id,
+                    notebook.pages,
+                    !isNotebookFullySelected(notebook.id, notebook.pages)
+                  )
+                }
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                    : "bg-white hover:bg-slate-100"
+                }`}
+              >
+                {isNotebookFullySelected(notebook.id, notebook.pages) ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span className="text-sm">
+                  {isNotebookFullySelected(notebook.id, notebook.pages)
+                    ? "Added"
+                    : "Add All"}
+                </span>
+              </button>
+            </div>
+
+            {expandedNotebooks.has(notebook.id) && notebook.pages && (
+              <div className="pl-8 pr-3 py-2 space-y-1 border-t text-slate-600">
+                {notebook.pages.map((page) => (
+                  <div
+                    key={page.id}
+                    className="flex items-center justify-between py-1"
+                  >
+                    <span className="text-sm">{page.title}</span>
+                    <button
+                      onClick={() =>
+                        handlePageSelection(
+                          notebook.id,
+                          page.id,
+                          !selectedPages[notebook.id]?.includes(page.id)
+                        )
+                      }
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-sm ${
+                        selectedPages[notebook.id]?.includes(page.id)
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-white hover:bg-slate-200"
+                      }`}
+                    >
+                      {selectedPages[notebook.id]?.includes(page.id) ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      <span>
+                        {selectedPages[notebook.id]?.includes(page.id)
+                          ? "Added"
+                          : "Add"}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
 
   return (
     <div className="container mx-auto">
@@ -397,6 +590,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
             {/* Quizzes Section */}
             <section className=" rounded-lg h-fit">
+              <Button 
+                onClick={() => setShowQuizForm(true)}
+                className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
+              >
+                New Quiz
+              </Button>
               <AccordionDemo
                 sections={[
                   {
@@ -462,6 +661,25 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
       />
+
+      {showQuizForm && (
+        <QuizForm
+          quizName={quizName}
+          setQuizName={setQuizName}
+          numberOfQuestions={numberOfQuestions}
+          setNumberOfQuestions={setNumberOfQuestions}
+          selectedQuestionTypes={selectedQuestionTypes}
+          setSelectedQuestionTypes={setSelectedQuestionTypes}
+          files={files}
+          setFiles={setFiles}
+          fileInputRef={fileInputRef as MutableRefObject<HTMLInputElement> }
+          isGenerating={isGenerating}
+          handleGenerateQuiz={handleGenerateQuiz}
+          setShowQuizForm={setShowQuizForm}
+          renderNotebookList={renderNotebookList}
+          selectedPages={selectedPages}
+        />
+      )}
     </div>
   );
 }
