@@ -61,6 +61,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
 import { StudyGuideCard } from "./StudyGuideCard";
+import StudyGuideModal from "./StudyGuideModal";
 
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
@@ -830,14 +831,14 @@ export default function StudyGuideComponent({
           </CardTitle>
           <CardDescription>Create and review study guides</CardDescription>
           <div className="flex flex-col justify-center items-center ">
-              <Button
-                onClick={() => setShowNotebookModal(true)}
-                className="flex items-center gap-2 m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
-              >
-                <PlusCircle className="h-4 w-4" />
-                Generate Study Guide
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowNotebookModal(true)}
+              className="flex items-center gap-2 m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Generate Study Guide
+            </Button>
+          </div>
         </CardHeader>
         {selectedGuideView ? (
           <StudyGuideCard
@@ -848,75 +849,25 @@ export default function StudyGuideComponent({
           />
         ) : (
           <div className="space-y-4">
-         
-
             {showNotebookModal && (
-              <div className="fixed inset-0 bg-white flex items-center justify-center z-10 ">
-                <Card className="w-full h-full overflow-y-auto bg-white rounded-none border-none shadow-none  max-w-xl">
-                  <CardContent>
-                    <div className="flex flex-col gap-2  my-4 items-center justify-center">
-                      <h2 className="text-xl font-bold mb-4 text-[#94b347]">
-                        Create Study Guide
-                      </h2>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Study Guide Name
-                        </label>
-                        <Input
-                          placeholder="Study Guide Name"
-                          value={guideName}
-                          onChange={(e) => setGuideName(e.target.value)}
-                          className="text-slate-600"
-                        />
-                      </div>
-                      <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg ">
-                        <h3> Select notes or upload files to study </h3>{" "}
-                      </div>
-                      <FormUpload
-                        files={files}
-                        handleFileUpload={handleFileUpload}
-                        handleClear={handleClear}
-                        fileInputRef={fileInputRef}
-                        messages={messages}
-                        handleSendMessage={handleSendMessage}
-                        showUpload={showUpload}
-                        setShowUpload={setShowUpload}
-                      />
-                      {/* Notebook selection content */}
-
-                      {renderNotebookSelection()}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowNotebookModal(false)}
-                      className="bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500 rounded-full"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleGenerateGuide}
-                      disabled={
-                        isGenerating ||
-                        !guideName.trim() ||
-                        (filesToUpload.length === 0 &&
-                          Object.keys(selectedPages).length === 0)
-                      }
-                      className="rounded-full bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
-                    >
-                      {isGenerating ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <BookOpen className="h-4 w-4" />
-                      )}
-                      {isGenerating ? "Generating..." : "Generate"}
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </div>
+              <StudyGuideModal
+                guideName={guideName}
+                setGuideName={setGuideName}
+                files={files}
+                handleFileUpload={handleFileUpload}
+                handleClear={handleClear}
+                fileInputRef={fileInputRef}
+                messages={messages}
+                handleSendMessage={handleSendMessage}
+                showUpload={showUpload}
+                setShowUpload={setShowUpload}
+                renderNotebookSelection={renderNotebookSelection}
+                onClose={() => setShowNotebookModal(false)}
+                handleGenerateGuide={handleGenerateGuide}
+                isGenerating={isGenerating}
+                filesToUpload={filesToUpload}
+                selectedPages={selectedPages}
+              />
             )}
 
             {/* Study Guides List */}
