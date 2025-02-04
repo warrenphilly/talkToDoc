@@ -6,7 +6,9 @@ import PageQuiz from "@/components/ui/PageQuiz";
 import { getQuiz, getUserByClerkId, Notebook } from "@/lib/firebase/firestore";
 
 import { db, storage } from "@/firebase";
+import { getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
 import { QuizState } from "@/types/quiz";
+import { User } from "@/types/users";
 import { useUser } from "@clerk/nextjs";
 import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
@@ -19,14 +21,13 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { User } from "@/types/users";
-import { getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
 
 export default function QuizPage() {
   const params = useParams();
+  const router = useRouter();
   const [quiz, setQuiz] = useState<QuizState | null>(null);
   const { user } = useUser();
 
@@ -54,8 +55,7 @@ export default function QuizPage() {
     new Set()
   );
 
-
-    useEffect(() => {
+  useEffect(() => {
     const fetchFirestoreUser = async () => {
       if (user) {
         try {
@@ -91,7 +91,6 @@ export default function QuizPage() {
 
     fetchNotebooks();
   }, [firestoreUser]);
-
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -226,6 +225,8 @@ export default function QuizPage() {
       setShowQuizForm(false);
 
       toast.success("Quiz generated successfully!");
+
+      router.push(`/quizzes/${newQuiz.id}`);
     } catch (error: any) {
       console.error("Error generating quiz:", error);
       toast.error(error.message || "Failed to generate quiz");
@@ -424,7 +425,9 @@ export default function QuizPage() {
           setSelectedQuestionTypes={setSelectedQuestionTypes}
           files={files}
           setFiles={setFiles}
-          fileInputRef={fileInputRef as unknown as React.RefObject<HTMLInputElement>}
+          fileInputRef={
+            fileInputRef as unknown as React.RefObject<HTMLInputElement>
+          }
           isGenerating={isGenerating}
           handleGenerateQuiz={handleGenerateQuiz}
           setShowQuizForm={setShowQuizForm}
