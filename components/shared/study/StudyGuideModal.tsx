@@ -1,12 +1,11 @@
-import React, { RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Message } from "@/lib/types";
 import { BookOpen, RefreshCw } from "lucide-react";
+import React, { RefObject } from "react";
 
 import FormUpload from "./formUpload";
-
 
 interface StudyGuideModalProps {
   guideName: string;
@@ -14,12 +13,12 @@ interface StudyGuideModalProps {
   files: File[];
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   handleClear: () => void;
-  fileInputRef: RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   messages: Message[];
   handleSendMessage: () => void;
   showUpload: boolean;
   setShowUpload: (show: boolean) => void;
-  renderNotebookSelection: () => React.ReactElement;
+  renderNotebookSelection: () => React.ReactNode;
   onClose: () => void;
   handleGenerateGuide: () => Promise<void>;
   isGenerating: boolean;

@@ -1262,12 +1262,26 @@ export const getStudyGuidesByFirestoreUserId = async (
 
     return querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      return {
+
+      // Helper function to safely convert Firestore timestamps
+      const convertTimestamp = (timestamp: any) => {
+        if (!timestamp) return null;
+        if (timestamp.toDate) {
+          return timestamp.toDate().toISOString();
+        }
+        return timestamp;
+      };
+
+      // Convert all timestamp fields
+      const serializedData = {
         ...data,
         id: doc.id,
-        createdAt:
-          data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      } as StudyGuide;
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+      };
+
+      // Parse and stringify to ensure complete serialization
+      return JSON.parse(JSON.stringify(serializedData)) as StudyGuide;
     });
   } catch (error) {
     console.error("Error getting study guides:", error);
@@ -1344,7 +1358,7 @@ export const updateStudyCardSetTitle = async (
 ): Promise<void> => {
   try {
     const studyCardSetRef = doc(db, "studyCardSets", setId);
-    
+
     await updateDoc(studyCardSetRef, {
       title: newTitle,
       updatedAt: serverTimestamp(),

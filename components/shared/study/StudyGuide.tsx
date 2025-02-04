@@ -16,8 +16,10 @@ import { db } from "@/firebase";
 import {
   deleteStudyCardSet,
   getAllNotebooks,
+  getNotebooksByFirestoreUserId,
   getStudyCards,
   getStudyCardSets,
+  getUserByClerkId,
   saveStudyCard,
   saveStudyCardSet,
   saveStudyGuide,
@@ -62,6 +64,8 @@ import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
 import { StudyGuideCard } from "./StudyGuideCard";
 import StudyGuideModal from "./StudyGuideModal";
+import { toast } from "react-hot-toast";
+import { User } from "@/types/users";
 
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
@@ -82,7 +86,7 @@ export interface StudyGuide {
   id: string;
   title: string;
   content: StudyGuideSection[];
-  notebookId: string;
+ 
   pageId: string;
   createdAt: Date;
   userId: string;
@@ -126,6 +130,7 @@ export default function StudyGuideComponent({
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
   const [selectedGuide, setSelectedGuide] = useState<StudyGuide | null>(null);
+  const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
 
   // Update the state to track expanded sections for each guide
   const [expandedSections, setExpandedSections] = useState<{
@@ -154,9 +159,10 @@ export default function StudyGuideComponent({
 
   useEffect(() => {
     if (showNotebookModal) {
-      loadAllNotebooks();
+      fetchNotebooks();
     }
   }, [showNotebookModal]);
+
 
   useEffect(() => {
     loadStudyGuides();
@@ -179,43 +185,79 @@ export default function StudyGuideComponent({
     console.log("Sending message");
   };
 
+  useEffect(() => {
+    const fetchFirestoreUser = async () => {
+      if (user) {
+        try {
+          const firestoreUser = await getUserByClerkId(user.user?.id || "");
+          setFirestoreUser(firestoreUser);
+        } catch (error) {
+          console.error("Error fetching user:", error);
+          toast.error("Failed to load user data");
+        }
+
+      }
+    };
+    fetchFirestoreUser();
+  }, [user]);
+
+
   const handleClear = () => {
     setMessages([]);
     setFiles([]);
   };
 
-  const loadAllNotebooks = async () => {
-    try {
-      setIsLoadingNotebooks(true);
-      console.log("Fetching notebooks...");
+  // const loadAllNotebooks = async () => {
+  //   try {
+  //     setIsLoadingNotebooks(true);
+  //     console.log("Fetching notebooks...");
 
-      // Get reference to notebooks collection
-      const notebooksRef = collection(db, "notebooks");
+  //     // Get reference to notebooks collection
+  //     const notebooksRef = collection(db, "notebooks");
 
-      // Create query to get all notebooks
-      const q = query(notebooksRef, orderBy("createdAt", "desc"));
+  //     // Create query to get all notebooks
+  //     const q = query(notebooksRef, orderBy("createdAt", "desc"));
 
-      // Get notebooks
-      const querySnapshot = await getDocs(q);
+  //     // Get notebooks
+  //     const querySnapshot = await getDocs(q);
 
-      // Map the documents to Notebook objects
-      const fetchedNotebooks: Notebook[] = querySnapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate() || new Date(),
-          } as Notebook)
-      );
+  //     // Map the documents to Notebook objects
+  //     const fetchedNotebooks: Notebook[] = querySnapshot.docs.map(
+  //       (doc) =>
+  //         ({
+  //           id: doc.id,
+  //           ...doc.data(),
+  //           createdAt: doc.data().createdAt?.toDate() || new Date(),
+  //         } as Notebook)
+  //     );
 
-      console.log("Fetched notebooks:", fetchedNotebooks);
-      setNotebooks(fetchedNotebooks);
-    } catch (error) {
-      console.error("Error loading notebooks:", error);
-    } finally {
-      setIsLoadingNotebooks(false);
+  //     console.log("Fetched notebooks:", fetchedNotebooks);
+  //     setNotebooks(fetchedNotebooks);
+  //   } catch (error) {
+  //     console.error("Error loading notebooks:", error);
+  //   } finally {
+  //     setIsLoadingNotebooks(false);
+  //   }
+  // };
+
+
+  const fetchNotebooks = async () => {
+    if (firestoreUser) {
+      try {
+        setIsLoadingNotebooks(true);
+        const fetchedNotebooks = await getNotebooksByFirestoreUserId(
+          firestoreUser.id
+        );
+        console.log("Fetched notebooks:", fetchedNotebooks); // Debug log
+        setNotebooks(fetchedNotebooks);
+      } catch (error) {
+        console.error("Error fetching notebooks:", error);
+        toast.error("Failed to load notebooks");
+      } finally {
+        setIsLoadingNotebooks(false);
+      }
     }
-  };
+  }
 
   const handlePageSelection = (
     notebookId: string,
@@ -673,7 +715,7 @@ export default function StudyGuideComponent({
         id: `guide_${crypto.randomUUID()}`,
         title: guideName,
         content: data.content, // This will be an array of sections with title, text, and show properties
-        notebookId,
+      
         pageId,
         createdAt: new Date(),
         userId: userId || "",
@@ -719,9 +761,9 @@ export default function StudyGuideComponent({
         // Try the ordered query first
         const q = query(
           studyGuidesRef,
-          where("pageId", "==", pageId),
-          where("notebookId", "==", notebookId),
+          where("userId", "==", userId),
           orderBy("createdAt", "desc")
+
         );
         querySnapshot = await getDocs(q);
       } catch (error) {
@@ -729,10 +771,10 @@ export default function StudyGuideComponent({
         // Fallback to unordered query if index doesn't exist
         const q = query(
           studyGuidesRef,
-          where("pageId", "==", pageId),
-          where("notebookId", "==", notebookId)
+          where("userId", "==", userId),
         );
         querySnapshot = await getDocs(q);
+
       }
 
       const guides = querySnapshot.docs.map((doc) => {
@@ -757,6 +799,7 @@ export default function StudyGuideComponent({
       console.error("Error loading study guides:", error);
     }
   };
+  
 
   const handleDeleteStudyGuide = async (guideId: string) => {
     try {

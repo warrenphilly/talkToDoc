@@ -271,10 +271,10 @@ export function SidebarNav() {
                         <SidebarMenuButton asChild className={`rounded-none`}>
                           <Link
                             href={`/notes/${notebook.id}`}
-                            className={`flex items-center gap-2 bg-slate-50 pl-10 justify-start ${
+                            className={`flex items-center gap-2  pl-10 justify-start ${
                               pathname === `/notes/${notebook.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
-                                : "hover:bg-slate-300"
+                                : " bg-slate-50 hover:bg-slate-300"
                             }  ${
                               pathname.includes("/notes") &&
                               pathname !== `/notes/${notebook.id}`
@@ -332,11 +332,11 @@ export function SidebarNav() {
                       >
                         <SidebarMenuButton asChild className="rounded-none">
                           <Link
-                            href={`study-cards/${set.id}`}
-                            className={`flex items-center gap-2 pl-10 justify-start ${
+                            href={``}
+                            className={`flex items-center  gap-2 pl-10 justify-start ${
                               pathname === `/study-cards/${set.id}`
                                 ? "bg-slate-200 text-slate-800 hover:text-slate-800 hover:bg-[#8da34f]"
-                                : "hover:bg-slate-300 "
+                                : "hover:bg-slate-300 bg-slate-50"
                             } ${
                               pathname.includes("/study-cards") &&
                               pathname !== `/study-cards/${set.id}`

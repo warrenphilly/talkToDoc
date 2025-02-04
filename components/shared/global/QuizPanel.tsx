@@ -64,10 +64,10 @@ import {
   Timestamp,
   where,
 } from "firebase/firestore";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
-import { ArrowLeft } from "lucide-react";
-
+import QuizForm from "./QuizForm";
 
 // First, let's define our message types
 interface Sentence {
@@ -651,21 +651,16 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex flex-col justify-center items-center w-full gap-4 ">
           <h2 className="text-2xl font-bold text-[#94b347]">Quiz Me</h2>
-          <p className="text-slate-600 ">
-            Create and review quizzes
-          </p>
-          
-            <Button
-              onClick={() => setShowQuizForm(true)}
-              className="bg-white border border-slate-400 text-slate-800 hover:bg-white 0 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Create Quiz
-            </Button>
-        
-        </div>
+          <p className="text-slate-600 ">Create and review quizzes</p>
 
-     
+          <Button
+            onClick={() => setShowQuizForm(true)}
+            className="bg-white border border-slate-400 text-slate-800 hover:bg-white 0 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Create Quiz
+          </Button>
+        </div>
       </div>
 
       {/* Quiz List */}
@@ -674,7 +669,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           {quizzes.map((quiz) => (
             <div
               key={quiz.id}
-              className="border-t  p-1 bg-white border-slate-300  cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => handleQuizSelect(quiz)}
+              className="border-t  p-1 bg-white border-slate-300  cursor-pointer hover:bg-slate-50 transition-colors"
+              onClick={() => handleQuizSelect(quiz)}
             >
               <div className="flex items-center justify-between p-3  text-slate-600">
                 <div className="flex items-center gap-2">
@@ -728,157 +724,43 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz Generation Form */}
       {showQuizForm && (
-        <div className="fixed inset-0 bg-white flex items-center justify-center p-4 z-5">
-          <Card className="w-full bg-white shadow-none border-none h-full max-w-xl ">
-            <CardHeader>
-              <div className="flex flex-row justify-center items-center">
-                <CardTitle className="text-[#94b347] text-xl font-bold">
-                  Create New Quiz
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Quiz Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Quiz Name
-                </label>
-                <Input
-                  value={quizName}
-                  onChange={(e) => setQuizName(e.target.value)}
-                  placeholder="Enter quiz name"
-                  className="text-slate-600 rounded-md"
-                />
-              </div>
-
-              {/* Number of Questions */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Number of Questions
-                </label>
-                <Select
-                  value={numberOfQuestions.toString()}
-                  onValueChange={(value) => setNumberOfQuestions(Number(value))}
-                >
-                  <SelectTrigger className="text-slate-600 rounded-md">
-                    <SelectValue placeholder="Select number of questions" />
-                  </SelectTrigger>
-                  <SelectContent className="text-slate-600 rounded-md bg-white">
-                    {[5, 10, 15, 20].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} questions
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Question Types */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Question Types
-                </label>
-                <div className="space-y-2">
-                  {Object.entries(selectedQuestionTypes).map(
-                    ([type, selected]) => (
-                      <div key={type} className="flex items-center">
-                        <Checkbox
-                          checked={selected}
-                          className="data-[state=checked]:bg-[#94b347] data-[state=checked]:text-white"
-                          onCheckedChange={(checked) =>
-                            setSelectedQuestionTypes((prev) => ({
-                              ...prev,
-                              [type]: checked === true,
-                            }))
-                          }
-                          id={type}
-                        />
-                        <label
-                          htmlFor={type}
-                          className="ml-2 text-sm text-slate-600"
-                        >
-                          {type.replace(/([A-Z])/g, " $1").trim()}
-                        </label>
-                      </div>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Notebook Selection */}
-              <div>
-                <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg ">
-                  <h3> Select notes or upload files to study </h3>
-                </div>
-                <FormUpload
-                  files={files}
-                  handleFileUpload={(e) => {
-                    if (e.target.files) {
-                      setFiles(Array.from(e.target.files));
-                    }
-                  }}
-                  handleClear={() => setFiles([])}
-                  fileInputRef={fileInputRef}
-                  messages={[]}
-                  handleSendMessage={() => {}}
-                  showUpload={true}
-                  setShowUpload={() => {}}
-                />
-                {renderNotebookList()}
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2 ">
-              <div className="flex flex-row justify-between items-center w-full">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowQuizForm(false)}
-                  className="text-red-500 bg-white rounded-full border border-red-500  hover:text-red-500 hover:border-red-500  hover:bg-red-200"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleGenerateQuiz}
-                  disabled={
-                    isGenerating ||
-                    !Object.values(selectedQuestionTypes).some(Boolean) ||
-                    (!files.length && !Object.keys(selectedPages).length)
-                  }
-                  className="bg-white hover:bg-white rounded-full shadow-none border border-slate-400 text-slate-400 hover:text-[#94b347] hover:border-[#94b347]"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Quiz"
-                  )}
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </div>
+        <QuizForm
+          quizName={quizName}
+          setQuizName={setQuizName}
+          numberOfQuestions={numberOfQuestions}
+          setNumberOfQuestions={setNumberOfQuestions}
+          selectedQuestionTypes={selectedQuestionTypes}
+          setSelectedQuestionTypes={setSelectedQuestionTypes}
+          files={files}
+          setFiles={setFiles}
+          fileInputRef={fileInputRef}
+          isGenerating={isGenerating}
+          handleGenerateQuiz={handleGenerateQuiz}
+          setShowQuizForm={setShowQuizForm}
+          renderNotebookList={renderNotebookList}
+          selectedPages={selectedPages}
+        />
       )}
 
       {/* Quiz Display */}
       {selectedQuiz && quizData && !showQuizForm && (
         <div>
-            <Button onClick={handleBackToList}  variant="ghost" className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent">
-                <ArrowLeft className="w-4 h-4" /> 
-              
-
+          <Button
+            onClick={handleBackToList}
+            variant="ghost"
+            className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent"
+          >
+            <ArrowLeft className="w-4 h-4" />
             Back to List
-            </Button>
+          </Button>
           <div className="flex flex-col justify-between items-start my-2">
-          
-            <p className="text-lg font-semibold text-[#94b347]">{selectedQuiz.quizData?.title}</p>
+            <p className="text-lg font-semibold text-[#94b347]">
+              {selectedQuiz.quizData?.title}
+            </p>
             <div className="flex flex-row justify-center items-center">
               <p>Questions: {selectedQuiz.totalQuestions}</p>
-            
             </div>
-            </div>
-
-        
+          </div>
 
           <Quiz
             data={quizData}
