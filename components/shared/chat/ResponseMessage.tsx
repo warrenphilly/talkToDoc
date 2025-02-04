@@ -38,9 +38,9 @@ export const ResponseMessage = ({
 
   if (typeof msg.text === "string") {
     return (
-      <div key={index} className="p-2 rounded mb-2 bg-white">
+      <div key={index} className="md:p-2 rounded mb-2 ">
         <div className="text-sm">
-          <div className="bg-white border border-[#94b347] p-4 rounded-2xl transition-colors">
+          <div className="bg-white border border-[#94b347] md:p-4 rounded-2xl transition-colors">
             <p className="text-gray-800">{msg.text}</p>
           </div>
         </div>
@@ -49,7 +49,7 @@ export const ResponseMessage = ({
   }
 
   return (
-    <div key={index} className="p-2 rounded mb-2 bg-white">
+    <div key={index} className="md:p-2 rounded mb-2 ">
       {msg.user === "AI" && (
         <div className="text-sm">
           {msg.text.map((section: Section, sectionIdx: number) => (
@@ -72,7 +72,7 @@ export const ResponseMessage = ({
                   }}
                 />
               ) : (
-                <div className="bg-white  p-4 rounded-2xl transition-colors">
+                <div className="  md:p-4 rounded-2xl transition-colors">
                   <div className="flex justify-between items-center mb-3">
                     <h3
                       className="text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer"

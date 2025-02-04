@@ -339,12 +339,12 @@ const ChatClient = ({
   }, [isSmallScreen]);
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl overflow-hidden">
+    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl ">
       {/* hydration error is here */}
-      <div className="flex flex-col bg-white w-full mx-2 overflow-hidden">
-        <div className="flex flex-row items-center justify-between w-full py-2">
+      <div className="flex flex-col bg-white w-full mx-2 h-full">
+        <div className="flex flex-row items-center justify-between w-full md:py-2">
           {/* Primary notebook buttons */}
-          <div className="flex flex-row gap-2 items-center justify-between px-7">
+          <div className="flex flex-col md:flex-row gap-2 items-center justify-between md:px-7">
             <Button
               onClick={() => setShowUpload(!showUpload)}
               className={`bg-white0 shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit ${
@@ -355,34 +355,28 @@ const ChatClient = ({
             </Button>
           </div>
 
-          <div className="flex flex-row items-center justify-center w-fit mx-8 gap-4">
+          {/* Desktop view */}
+          <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 my-4">
             <Button
               onClick={() => {
-             
                 setShowStudyCards(false);
                 setShowStudyGuides(!showStudyGuides);
-            
-
                 setShowChat(false);
                 setShowQuiz(false);
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
               }}
-              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
             >
               Study guide
             </Button>
-
             <Button
               onClick={() => {
                 setShowStudyCards(!showStudyCards);
-                console.log("showStudyCards", showStudyCards);
-
                 setShowStudyGuides(false);
                 setShowChat(false);
                 setShowQuiz(false);
-
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
@@ -393,17 +387,13 @@ const ChatClient = ({
             </Button>
             <Button
               onClick={() => {
-         
                 setShowQuiz(!showQuiz);
-
                 setShowStudyCards(false);
                 setShowStudyGuides(false);
-             
                 setShowChat(false);
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
-              
                 setIsStudyCardsFullscreen(false);
                 setIsStudyGuidesFullscreen(false);
               }}
@@ -411,37 +401,104 @@ const ChatClient = ({
             >
               Quiz Me
             </Button>
-
             <Button
               onClick={() => {
                 setShowChat(!showChat);
-
                 setShowQuiz(false);
                 setIsNotebookFullscreen(false);
                 setIsChatFullscreen(false);
                 setIsQuizFullscreen(false);
-               
                 setShowStudyCards(false);
                 setShowStudyGuides(false);
-              
               }}
-              className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
+              className="text-slate-500 md:px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
             </Button>
           </div>
+
+          {/* Mobile hamburger menu */}
+          <div className="md:hidden my-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="mr-4 rounded-full bg-white hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-white hover:bg-white text-slate-500">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowStudyCards(false);
+                    setShowStudyGuides(!showStudyGuides);
+                    setShowChat(false);
+                    setShowQuiz(false);
+                    setIsNotebookFullscreen(false);
+                    setIsChatFullscreen(false);
+                    setIsQuizFullscreen(false);
+                  }}
+                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border data"
+                >
+                  Study guide
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowStudyCards(!showStudyCards);
+                    setShowStudyGuides(false);
+                    setShowChat(false);
+                    setShowQuiz(false);
+                    setIsNotebookFullscreen(false);
+                    setIsChatFullscreen(false);
+                    setIsQuizFullscreen(false);
+                  }}
+                  className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
+                >
+                  Study cards
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowQuiz(!showQuiz);
+                    setShowStudyCards(false);
+                    setShowStudyGuides(false);
+                    setShowChat(false);
+                    setIsNotebookFullscreen(false);
+                    setIsChatFullscreen(false);
+                    setIsQuizFullscreen(false);
+                    setIsStudyCardsFullscreen(false);
+                    setIsStudyGuidesFullscreen(false);
+                  }}
+                  className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
+                >
+                  Quiz Me
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowChat(!showChat);
+                    setShowQuiz(false);
+                    setIsNotebookFullscreen(false);
+                    setIsChatFullscreen(false);
+                    setIsQuizFullscreen(false);
+                    setShowStudyCards(false);
+                    setShowStudyGuides(false);
+                  }}
+                  className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
+                >
+                  {showChat ? "Close Chat" : "Talk to my notes"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-start h-[calc(100%-3rem)] overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden p-0 m-0">
           {/* workspace panel if the viewport is small then it will be vertical else horizontal */}
           <ResizablePanelGroup
             direction={isSmallScreen ? "vertical" : "horizontal"}
-            className="w-full px-2"
+            className="w-full "
           >
             {/* notbook panel */}
             <ResizablePanel
-              className={`relative ${
-                isNotebookFullscreen ? "w-full" : "w-full p-2 min-w-[600px]"
+              className={`relative  p-0 m-0 flex items-center justify-center  ${
+                isNotebookFullscreen ? "w-full" : "w-full "
               } ${
                 isChatFullscreen ||
                 isQuizFullscreen ||
@@ -449,7 +506,7 @@ const ChatClient = ({
                 isStudyCardsFullscreen ||
                 isStudyGuidesFullscreen
                   ? "hidden"
-                  : "w-full p-2 min-w-[600px]"
+                  : "w-full p-2 "
 
               } flex flex-col gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
@@ -466,7 +523,7 @@ const ChatClient = ({
               />
 
               {isProcessing && (
-                <div className="w-full px-4">
+                <div className="w-full ">
                   <div className="w-full bg-slate-200 rounded-full h-2.5">
                     <div
                       className="bg-[#94b347] h-2.5 rounded-full transition-all duration-300"
@@ -479,7 +536,7 @@ const ChatClient = ({
                 </div>
               )}
 
-              <div className="flex bg-white flex-col overflow-y-auto p-4   rounded-2xl m-2 w-full h-full">
+              <div className="flex  flex-col overflow-y-auto   rounded-2xl m w-full h-full">
                 <ParagraphEditor
                   onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
                   messageIndex={0}

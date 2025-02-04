@@ -68,11 +68,20 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
   }));
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white p-4">
-      <BrowserTabs notebookId={notebook.id} initialTabs={tabs} />
+    <div className="flex flex-col min-h-screen w-full bg-white">
+      {/* Main content container with responsive padding */}
+      <div className="flex-1 w-full max-w-[100vw] mx-auto px-2 sm:px-4 md:px-6">
+        {/* Responsive container for BrowserTabs */}
+        <div className="h-[calc(100vh-2rem)] sm:h-[calc(100vh-4rem)] w-full overflow-hidden rounded-lg">
+          <BrowserTabs 
+            notebookId={notebook.id} 
+            initialTabs={tabs}
+            className="h-full w-full"
+          />
+        </div>
+      </div>
     </div>
   );
-
 };
 
 export default NotePage;

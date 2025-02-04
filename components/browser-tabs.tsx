@@ -185,16 +185,16 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   };
 
   return (
-    <div className={cn("w-full h-full mx-auto rounded-lg bg-white", className)}>
-      <div className="flex items-center bg-white rounded-t-lg">
+    <div className={cn("w-full h-full mx-auto rounded-lg bg-white mt-12", className)}>
+      <div className="flex items-center bg-white rounded-t-lg overflow-x-auto scrollbar-hide z-20">
         {tabs.map((tab) => (
           <motion.div
             key={tab.id}
             layout
             className={cn(
-              "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer",
+              "  flex items-center px-1.5 md:px-3 py-0.5 md:py-2 text-[10px] md:text-sm font-medium relative top-[15px] rounded-t-lg cursor-pointer min-w-[80px] md:min-w-[150px] max-w-[120px] md:max-w-none",
               activeTabId === tab.id
-                ? " text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300  bg-white shadow-x-md"
+                ? "text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300 bg-white shadow-x-md"
                 : "text-muted-foreground bg-slate-100"
             )}
             onClick={() => setActiveTabId(tab.id)}
@@ -205,30 +205,30 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               notebookId={notebookId}
             />
             <button
-              className="ml-2 text-muted-foreground hover:text-foreground"
+              className="ml-0.5 md:ml-2 text-muted-foreground hover:text-foreground"
               onClick={(e) => {
                 e.stopPropagation();
                 removeTab(tab.id);
               }}
             >
-              <X size={14} />
+              <X size={10} className="md:w-4 md:h-4" />
             </button>
           </motion.div>
         ))}
         <button
-          className="p-1 ml-2 text-muted-foreground group relative flex items-center"
+          className="p-0.5 md:p-1 ml-1 md:ml-2 text-muted-foreground group relative flex items-center"
           onClick={addTab}
         >
-          <Plus size={20} />
-          <span className="absolute left-full ml-2 hidden group-hover:flex transition-opacity whitespace-nowrap text-sm text-slate-400">
+          <Plus size={14} className="md:w-5 md:h-5" />
+          <span className="absolute left-full ml-2 hidden group-hover:flex transition-opacity whitespace-nowrap text-[10px] md:text-sm text-slate-400">
             Add page
           </span>
         </button>
         <button
-          className="p-1 ml-auto mr-2 text-muted-foreground hover:text-foreground"
+          className="p-0.5 md:p-1 ml-auto mr-1 md:mr-2 text-muted-foreground hover:text-foreground"
           onClick={() => setIsModalOpen(true)}
         >
-          <List size={20} />
+          <List size={14} className="md:w-5 md:h-5" />
         </button>
       </div>
       <AnimatePresence mode="wait">
@@ -238,7 +238,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className="p-4  h-[calc(100vh-5.2rem)] rounded-r-xl rounded-b-xl bg-white overflow-hidden border border-slate-300"
+          className=" h-[calc(100vh-5.2rem)] z-10 rounded-r-xl  rounded-b-xl bg-white overflow-hidden border border-slate-300 "
         >
           <ChatClient
             title={activeTab?.title || ""}
