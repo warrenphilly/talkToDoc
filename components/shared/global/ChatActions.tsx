@@ -55,7 +55,7 @@ const ChatActions = ({
               {contextSections.length > 0
                 ? contextSections[0].text
                 : "Click text to add context (max 3)"}
-                 </div>
+            </div>
             <div className="text-slate-400 line-clamp-1 group-data-[state=open]:block group-[&[data-state=open]]:block group-data-[state=closed]:hidden group-[&[data-state=closed]]:hidden">
               Hide Context
             </div>
@@ -63,53 +63,63 @@ const ChatActions = ({
           <AccordionContent>{renderContextSections()}</AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="flex flex-col items-center justify-center mt-2">
-        <h1 className="text-sm font-semibold text-slate-400">Actions</h1>
-      </div>
 
-      <div className="flex flex-row gap-2 w-full items-center justify-center m-2">
-        <Button
-          className="bg-white border border-slate-500 text-slate-500 hover:bg-white hover:text-[#94b347] rounded-full shadow-none"
-          onClick={() => sendMessage("Explain this in simple terms")}
-          disabled={contextSections.length === 0}
-        >
-          Explain
-        </Button>
-        <Button
-          className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none"
-          onClick={() => sendMessage("Expand on this")}
-          disabled={contextSections.length === 0}
-        >
-          Expand
-        </Button>
-        <Button
-          className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none"
-          onClick={() => sendMessage("Give me a step-by-step example")}
-          disabled={contextSections.length === 0}
-        >
-          Example
-        </Button>
-        <Button
-          className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none"
-          onClick={() =>
-            sendMessage("Reword this in a way that is easier to understand")
-          }
-          disabled={contextSections.length === 0}
-        >
-          Reword
-        </Button>
-        <Button
-          className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none"
-          onClick={() =>
-            sendMessage(
-              "Summarize this in a way that is easier to understand, 100 words or less"
-            )
-          }
-          disabled={contextSections.length === 0}
-        >
-          Summarize
-        </Button>
-      </div>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1" className="group">
+          <AccordionTrigger className="group">
+            <div className="flex flex-col items-center justify-center ">
+              <h1 className="text-sm font-semibold text-slate-400">Actions</h1>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="flex flex-row flex-wrap gap-2 w-full items-center justify-center m-2">
+              <Button
+                className="bg-white border border-slate-500 text-slate-500 hover:bg-white hover:text-[#94b347] rounded-full shadow-none text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-2"
+                onClick={() => sendMessage("Explain this in simple terms")}
+                disabled={contextSections.length === 0}
+              >
+                Explain
+              </Button>
+              <Button
+                className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-2"
+                onClick={() => sendMessage("Expand on this")}
+                disabled={contextSections.length === 0}
+              >
+                Expand
+              </Button>
+              <Button
+                className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-2"
+                onClick={() => sendMessage("Give me a step-by-step example")}
+                disabled={contextSections.length === 0}
+              >
+                Example
+              </Button>
+              <Button
+                className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-2"
+                onClick={() =>
+                  sendMessage(
+                    "Reword this in a way that is easier to understand"
+                  )
+                }
+                disabled={contextSections.length === 0}
+              >
+                Reword
+              </Button>
+              <Button
+                className="bg-white hover:bg-white border border-slate-500 text-slate-500 hover:text-[#94b347] rounded-full shadow-none text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-2"
+                onClick={() =>
+                  sendMessage(
+                    "Summarize this in a way that is easier to understand, 100 words or less"
+                  )
+                }
+                disabled={contextSections.length === 0}
+              >
+                Summarize
+              </Button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

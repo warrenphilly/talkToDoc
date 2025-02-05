@@ -567,18 +567,18 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-4 h-full overflow-y-auto auto-scroll">
       {/* Header with Create Quiz button */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex flex-col justify-center items-center w-full gap-4 ">
-          <h2 className="text-2xl font-bold text-[#94b347]">Quiz Me</h2>
-          <p className="text-slate-600 ">Create and review quizzes</p>
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">Quiz Me</h2>
+          <p className="text-slate-600 text-sm sm:text-base text-center">Create and review quizzes</p>
 
           <Button
             onClick={() => setShowQuizForm(true)}
-            className="bg-white border border-slate-400 text-slate-800 hover:bg-white 0 rounded-full my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347]"
+            className="bg-white border border-slate-400 text-slate-800 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
           >
-            <PlusCircle className="h-4 w-4" />
+            <PlusCircle className="h-4 w-4 mr-2" />
             Create Quiz
           </Button>
         </div>
@@ -590,28 +590,26 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           {quizzes.map((quiz) => (
             <div
               key={quiz.id}
-              className="border-t  p-1 bg-white border-slate-300  cursor-pointer hover:bg-slate-50 transition-colors"
+              className="border-t p-1 bg-white border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
               onClick={() => handleQuizSelect(quiz)}
             >
-              <div className="flex items-center justify-between p-3  text-slate-600">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between p-2 sm:p-3 text-slate-600">
+                <div className="flex items-center gap-2 flex-1">
                   <button
                     onClick={() => handleQuizSelect(quiz)}
-                    className="flex-1 flex items-center gap-4 text-left"
+                    className="flex-1 flex items-center gap-2 sm:gap-4 text-left"
                   >
-                    <div className="flex flex-col">
-                      <h3 className="font-medium text-slate-700 ">
+                    <div className="flex flex-col w-full">
+                      <h3 className="font-medium text-slate-700 text-sm sm:text-base truncate">
                         {quiz.quizData?.title || "Untitled Quiz"}
                       </h3>
-                      <div className="flex gap-4 text-sm text-slate-500">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs sm:text-sm text-slate-500">
                         <p>Questions: {quiz.totalQuestions}</p>
-                        <p>
+                        <p className="hidden sm:block">
                           Created:{" "}
                           {quiz.startedAt instanceof Date
                             ? quiz.startedAt.toLocaleDateString()
-                            : new Date(
-                                quiz.startedAt.seconds * 1000
-                              ).toLocaleDateString()}
+                            : new Date(quiz.startedAt.seconds * 1000).toLocaleDateString()}
                         </p>
                         {quiz.isComplete && (
                           <p>
@@ -627,7 +625,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     e.stopPropagation();
                     handleDeleteQuiz(quiz.id);
                   }}
-                  className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                  className="p-1 sm:p-2 text-slate-400 hover:text-red-500 transition-colors"
                 >
                   <Trash className="h-4 w-4" />
                 </button>
@@ -636,7 +634,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           ))}
 
           {quizzes.length === 0 && (
-            <div className="text-center p-4 text-gray-500">
+            <div className="text-center p-4 text-gray-500 text-sm sm:text-base">
               No quizzes found. Please create a quiz first.
             </div>
           )}
@@ -665,20 +663,20 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz Display */}
       {selectedQuiz && quizData && !showQuizForm && (
-        <div>
+        <div className="space-y-2 sm:space-y-4">
           <Button
             onClick={handleBackToList}
             variant="ghost"
-            className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent"
+            className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 mr-1" />
             Back to List
           </Button>
           <div className="flex flex-col justify-between items-start my-2">
-            <p className="text-lg font-semibold text-[#94b347]">
+            <p className="text-base sm:text-lg font-semibold text-[#94b347] break-words">
               {selectedQuiz.quizData?.title}
             </p>
-            <div className="flex flex-row justify-center items-center">
+            <div className="flex flex-row justify-center items-center text-sm sm:text-base">
               <p>Questions: {selectedQuiz.totalQuestions}</p>
             </div>
           </div>

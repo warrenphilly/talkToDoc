@@ -339,23 +339,21 @@ const ChatClient = ({
   }, [isSmallScreen]);
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl ">
-      {/* hydration error is here */}
-      <div className="flex flex-col bg-white w-full mx-2 h-full">
-        <div className="flex flex-row items-center justify-between w-full md:py-2">
-          {/* Primary notebook buttons */}
-          <div className="flex flex-col md:flex-row gap-2 items-center justify-between md:px-7">
+    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl">
+      <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
+        <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
+          <div className="flex flex-row gap-2 items-center">
             <Button
               onClick={() => setShowUpload(!showUpload)}
-              className={`bg-white0 shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit ${
+              className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 ${
                 messages.length > 0 ? "block" : "hidden"
               }`}
             >
               {showUpload ? "Close Uploads" : "Uploaded Files"}
             </Button>
           </div>
+         
 
-          {/* Desktop view */}
           <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 my-4">
             <Button
               onClick={() => {
@@ -487,28 +485,24 @@ const ChatClient = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+        
+
         </div>
 
-        <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden p-0 m-0">
-          {/* workspace panel if the viewport is small then it will be vertical else horizontal */}
+        <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup
             direction={isSmallScreen ? "vertical" : "horizontal"}
-            className="w-full "
+            className="w-full"
           >
-            {/* notbook panel */}
             <ResizablePanel
-              className={`relative  p-0 m-0 flex items-center justify-center  ${
-                isNotebookFullscreen ? "w-full" : "w-full "
-              } ${
-                isChatFullscreen ||
-                isQuizFullscreen ||
-               
-                isStudyCardsFullscreen ||
-                isStudyGuidesFullscreen
-                  ? "hidden"
-                  : "w-full p-2 "
-
-              } flex flex-col gap-2 h-full overflow-hidden`}
+              className={`relative min-w-0 p-0 m-0 flex items-center justify-center
+                ${isNotebookFullscreen ? "w-full" : "w-full"}
+                ${
+                  isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen
+                    ? "hidden"
+                    : "w-full p-1 md:p-2"
+                } 
+                flex flex-col gap-1 md:gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
               <UploadArea
@@ -613,19 +607,13 @@ const ChatClient = ({
               )}
 
 
-            {/* Chat and Quiz panels */}
             {!isNotebookFullscreen &&
               (showChat || showQuiz || showStudyCards || showStudyGuides) && (
                 <ResizablePanel
                   className={`relative ${
                     showChat || showQuiz || showStudyCards || showStudyGuides
-
-                      ? "translate-x-0 my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-2 w-full min-w-[400px]"
+                      ? "translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
                       : "hidden"
-                  } ${
-                    isChatFullscreen || isQuizFullscreen
-                      ? "w-full"
-                      : "w-full p-2 min-w-[600px]"
                   }`}
                   defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
                 >
@@ -633,14 +621,14 @@ const ChatClient = ({
                     <ResizablePanel
                       className={`relative ${
                         showChat
-                          ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                          ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-xl md:rounded-2xl w-full"
                           : "hidden"
                       }`}
                       defaultSize={isChatFullscreen ? 100 : 50}
                     >
                       <Button
                         onClick={() => setIsChatFullscreen(!isChatFullscreen)}
-                        className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                        className="absolute top-2 right-2 z-70 bg-slate-100 hover:bg-slate-200 p-2"
                         size="icon"
                       >
                         {isChatFullscreen ? (
@@ -665,7 +653,7 @@ const ChatClient = ({
                       <ResizablePanel
                         className={`relative ${
                           showQuiz
-                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                            ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
 
                             : "hidden"
                         }`}

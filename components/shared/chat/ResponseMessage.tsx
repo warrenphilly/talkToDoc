@@ -73,7 +73,7 @@ export const ResponseMessage = ({
                 />
               ) : (
                 <div className="  md:p-4 rounded-2xl transition-colors">
-                  <div className="flex justify-between items-center mb-3">
+                  <div className="flex flex-col md:flex-row  gap-4 md:gap-0 justify-between items-center mb-3">
                     <h3
                       className="text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer"
                       onClick={() => handleSectionClick(section)}
@@ -110,7 +110,7 @@ export const ResponseMessage = ({
                           className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
                         >
                           <div className="px-1 rounded cursor-pointer transition-colors">
-                            <p className="text-gray-800 text-md text-wrap">
+                            <p className="text-gray-800 text-xs md:text-md text-wrap">
                               {sentence.text}
                             </p>
                           </div>

@@ -323,56 +323,58 @@ const SideChat = ({
 
 
   return (
-    <div className="flex  flex-col h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 ">
-      <div className="grid grid-cols-3 items-center ">
-      <Button
-            className="bg-white hover:bg-red-200 w-fit ml-4 text-slate-400 border-slate-400 rounded-full border hover:border-red-600 hover:text-red-600"
-            onClick={handleClearChat}
-            
-          >
-            Clear Chat
-          </Button>
-      <div className="flex flex-row items-center justify-center">
-        <h1 className="text-xl font-semibold text-[#94b347]">Talk to Notes</h1>
-      </div>
+    <div className="flex flex-col  h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 justify-center items-center">
+      {/* Header section */}
+      <div className="grid grid-cols-3 items-center gap-2 sm:gap-4">
+        <Button
+          className="bg-white hover:bg-red-200 w-fit text-sm sm:text-base text-slate-400 border-slate-400 rounded-full border hover:border-red-600 hover:text-red-600"
+          onClick={handleClearChat}
+        >
+          Clear
+        </Button>
+        <div className="flex flex-row items-center justify-center">
+          <h1 className="text-lg sm:text-xl font-semibold text-[#94b347] truncate">Talk to Notes</h1>
+        </div>
       </div>
 
-   {messages.length > 0 ? (
-      <div className="flex-grow  p-4 overflow-y-auto auto-scroll">
-        {messages.map(
-          (msg, index) =>
-            msg.text &&
-            (msg.user === "User" || msg.user === "AI") && (
-              <div
-                key={index}
-                className={`p-2 rounded mb-2 ${
-                  msg.user === "User"
-                    ? "border border-slate-400 shadow-sm rounded-lg text-slate-600"
-                    : "border border-[#94b347] text-lg text-[#94b347] my-4 rounded-lg"
-                }`}
-              >
-                {msg.user === "AI" ? (
-                  <div className="text-md font-semibold ">
-                  <strong>Mr. Chudd (AI):</strong> <span>{String(msg.text)}</span>
-                
+      {/* Messages section */}
+      {messages.length > 0 ? (
+        <div className="flex-grow p-2 sm:p-4 overflow-y-auto auto-scroll">
+          {messages.map(
+            (msg, index) =>
+              msg.text &&
+              (msg.user === "User" || msg.user === "AI") && (
+                <div
+                  key={index}
+                  className={`p-2 rounded mb-2 ${
+                    msg.user === "User"
+                      ? "border border-slate-400 shadow-sm rounded-lg text-slate-600"
+                      : "border border-[#94b347] text-base sm:text-lg text-[#94b347] my-4 rounded-lg"
+                  }`}
+                >
+                  {msg.user === "AI" ? (
+                    <div className="text-sm sm:text-md font-semibold">
+                      <strong>Mr. Chudd (AI):</strong> <span>{String(msg.text)}</span>
+                    </div>
+                  ) : (
+                    <div className="text-sm sm:text-md font-semibold">
+                      <strong>{user?.firstName}:</strong> <span>{String(msg.text)}</span>
+                    </div>
+                  )}
                 </div>
-                ) : (
-                  <div className="text-md font-semibold">
-                    <strong>{user?.firstName}:</strong> <span>{String(msg.text)}</span>
-                  
-                  </div>
-                )}
-              </div>
-            )
-        )}
-      </div>
+              )
+          )}
+        </div>
       ) : (
-        <div className="flex-grow w-full h-full flex flex-col items-center justify-center p-4 overflow-y-auto auto-scroll">
-            <p className="text-gray-400 text-center max-w-sm">Hey there, my little academic weapon in the making. I'm Mr. Chudd, your AI tutor. Together, we shall pass! </p>
-           
+        <div className="flex-grow w-full h-full flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto auto-scroll">
+          <p className="text-gray-400 text-center text-sm sm:text-base max-w-sm">
+            Hey there, my little academic weapon in the making. I'm Mr. Chudd, your AI tutor. Together, we shall pass!
+          </p>
         </div>
       )}
 
+      {/* Input section */}
+      <div className="m-2 bottom-0 w-full border border-slate-300 rounded-lg p-2">
 
 
 
@@ -380,55 +382,15 @@ const SideChat = ({
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      <div className=" m-2  bottom-0 w-full  border border-slate-300  rounded-lg p-2">
-   
-
-      <ChatActions sendMessage={sendMessage} contextSections={contextSections} removeContextSection={removeContextSection}/>
-        <div className="flex  bg-white rounded-lg  p-2 flex-row items-center gap-3 h-fit">
-          
+        
+        <ChatActions 
+          sendMessage={sendMessage} 
+          contextSections={contextSections} 
+          removeContextSection={removeContextSection}
+        />
+        <div className="flex bg-white rounded-lg p-2 flex-row items-center gap-2 sm:gap-3 h-fit">
           <Textarea
-            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-50 text-slate-900 flex-grow"
+            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-50 text-slate-900 flex-grow text-sm sm:text-base"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -437,13 +399,12 @@ const SideChat = ({
             }
           />
           <Button
-            className="bg-[#94b347] text-white"
+            className="bg-[#94b347] text-white text-sm sm:text-base px-2 sm:px-4"
             onClick={() => sendMessage(input)}
           >
             Send
           </Button>
         </div>
-        
       </div>
     </div>
   );
