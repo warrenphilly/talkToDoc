@@ -749,7 +749,7 @@ const ChatClient = ({
             }
           }}
         >
-          <DrawerContent className="h-[90vh]">
+          <DrawerContent className="h-[90vh] bg-white">
             <DrawerHeader className="p-4">
               <DrawerTitle>
                 {showStudyGuides && "Study Guide"}
