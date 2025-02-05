@@ -32,21 +32,31 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
       if (!newCardTitle.trim() || !newCardContent.trim()) return;
 
       const studyCardRef = doc(db, "studyCardSets", studySet.id);
-      const newCard = { title: newCardTitle, content: newCardContent };
-      const updatedCards = [...studySet.cards, newCard];
+      const newCard = {
+        front: newCardTitle,
+        back: newCardContent
+      };
+      
+      const updatedCards = [
+        ...studySet.cards.map((card) => {
+          return {
+            front: card.front,
+            back: card.back
+          } as { front: string; back: string };
+        }),
+        newCard
+      ];
 
       await updateDoc(studyCardRef, {
         cards: updatedCards,
         updatedAt: serverTimestamp(),
       });
 
-      // Update the local state through the parent component
       onUpdate({
         ...studySet,
         cards: updatedCards,
       });
 
-      // Reset form
       setNewCardTitle("");
       setNewCardContent("");
       setShowAddModal(false);
@@ -81,10 +91,10 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
                 className="bg-white border border-slate-200 p-4 rounded hover:bg-slate-50 transition-colors"
               >
                 <h3 className="font-semibold text-[#94b347]">
-                  {index + 1}. {card.title}
+                  {index + 1}. {card.front}
                 </h3>
                 <div className={`mt-2 text-slate-600 ${showListAnswer[index] ? 'block' : 'hidden'}`}>
-                  <p>{card.content}</p>
+                  <p>{card.back}</p>
                 </div>
                 <button 
                   onClick={() => toggleListAnswer(index)}
