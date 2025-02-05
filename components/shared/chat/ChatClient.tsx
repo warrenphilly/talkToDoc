@@ -26,6 +26,12 @@ import SideChat from "@/components/shared/global/SideChat";
 
 import StudyMaterialTabs from "@/components/StudyMaterialTabs";
 import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,6 +39,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   deleteNotebook,
   deletePage,
@@ -91,11 +103,13 @@ const ChatClient = ({
   const [isChatFullscreen, setIsChatFullscreen] = useState(false);
   const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
 
-
   const [showStudyCards, setShowStudyCards] = useState(false);
   const [isStudyCardsFullscreen, setIsStudyCardsFullscreen] = useState(false);
   const [showStudyGuides, setShowStudyGuides] = useState(false);
   const [isStudyGuidesFullscreen, setIsStudyGuidesFullscreen] = useState(false);
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -338,6 +352,42 @@ const ChatClient = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [isSmallScreen]);
 
+  const handleComponentSelect = (component: string) => {
+    setDropdownOpen(false);
+    setIsDrawerOpen(true);
+    if (component === "studyGuide") {
+      setShowStudyGuides(true);
+      setShowStudyCards(false);
+      setShowChat(false);
+      setShowQuiz(false);
+    } else if (component === "studyCards") {
+      setShowStudyCards(true);
+      setShowStudyGuides(false);
+      setShowChat(false);
+      setShowQuiz(false);
+    } else if (component === "quiz") {
+      setShowQuiz(true);
+      setShowStudyCards(false);
+      setShowStudyGuides(false);
+      setShowChat(false);
+    } else if (component === "chat") {
+      setShowChat(true);
+      setShowQuiz(false);
+      setShowStudyCards(false);
+      setShowStudyGuides(false);
+    }
+  };
+
+  // Add this function to handle drawer close
+  const handleDrawerClose = () => {
+    setIsDrawerOpen(false);
+    // Reset all component states when drawer closes
+    setShowStudyGuides(false);
+    setShowStudyCards(false);
+    setShowQuiz(false);
+    setShowChat(false);
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
@@ -352,63 +402,28 @@ const ChatClient = ({
               {showUpload ? "Close Uploads" : "Uploaded Files"}
             </Button>
           </div>
-         
 
           <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 my-4">
             <Button
-              onClick={() => {
-                setShowStudyCards(false);
-                setShowStudyGuides(!showStudyGuides);
-                setShowChat(false);
-                setShowQuiz(false);
-                setIsNotebookFullscreen(false);
-                setIsChatFullscreen(false);
-                setIsQuizFullscreen(false);
-              }}
+              onClick={() => handleComponentSelect("studyGuide")}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
             >
               Study guide
             </Button>
             <Button
-              onClick={() => {
-                setShowStudyCards(!showStudyCards);
-                setShowStudyGuides(false);
-                setShowChat(false);
-                setShowQuiz(false);
-                setIsNotebookFullscreen(false);
-                setIsChatFullscreen(false);
-                setIsQuizFullscreen(false);
-              }}
+              onClick={() => handleComponentSelect("studyCards")}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
             >
               Study cards
             </Button>
             <Button
-              onClick={() => {
-                setShowQuiz(!showQuiz);
-                setShowStudyCards(false);
-                setShowStudyGuides(false);
-                setShowChat(false);
-                setIsNotebookFullscreen(false);
-                setIsChatFullscreen(false);
-                setIsQuizFullscreen(false);
-                setIsStudyCardsFullscreen(false);
-                setIsStudyGuidesFullscreen(false);
-              }}
+              onClick={() => handleComponentSelect("quiz")}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               Quiz Me
             </Button>
             <Button
-              onClick={() => {
-                setShowChat(!showChat);
-                setShowQuiz(false);
-                setIsNotebookFullscreen(false);
-                setIsChatFullscreen(false);
-                setIsQuizFullscreen(false);
-                setShowStudyCards(false);
-                setShowStudyGuides(false);
-              }}
+              onClick={() => handleComponentSelect("chat")}
               className="text-slate-500 md:px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
               {showChat ? "Close Chat" : "Talk to my notes"}
@@ -417,66 +432,54 @@ const ChatClient = ({
 
           {/* Mobile hamburger menu */}
           <div className="md:hidden my-4">
-            <DropdownMenu>
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="mr-4 rounded-full bg-white hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="mr-4 rounded-full bg-white hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+                >
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-white hover:bg-white text-slate-500">
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-white hover:bg-white text-slate-500"
+                onCloseAutoFocus={(event) => {
+                  event.preventDefault();
+                }}
+              >
                 <DropdownMenuItem
-                  onClick={() => {
-                    setShowStudyCards(false);
-                    setShowStudyGuides(!showStudyGuides);
-                    setShowChat(false);
-                    setShowQuiz(false);
-                    setIsNotebookFullscreen(false);
-                    setIsChatFullscreen(false);
-                    setIsQuizFullscreen(false);
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    handleComponentSelect("studyGuide");
                   }}
-                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border data"
+                  className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
                 >
                   Study guide
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setShowStudyCards(!showStudyCards);
-                    setShowStudyGuides(false);
-                    setShowChat(false);
-                    setShowQuiz(false);
-                    setIsNotebookFullscreen(false);
-                    setIsChatFullscreen(false);
-                    setIsQuizFullscreen(false);
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    handleComponentSelect("studyCards");
                   }}
                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
                 >
                   Study cards
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setShowQuiz(!showQuiz);
-                    setShowStudyCards(false);
-                    setShowStudyGuides(false);
-                    setShowChat(false);
-                    setIsNotebookFullscreen(false);
-                    setIsChatFullscreen(false);
-                    setIsQuizFullscreen(false);
-                    setIsStudyCardsFullscreen(false);
-                    setIsStudyGuidesFullscreen(false);
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    handleComponentSelect("quiz");
                   }}
                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
                 >
                   Quiz Me
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    setShowChat(!showChat);
-                    setShowQuiz(false);
-                    setIsNotebookFullscreen(false);
-                    setIsChatFullscreen(false);
-                    setIsQuizFullscreen(false);
-                    setShowStudyCards(false);
-                    setShowStudyGuides(false);
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    handleComponentSelect("chat");
                   }}
                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
                 >
@@ -485,8 +488,6 @@ const ChatClient = ({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        
-
         </div>
 
         <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
@@ -498,7 +499,10 @@ const ChatClient = ({
               className={`relative min-w-0 p-0 m-0 flex items-center justify-center
                 ${isNotebookFullscreen ? "w-full" : "w-full"}
                 ${
-                  isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen
+                  isChatFullscreen ||
+                  isQuizFullscreen ||
+                  isStudyCardsFullscreen ||
+                  isStudyGuidesFullscreen
                     ? "hidden"
                     : "w-full p-1 md:p-2"
                 } 
@@ -598,7 +602,6 @@ const ChatClient = ({
               isNotebookFullscreen ||
               isChatFullscreen ||
               isQuizFullscreen ||
-             
               isStudyCardsFullscreen ||
               isStudyGuidesFullscreen
             ) &&
@@ -606,139 +609,175 @@ const ChatClient = ({
                 <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
-            
             {/* <div> */}
 
             {!isNotebookFullscreen &&
+              !isSmallScreen &&
               (showChat || showQuiz || showStudyCards || showStudyGuides) && (
-              <>
-                <ResizablePanel
-                  className={`relative ${
-                    showChat || showQuiz || showStudyCards || showStudyGuides
-                      ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
-                      : "hidden"
-
-
-                  }`}
-                  defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
-                >
-                  {showChat && (
-                    <ResizablePanel
-                      className={`relative ${
-                        showChat
-                          ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-xl md:rounded-2xl w-full"
-                          : "hidden"
-                      }`}
-                      defaultSize={isChatFullscreen ? 100 : 50}
-                    >
-                      <Button
-                        onClick={() => setIsChatFullscreen(!isChatFullscreen)}
-                        className="absolute top-2 right-2 z-70 bg-slate-100 hover:bg-slate-200 p-2"
-                        size="icon"
-                      >
-                        {isChatFullscreen ? (
-                          <Minimize2 size={16} />
-                        ) : (
-                          <Maximize2 size={16} />
-                        )}
-                      </Button>
-                      <SideChat
-                        notebookId={notebookId}
-                        pageId={tabId}
-                        primeSentence={primeSentence}
-                        setPrimeSentence={setPrimeSentence}
-                      />
-                    </ResizablePanel>
-                  )}
-
-                  {showQuiz &&
-                    !isChatFullscreen &&
-                    !isStudyCardsFullscreen &&
-                    !isStudyGuidesFullscreen && (
+                <>
+                  <ResizablePanel
+                    className={`relative ${
+                      showChat || showQuiz || showStudyCards || showStudyGuides
+                        ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
+                        : "hidden"
+                    }`}
+                    defaultSize={
+                      isChatFullscreen || isQuizFullscreen ? 100 : 50
+                    }
+                  >
+                    {showChat && (
                       <ResizablePanel
                         className={`relative ${
-                          showQuiz
-                            ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-
+                          showChat
+                            ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-xl md:rounded-2xl w-full"
                             : "hidden"
                         }`}
-                        defaultSize={isQuizFullscreen ? 100 : 50}
+                        defaultSize={isChatFullscreen ? 100 : 50}
                       >
                         <Button
-                          onClick={() => setIsQuizFullscreen(!isQuizFullscreen)}
-                          className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                          onClick={() => setIsChatFullscreen(!isChatFullscreen)}
+                          className="absolute top-2 right-2 z-70 bg-slate-100 hover:bg-slate-200 p-2"
                           size="icon"
                         >
-                          {isQuizFullscreen ? (
+                          {isChatFullscreen ? (
                             <Minimize2 size={16} />
                           ) : (
                             <Maximize2 size={16} />
                           )}
                         </Button>
-                        <QuizPanel notebookId={notebookId} pageId={tabId} />
+                        <SideChat
+                          notebookId={notebookId}
+                          pageId={tabId}
+                          primeSentence={primeSentence}
+                          setPrimeSentence={setPrimeSentence}
+                        />
                       </ResizablePanel>
                     )}
-                  {showStudyCards && (
-                    <ResizablePanel
-                      className={`relative ${
-                        showStudyCards
-                          ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
-                          : "hidden"
-                      }`}
-                      defaultSize={isStudyCardsFullscreen ? 100 : 50}
-                    >
-                      <Button
-                        onClick={() =>
-                          setIsStudyCardsFullscreen(!isStudyCardsFullscreen)
-                        }
-                        className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
-                        size="icon"
-                      >
-                        {isStudyCardsFullscreen ? (
-                          <Minimize2 size={16} />
-                        ) : (
-                          <Maximize2 size={16} />
-                        )}
-                      </Button>
-                      <StudyCards notebookId={notebookId} pageId={tabId} />
-                    </ResizablePanel>
-                  )}
-                  {showStudyGuides && (
-                    <ResizablePanel
-                      className={`relative ${
-                        showStudyGuides
-                          ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
-                          : "hidden"
-                      }`}
-                      defaultSize={isStudyGuidesFullscreen ? 100 : 50}
-                    >
-                      <Button
-                        onClick={() =>
-                          setIsStudyGuidesFullscreen(!isStudyGuidesFullscreen)
-                        }
-                        className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
-                        size="icon"
-                      >
-                        {isStudyGuidesFullscreen ? (
-                          <Minimize2 size={16} />
-                        ) : (
-                          <Maximize2 size={16} />
-                        )}
-                      </Button>
-                      <StudyGuide notebookId={notebookId} pageId={tabId} />
-                    </ResizablePanel>
-                  )}
-                </ResizablePanel>
-                
 
-
-              </>
+                    {showQuiz &&
+                      !isChatFullscreen &&
+                      !isStudyCardsFullscreen &&
+                      !isStudyGuidesFullscreen && (
+                        <ResizablePanel
+                          className={`relative ${
+                            showQuiz
+                              ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                              : "hidden"
+                          }`}
+                          defaultSize={isQuizFullscreen ? 100 : 50}
+                        >
+                          <Button
+                            onClick={() =>
+                              setIsQuizFullscreen(!isQuizFullscreen)
+                            }
+                            className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
+                            size="icon"
+                          >
+                            {isQuizFullscreen ? (
+                              <Minimize2 size={16} />
+                            ) : (
+                              <Maximize2 size={16} />
+                            )}
+                          </Button>
+                          <QuizPanel notebookId={notebookId} pageId={tabId} />
+                        </ResizablePanel>
+                      )}
+                    {showStudyCards && (
+                      <ResizablePanel
+                        className={`relative ${
+                          showStudyCards
+                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
+                            : "hidden"
+                        }`}
+                        defaultSize={isStudyCardsFullscreen ? 100 : 50}
+                      >
+                        <Button
+                          onClick={() =>
+                            setIsStudyCardsFullscreen(!isStudyCardsFullscreen)
+                          }
+                          className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
+                          size="icon"
+                        >
+                          {isStudyCardsFullscreen ? (
+                            <Minimize2 size={16} />
+                          ) : (
+                            <Maximize2 size={16} />
+                          )}
+                        </Button>
+                        <StudyCards notebookId={notebookId} pageId={tabId} />
+                      </ResizablePanel>
+                    )}
+                    {showStudyGuides && (
+                      <ResizablePanel
+                        className={`relative ${
+                          showStudyGuides
+                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
+                            : "hidden"
+                        }`}
+                        defaultSize={isStudyGuidesFullscreen ? 100 : 50}
+                      >
+                        <Button
+                          onClick={() =>
+                            setIsStudyGuidesFullscreen(!isStudyGuidesFullscreen)
+                          }
+                          className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
+                          size="icon"
+                        >
+                          {isStudyGuidesFullscreen ? (
+                            <Minimize2 size={16} />
+                          ) : (
+                            <Maximize2 size={16} />
+                          )}
+                        </Button>
+                        <StudyGuide notebookId={notebookId} pageId={tabId} />
+                      </ResizablePanel>
+                    )}
+                  </ResizablePanel>
+                </>
               )}
-            
+
             {/* </div> */}
           </ResizablePanelGroup>
         </div>
       </div>
+      {isSmallScreen && (
+        <Drawer
+          open={isDrawerOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleDrawerClose();
+            }
+          }}
+        >
+          <DrawerContent className="h-[90vh]">
+            <DrawerHeader className="p-4">
+              <DrawerTitle>
+                {showStudyGuides && "Study Guide"}
+                {showStudyCards && "Study Cards"}
+                {showQuiz && "Quiz"}
+                {showChat && "Chat"}
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="h-full overflow-y-auto px-4">
+              {showChat && (
+                <SideChat
+                  notebookId={notebookId}
+                  pageId={tabId}
+                  primeSentence={primeSentence}
+                  setPrimeSentence={setPrimeSentence}
+                />
+              )}
+              {showQuiz && <QuizPanel notebookId={notebookId} pageId={tabId} />}
+              {showStudyCards && (
+                <StudyCards notebookId={notebookId} pageId={tabId} />
+              )}
+              {showStudyGuides && (
+                <StudyGuide notebookId={notebookId} pageId={tabId} />
+              )}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 };
