@@ -40,8 +40,8 @@ export const ResponseMessage = ({
     return (
       <div key={index} className="md:p-2 rounded mb-2 ">
         <div className="text-sm">
-          <div className="bg-white border border-[#94b347] md:p-4 rounded-2xl transition-colors">
-            <p className="text-gray-800">{msg.text}</p>
+          <div className="bg-white border border-[#94b347] p-2 md:p-4 rounded-2xl transition-colors">
+            <p className="text-gray-800 whitespace-normal break-words">{msg.text}</p>
           </div>
         </div>
       </div>
@@ -72,10 +72,10 @@ export const ResponseMessage = ({
                   }}
                 />
               ) : (
-                <div className="  md:p-4 rounded-2xl transition-colors">
-                  <div className="flex flex-col md:flex-row  gap-4 md:gap-0 justify-between items-center mb-3">
+                <div className="p-2 md:p-4 rounded-2xl transition-colors">
+                  <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start md:items-center mb-3">
                     <h3
-                      className="text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer"
+                      className="text-base md:text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer break-words"
                       onClick={() => handleSectionClick(section)}
                     >
                       {section.title}
@@ -101,22 +101,20 @@ export const ResponseMessage = ({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {section.sentences.map(
-                      (sentence: Sentence, sentenceIdx: number) => (
-                        <Button
-                          key={sentenceIdx}
-                          asChild
-                          onClick={() => handleSentenceClick(sentence)}
-                          className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0"
-                        >
-                          <div className="px-1 rounded cursor-pointer transition-colors">
-                            <p className="text-gray-800 text-xs md:text-md text-wrap">
-                              {sentence.text}
-                            </p>
-                          </div>
-                        </Button>
-                      )
-                    )}
+                    {section.sentences.map((sentence: Sentence, sentenceIdx: number) => (
+                      <Button
+                        key={sentenceIdx}
+                        asChild
+                        onClick={() => handleSentenceClick(sentence)}
+                        className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0 w-full"
+                      >
+                        <div className="px-1 py-1 rounded cursor-pointer transition-colors w-full">
+                          <p className="text-gray-800 text-xs md:text-sm text-left whitespace-normal break-words">
+                            {sentence.text}
+                          </p>
+                        </div>
+                      </Button>
+                    ))}
                   </div>
                 </div>
               )}

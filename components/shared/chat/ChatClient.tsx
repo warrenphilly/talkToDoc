@@ -389,7 +389,7 @@ const ChatClient = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full bg-white w-full rounded-xl">
+    <div className="flex flex-col md:flex-row h-full  w-full items-center bg-green-500 rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center">
@@ -490,14 +490,14 @@ const ChatClient = ({
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
+        <div className="flex flex-col md:flex-row bg-green-500 items-center justify-start w-fit h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup
             direction={isSmallScreen ? "vertical" : "horizontal"}
             className="w-full"
           >
             <ResizablePanel
               className={`relative min-w-0 p-0 m-0 flex items-center justify-center
-                ${isNotebookFullscreen ? "w-full" : "w-full"}
+                ${isNotebookFullscreen ? "w-full" : "w-fit"}
                 ${
                   isChatFullscreen ||
                   isQuizFullscreen ||
