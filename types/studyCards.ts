@@ -5,7 +5,7 @@ export interface StudyCard {
 
 export interface StudySetMetadata {
   name: string;
-  createdAt: Date;
+  cardCount: number;
   sourceNotebooks: {
     notebookId: string;
     notebookTitle: string;
@@ -14,22 +14,20 @@ export interface StudySetMetadata {
       pageTitle: string;
     }[];
   }[];
-  cardCount: number;
+  createdAt: string;
 }
 
 export interface StudyCardSet {
   id: string;
   title: string;
-  createdAt: string;
-  updatedAt: string;
+  cards: Array<{
+    front: string;
+    back: string;
+  }>;
+  metadata: StudySetMetadata;
   notebookId: string;
   pageId: string;
+  createdAt: string;
+  updatedAt: string;
   userId: string;
-  cards: StudyCard[];
-  metadata: {
-    name: string;
-    cardCount: number;
-    sourceNotebooks: string[];
-    createdAt: string;
-  };
 }

@@ -743,7 +743,7 @@ const ChatClient = ({
       {isSmallScreen && (
         <Drawer
           open={isDrawerOpen}
-          onOpenChange={(open) => {
+          onOpenChange={(open: boolean) => {
             if (!open) {
               handleDrawerClose();
             }

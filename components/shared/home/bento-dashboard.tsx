@@ -427,12 +427,25 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         throw new Error("No notebook or page selected");
       }
 
-      // Create metadata first
+      // Create metadata with the correct structure
       const metadata = {
         name: setName,
         cardCount: numCards,
-        sourceNotebooks: [firstNotebookId],
-        createdAt: new Date().toISOString(),
+        sourceNotebooks: Object.entries(selectedPages).map(([notebookId, pageIds]) => {
+          const notebook = notebooks.find(n => n.id === notebookId);
+          return {
+            notebookId,
+            notebookTitle: notebook?.title || '',
+            pages: pageIds.map(pageId => {
+              const page = notebook?.pages.find(p => p.id === pageId);
+              return {
+                pageId,
+                pageTitle: page?.title || 'Unknown Page'
+              };
+            })
+          };
+        }),
+        createdAt: new Date().toISOString()
       };
 
       // Upload files if any

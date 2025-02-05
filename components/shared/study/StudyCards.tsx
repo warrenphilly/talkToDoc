@@ -438,19 +438,19 @@ export default function StudyCards({
               <StudyCardCarousel studySet={selectedSet} />
               <StudyCardList studySet={selectedSet} onUpdate={handleStudySetUpdate} />
               {selectedSet.cards.map(
-                (card: { title: string; content: string }, index: number) => (
+                (card: { front: string; back: string }, index: number) => (
                   <div
                     key={index}
                     onClick={() => handleToggleAnswer(index)}
                     className="bg-white border border-slate-400  p-4 rounded cursor-pointer hover:bg-slate-100 transition-colors w-full  max-w-4xl mx-auto"
                   >
-                    <h3 className="font-bold text-[#94b347]">{card.title}</h3>
+                    <h3 className="font-bold text-[#94b347]">{card.front}</h3>
                     <div
                       className={`mt-2 text-slate-600 ${
                         showAnswer[index] ? "block" : "hidden"
                       }`}
                     >
-                      <p>{card.content}</p>
+                      <p>{card.back}</p>
                     </div>
                     {!showAnswer[index] && (
                       <p className="text-sm text-slate-500 mt-2">

@@ -389,7 +389,7 @@ export default function StudyGuideComponent({
 
       const metadata: StudySetMetadata = {
         name: setName,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         sourceNotebooks: sourceNotebooks.filter(
           (n): n is NonNullable<typeof n> => n !== null
         ),
