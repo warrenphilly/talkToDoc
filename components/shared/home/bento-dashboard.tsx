@@ -826,65 +826,61 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6">
+    <div className="container mx-auto px-2 sm:px-6">
       <div className="flex flex-col items-center justify-center h-full w-full">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-[#94b347] mb-4">
+        <h1 className="text-xl sm:text-3xl font-semibold text-[#94b347] mb-2 sm:mb-4">
           Dashboard
         </h1>
       </div>
 
-      <div className="flex flex-col items-center justify-center h-full w-full">
-        <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4 mb-6">
-          <h1 className="text-lg sm:text-xl font-semibold text-slate-600">
-            My Notebooks
-          </h1>
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="w-full sm:w-auto text-slate-900 px-4 py-2 bg-white rounded-full border border-slate-300 shadow-none font-semibold hover:bg-slate-50"
-          >
-            New Notebook
-          </Button>
-        </div>
+      <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <h1 className="text-base sm:text-xl font-semibold text-slate-600">
+          My Notebooks
+        </h1>
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="w-full sm:w-auto text-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-full border border-slate-300 shadow-none font-semibold hover:bg-slate-50 text-sm sm:text-base"
+        >
+          New Notebook
+        </Button>
       </div>
 
       {notebooks.length === 0 ? (
         loading ? (
-          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[300px]">
-            <div className="text-slate-400 text-xl font-semibold">
+          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
+            <div className="text-slate-400 text-lg sm:text-xl font-semibold">
               Loading your notebooks...
             </div>
             <CircularProgress sx={{ color: "#94b347" }} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[300px]">
-            <div className="text-slate-400 text-xl font-semibold">
+          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
+            <div className="text-slate-400 text-lg sm:text-xl font-semibold">
               No notebooks found
             </div>
           </div>
         )
       ) : (
-        <div className="space-y-6 sm:space-y-8">
-          {/* Notebooks Section */}
-          <section className="w-full ">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="space-y-4 sm:space-y-8">
+          <section className="w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
                   <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border border-slate-300 relative">
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
-                      className="absolute top-2 right-2 p-2 hover:bg-red-100 rounded-full transition-colors"
+                      className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
                     >
-                      <Trash2 className="h-4 w-4 text-white hover:text-red-500" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500" />
                     </button>
-                    <CardContent className="p-4 sm:p-8 flex flex-col h-full">
+                    <CardContent className="p-3 sm:p-8 flex flex-col h-full">
                       <div className="p-2 sm:p-3 rounded-full w-fit bg-[#94b347]">
-                        <NotebookPen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                        <NotebookPen className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
                       </div>
-
-                      <h2 className="text-lg sm:text-xl font-semibold mt-3 sm:mt-4 text-white">
+                      <h2 className="text-base sm:text-xl font-semibold mt-2 sm:mt-4 text-white">
                         {notebook.title}
                       </h2>
-                      <p className="mt-1 sm:mt-2 flex-grow text-white text-sm sm:text-base">
+                      <p className="mt-1 sm:mt-2 flex-grow text-white text-xs sm:text-base">
                         {formatDate(notebook.createdAt)}
                       </p>
                     </CardContent>
@@ -893,36 +889,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               ))}
             </div>
           </section>
-          <div className="w-full h-px bg-slate-200"></div>
-
-          {/* Study Materials Header */}
-        </div>
-      )}
-      {/* Study Materials Grid */}
-      <div className="h-px w-full bg-slate-200"></div>
-      <div className="w-full mt-8">
-        <div className="text-center py-4">
-          <h2 className="text-xl sm:text-2xl font-semibold text-[#94b347]">
-            Study Material
-          </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1">
-            Study cards, study guides, and quizzes. All in one place.
-          </p>
-        </div>
-
-        {/* Study Materials Grid */}
-        {loading ? (
-          <div className="flex flex-col items-between justify-start h-full w-full gap-2 min-h-[300px] ">
-            <div className="text-slate-400 text-xl font-semibold flex flex-row w-full justify-between ">
-              <Skeleton className="h-12 w-64" />
-              <Skeleton className="h-12 w-64" />
-              <Skeleton className="h-12 w-64" />
+          <div className="w-full mt-6 sm:mt-8">
+            <div className="text-center py-3 sm:py-4">
+              <h2 className="text-lg sm:text-2xl font-semibold text-[#94b347]">
+                Study Material
+              </h2>
+              <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                Study cards, study guides, and quizzes. All in one place.
+              </p>
             </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 w-full ">
-            <>
-              {/* Study Cards Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-8 w-full">
               <section className="rounded-lg h-fit">
                 <AccordionDemo
                   sections={[
@@ -934,36 +910,36 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                         onClick: () => setShowCardModal(true),
                       },
                       content: (
-                        <div className="space-y-3 sm:space-y-4">
+                        <div className="space-y-2 sm:space-y-4">
                           {studyCards.map((studyCard) => (
                             <Link
                               key={studyCard.id}
                               href={`/study-cards/${studyCard.id}`}
                             >
                               <Card className="transition-transform shadow-none bg-white border-none relative">
-                                <CardContent className="p-3 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
-                                  <div className="p-1.5 sm:p-2 rounded-full w-fit bg-white">
-                                    <PanelBottom className="h-5 w-5 sm:h-6 sm:w-6 text-[#94b347]" />
+                                <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+                                  <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
+                                    <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
                                   </div>
                                   <div className="flex flex-col items-start flex-grow mx-2 sm:mx-4">
-                                    <h2 className="text-sm sm:text-md font-semibold text-slate-600 line-clamp-1">
+                                    <h2 className="text-xs sm:text-md font-semibold text-slate-600 line-clamp-1">
                                       {studyCard.title}
                                     </h2>
-                                    <p className="text-muted-foreground text-xs sm:text-sm">
+                                    <p className="text-muted-foreground text-xs">
                                       {formatDate(studyCard.createdAt)}
                                     </p>
                                   </div>
-                                  <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-                                    {studyCard.cards.length} cards
-                                  </p>
-                                  <div className="mx-1 sm:mx-2">
+                                  <div className="flex items-center gap-1 sm:gap-2">
+                                    <p className="text-muted-foreground text-xs hidden sm:block">
+                                      {studyCard.cards.length} cards
+                                    </p>
                                     <button
                                       onClick={(e) =>
                                         handleDeleteStudyCard(e, studyCard.id)
                                       }
-                                      className="p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
+                                      className="p-1 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
                                     >
-                                      <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 hover:text-red-500" />
                                     </button>
                                   </div>
                                 </CardContent>
@@ -976,8 +952,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   ]}
                 />
               </section>
-
-              {/* Study Guides Section */}
               <section className="rounded-lg h-fit">
                 <AccordionDemo
                   sections={[
@@ -1033,8 +1007,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   ]}
                 />
               </section>
-
-              {/* Quizzes Section */}
               <section className="rounded-lg h-fit">
                 <AccordionDemo
                   sections={[
@@ -1097,10 +1069,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   ]}
                 />
               </section>
-            </>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <CreateNotebookModal
         isOpen={isCreateModalOpen}
