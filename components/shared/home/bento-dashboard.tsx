@@ -156,12 +156,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     const fetchNotebooks = async () => {
       try {
         const clerkUserId = await getCurrentUserId();
-     
 
         if (!clerkUserId) return;
 
         const firestoreUser = await getUserByClerkId(clerkUserId);
-     
 
         if (!firestoreUser) return;
 
@@ -173,8 +171,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           clerkUserId
         );
         const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
-
-   
 
         setNotebooks(userNotebooks);
         setStudyCards(userStudyCards);
@@ -428,21 +424,23 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       const metadata = {
         name: setName,
         cardCount: numCards,
-        sourceNotebooks: Object.entries(selectedPages).map(([notebookId, pageIds]) => {
-          const notebook = notebooks.find(n => n.id === notebookId);
-          return {
-            notebookId,
-            notebookTitle: notebook?.title || '',
-            pages: pageIds.map(pageId => {
-              const page = notebook?.pages.find(p => p.id === pageId);
-              return {
-                pageId,
-                pageTitle: page?.title || 'Unknown Page'
-              };
-            })
-          };
-        }),
-        createdAt: new Date().toISOString()
+        sourceNotebooks: Object.entries(selectedPages).map(
+          ([notebookId, pageIds]) => {
+            const notebook = notebooks.find((n) => n.id === notebookId);
+            return {
+              notebookId,
+              notebookTitle: notebook?.title || "",
+              pages: pageIds.map((pageId) => {
+                const page = notebook?.pages.find((p) => p.id === pageId);
+                return {
+                  pageId,
+                  pageTitle: page?.title || "Unknown Page",
+                };
+              }),
+            };
+          }
+        ),
+        createdAt: new Date().toISOString(),
       };
 
       // Upload files if any
@@ -592,8 +590,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
   };
   const renderNotebookList = () => {
-  
-
     if (!notebooks || notebooks.length === 0) {
       return (
         <div className="text-center p-4 text-gray-500">
@@ -886,7 +882,21 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               ))}
             </div>
           </section>
-          <div className="w-full mt-6 sm:mt-8">
+        </div>
+      )}
+
+      <div className="w-full mt-6 sm:mt-8">
+        <div className="h-px w-full bg-slate-300"></div>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
+            <div className="text-slate-400 text-lg sm:text-xl font-semibold">
+              Loading your Study Material
+            </div>
+            <CircularProgress sx={{ color: "#94b347" }} />
+          </div>
+        ) : (
+          <>
             <div className="text-center py-3 sm:py-4">
               <h2 className="text-lg sm:text-2xl font-semibold text-[#94b347]">
                 Study Material
@@ -1067,9 +1077,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 />
               </section>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       <CreateNotebookModal
         isOpen={isCreateModalOpen}
