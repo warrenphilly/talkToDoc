@@ -185,17 +185,18 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   };
 
   return (
-    <div className={cn("w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center  ", className)}>
-      <div className="flex items-center bg-white rounded-t-lg overflow-x-auto scrollbar-hide pt-16">
+    <div className={cn("w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center pt-16 ", className)}>
+      <div className="flex items-center z-50  h-fit w-full rounded-t-lg scrollbar-hide ">
         {tabs.map((tab) => (
           <motion.div
             key={tab.id}
+
             layout
             className={cn(
               "  flex items-center px-1.5 md:px-3 py-0.5 md:py-2 text-[10px] md:text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer min-w-[80px] md:min-w-[150px] max-w-[120px] md:max-w-none",
               activeTabId === tab.id
                 ? "text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300 bg-white shadow-x-md"
-                : "text-muted-foreground bg-slate-100"
+                : "text-muted-foreground bg-slate-100 border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300"
             )}
             onClick={() => setActiveTabId(tab.id)}
           >
@@ -238,10 +239,11 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className=" h-[90vh] rounded-r-xl rounded-b-xl bg-white overflow-hidden border border-slate-300 "
+          className=" h-[90vh] rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden border border-slate-300 z-10 "
         >
           <ChatClient
             title={activeTab?.title || ""}
+
             tabId={activeTab?.id || ""}
             notebookId={notebookId}
             onPageDelete={syncTabs}

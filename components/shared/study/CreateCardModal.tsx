@@ -4,6 +4,7 @@ import FormUpload from "@/components/shared/study/formUpload";
 import { RefObject } from "react";
 import { Message } from "@/lib/types";
 import { Notebook } from "@/types/notebooks";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface CreateCardModalProps {
   showNotebookModal: boolean;
@@ -133,12 +134,20 @@ export default function CreateCardModal({
                   (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)
                 }
               >
-                {isGenerating ? "Generating..." : "Generate Cards"}
+                {isGenerating ? (
+                  <div className="flex items-center gap-2">
+                   <RefreshCw className="h-4 w-4 animate-spin" /> 
+                    Generating...
+                  </div>
+                ) : (
+                  "Generate Cards"
+                )}
               </Button>
             </div>
           </div>
         </div>
       )}
+
     </>
   );
 }

@@ -4,6 +4,7 @@ import { StudyGuide } from "@/components/shared/study/StudyGuide";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { db, storage } from "@/firebase";
 import { getCurrentUserId } from "@/lib/auth";
 import {
   deleteNotebook,
@@ -21,42 +22,40 @@ import {
 import type { Message } from "@/lib/types";
 import type { QuizState } from "@/types/quiz";
 import { StudyCardSet } from "@/types/studyCards";
+import { useUser } from "@clerk/nextjs";
 import CircularProgress from "@mui/material/CircularProgress";
-import { Timestamp } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
+import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
-  ChevronRight,
-  ChevronDown,
   Check,
+  ChevronDown,
+  ChevronRight,
   FileText,
   MessageCircleQuestion,
   MessageSquare,
   NotebookPen,
   PanelBottom,
   Plus,
+  RefreshCw,
   ScrollText,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef, MutableRefObject } from "react";
-import { toast } from "react-hot-toast";
-import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { db, storage } from "@/firebase";
-import { ref, uploadString, getDownloadURL } from "firebase/storage";
-import { useUser } from "@clerk/nextjs";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 
+import QuizForm from "@/components/shared/global/QuizForm";
+import CreateCardModal from "@/components/shared/study/CreateCardModal";
+import StudyGuideModal from "@/components/shared/study/StudyGuideModal";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import QuizForm from "@/components/shared/global/QuizForm";
-import CreateCardModal from "@/components/shared/study/CreateCardModal";
-import StudyGuideModal from "@/components/shared/study/StudyGuideModal";
-import { BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BookOpen } from "lucide-react";
 
 interface StudyCardData {
   title: string;
@@ -463,12 +462,21 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         }
       }
 
+      // Create metadata first
+      const metadata = {
+        name: setName,
+        cardCount: numCards,
+        sourceNotebooks: [firstNotebookId],
+        createdAt: new Date().toISOString(),
+      };
+
       const formData = new FormData();
       const messageData = {
         selectedPages:
           Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         setName,
         numCards,
+        metadata, // Include metadata in the request
         uploadedDocs:
           uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
@@ -480,21 +488,24 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         body: formData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to generate study cards");
-      }
+      const responseData = await response.json();
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          responseData.details || "Failed to generate study cards"
+        );
+      }
 
       const newStudyCardSet = {
         id: `studycards_${crypto.randomUUID()}`,
         notebookId: firstNotebookId,
         pageId: firstPageId,
         title: setName,
-        cards: data.cards,
+        cards: responseData.cards,
         createdAt: serverTimestamp(),
         userId: user?.id || "",
+        metadata: metadata,
+        updatedAt: serverTimestamp(),
       };
 
       const studyCardRef = doc(db, "studyCards", newStudyCardSet.id);
@@ -880,17 +891,15 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
         {/* Study Materials Grid */}
         {loading ? (
-            <div className="flex flex-col items-between justify-start h-full w-full gap-2 min-h-[300px] ">
-              <div className="text-slate-400 text-xl font-semibold flex flex-row w-full justify-between ">
-                <Skeleton className="h-12 w-64" />
-                <Skeleton className="h-12 w-64" />
-                <Skeleton className="h-12 w-64" />
-              </div>
-           
+          <div className="flex flex-col items-between justify-start h-full w-full gap-2 min-h-[300px] ">
+            <div className="text-slate-400 text-xl font-semibold flex flex-row w-full justify-between ">
+              <Skeleton className="h-12 w-64" />
+              <Skeleton className="h-12 w-64" />
+              <Skeleton className="h-12 w-64" />
             </div>
-          ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 w-full ">
-          
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8 w-full ">
             <>
               {/* Study Cards Section */}
               <section className="rounded-lg h-fit">
@@ -1068,9 +1077,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 />
               </section>
             </>
-         
-        </div>
-      )}
+          </div>
+        )}
       </div>
 
       <CreateNotebookModal

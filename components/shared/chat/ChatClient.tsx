@@ -606,14 +606,19 @@ const ChatClient = ({
                 <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
+            
+            {/* <div> */}
 
             {!isNotebookFullscreen &&
               (showChat || showQuiz || showStudyCards || showStudyGuides) && (
+              <>
                 <ResizablePanel
                   className={`relative ${
                     showChat || showQuiz || showStudyCards || showStudyGuides
-                      ? "translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
+                      ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
                       : "hidden"
+
+
                   }`}
                   defaultSize={isChatFullscreen || isQuizFullscreen ? 100 : 50}
                 >
@@ -724,7 +729,13 @@ const ChatClient = ({
                     </ResizablePanel>
                   )}
                 </ResizablePanel>
+                
+
+
+              </>
               )}
+            
+            {/* </div> */}
           </ResizablePanelGroup>
         </div>
       </div>
