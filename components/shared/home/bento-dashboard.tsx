@@ -21,7 +21,7 @@ import {
 } from "@/lib/firebase/firestore";
 import type { Message } from "@/lib/types";
 import type { QuizState } from "@/types/quiz";
-import { StudyCardSet } from "@/types/studyCards";
+import { StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 import { useUser } from "@clerk/nextjs";
 import CircularProgress from "@mui/material/CircularProgress";
 import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
@@ -55,6 +55,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { BookOpen } from "lucide-react";
 
 interface StudyCardData {
@@ -426,6 +427,15 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         throw new Error("No notebook or page selected");
       }
 
+      // Create metadata first
+      const metadata = {
+        name: setName,
+        cardCount: numCards,
+        sourceNotebooks: [firstNotebookId],
+        createdAt: new Date().toISOString(),
+      };
+
+      // Upload files if any
       let uploadedDocsMetadata = [];
       if (filesToUpload.length > 0) {
         for (const file of filesToUpload) {
@@ -462,21 +472,13 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         }
       }
 
-      // Create metadata first
-      const metadata = {
-        name: setName,
-        cardCount: numCards,
-        sourceNotebooks: [firstNotebookId],
-        createdAt: new Date().toISOString(),
-      };
-
       const formData = new FormData();
       const messageData = {
         selectedPages:
           Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         setName,
         numCards,
-        metadata, // Include metadata in the request
+        metadata,
         uploadedDocs:
           uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
@@ -496,20 +498,26 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         );
       }
 
-      const newStudyCardSet = {
+      // Create the study card set with proper typing
+      const newStudyCardSet: StudyCardSet = {
         id: `studycards_${crypto.randomUUID()}`,
-        notebookId: firstNotebookId,
-        pageId: firstPageId,
         title: setName,
         cards: responseData.cards,
-        createdAt: serverTimestamp(),
+        metadata,
+        notebookId: firstNotebookId,
+        pageId: firstPageId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         userId: user?.id || "",
-        metadata: metadata,
-        updatedAt: serverTimestamp(),
       };
 
-      const studyCardRef = doc(db, "studyCards", newStudyCardSet.id);
-      await setDoc(studyCardRef, newStudyCardSet);
+      // Save to Firestore using the imported function
+      const studyCardSetId = await saveStudyCardSet(
+        firstNotebookId,
+        firstPageId,
+        responseData.cards,
+        metadata
+      );
 
       setSetName("");
       setFilesToUpload([]);
@@ -525,7 +533,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         setStudyCards(userStudyCards);
       }
 
-      router.push(`/study-cards/${newStudyCardSet.id}`);
+      router.push(`/study-cards/${studyCardSetId}`);
     } catch (error: any) {
       console.error("Error generating study cards:", error);
       toast.error(error.message || "Failed to generate study cards");
