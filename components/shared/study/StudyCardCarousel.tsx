@@ -82,7 +82,7 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
           className="bg-white border border-[#94b347] p-4 flex flex-col justify-center items-center py-32 rounded-xl  cursor-pointer  transition-colors"
         >
           <h3 className="font-bold text-[#94b347] text-2xl">
-            {studySet.cards[currentCardIndex].title}
+            {studySet.cards[currentCardIndex].front}
           </h3>
           {showAnswer[currentCardIndex] && (
             <div className="mt-4 w-full h-px bg-[#94b347]"></div>
@@ -92,7 +92,7 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
               showAnswer[currentCardIndex] ? "block" : "hidden"
             }`}
           >
-            <p>{studySet.cards[currentCardIndex].content}</p>
+            <p>{studySet.cards[currentCardIndex].back}</p>
           </div>
           {!showAnswer[currentCardIndex] ? (
             <p className=" text-slate-500 mt-2 text-xl">
