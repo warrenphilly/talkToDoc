@@ -149,6 +149,9 @@ export default function StudyGuideComponent({
   const user = useUser();
   const userId = user?.user?.id;
 
+
+
+
   useEffect(() => {
     console.log("HHHHHHHHh1")
     setFilesToUpload([...filesToUpload, ...files]);
@@ -156,6 +159,7 @@ export default function StudyGuideComponent({
 
   useEffect(() => {
     console.log("HHHHHHHHh2")
+    
     loadCardSets();
   }, [pageId]);
 
@@ -189,7 +193,22 @@ export default function StudyGuideComponent({
     console.log("Sending message");
   };
 
+  {/* error zone*/}
 
+  useEffect(() => {
+    const fetchFirestoreUser = async () => {
+      if (user?.user?.id) {  // Check for user ID specifically
+        try {
+          const firestoreUser = await getUserByClerkId(user.user.id);
+          setFirestoreUser(firestoreUser);
+        } catch (error) {
+          console.error("Error fetching user:", error);
+          toast.error("Failed to load user data");
+        }
+      }
+    };
+    fetchFirestoreUser();
+  }, [user?.user?.id]);  // Only depend on the user ID
 
 
   const handleClear = () => {

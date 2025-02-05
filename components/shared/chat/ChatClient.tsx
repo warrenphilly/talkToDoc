@@ -389,7 +389,7 @@ const ChatClient = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full  w-full items-center bg-green-500 rounded-xl">
+    <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center">
