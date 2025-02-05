@@ -18,7 +18,7 @@ const ChatActions = ({
   contextSections,
   removeContextSection,
 }: ChatActionsProps) => {
-  console.log("contextSections", contextSections);
+ 
   const renderContextSections = (): ReactNode => (
     <div className="m-2">
       {contextSections.length > 0 ? (

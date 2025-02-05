@@ -31,7 +31,7 @@ const FormUpload = ({
 
   const handleGenerateNotes = () => {
     
-    console.log("filesToUpload frfrfr", filesToUpload);
+
     // handleSendMessage();
   };
   //useEffect for watching messages.length
@@ -40,7 +40,7 @@ const FormUpload = ({
 
   useEffect(() => {
     setFilesToUpload([...filesToUpload, ...files]);
-    console.log("filesToUpload", filesToUpload);
+
   }, [files]);
 
   return (
@@ -120,7 +120,7 @@ const FormUpload = ({
                     variant="outline"
                     onClick={() => {
                       fileInputRef.current?.click();
-                      console.log("files", files);
+              
                     }}
                     className="flex items-center gap-2  bg-white text-slate-600 border-none shadow-lg"
                   >

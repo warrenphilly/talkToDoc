@@ -153,26 +153,26 @@ export default function StudyGuideComponent({
 
 
   useEffect(() => {
-    console.log("HHHHHHHHh1")
+
     setFilesToUpload([...filesToUpload, ...files]);
   }, [files]);
 
   useEffect(() => {
-    console.log("HHHHHHHHh2")
+  
     
     loadCardSets();
   }, [pageId]);
 
   useEffect(() => {
     if (showNotebookModal) {
-      console.log("HHHHHHHHh3")
+    
       fetchNotebooks();
     }
   }, [showNotebookModal]);
 
 
   useEffect(() => {
-    console.log("HHHHHHHHh4")
+
     loadStudyGuides();
   }, [pageId]);
 
@@ -216,38 +216,7 @@ export default function StudyGuideComponent({
     setFiles([]);
   };
 
-  // const loadAllNotebooks = async () => {
-  //   try {
-  //     setIsLoadingNotebooks(true);
-  //     console.log("Fetching notebooks...");
 
-  //     // Get reference to notebooks collection
-  //     const notebooksRef = collection(db, "notebooks");
-
-  //     // Create query to get all notebooks
-  //     const q = query(notebooksRef, orderBy("createdAt", "desc"));
-
-  //     // Get notebooks
-  //     const querySnapshot = await getDocs(q);
-
-  //     // Map the documents to Notebook objects
-  //     const fetchedNotebooks: Notebook[] = querySnapshot.docs.map(
-  //       (doc) =>
-  //         ({
-  //           id: doc.id,
-  //           ...doc.data(),
-  //           createdAt: doc.data().createdAt?.toDate() || new Date(),
-  //         } as Notebook)
-  //     );
-
-  //     console.log("Fetched notebooks:", fetchedNotebooks);
-  //     setNotebooks(fetchedNotebooks);
-  //   } catch (error) {
-  //     console.error("Error loading notebooks:", error);
-  //   } finally {
-  //     setIsLoadingNotebooks(false);
-  //   }
-  // };
 
 
   const fetchNotebooks = async () => {
@@ -257,7 +226,7 @@ export default function StudyGuideComponent({
         const fetchedNotebooks = await getNotebooksByFirestoreUserId(
           firestoreUser.id
         );
-        console.log("Fetched notebooks:", fetchedNotebooks); // Debug log
+       
         setNotebooks(fetchedNotebooks);
       } catch (error) {
         console.error("Error fetching notebooks:", error);

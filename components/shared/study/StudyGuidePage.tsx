@@ -290,7 +290,7 @@ export function StudyGuidePage({
           const fetchedNotebooks = await getNotebooksByFirestoreUserId(
             firestoreUser.id
           );
-          console.log("Fetched notebooks:", fetchedNotebooks); // Debug log
+        
           setNotebooks(fetchedNotebooks);
         } catch (error) {
           console.error("Error fetching notebooks:", error);
@@ -305,8 +305,7 @@ export function StudyGuidePage({
   }, [firestoreUser]);
 
   const renderNotebookList = () => {
-    console.log("Rendering notebooks:", notebooks); // Debug log
-    console.log("Loading state:", isLoadingNotebooks); // Debug log
+   
 
     if (isLoadingNotebooks) {
       return (

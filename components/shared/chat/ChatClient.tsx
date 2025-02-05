@@ -146,7 +146,7 @@ const ChatClient = ({
 
       // First check if a sidechat already exists
       const existingSideChat = await getSideChat(notebookId, tabId);
-      console.log("existingSideChat", existingSideChat);
+    
 
       if (existingSideChat) {
         // If sidechat exists, just add the new context section to it
@@ -211,12 +211,6 @@ const ChatClient = ({
     setPrimeSentence(null);
   };
 
-  // useEffect(() => {
-  //   console.log(
-  //     "messages(this value will be stores in the database):",
-  //     messages
-  //   );
-  // }, [messages]);
 
   // Load messages when component mounts
   useEffect(() => {
@@ -268,7 +262,7 @@ const ChatClient = ({
       updatedMessages.splice(index + 1, 0, newMessage);
 
       setMessages(updatedMessages);
-      console.log("updatedMessages", updatedMessages);
+     
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
       console.error("Error saving paragraph:", error);

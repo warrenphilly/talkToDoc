@@ -123,7 +123,7 @@ export function SidebarNav() {
 
         const firestoreUser = await getUserByClerkId(clerkUser.id);
         setUser(firestoreUser);
-        console.log("Firestore User:", firestoreUser);
+      
 
         if (!firestoreUser) return;
 
@@ -131,18 +131,18 @@ export function SidebarNav() {
         const userNotebooks = await getNotebooksByFirestoreUserId(
           firestoreUser.id
         );
-        console.log("Notebooks:", userNotebooks);
+        
 
         const userStudyCards = await getStudyCardsByClerkId(clerkUser.id);
-        console.log("Study Cards:", userStudyCards);
+ 
 
         const userStudyGuides = await getStudyGuidesByFirestoreUserId(
           clerkUser.id
         );
-        console.log("Study Guides:", userStudyGuides);
+      
 
         const userQuizzes = await getQuizzesByFirestoreUserId(clerkUser.id);
-        console.log("Quizzes:", userQuizzes);
+
 
         setNotebooks(userNotebooks);
         setStudyCards(userStudyCards);

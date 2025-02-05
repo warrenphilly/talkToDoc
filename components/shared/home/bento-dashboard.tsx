@@ -156,12 +156,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     const fetchNotebooks = async () => {
       try {
         const clerkUserId = await getCurrentUserId();
-        console.log("Clerk User ID:", clerkUserId); // Debug log
+     
 
         if (!clerkUserId) return;
 
         const firestoreUser = await getUserByClerkId(clerkUserId);
-        console.log("Firestore User:", firestoreUser); // Debug log
+     
 
         if (!firestoreUser) return;
 
@@ -174,10 +174,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         );
         const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
 
-        console.log("Firestore User ID:", firestoreUser.id); // Debug log
-        console.log("Study Cards Query Result:", userStudyCards);
-        console.log("Study Guides Query Result:", userStudyGuides);
-        console.log("Quizzes Query Result:", userQuizzes);
+   
 
         setNotebooks(userNotebooks);
         setStudyCards(userStudyCards);
@@ -595,7 +592,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
   };
   const renderNotebookList = () => {
-    console.log("Rendering notebooks:", notebooks); // Debug log
+  
 
     if (!notebooks || notebooks.length === 0) {
       return (

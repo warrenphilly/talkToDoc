@@ -45,9 +45,6 @@ const HomeClient = () => {
     }, 1000);
   }, [,]);
 
-  useEffect(() => {
-    console.log("messages", messages);
-  }, [messages]);
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-white w-full overflow-hidden">

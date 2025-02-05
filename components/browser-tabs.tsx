@@ -74,9 +74,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
     setTabs(convertedTabs);
     setAllPages(initialTabs);
-    // console.log("convertedTabs", convertedTabs);
-    // console.log("initialTabs", initialTabs);
-    // console.log("allPages", allPages);
+
     if (convertedTabs.length > 0) {
       setActiveTabId(convertedTabs[0].id);
     }

@@ -173,10 +173,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       // First get the Firestore user
       const firestoreUser = await getUserByClerkId(user.id);
 
-      console.log("User IDs:", {
-        clerkUserId: user.id,
-        firestoreUserId: firestoreUser?.id,
-      });
+      
 
       if (!firestoreUser) {
         console.error("No Firestore user found for Clerk ID:", user.id);
@@ -188,23 +185,13 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // Get ALL notebooks for debugging
       const allNotebooks = await getDocs(collection(db, "notebooks"));
-      console.log(
-        "All notebooks:",
-        allNotebooks.docs.map((doc) => ({
-          notebookId: doc.id,
-          userId: doc.data().userId,
-          title: doc.data().title,
-        }))
-      );
+    
 
       // Query using Firestore user ID
       const q = query(notebooksRef, where("userId", "==", firestoreUser.id));
       const querySnapshot = await getDocs(q);
 
-      console.log("Query results for Firestore userId:", {
-        firestoreUserId: firestoreUser.id,
-        matchCount: querySnapshot.docs.length,
-      });
+   
 
       const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
         const data = doc.data();
@@ -217,7 +204,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         };
       });
 
-      console.log("Final processed notebooks:", fetchedNotebooks);
+
       setNotebooks(fetchedNotebooks);
     } catch (error) {
       console.error("Error loading notebooks:", error);
@@ -304,7 +291,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           }
 
           const convertData = await convertResponse.json();
-          console.log("Convert response:", convertData);
+   
 
           if (!convertData.path && !convertData.text) {
             throw new Error(
@@ -336,7 +323,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         quizName,
       };
 
-      console.log("Quiz generation payload:", message);
+    
 
       quizFormData.append("message", JSON.stringify(message));
 
@@ -351,7 +338,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       }
 
       const data = await response.json();
-      console.log("Quiz generation response:", data);
+
 
       // Ensure required fields are present
       if (!notebookId) {
@@ -378,7 +365,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // Save to Firestore
       const docRef = await addDoc(collection(db, "quizzes"), newQuiz);
-      console.log("Quiz saved with ID:", docRef.id);
+      
 
       setShowQuizForm(false);
     } catch (error) {
@@ -393,7 +380,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Function to handle quiz selection
   const handleQuizSelect = (quiz: QuizState) => {
-    console.log("Selected quiz:", quiz);
+
     if (quiz.quizData) {
       // Convert timestamps to serializable format
       const serializedQuiz: SerializedQuizState = {

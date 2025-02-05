@@ -153,20 +153,15 @@ const SideChat = ({
   // Initialize side chat
   useEffect(() => {
     const initializeSideChat = async () => {
-      console.log("Initializing side chat with:", {
-        notebookId,
-        pageId,
-        primeSentence,
-      });
-
+      
       setIsLoading(true);
       try {
         // First check if a sidechat exists for this page
         const existingSideChat = await getSideChat(notebookId, pageId);
-        console.log("existingSideChat ttttttttt", existingSideChat);
+      
 
         if (existingSideChat) {
-          console.log("Loading existing side chat:", existingSideChat);
+    
           setSideChatId(existingSideChat?.id || null  );
           setMessages(existingSideChat?.messages || []);
           setContextSections(existingSideChat?.contextSections || []);
@@ -195,14 +190,7 @@ const SideChat = ({
     if (!messageText.trim() && files.length === 0) return;
 
     try {
-      console.log("Starting sendMessage with:", {
-        messageText,
-        notebookId,
-        pageId,
-        sideChatId,
-        primeSentence,
-      });
-
+      
       const formData = new FormData();
       formData.append("userMessage", messageText);
       formData.append("notebookId", notebookId);
@@ -247,25 +235,16 @@ const SideChat = ({
 
       try {
         if (sideChatId) {
-          console.log("Updating existing side chat:", {
-            sideChatId,
-            contextSections: contextSections,
-            messagesCount: finalMessages.length,
-          });
+        
 
           await updateSideChat(
             sideChatId,
             contextSections,
             finalMessages
           );
-          console.log("Side chat updated successfully");
+    
         } else {
-          console.log("Creating new side chat:", {
-            notebookId,
-            pageId,
-            contextSections: contextSections,
-            messagesCount: finalMessages.length,
-          });
+          
 
           if (!primeSentence) {
             console.warn(
@@ -279,7 +258,7 @@ const SideChat = ({
             contextSections,
             finalMessages
           );
-          console.log("New side chat created with ID:", newSideChatId);
+          
           setSideChatId(newSideChatId);
         }
       } catch (saveError) {

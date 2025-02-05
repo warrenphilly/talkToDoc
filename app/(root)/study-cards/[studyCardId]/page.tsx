@@ -190,27 +190,25 @@ export default function StudyCardPage() {
 
   useEffect(() => {
     const loadFirestoreUser = async () => {
-      console.log("Loading user...");
+
       if (!userId) return null;
       
       const user = await getUserByClerkId(userId);
-      console.log("User loaded:", user?.id);
+
       setFirestoreUser(user);
-      console.log("User loaded:", user?.id);
+
       if (user?.id) {
         const userNotebooks = await getNotebooksByFirestoreUserId(
           user?.id
         );
         setNotebooks(userNotebooks);
-        console.log("Notebooks loaded:", userNotebooks);
+   
       }
     };
 
     
     loadFirestoreUser();
-   
-   
-    console.log("Notebooks loaded:", notebooks);
+ 
     
   }, [userId]);
 
@@ -221,7 +219,7 @@ export default function StudyCardPage() {
         return;
       }
 
-      console.log("Fetching study card set with ID:", studyCardId);
+      
       const set = await getStudyCardSet(studyCardId);
       
       if (!set) {
@@ -229,7 +227,7 @@ export default function StudyCardPage() {
         return;
       }
 
-      console.log("Retrieved study set:", set);
+
       setStudySet(set);
     } catch (error) {
       console.error("Error loading study set:", error);
@@ -438,11 +436,11 @@ export default function StudyCardPage() {
     
     try {
       setIsLoadingNotebooks(true);
-      console.log("Loading notebooks for user:", firestoreUser.id);
+
       const userNotebooks = await getNotebooksByFirestoreUserId(
         firestoreUser.id
       );
-      console.log("Fetched notebooks:", userNotebooks);
+    
       
       setNotebooks(userNotebooks);
     } catch (error) {
