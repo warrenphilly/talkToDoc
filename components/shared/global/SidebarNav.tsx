@@ -231,6 +231,7 @@ export function SidebarNav() {
                 onOpenChange={setNotebooksOpen}
                 className="w-full h-fit justify-center bg-white rounded-xl"
               >
+                
                 <CollapsibleTrigger
                   className={`flex items-center gap-2 border-y border-b-slate-200 py-2 w-full bg-none px-4 ${
                     pathname.includes("/notes")

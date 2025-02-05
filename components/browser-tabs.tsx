@@ -315,7 +315,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
-            <DialogTitle>All Pages</DialogTitle>
+            <DialogTitle >All Pages</DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[300px] w-full pr-4">
             {allPages.map((page) => (

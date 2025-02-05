@@ -35,10 +35,10 @@ export default function RootLayout({
           <SignedIn>
             <SidebarProvider defaultOpen={true}>
               <div className="flex h-screen w-full">
-              <SidebarTrigger className="absolute top-4 left-4 z-50" />
+                
+                <SidebarTrigger className="absolute top-4 left-4 z-50" />
                 <SidebarNav />
                 <main className="flex-1 relative">
-                  
                   {children}
                 </main>
               </div>

@@ -150,21 +150,25 @@ export default function StudyGuideComponent({
   const userId = user?.user?.id;
 
   useEffect(() => {
+    console.log("HHHHHHHHh1")
     setFilesToUpload([...filesToUpload, ...files]);
   }, [files]);
 
   useEffect(() => {
+    console.log("HHHHHHHHh2")
     loadCardSets();
   }, [pageId]);
 
   useEffect(() => {
     if (showNotebookModal) {
+      console.log("HHHHHHHHh3")
       fetchNotebooks();
     }
   }, [showNotebookModal]);
 
 
   useEffect(() => {
+    console.log("HHHHHHHHh4")
     loadStudyGuides();
   }, [pageId]);
 
@@ -185,21 +189,7 @@ export default function StudyGuideComponent({
     console.log("Sending message");
   };
 
-  useEffect(() => {
-    const fetchFirestoreUser = async () => {
-      if (user) {
-        try {
-          const firestoreUser = await getUserByClerkId(user.user?.id || "");
-          setFirestoreUser(firestoreUser);
-        } catch (error) {
-          console.error("Error fetching user:", error);
-          toast.error("Failed to load user data");
-        }
 
-      }
-    };
-    fetchFirestoreUser();
-  }, [user]);
 
 
   const handleClear = () => {
