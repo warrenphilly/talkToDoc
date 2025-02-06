@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { UploadOutlined } from "@ant-design/icons";
-import { LucideFileText, ImageIcon } from "lucide-react";
+import { LucideFileText, ImageIcon, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Message } from "@/lib/types";
 
@@ -81,6 +81,10 @@ const UploadArea = ({
     }
   };
 
+  const handleRemoveFile = (indexToRemove: number) => {
+    setFilesToProcess(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
   return (
     <div className="flex  min-w-[300px] w-full bg-white  flex-col px-6 gap-2 items-start justify-start rounded-2xl w-full">
       {showUpload && (
@@ -134,7 +138,7 @@ const UploadArea = ({
                                   alt={file.name}
                                   className="w-12 h-12 object-cover"
                                   onError={(e) => {
-                                    e.currentTarget.src = ''; // Clear the src
+                                    e.currentTarget.src = '';
                                     e.currentTarget.style.display = 'none';
                                     e.currentTarget.parentElement?.classList.add('fallback-icon');
                                   }}
@@ -153,6 +157,13 @@ const UploadArea = ({
                             </p>
                           </div>
                         </div>
+                        <button
+                          onClick={() => handleRemoveFile(index)}
+                          className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+                          aria-label="Remove file"
+                        >
+                          <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-500" />
+                        </button>
                       </div>
                     );
                   })}
