@@ -209,6 +209,7 @@ export default function QuizPage() {
         totalQuestions: data.quiz.questions.length,
         userId: user?.id || "",
         createdAt: Timestamp.now(),
+        title: quizName,
       };
 
       const quizRef = doc(db, "quizzes", newQuiz.id);

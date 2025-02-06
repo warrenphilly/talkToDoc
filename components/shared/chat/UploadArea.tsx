@@ -82,9 +82,9 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex border-t min-w-[300px] bg-slate-100 border-slate-200 flex-col gap-2 items-center justify-center rounded-2xl w-full">
+    <div className="flex  min-w-[300px] w-full bg-white  flex-col px-6 gap-2 items-start justify-start rounded-2xl w-full">
       {showUpload && (
-        <div className="flex flex-col gap-2 items-start justify-center rounded-2xl w-full h-fit p-6">
+        <div className="flex flex-col gap-2  bg-[] items-start justify-center rounded-2xl w-full border border-slate-400 h-fit p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Upload your files
           </label>
@@ -127,11 +127,22 @@ const UploadArea = ({
                       >
                         <div className="flex items-center gap-3">
                           {isImage ? (
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={file.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded overflow-hidden">
+                              {file instanceof File ? (
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={file.name}
+                                  className="w-12 h-12 object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = ''; // Clear the src
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.parentElement?.classList.add('fallback-icon');
+                                  }}
+                                />
+                              ) : (
+                                <ImageIcon className="w-8 h-8 text-slate-400" />
+                              )}
+                            </div>
                           ) : (
                             <LucideFileText className="w-12 h-12 text-slate-600" />
                           )}
@@ -151,7 +162,7 @@ const UploadArea = ({
 
             {/* Previously Uploaded Files List */}
             {previouslyUploadedFiles.length > 0 && (
-              <div className="border border-slate-400 rounded-lg p-4 space-y-3">
+              <div className=" rounded-lg p-4 space-y-3">
                 <p className="text-sm text-slate-600 font-semibold">Previously Uploaded Files</p>
                 <div className="space-y-2">
                   {previouslyUploadedFiles.map((file, index) => {
@@ -161,7 +172,7 @@ const UploadArea = ({
                     return (
                       <div 
                         key={index}
-                        className="bg-white min-w-[200px] flex items-center justify-between p-2 rounded-lg"
+                        className="bg-white flex items-center justify-between p-2 rounded-lg border border-slate-400"
                       >
                         <div className="flex items-center gap-3 bg-white">
                           {isImage ? (
@@ -172,7 +183,7 @@ const UploadArea = ({
                             <LucideFileText className="w-12 h-12 text-slate-600" />
                           )}
                           <div>
-                            <p className="text-sm font-medium text-slate-700 line-clamp-1">{file.name}</p>
+                            <p className="text-sm font-medium text-slate-700">{file.name}</p>
                           </div>
                         </div>
                       </div>

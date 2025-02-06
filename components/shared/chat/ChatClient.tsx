@@ -67,6 +67,12 @@ import StudyCards from "../study/StudyCards";
 import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ChatClientProps {
   title: string;
@@ -112,11 +118,16 @@ const ChatClient = ({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     setFiles: (files: File[]) => void
   ) => {
     fileUpload(event, setFiles);
+    if (isSmallScreen) {
+      setShowUploadModal(false);
+    }
   };
 
   const handleSentenceClick = (
@@ -328,10 +339,16 @@ const ChatClient = ({
     }
   };
 
-  // Add this useEffect to handle screen size changes
+  // Modify the screen size useEffect
   useEffect(() => {
     const handleResize = () => {
-      setIsSmallScreen(window.innerWidth < 1068);
+      const newIsSmallScreen = window.innerWidth < 1068;
+      setIsSmallScreen(newIsSmallScreen);
+      
+      // Close modal if screen becomes large
+      if (!newIsSmallScreen) {
+        setShowUploadModal(false);
+      }
     };
 
     // Set initial value
@@ -356,17 +373,17 @@ const ChatClient = ({
       setShowChat(false);
       setShowQuiz(false);
     } else if (component === "studyCards") {
-      setShowStudyCards(true);
+      setShowStudyCards(!showStudyCards);
       setShowStudyGuides(false);
       setShowChat(false);
       setShowQuiz(false);
     } else if (component === "quiz") {
-      setShowQuiz(true);
+      setShowQuiz(!showQuiz);
       setShowStudyCards(false);
       setShowStudyGuides(false);
       setShowChat(false);
     } else if (component === "chat") {
-      setShowChat(true);
+      setShowChat(!showChat);
       setShowQuiz(false);
       setShowStudyCards(false);
       setShowStudyGuides(false);
@@ -389,7 +406,7 @@ const ChatClient = ({
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center">
             <Button
-              onClick={() => setShowUpload(!showUpload)}
+              onClick={() => isSmallScreen ? setShowUploadModal(true) : setShowUpload(!showUpload)}
               className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 ${
                 messages.length > 0 ? "block" : "hidden"
               }`}
@@ -504,18 +521,18 @@ const ChatClient = ({
                 flex flex-col gap-1 md:gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
-              <UploadArea
-                messages={messages}
-                files={files}
-                showUpload={showUpload}
-                fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
-                handleFileUpload={(event) => handleFileUpload(event, setFiles)}
-                handleSendMessage={handleSendMessage}
-                handleClear={handleClear}
-                setShowUpload={setShowUpload}
-               
-                
-              />
+              {!isSmallScreen && (
+                <UploadArea
+                  messages={messages}
+                  files={files}
+                  showUpload={showUpload}
+                  fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
+                  handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                  handleSendMessage={handleSendMessage}
+                  handleClear={handleClear}
+                  setShowUpload={setShowUpload}
+                />
+              )}
               {/* {!isProcessing && !showUpload && (
                 <div className="w-full">
                   <p className="text-sm text-slate-500 text-center mt-2">
@@ -781,6 +798,31 @@ const ChatClient = ({
             </div>
           </DrawerContent>
         </Drawer>
+      )}
+      {isSmallScreen && (
+        <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+          <DialogContent className="sm:max-w-[425px] bg-white p-6">
+            <DialogHeader>
+              <DialogTitle hidden>Upload Files</DialogTitle>
+            </DialogHeader>
+            <UploadArea
+              messages={messages}
+              files={files}
+              showUpload={true}
+              fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
+              handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+              handleSendMessage={() => {
+                handleSendMessage();
+                setShowUploadModal(false);
+              }}
+              handleClear={() => {
+                handleClear();
+                setShowUploadModal(false);
+              }}
+              setShowUpload={setShowUpload}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
