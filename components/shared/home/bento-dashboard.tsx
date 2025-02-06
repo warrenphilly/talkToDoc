@@ -418,6 +418,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
   const handleGenerateCards = async () => {
     try {
+      if (!user?.id) {
+        toast.error("Please sign in to generate study cards");
+        return;
+      }
+
       await generateCards(
         setName,
         numCards,
@@ -431,7 +436,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         setFilesToUpload,
         setFiles,
         setMessages,
-        loadCardSets
+        loadCardSets,
+        user.id
       );
     } catch (error) {
       console.error("Error generating cards:", error);

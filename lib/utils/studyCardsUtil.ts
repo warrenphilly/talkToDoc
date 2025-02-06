@@ -7,7 +7,6 @@ import { fileUpload } from "@/lib/utils";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { StudySetMetadata } from "@/types/studyCards";
 import { UserResource } from "@clerk/types";
-import { currentUser } from "@clerk/nextjs/server";
 
 export const toggleAnswer = (showAnswer: Record<string, boolean>, cardIndex: number) => {
   return {
@@ -244,12 +243,11 @@ export const handleGenerateCards = async (
   setFilesToUpload: (files: File[]) => void,
   setFiles: (files: File[]) => void,
   setMessages: (messages: any[]) => void,
-  loadCardSets: () => Promise<void>
+  loadCardSets: () => Promise<void>,
+  userId: string
 ) => {
   try {
-    // Get current user ID
-    const user = await currentUser();
-    if (!user) {
+    if (!userId) {
       throw new Error("User not authenticated");
     }
 
@@ -358,7 +356,7 @@ export const handleGenerateCards = async (
         }))
       })),
       cardCount: numCards,
-      userId: user.id, 
+      userId: userId,
     };
 
     const formData = new FormData();
@@ -389,7 +387,7 @@ export const handleGenerateCards = async (
     }
 
     const data = await response.json();
-    await saveStudyCardSet(firstNotebookId, firstPageId, data.cards, metadata, user.id);
+    await saveStudyCardSet(firstNotebookId, firstPageId, data.cards, metadata, userId);
 
     setShowNotebookModal(false);
     setSelectedPages({});
