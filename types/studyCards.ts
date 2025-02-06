@@ -15,6 +15,7 @@ export interface StudySetMetadata {
     }[];
   }[];
   createdAt: string;
+  userId: string;
 }
 
 export interface StudyCardSet {

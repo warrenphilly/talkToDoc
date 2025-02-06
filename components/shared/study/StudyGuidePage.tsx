@@ -200,6 +200,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
         title: guideName,
         content: data.content,
         pageId: pageIdToUse,
+        notebookId: notebookIdToUse,
         createdAt: new Date(),
         userId: user?.id || "",
       };

@@ -272,6 +272,11 @@ export default function StudyCardPage() {
 
       setIsGenerating(true);
 
+      // Get the current user ID
+      if (!firestoreUser?.id) {
+        throw new Error("User not authenticated");
+      }
+
       // Get the first selected notebook and page for storage path
       const firstNotebookId = Object.keys(selectedPages).find(
         notebookId => selectedPages[notebookId]?.length > 0
@@ -343,6 +348,7 @@ export default function StudyCardPage() {
         createdAt: new Date(),
         sourceNotebooks: sourceNotebooks.filter((n) => n !== null),
         cardCount: numCards,
+        userId: firestoreUser.id,
       };
 
       // Call the API to generate cards
@@ -368,8 +374,14 @@ export default function StudyCardPage() {
 
       const data = await response.json();
 
-      // Save the study card set
-      await saveStudyCardSet(notebookIdToUse, pageIdToUse, data.cards, metadata);
+      // Save the study card set with user ID
+      await saveStudyCardSet(
+        notebookIdToUse, 
+        pageIdToUse, 
+        data.cards, 
+        metadata,
+        firestoreUser.id
+      );
 
       // Reset form state
       setShowNotebookModal(false);

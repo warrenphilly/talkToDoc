@@ -1034,26 +1034,26 @@ export const saveStudyCardSet = async (
   notebookId: string,
   pageId: string,
   cards: any[],
-  metadata: any
+  metadata: any,
+  userId: string
 ) => {
   try {
     const studyCardSetId = `studycards_${crypto.randomUUID()}`;
+    const timestamp = serverTimestamp();
     
-    // Create a reference to the study card set document
     const studyCardSetRef = doc(db, 'studyCardSets', studyCardSetId);
     
-    // Create the study card set data
     const studyCardSetData = {
       id: studyCardSetId,
       cards,
       metadata,
-      notebookId: notebookId || '',  // Use empty string if no notebookId
-      pageId: pageId || '',          // Use empty string if no pageId
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      notebookId: notebookId || '',
+      pageId: pageId || '',
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      userId: userId,
     };
 
-    // Save the study card set
     await setDoc(studyCardSetRef, studyCardSetData);
 
     return studyCardSetId;
