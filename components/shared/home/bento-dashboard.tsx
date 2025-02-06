@@ -267,12 +267,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       setIsGenerating(true);
 
-      const firstNotebookId = Object.keys(selectedPages)[0];
-      const firstPageId = selectedPages[firstNotebookId]?.[0];
-
-      if (!firstNotebookId || !firstPageId) {
-        throw new Error("No notebook or page selected");
-      }
+      // Get the first selected notebook and page if they exist
+      const firstNotebookId = Object.keys(selectedPages)[0] || "";
+      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
 
       let uploadedDocsMetadata = [];
       if (files.length > 0) {
@@ -292,7 +289,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           const data = await response.json();
           if (data.text) {
             const timestamp = new Date().getTime();
-            const path = `quizdocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            // Use a generic path if no notebook/page is selected
+            const path = firstNotebookId && firstPageId
+              ? `quizdocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`
+              : `quizdocs/uploads/${timestamp}.md`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
@@ -312,15 +312,13 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages:
-          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         quizName,
         numberOfQuestions,
         questionTypes: Object.entries(selectedQuestionTypes)
           .filter(([_, selected]) => selected)
           .map(([type]) => type),
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -379,6 +377,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           setQuizzes(userQuizzes);
         }
       }
+
+      // Navigate to the new quiz
+      router.push(`/quizzes/${newQuiz.id}`);
     } catch (error: any) {
       console.error("Error generating quiz:", error);
       toast.error(error.message || "Failed to generate quiz");
@@ -403,47 +404,39 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      if (
-        filesToUpload.length === 0 &&
-        Object.keys(selectedPages).length === 0
-      ) {
+      if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
 
       setIsGenerating(true);
 
-      const firstNotebookId = Object.keys(selectedPages)[0];
-      const firstPageId = selectedPages[firstNotebookId]?.[0];
+      // Get the first selected notebook and page if they exist
+      const firstNotebookId = Object.keys(selectedPages)[0] || null;
+      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : null;
 
-      if (!firstNotebookId || !firstPageId) {
-        throw new Error("No notebook or page selected");
-      }
-
-      // Create metadata with the correct structure
+      // Create metadata with optional notebook references
       const metadata = {
         name: setName,
         cardCount: numCards,
-        sourceNotebooks: Object.entries(selectedPages).map(
-          ([notebookId, pageIds]) => {
-            const notebook = notebooks.find((n) => n.id === notebookId);
-            return {
-              notebookId,
-              notebookTitle: notebook?.title || "",
-              pages: pageIds.map((pageId) => {
-                const page = notebook?.pages.find((p) => p.id === pageId);
-                return {
-                  pageId,
-                  pageTitle: page?.title || "Unknown Page",
-                };
-              }),
-            };
-          }
-        ),
+        sourceNotebooks: Object.entries(selectedPages).map(([notebookId, pageIds]) => {
+          const notebook = notebooks.find((n) => n.id === notebookId);
+          return {
+            notebookId,
+            notebookTitle: notebook?.title || "",
+            pages: pageIds.map((pageId) => {
+              const page = notebook?.pages.find((p) => p.id === pageId);
+              return {
+                pageId,
+                pageTitle: page?.title || "Unknown Page",
+              };
+            }),
+          };
+        }),
         createdAt: new Date().toISOString(),
       };
 
-      // Upload files if any
+      // Handle file uploads
       let uploadedDocsMetadata = [];
       if (filesToUpload.length > 0) {
         for (const file of filesToUpload) {
@@ -462,7 +455,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           const data = await response.json();
           if (data.text) {
             const timestamp = new Date().getTime();
-            const path = `studycards/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            // Use a generic path if no notebook/page is selected
+            const path = firstNotebookId && firstPageId
+              ? `studycards/${firstNotebookId}/${firstPageId}_${timestamp}.md`
+              : `studycards/uploads/${timestamp}.md`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
@@ -482,13 +478,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages:
-          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         setName,
         numCards,
         metadata,
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -501,19 +495,17 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       const responseData = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          responseData.details || "Failed to generate study cards"
-        );
+        throw new Error(responseData.details || "Failed to generate study cards");
       }
 
-      // Create the study card set with proper typing
+      // Create the study card set with optional notebook references
       const newStudyCardSet: StudyCardSet = {
         id: `studycards_${crypto.randomUUID()}`,
         title: setName,
         cards: responseData.cards,
         metadata,
-        notebookId: firstNotebookId,
-        pageId: firstPageId,
+        notebookId: firstNotebookId || "",  // Use empty string instead of undefined
+        pageId: firstPageId || "",  // Use empty string instead of undefined
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         userId: user?.id || "",
@@ -521,8 +513,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       // Save to Firestore using the imported function
       const studyCardSetId = await saveStudyCardSet(
-        firstNotebookId,
-        firstPageId,
+        newStudyCardSet.notebookId,
+        newStudyCardSet.pageId,
         responseData.cards,
         metadata
       );
@@ -704,23 +696,18 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      if (
-        studyGuideFiles.length === 0 &&
-        Object.keys(selectedPages).length === 0
-      ) {
+      if (studyGuideFiles.length === 0 && Object.keys(selectedPages).length === 0) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
 
       setIsGeneratingGuide(true);
 
-      const firstNotebookId = Object.keys(selectedPages)[0];
-      const firstPageId = selectedPages[firstNotebookId]?.[0];
+      // Get the first selected notebook and page if they exist
+      const firstNotebookId = Object.keys(selectedPages)[0] || "";
+      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
 
-      if (!firstNotebookId || !firstPageId) {
-        throw new Error("No notebook or page selected");
-      }
-
+      // Handle file uploads
       let uploadedDocsMetadata = [];
       if (studyGuideFiles.length > 0) {
         for (const file of studyGuideFiles) {
@@ -739,7 +726,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           const data = await response.json();
           if (data.text) {
             const timestamp = new Date().getTime();
-            const path = `studyguides/${firstNotebookId}/${firstPageId}_${timestamp}.md`;
+            // Use a generic path if no notebook/page is selected
+            const path = firstNotebookId && firstPageId
+              ? `studyguides/${firstNotebookId}/${firstPageId}_${timestamp}.md`
+              : `studyguides/uploads/${timestamp}.md`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
@@ -759,11 +749,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages:
-          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         guideName,
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -773,12 +761,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         body: formData,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to generate study guide");
-      }
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.details || "Failed to generate study guide");
+      }
 
       const newStudyGuide = {
         id: `studyguide_${crypto.randomUUID()}`,
@@ -803,9 +790,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       // Refresh the study guides list
       const clerkUserId = await getCurrentUserId();
       if (clerkUserId) {
-        const userStudyGuides = await getStudyGuidesByFirestoreUserId(
-          clerkUserId
-        );
+        const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUserId);
         setStudyGuides(userStudyGuides);
       }
 

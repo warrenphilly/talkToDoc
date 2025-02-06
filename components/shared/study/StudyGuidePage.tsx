@@ -22,26 +22,27 @@ import {
   Plus,
   RefreshCw,
   X,
+  Trash2,
+  Edit2,
+  Save,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast"; // Add this import
 import { v4 as uuidv4 } from "uuid"; // Add this for generating pageId
-import { StudyGuide } from "./StudyGuide"; // Make sure to export the interface from StudyGuide.tsx
+import { StudyGuide } from "@/types/studyGuide"; // Make sure to export the interface from StudyGuide.tsx
 import StudyGuideModal from "./StudyGuideModal";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { getDoc } from "firebase/firestore";
 
 interface StudyGuidePageProps {
   guide: StudyGuide;
-  onDelete: (guideId: string) => void;
-  onUpdateTitle: (guideId: string, newTitle: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onUpdateTitle: (id: string, newTitle: string) => Promise<void>;
 }
 
-export function StudyGuidePage({
-  guide,
-  onDelete,
-  onUpdateTitle,
-}: StudyGuidePageProps) {
+export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(guide.title);
   const [showModal, setShowModal] = useState(false);
@@ -63,6 +64,14 @@ export function StudyGuidePage({
   const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
   const { user } = useUser();
   const router = useRouter();
+  const params = useParams();
+  const [studyGuide, setStudyGuide] = useState<StudyGuide | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const handleSaveTitle = async () => {
+    await onUpdateTitle(guide.id, editedTitle);
+    setIsEditing(false);
+  };
 
   const handleSave = () => {
     if (editedTitle.trim()) {
@@ -304,6 +313,43 @@ export function StudyGuidePage({
     fetchNotebooks();
   }, [firestoreUser]);
 
+  useEffect(() => {
+    const fetchStudyGuide = async () => {
+      if (params.studyGuideId) {
+        try {
+          const studyGuideRef = doc(
+            db,
+            "studyGuides",
+            params.studyGuideId as string
+          );
+          const studyGuideSnap = await getDoc(studyGuideRef);
+
+          if (studyGuideSnap.exists()) {
+            const data = studyGuideSnap.data();
+            // Convert Firestore Timestamp to Date object
+            const createdAtDate = data.createdAt?.toDate?.() || new Date();
+
+            setStudyGuide({
+              id: studyGuideSnap.id,
+              title: data.title,
+              content: data.content,
+              notebookId: data.notebookId || "", // Add notebookId with empty string fallback
+              pageId: data.pageId || "",
+              createdAt: createdAtDate,
+              userId: data.userId || "",
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching study guide:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStudyGuide();
+  }, [params.studyGuideId]);
+
   const renderNotebookList = () => {
    
 
@@ -429,13 +475,21 @@ export function StudyGuidePage({
 
         <Button
           variant="ghost"
+          className="gap-2 text-red-500 flex items-center justify-center w-fit border border-red-500 rounded-full"
+          onClick={() => onDelete(guide.id)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete Guide
+        </Button>
+
+        <Button
+          variant="ghost"
           className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-600 rounded-full"
           onClick={() => setShowModal(true)}
         >
           + Create New Guide
         </Button>
       </div>
-
 
       <div className="shadow-none border-none p-4  h-full max-h-[calc(100vh-100px)] overflow-y-auto">
         <div className="flex flex-row items-center justify-between w-full  px-4    pb-2">
@@ -452,10 +506,10 @@ export function StudyGuidePage({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleSave}
+                  onClick={handleSaveTitle}
                   className="text-green-600 hover:text-green-700 "
                 >
-                  <Check className="h-4 w-4" />
+                  <Save className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"

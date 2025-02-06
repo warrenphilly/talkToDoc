@@ -95,13 +95,13 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a skilled educator and study guide creator. Create a comprehensive study guide that helps students understand and retain key concepts.
+            content: `You are a skilled educator and study guide creator. Create a comprehensive study guide that helps students understand and retain key concepts. Return ONLY valid JSON without any markdown formatting or code blocks.
 
-Format the response as a structured JSON object with the following format:
+The response should follow this format:
 {
   "sections": [
     {
@@ -117,15 +117,7 @@ Format the response as a structured JSON object with the following format:
       ]
     }
   ]
-}
-
-Guidelines:
-- Break down complex topics into manageable subtopics
-- Include practical examples where relevant
-- Provide specific study tips and memory aids
-- Focus on clarity and understanding
-- Highlight connections between concepts
-- Include key definitions and terminology`
+}`
           },
           {
             role: "user",
@@ -142,7 +134,18 @@ Guidelines:
     }
 
     const data = await response.json();
-    const studyGuideContent = JSON.parse(data.choices[0].message.content);
+    
+    // Clean the response content to remove any markdown formatting
+    const cleanContent = data.choices[0].message.content.replace(/```json\n|\n```/g, '');
+    
+    let studyGuideContent;
+    try {
+      studyGuideContent = JSON.parse(cleanContent);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      console.error("Raw Content:", cleanContent);
+      throw new Error("Failed to parse study guide content");
+    }
 
     // Add show property to each section
     const formattedSections = studyGuideContent.sections.map((section: any) => ({

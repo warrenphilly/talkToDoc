@@ -200,11 +200,11 @@ ${allContent}`,
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
-              content: `Create ${numberOfCards} study cards from this summarized content:
+              content: `Create EXACTLY ${numberOfCards} study cards from this summarized content. No more, no less.
 
 ${summary}
 
@@ -218,11 +218,15 @@ Format your response as a valid JSON object with this exact structure:
   ]
 }
 
-Important: Respond ONLY with the JSON object, no additional text or explanations.`,
+Important: 
+- Create EXACTLY ${numberOfCards} cards
+- Respond ONLY with the JSON object
+- No additional text or explanations
+- Each card must have both title and content fields`,
             },
           ],
           temperature: 0.7,
-          max_tokens: 1000,
+          max_tokens: 2000,
         }),
       }
     );

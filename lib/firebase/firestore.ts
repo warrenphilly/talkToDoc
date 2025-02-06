@@ -964,6 +964,14 @@ export const saveStudyGuide = async (
   content: string
 ): Promise<void> => {
   try {
+    // Validate inputs
+    if (!notebookId || !pageId || !content) {
+      throw new Error("Missing required parameters");
+    }
+
+    // Ensure content is a valid string
+    const sanitizedContent = typeof content === 'string' ? content : JSON.stringify(content);
+
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
 
@@ -974,16 +982,43 @@ export const saveStudyGuide = async (
 
     if (pageIndex === -1) throw new Error("Page not found");
 
-    // Add or update study guide
+    // Add or update study guide with sanitized content
     notebook.pages[pageIndex].studyGuide = {
-      content,
+      content: sanitizedContent,
       updatedAt: new Date(),
     };
 
     await updateDoc(notebookRef, { pages: notebook.pages });
   } catch (error) {
     console.error("Error saving study guide:", error);
-    throw error;
+    // Add more context to the error
+    throw new Error(`Failed to save study guide: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Add a new function to get study guide content
+export const getStudyGuide = async (
+  notebookId: string,
+  pageId: string
+): Promise<{ content: string; updatedAt: Date } | null> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    const notebookSnap = await getDoc(notebookRef);
+
+    if (!notebookSnap.exists()) return null;
+
+    const notebook = notebookSnap.data() as Notebook;
+    const page = notebook.pages.find((p) => p.id === pageId);
+
+    if (!page || !page.studyGuide) return null;
+
+    return {
+      content: page.studyGuide.content,
+      updatedAt: page.studyGuide.updatedAt
+    };
+  } catch (error) {
+    console.error("Error getting study guide:", error);
+    throw new Error(`Failed to get study guide: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
@@ -998,56 +1033,32 @@ const convertTimestampToDate = (timestamp: any): Date => {
 export const saveStudyCardSet = async (
   notebookId: string,
   pageId: string,
-  cards: StudyCard[],
-  metadata: Omit<StudySetMetadata, "createdAt">
+  cards: any[],
+  metadata: any
 ) => {
   try {
-    const user = await currentUser();
-    if (!user) throw new Error("User not authenticated");
-
-    const studySetRef = doc(collection(db, "studyCardSets"));
-    const setId = studySetRef.id;
-
-    // Create timestamp
-    const timestamp = serverTimestamp();
-
-    const studySetData = {
-      id: setId,
-      title: metadata.name,
-      cards: cards.map(({ title, content }) => ({ title, content })), // Only include required properties
-      metadata: {
-        ...metadata,
-        createdAt: timestamp,
-      },
-      userId: user.id,
-      notebookId,
-      pageId,
-      createdAt: timestamp,
+    const studyCardSetId = `studycards_${crypto.randomUUID()}`;
+    
+    // Create a reference to the study card set document
+    const studyCardSetRef = doc(db, 'studyCardSets', studyCardSetId);
+    
+    // Create the study card set data
+    const studyCardSetData = {
+      id: studyCardSetId,
+      cards,
+      metadata,
+      notebookId: notebookId || '',  // Use empty string if no notebookId
+      pageId: pageId || '',          // Use empty string if no pageId
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     };
 
-    await setDoc(studySetRef, studySetData);
+    // Save the study card set
+    await setDoc(studyCardSetRef, studyCardSetData);
 
-    const notebookRef = doc(db, "notebooks", notebookId);
-    const notebookSnap = await getDoc(notebookRef);
-
-    if (notebookSnap.exists()) {
-      const notebook = notebookSnap.data();
-      const pageIndex = notebook.pages.findIndex((p: any) => p.id === pageId);
-
-      if (pageIndex !== -1) {
-        const updatedPages = [...notebook.pages];
-        if (!updatedPages[pageIndex].studyCardSetRefs) {
-          updatedPages[pageIndex].studyCardSetRefs = [];
-        }
-        updatedPages[pageIndex].studyCardSetRefs.push(setId);
-
-        await updateDoc(notebookRef, { pages: updatedPages });
-      }
-    }
-
-    return setId;
+    return studyCardSetId;
   } catch (error) {
-    console.error("Error saving study card set:", error);
+    console.error('Error saving study card set:', error);
     throw error;
   }
 };
@@ -1156,24 +1167,33 @@ export const deleteStudyCardSet = async (
     const cardSetRef = doc(db, "studyCardSets", setId);
     await deleteDoc(cardSetRef);
 
-    // Remove the reference from the notebook page
-    const notebookRef = doc(db, "notebooks", notebookId);
-    const notebookSnap = await getDoc(notebookRef);
+    // Only update notebook if notebookId and pageId are provided
+    if (notebookId && pageId) {
+      // Remove the reference from the notebook page
+      const notebookRef = doc(db, "notebooks", notebookId);
+      const notebookSnap = await getDoc(notebookRef);
 
-    if (!notebookSnap.exists()) throw new Error("Notebook not found");
+      if (!notebookSnap.exists()) {
+        console.warn("Notebook not found, but study card set was deleted");
+        return;
+      }
 
-    const notebook = notebookSnap.data() as Notebook;
-    const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
+      const notebook = notebookSnap.data() as Notebook;
+      const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
 
-    if (pageIndex === -1) throw new Error("Page not found");
+      if (pageIndex === -1) {
+        console.warn("Page not found in notebook, but study card set was deleted");
+        return;
+      }
 
-    // Filter out the deleted set ID from studyCardSetRefs
-    notebook.pages[pageIndex].studyCardSetRefs =
-      notebook.pages[pageIndex].studyCardSetRefs?.filter(
-        (ref) => ref !== setId
-      ) || [];
+      // Filter out the deleted set ID from studyCardSetRefs
+      notebook.pages[pageIndex].studyCardSetRefs =
+        notebook.pages[pageIndex].studyCardSetRefs?.filter(
+          (ref) => ref !== setId
+        ) || [];
 
-    await updateDoc(notebookRef, { pages: notebook.pages });
+      await updateDoc(notebookRef, { pages: notebook.pages });
+    }
   } catch (error) {
     console.error("Error deleting study card set:", error);
     throw error;
