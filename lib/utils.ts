@@ -31,11 +31,18 @@ export const sendMessage = async (
   let allText = '';
   let messages: Message[] = [];
 
+  // Create file details array with UUIDs instead of URLs
+  const fileDetails = files.map(file => ({
+    id: crypto.randomUUID(),
+    name: file.name
+  }));
+
   // Add user message first
   const userMessage: Message = {
     user: "User",
     text: input,
-    files: files.map((file) => URL.createObjectURL(file)),
+    files: fileDetails.map(fd => fd.id), // Use the UUIDs
+    fileDetails: fileDetails
   };
   messages.push(userMessage);
   setMessages((prevMessages) => [...prevMessages, userMessage]);

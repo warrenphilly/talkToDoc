@@ -26,13 +26,13 @@ const UploadArea = ({
   showUpload,
   setShowUpload,
 }: UploadAreaProps) => {
-  const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<string[]>([]);
+  const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<Array<{id: string, name: string}>>([]);
   const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
   const [processingFiles, setProcessingFiles] = useState<boolean>(false);
 
   // Update filesToProcess when files prop changes
   useEffect(() => {
-    if (!processingFiles) {  // Only update if not currently processing
+    if (!processingFiles) {
       setFilesToProcess(files);
     }
   }, [files, processingFiles]);
@@ -41,32 +41,42 @@ const UploadArea = ({
   useEffect(() => {
     const allUploadedFiles = messages
       .filter(msg => msg.files && msg.files.length > 0)
-      .flatMap(msg => msg.files || []);
+      .flatMap(msg => {
+        if (msg.fileDetails) {
+          return msg.fileDetails;
+        }
+        return (msg.files || []).map(id => ({ id, name: 'Unknown File' }));
+      });
     setPreviouslyUploadedFiles(allUploadedFiles);
   }, [messages]);
 
   const handleGenerateNotes = async () => {
     setProcessingFiles(true);
     
-    // Immediately move current files to previously uploaded
-    const newUploadedFiles = filesToProcess.map(file => URL.createObjectURL(file));
-    setPreviouslyUploadedFiles(prev => [...prev, ...newUploadedFiles]);
+    // Create file details array with IDs and original names
+    const fileDetails = filesToProcess.map(file => ({
+      id: crypto.randomUUID(),
+      name: file.name
+    }));
     
-    // Clear the files to process immediately
+    // Update previously uploaded files
+    setPreviouslyUploadedFiles(prev => [...prev, ...fileDetails]);
+    
+    // Clear the files to process
     setFilesToProcess([]);
     
-    // Call the parent handlers
+    // Call parent handlers with file details
     setShowUpload(false);
     await handleSendMessage();
-    handleClear();
+    // handleClear();
     
     setProcessingFiles(false);
-  }
+  };
 
   return (
-    <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
+    <div className="flex border-t bg-slate-100 border-slate-200 flex-col gap-2 items-center justify-center rounded-2xl w-full">
       {showUpload && (
-        <div className="bg-white flex flex-col gap-2 items-start justify-center rounded-2xl w-full h-fit p-6">
+        <div className="flex flex-col gap-2 items-start justify-center rounded-2xl w-full h-fit p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Upload your files
           </label>
@@ -136,28 +146,27 @@ const UploadArea = ({
               <div className="border border-slate-400 rounded-lg p-4 space-y-3">
                 <p className="text-sm text-slate-600 font-semibold">Previously Uploaded Files</p>
                 <div className="space-y-2">
-                  {previouslyUploadedFiles.map((fileUrl, index) => {
-                    const fileExtension = fileUrl.split(".").pop()?.toLowerCase();
+                  {previouslyUploadedFiles.map((file, index) => {
+                    const fileExtension = file.name.split(".").pop()?.toLowerCase();
                     const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension || "");
-                    const fileName = fileUrl.split("/").pop();
 
                     return (
                       <div 
                         key={index}
-                        className="flex items-center justify-between bg-slate-50 p-2 rounded-lg"
+                        className=" bg-white flex items-center justify-between p-2 rounded-lg"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 bg-white">
                           {isImage ? (
                             <img
-                              src={fileUrl}
-                              alt={fileName}
+                              src={file.id}
+                              alt={file.name}
                               className="w-12 h-12 object-cover rounded"
                             />
                           ) : (
                             <LucideFileText className="w-12 h-12 text-slate-600" />
                           )}
                           <div>
-                            <p className="text-sm font-medium text-slate-700">{fileName}</p>
+                            <p className="text-sm font-medium text-slate-700">{file.name}</p>
                           </div>
                         </div>
                       </div>

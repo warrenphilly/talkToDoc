@@ -516,13 +516,13 @@ const ChatClient = ({
                
                 
               />
-              {!isProcessing && !showUpload && (
+              {/* {!isProcessing && !showUpload && (
                 <div className="w-full">
                   <p className="text-sm text-slate-500 text-center mt-2">
                     Processing section {progress} of {totalSections}
                   </p>
                 </div>
-              )}
+              )} */}
 
               {isProcessing && (
                 <div className="w-full ">

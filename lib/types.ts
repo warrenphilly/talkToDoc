@@ -12,7 +12,10 @@ export interface Message {
    user: string;
    text: string | Section[];
    files?: string[];
-
+   fileDetails?: Array<{
+     id: string;
+     name: string;
+   }>;
 }
 
 export interface ParagraphData {
