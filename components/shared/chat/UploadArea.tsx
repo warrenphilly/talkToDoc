@@ -27,6 +27,15 @@ const UploadArea = ({
   setShowUpload,
 }: UploadAreaProps) => {
   const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<string[]>([]);
+  const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
+  const [processingFiles, setProcessingFiles] = useState<boolean>(false);
+
+  // Update filesToProcess when files prop changes
+  useEffect(() => {
+    if (!processingFiles) {  // Only update if not currently processing
+      setFilesToProcess(files);
+    }
+  }, [files, processingFiles]);
 
   // Extract previously uploaded files from messages
   useEffect(() => {
@@ -36,9 +45,22 @@ const UploadArea = ({
     setPreviouslyUploadedFiles(allUploadedFiles);
   }, [messages]);
 
-  const handleGenerateNotes = () => {
+  const handleGenerateNotes = async () => {
+    setProcessingFiles(true);
+    
+    // Immediately move current files to previously uploaded
+    const newUploadedFiles = filesToProcess.map(file => URL.createObjectURL(file));
+    setPreviouslyUploadedFiles(prev => [...prev, ...newUploadedFiles]);
+    
+    // Clear the files to process immediately
+    setFilesToProcess([]);
+    
+    // Call the parent handlers
     setShowUpload(false);
-    handleSendMessage();
+    await handleSendMessage();
+    handleClear();
+    
+    setProcessingFiles(false);
   }
 
   return (
@@ -59,23 +81,25 @@ const UploadArea = ({
                 onChange={handleFileUpload}
                 className="hidden"
                 accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
+                disabled={processingFiles}
               />
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg"
+                disabled={processingFiles}
               >
                 <UploadOutlined />
-                Upload Files ({files.length})
+                Upload Files ({filesToProcess.length})
               </Button>
             </div>
 
             {/* New Files List */}
-            {files.length > 0 && (
+            {filesToProcess.length > 0 && (
               <div className="border border-slate-400 rounded-lg p-4 space-y-3">
                 <p className="text-sm text-slate-600 font-semibold">New Files to Process</p>
                 <div className="space-y-2">
-                  {files.map((file, index) => {
+                  {filesToProcess.map((file, index) => {
                     const isImage = file.type.startsWith('image/');
                     
                     return (
@@ -144,12 +168,13 @@ const UploadArea = ({
             )}
 
             {/* Generate Button - only shown when there are new files */}
-            {files.length > 0 && (
+            {filesToProcess.length > 0 && (
               <Button 
                 className="bg-[#dae9b6] text-slate-700 hover:bg-[#c8d9a2] w-fit"
                 onClick={handleGenerateNotes}
+                disabled={processingFiles}
               >
-                Generate Notes from New Files
+                {processingFiles ? 'Processing...' : 'Generate Notes from New Files'}
               </Button>
             )}
           </div>

@@ -99,6 +99,7 @@ const ChatClient = ({
   const [progress, setProgress] = useState(0);
   const [totalSections, setTotalSections] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
   const [isChatFullscreen, setIsChatFullscreen] = useState(false);
   const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
@@ -512,7 +513,16 @@ const ChatClient = ({
                 handleSendMessage={handleSendMessage}
                 handleClear={handleClear}
                 setShowUpload={setShowUpload}
+               
+                
               />
+              {!isProcessing && !showUpload && (
+                <div className="w-full">
+                  <p className="text-sm text-slate-500 text-center mt-2">
+                    Processing section {progress} of {totalSections}
+                  </p>
+                </div>
+              )}
 
               {isProcessing && (
                 <div className="w-full ">

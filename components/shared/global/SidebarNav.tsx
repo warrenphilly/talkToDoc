@@ -56,6 +56,9 @@ import {
   Inbox,
   LogOut,
   MessageCircle,
+  MessageCircleQuestion,
+  NotebookPen,
+  PanelBottom,
   ScrollText,
   Search,
   Settings,
@@ -239,7 +242,7 @@ export function SidebarNav() {
                       : "hover:bg-slate-300"
                   }`}
                 >
-                  <BookOpen className="text-[#94b347] h-4" />
+                  <NotebookPen className="text-[#94b347] h-4" />
                   <span>Notebooks</span>
                   <ChevronDown
                     className={`ml-auto transform transition-transform duration-200 ${
@@ -269,27 +272,24 @@ export function SidebarNav() {
                         key={notebook.id}
                         className={`w-full border-b  rounded-none border-slate-200`}
                       >
-                        <SidebarMenuButton asChild className={`rounded-none`}>
+                        <SidebarMenuButton asChild className={`rounded-none ${
+                              pathname === `/notes/${notebook.id}`
+                                ? " bg-[#bdcc97] hover:bg-[#8da34f] text-white"
+                                : "hover:bg-slate-100 bg-slate-50"
+                            }  py-2`}>
                           <Link
                             href={`/notes/${notebook.id}`}
                             className={`flex items-center gap-2  pl-10 justify-start ${
                               pathname === `/notes/${notebook.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
                                 : " bg-slate-50 hover:bg-slate-300"
-                            }  ${
-                              pathname.includes("/notes") &&
-                              pathname !== `/notes/${notebook.id}`
-                                ? "  hover:bg-[#8da34f]"
-                                : "hover:bg-slate-100"
                             } `}
                           >
-                            <FileText
-                              className={`text-[#94b347] ${
-                                pathname === `/notes/${notebook.id}`
-                                  ? "text-white"
-                                  : ""
-                              }`}
-                            />
+                         <NotebookPen className={`h-5 w-5 sm:h-8 sm:w-8 ${
+                              pathname === `/notes/${notebook.id}`
+                                ? "text-white"
+                                : "text-[#94b347]"
+                            }`} />
                             <span>{notebook.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -312,7 +312,7 @@ export function SidebarNav() {
                       : "hover:bg-slate-300"
                   }`}
                 >
-                  <Brain className="text-[#94b347] h-4" />
+                   <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
                   <span>Study Cards</span>
                   <ChevronDown
                     className={`ml-auto transform transition-transform duration-200 ${
@@ -331,28 +331,25 @@ export function SidebarNav() {
                         key={set.id}
                         className="w-full border-b rounded-none border-slate-200"
                       >
-                        <SidebarMenuButton asChild className="rounded-none">
+                        <SidebarMenuButton asChild className={`rounded-none ${
+                              pathname === `/study-cards/${set.id}`
+                                ? " bg-[#bdcc97] hover:bg-[#8da34f] text-white"
+                                : "hover:bg-slate-100 bg-slate-50"
+                            }  py-2`}>
                           <Link
-                            href={``}
+                            href={`/study-cards/${set.id}`}
                             className={`flex items-center  gap-2 pl-10 justify-start ${
                               pathname === `/study-cards/${set.id}`
-                                ? "bg-slate-200 text-slate-800 hover:text-slate-800 hover:bg-[#8da34f]"
+                                ? "text-slate-800 hover:text-slate-800 bg-[#bdcc97] hover:bg-[#8da34f] text-white"
                                 : "hover:bg-slate-300 bg-slate-50"
-                            } ${
-                              pathname.includes("/study-cards") &&
-                              pathname !== `/study-cards/${set.id}`
-                                ? "bg-slate-50 hover:bg-[#8da34f]"
-                                : "hover:bg-slate-100"
-                            } py-2`}
+                            }  py-2`}
                           >
-                            <ScrollText
-                              className={`text-[#94b347] ${
-                                pathname === `/study-cards/${set.id}`
-                                  ? "text-white "
-                                  : ""
-                              }`}
-                            />
-                            <span>{set.title}</span>
+                            <PanelBottom className={`h-4 w-4 sm:h-6 sm:w-6  ${
+                              pathname === `/study-cards/${set.id}`
+                                ? "text-white"
+                                : "text-[#94b347]"
+                            }`} />
+                            <span>{set.metadata.name}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -374,7 +371,7 @@ export function SidebarNav() {
                       : "hover:bg-slate-300"
                   }`}
                 >
-                  <GraduationCap className="text-[#94b347] h-4" />
+              <ScrollText className={`h-6 w-6 text-[#94b347] `} />
                   <span>Study Guides</span>
                   <ChevronDown
                     className={`ml-auto transform transition-transform duration-200 ${
@@ -393,27 +390,24 @@ export function SidebarNav() {
                         key={guide.id}
                         className="w-full border-b rounded-none border-slate-200"
                       >
-                        <SidebarMenuButton asChild className="rounded-none">
+                        <SidebarMenuButton asChild className={`rounded-none ${
+                              pathname === `/study-guides/${guide.id}`
+                                ? " bg-[#bdcc97] hover:bg-[#8da34f] text-white"
+                                : "hover:bg-slate-100 bg-slate-50"
+                            }  py-2`}>
                           <Link
                             href={`/study-guides/${guide.id}`}
-                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
+                            className={`flex items-center  gap-2 pl-10 justify-start ${
                               pathname === `/study-guides/${guide.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
-                                : "hover:bg-slate-300"
-                            } ${
-                              pathname.includes("/study-guides") &&
-                              pathname !== `/study-guides/${guide.id}`
-                                ? "bg-slate-50 hover:bg-[#8da34f]"
-                                : "hover:bg-slate-100"
-                            } py-2`}
+                                : "hover:bg-slate-300 bg-slate-50"
+                            } `}
                           >
-                            <FileText
-                              className={`text-[#94b347] ${
-                                pathname === `/study-guides/${guide.id}`
-                                  ? "text-white"
-                                  : ""
-                              }`}
-                            />
+                            <ScrollText className={`h-6 w-6 ${
+                              pathname === `/study-guides/${guide.id}`
+                                ? "text-white"
+                                : "text-[#94b347]"
+                            }`} />
                             <span>{guide.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -437,7 +431,8 @@ export function SidebarNav() {
                       : "hover:bg-slate-300"
                   }`}
                 >
-                  <MessageCircle className="text-[#94b347] h-4" />
+                  <MessageCircleQuestion className={`h-4  text-[#94b347]
+                  `} />
                   <span>Quizzes</span>
                   <ChevronDown
                     className={`ml-auto transform transition-transform duration-200 ${
@@ -452,27 +447,24 @@ export function SidebarNav() {
                         key={quiz.id}
                         className="w-full border-b rounded-none border-slate-200"
                       >
-                        <SidebarMenuButton asChild className="rounded-none">
+                        <SidebarMenuButton asChild className={`rounded-none ${
+                              pathname === `/quizzes/${quiz.id}`
+                                ? "text-slate-800 hover:text-slate-800 bg-[#bdcc97] hover:bg-[#8da34f] text-white"
+                                : "hover:bg-slate-100 bg-slate-50"
+                            }  `}>
                           <Link
                             href={`/quizzes/${quiz.id}`}
-                            className={`flex items-center bg-slate-50 gap-2 pl-10 justify-start ${
+                            className={`flex items-center gap-2 pl-10 justify-start ${
                               pathname === `/quizzes/${quiz.id}`
                                 ? "bg-[#bdcc97] text-white hover:text-white hover:bg-[#8da34f]"
-                                : "hover:bg-slate-300"
-                            } ${
-                              pathname.includes("/quizzes") &&
-                              pathname !== `/quizzes/${quiz.id}`
-                                ? "bg-slate-50 hover:bg-[#8da34f]"
-                                : "hover:bg-slate-100"
-                            } py-2`}
+                                : "hover:bg-slate-300  bg-slate-50"
+                            } `}
                           >
-                            <FileText
-                              className={`text-[#94b347] ${
-                                pathname === `/quizzes/${quiz.id}`
-                                  ? "text-white"
-                                  : ""
-                              }`}
-                            />
+                             <MessageCircleQuestion className={`h-6 w-6 ${
+                              pathname === `/quizzes/${quiz.id}`
+                                ? "text-white"
+                                : "text-[#94b347]"
+                            }`} />
                             <span>{`${quiz.quizData.title}`}</span>
                           </Link>
                         </SidebarMenuButton>
