@@ -66,6 +66,7 @@ export interface QuizState {
   gptFeedback?: string;
   userId: string;
   createdAt: Timestamp | SerializedTimestamp;
+  title: string;
 }
 
 // Add a type for the Firestore quiz document

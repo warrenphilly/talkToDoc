@@ -57,6 +57,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { BookOpen } from "lucide-react";
+import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 
 interface StudyCardData {
   title: string;
@@ -267,9 +268,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       setIsGenerating(true);
 
-      // Get the first selected notebook and page if they exist
+      // Get the first notebook and page IDs if they exist
       const firstNotebookId = Object.keys(selectedPages)[0] || "";
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
+      const firstPageId = selectedPages[firstNotebookId]?.[0] || "";
 
       let uploadedDocsMetadata = [];
       if (files.length > 0) {
@@ -289,10 +290,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           const data = await response.json();
           if (data.text) {
             const timestamp = new Date().getTime();
-            // Use a generic path if no notebook/page is selected
-            const path = firstNotebookId && firstPageId
+            // Use a generic path if no notebook is selected
+            const path = firstNotebookId 
               ? `quizdocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`
-              : `quizdocs/uploads/${timestamp}.md`;
+              : `quizdocs/uploads/${timestamp}_${file.name.replace(/\s+/g, '_')}.md`;
+
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
@@ -304,6 +306,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               path,
               url,
               name: file.name,
+              content: data.text, // Include content directly
               timestamp: timestamp.toString(),
             });
           }
@@ -312,13 +315,15 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         quizName,
         numberOfQuestions,
         questionTypes: Object.entries(selectedQuestionTypes)
           .filter(([_, selected]) => selected)
           .map(([type]) => type),
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -351,6 +356,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         totalQuestions: data.quiz.questions.length,
         userId: user?.id || "",
         createdAt: Timestamp.now(),
+        title: quizName,
       };
 
       const quizRef = doc(db, "quizzes", newQuiz.id);
@@ -397,148 +403,39 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     }
   };
 
-  const handleGenerateCards = async () => {
+  const loadCardSets = async () => {
     try {
-      if (!setName.trim()) {
-        toast.error("Please enter a name for the study card set");
-        return;
-      }
-
-      if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
-        toast.error("Please either upload files or select notebook pages");
-        return;
-      }
-
-      setIsGenerating(true);
-
-      // Get the first selected notebook and page if they exist
-      const firstNotebookId = Object.keys(selectedPages)[0] || null;
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : null;
-
-      // Create metadata with optional notebook references
-      const metadata = {
-        name: setName,
-        cardCount: numCards,
-        sourceNotebooks: Object.entries(selectedPages).map(([notebookId, pageIds]) => {
-          const notebook = notebooks.find((n) => n.id === notebookId);
-          return {
-            notebookId,
-            notebookTitle: notebook?.title || "",
-            pages: pageIds.map((pageId) => {
-              const page = notebook?.pages.find((p) => p.id === pageId);
-              return {
-                pageId,
-                pageTitle: page?.title || "Unknown Page",
-              };
-            }),
-          };
-        }),
-        createdAt: new Date().toISOString(),
-      };
-
-      // Handle file uploads
-      let uploadedDocsMetadata = [];
-      if (filesToUpload.length > 0) {
-        for (const file of filesToUpload) {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          const response = await fetch("/api/convert", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to convert file: ${file.name}`);
-          }
-
-          const data = await response.json();
-          if (data.text) {
-            const timestamp = new Date().getTime();
-            // Use a generic path if no notebook/page is selected
-            const path = firstNotebookId && firstPageId
-              ? `studycards/${firstNotebookId}/${firstPageId}_${timestamp}.md`
-              : `studycards/uploads/${timestamp}.md`;
-            const storageRef = ref(storage, path);
-            await uploadString(storageRef, data.text, "raw", {
-              contentType: "text/markdown",
-            });
-
-            const url = await getDownloadURL(storageRef);
-
-            uploadedDocsMetadata.push({
-              path,
-              url,
-              name: file.name,
-              timestamp: timestamp.toString(),
-            });
-          }
-        }
-      }
-
-      const formData = new FormData();
-      const messageData = {
-        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
-        setName,
-        numCards,
-        metadata,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
-      };
-
-      formData.append("message", JSON.stringify(messageData));
-
-      const response = await fetch("/api/studycards", {
-        method: "POST",
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.details || "Failed to generate study cards");
-      }
-
-      // Create the study card set with optional notebook references
-      const newStudyCardSet: StudyCardSet = {
-        id: `studycards_${crypto.randomUUID()}`,
-        title: setName,
-        cards: responseData.cards,
-        metadata,
-        notebookId: firstNotebookId || "",  // Use empty string instead of undefined
-        pageId: firstPageId || "",  // Use empty string instead of undefined
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        userId: user?.id || "",
-      };
-
-      // Save to Firestore using the imported function
-      const studyCardSetId = await saveStudyCardSet(
-        newStudyCardSet.notebookId,
-        newStudyCardSet.pageId,
-        responseData.cards,
-        metadata
-      );
-
-      setSetName("");
-      setFilesToUpload([]);
-      setSelectedPages({});
-      setShowCardModal(false);
-
-      toast.success("Study cards generated successfully!");
-
-      // Refresh the study cards list
       const clerkUserId = await getCurrentUserId();
       if (clerkUserId) {
         const userStudyCards = await getStudyCardsByClerkId(clerkUserId);
         setStudyCards(userStudyCards);
       }
+    } catch (error) {
+      console.error("Error loading card sets:", error);
+      toast.error("Failed to load study cards");
+    }
+  };
 
-      router.push(`/study-cards/${studyCardSetId}`);
-    } catch (error: any) {
-      console.error("Error generating study cards:", error);
-      toast.error(error.message || "Failed to generate study cards");
-    } finally {
-      setIsGenerating(false);
+  const handleGenerateCards = async () => {
+    try {
+      await generateCards(
+        setName,
+        numCards,
+        selectedPages,
+        filesToUpload,
+        notebooks,
+        setIsGenerating,
+        setShowCardModal,
+        setSelectedPages,
+        setSetName,
+        setFilesToUpload,
+        setFiles,
+        setMessages,
+        loadCardSets
+      );
+    } catch (error) {
+      console.error("Error generating cards:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate cards");
     }
   };
 

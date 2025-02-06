@@ -232,36 +232,71 @@ export const handleSelectAllPages = (
 
 export const handleGenerateCards = async (
   setName: string,
-  filesToUpload: File[],
-  selectedPages: { [notebookId: string]: string[] },
   numCards: number,
+  selectedPages: { [notebookId: string]: string[] },
+  filesToUpload: File[],
   notebooks: Notebook[],
-  notebookId: string,
-  pageId: string,
-  setIsGenerating: (generating: boolean) => void,
-  loadCardSets: () => Promise<void>,
+  setIsGenerating: (isGenerating: boolean) => void,
   setShowNotebookModal: (show: boolean) => void,
   setSelectedPages: (pages: { [notebookId: string]: string[] }) => void,
   setSetName: (name: string) => void,
   setFilesToUpload: (files: File[]) => void,
   setFiles: (files: File[]) => void,
-  setMessages: (messages: any[]) => void
+  setMessages: (messages: any[]) => void,
+  loadCardSets: () => Promise<void>
 ) => {
   try {
     if (!setName.trim()) {
-      alert("Please enter a name for the study set");
-      return;
+      throw new Error("Please enter a name for the study set");
     }
 
     if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
-      alert("Please either upload files or select notebook pages");
-      return;
+      throw new Error("Please either upload files or select notebook pages");
     }
 
     setIsGenerating(true);
-    const allText: string[] = [];
-    let uploadedDocs = [];
 
+    // Get the first selected notebook and page if they exist
+    const firstNotebookId = Object.keys(selectedPages)[0] || "";
+    const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
+
+    let uploadedDocs = [];
+    let notebookContent = [];
+
+    // Process selected pages first
+    for (const [notebookId, pageIds] of Object.entries(selectedPages)) {
+      const notebook = notebooks.find((n) => n.id === notebookId);
+      if (!notebook) continue;
+
+      const notebookPages = [];
+      for (const pageId of pageIds) {
+        const page = notebook.pages.find((p) => p.id === pageId);
+        if (!page) continue;
+
+        // Get the page content from Firestore
+        const pageRef = doc(db, "notebooks", notebookId, "pages", pageId);
+        const pageSnap = await getDoc(pageRef);
+        const pageData = pageSnap.data();
+
+        if (pageData && pageData.content) {
+          notebookPages.push({
+            pageId,
+            pageTitle: page.title,
+            content: pageData.content
+          });
+        }
+      }
+
+      if (notebookPages.length > 0) {
+        notebookContent.push({
+          notebookId,
+          notebookTitle: notebook.title,
+          pages: notebookPages
+        });
+      }
+    }
+
+    // Process uploaded files
     if (filesToUpload.length > 0) {
       for (const file of filesToUpload) {
         const formData = new FormData();
@@ -278,72 +313,60 @@ export const handleGenerateCards = async (
 
         const data = await response.json();
         if (data.text) {
-          allText.push(`# ${file.name}\n\n${data.text}`);
+          const timestamp = Date.now();
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const path = `studycards/${timestamp}_${sanitizedFileName}`;
+          
+          const storageRef = ref(storage, path);
+          await uploadString(storageRef, data.text, "raw", {
+            contentType: "text/markdown",
+          });
+
+          const url = await getDownloadURL(storageRef);
+          uploadedDocs.push({
+            path,
+            url,
+            name: file.name,
+            content: data.text,
+            timestamp: new Date().toISOString(),
+          });
         }
-      }
-
-      if (allText.length > 0) {
-        const combinedText = allText.join("\n\n---\n\n");
-        const timestamp = new Date().getTime();
-        const markdownPath = `studydocs/${notebookId}/${pageId}_${timestamp}.md`;
-
-        const storageRef = ref(storage, markdownPath);
-        await uploadString(storageRef, combinedText, "raw", {
-          contentType: "text/markdown",
-          customMetadata: {
-            notebookId,
-            pageId,
-            setName,
-            timestamp: timestamp.toString(),
-          },
-        });
-
-        const downloadUrl = await getDownloadURL(storageRef);
-        uploadedDocs.push({
-          url: downloadUrl,
-          path: markdownPath,
-          name: setName,
-          timestamp: new Date().toISOString(),
-        });
       }
     }
 
-    const sourceNotebooks = await Promise.all(
-      Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
-        const notebook = notebooks.find((n) => n.id === notebookId);
-        if (!notebook) return null;
-
-        return {
-          notebookId,
-          notebookTitle: notebook.title,
-          pages: pageIds.map((pageId) => {
-            const page = notebook.pages.find((p) => p.id === pageId);
-            return {
-              pageId,
-              pageTitle: page?.title || "Unknown Page",
-            };
-          }),
-        };
-      })
-    );
+    // Verify we have content before proceeding
+    if (uploadedDocs.length === 0 && notebookContent.length === 0) {
+      throw new Error("No content found in uploaded documents or selected pages");
+    }
 
     const metadata: StudySetMetadata = {
       name: setName,
       createdAt: new Date().toISOString(),
-      sourceNotebooks: sourceNotebooks.filter(
-        (n): n is NonNullable<typeof n> => n !== null
-      ),
+      sourceNotebooks: notebookContent.map(notebook => ({
+        notebookId: notebook.notebookId,
+        notebookTitle: notebook.notebookTitle,
+        pages: notebook.pages.map(page => ({
+          pageId: page.pageId,
+          pageTitle: page.pageTitle
+        }))
+      })),
       cardCount: numCards,
     };
 
     const formData = new FormData();
     const messageData = {
-      selectedPages:
-        Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+      selectedPages,
       numberOfCards: numCards,
       metadata,
       uploadedDocs: uploadedDocs.length > 0 ? uploadedDocs : undefined,
+      notebookContent: notebookContent.length > 0 ? notebookContent : undefined
     };
+
+    console.log("Sending request with data:", {
+      hasUploadedDocs: uploadedDocs.length > 0,
+      hasNotebookContent: notebookContent.length > 0,
+      numberOfCards: numCards
+    });
 
     formData.append("message", JSON.stringify(messageData));
 
@@ -358,42 +381,19 @@ export const handleGenerateCards = async (
     }
 
     const data = await response.json();
+    await saveStudyCardSet(firstNotebookId, firstPageId, data.cards, metadata);
 
-    await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
-
-    if (uploadedDocs.length > 0) {
-      const notebookRef = doc(db, "notebooks", notebookId);
-      const notebookSnap = await getDoc(notebookRef);
-
-      if (notebookSnap.exists()) {
-        const notebook = notebookSnap.data() as Notebook;
-        const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
-
-        if (pageIndex !== -1) {
-          if (!notebook.pages[pageIndex].studyDocs) {
-            notebook.pages[pageIndex].studyDocs = [];
-          }
-          notebook.pages[pageIndex].studyDocs.push(...uploadedDocs);
-
-          await updateDoc(notebookRef, {
-            pages: notebook.pages,
-          });
-        }
-      }
-    }
-
-    await loadCardSets();
     setShowNotebookModal(false);
     setSelectedPages({});
     setSetName("");
     setFilesToUpload([]);
     setFiles([]);
     setMessages([]);
+    await loadCardSets();
+
   } catch (error) {
     console.error("Error generating study cards:", error);
-    alert(
-      error instanceof Error ? error.message : "Failed to generate cards"
-    );
+    throw error;
   } finally {
     setIsGenerating(false);
   }

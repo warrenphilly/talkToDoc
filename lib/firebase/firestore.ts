@@ -1265,6 +1265,7 @@ export const getQuizzesByFirestoreUserId = async (
         incorrectAnswers: data.incorrectAnswers || [],
         totalQuestions: data.totalQuestions || 0,
         userId: data.userId || userId,
+        title: data.title || "",
       };
 
       return quizState;
