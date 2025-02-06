@@ -20,6 +20,7 @@ import {
   addPageToNotebook,
   Page,
   togglePageOpenState,
+  deletePage,
 } from "@/lib/firebase/firestore";
 import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import { List, Pencil, Plus, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
 import { TitleEditor } from "./shared/chat/title-editor";
+import { useRouter } from "next/navigation";
 
 interface Tab {
   id: string;
@@ -54,6 +56,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [allPages, setAllPages] = useState<Tab[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const openPages = initialTabs.filter((tab) => tab.isOpen);
@@ -184,8 +187,50 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
   const handleDeletePage = async (pageId: string) => {
     if (confirm("Are you sure you want to delete this page?")) {
-      await syncTabs(pageId);
-      setAllPages(allPages.filter((page) => page.id !== pageId));
+      try {
+        // If deleting current page, switch to another page first
+        if (activeTabId === pageId) {
+          const currentIndex = tabs.findIndex(tab => tab.id === pageId);
+          const previousTab = tabs[currentIndex - 1] || tabs[currentIndex + 1];
+
+          if (previousTab) {
+            // Switch to previous/next tab if it exists
+            setActiveTabId(previousTab.id);
+          } else {
+            // Create new page if no other pages exist
+            const newTitle = `Untitled Page`;
+            const newPage = await addPageToNotebook(notebookId, newTitle);
+            const newTab: Tab = {
+              id: newPage.id,
+              title: newPage.title,
+              content: (
+                <ChatClient
+                  title={newPage.title}
+                  tabId={newPage.id}
+                  notebookId={notebookId}
+                  onPageDelete={syncTabs}
+                />
+              ),
+              messages: [],
+              isOpen: true,
+            };
+            setTabs([newTab]);
+            setActiveTabId(newPage.id);
+            setAllPages(prevPages => [...prevPages, newPage]);
+          }
+        }
+
+        // Delete the page from database
+        await deletePage(notebookId, pageId);
+        
+        // Update local state
+        await syncTabs(pageId);
+        setAllPages(prevPages => prevPages.filter(page => page.id !== pageId));
+        
+      } catch (error) {
+        console.error("Error deleting page:", error);
+        alert("Failed to delete page. Please try again.");
+      }
     }
   };
 

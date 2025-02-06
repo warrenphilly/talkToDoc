@@ -407,9 +407,7 @@ const ChatClient = ({
           <div className="flex flex-row gap-2 items-center">
             <Button
               onClick={() => isSmallScreen ? setShowUploadModal(true) : setShowUpload(!showUpload)}
-              className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 ${
-                messages.length > 0 ? "block" : "hidden"
-              }`}
+              className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 `}
             >
               {showUpload ? "Close Uploads" : "Uploaded Files"}
             </Button>

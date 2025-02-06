@@ -369,14 +369,49 @@ export const addPageToNotebook = async (
 
 export const deleteNotebook = async (notebookId: string) => {
   try {
+    // Get the user's document first
+    const userId = await getCurrentUserId();
+    if (!userId) throw new Error("User not authenticated");
+    
+    const userDoc = await getUserById(userId);
+    if (!userDoc) throw new Error("User document not found");
+
+    // Remove the notebook from the user's notebooks array
+    const updatedNotebooks = userDoc.notebooks.filter(id => id !== notebookId);
+    
+    // Update the user document
+    await updateDoc(doc(db, "users", userId), {
+      notebooks: updatedNotebooks,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Delete the notebook document
     await deleteDoc(doc(db, "notebooks", notebookId));
+
+    // Delete all associated study card sets
+    const studyCardSetsRef = collection(db, "studyCardSets");
+    const studyCardSetsQuery = query(studyCardSetsRef, where("notebookId", "==", notebookId));
+    const studyCardSets = await getDocs(studyCardSetsQuery);
+    
+    for (const doc of studyCardSets.docs) {
+      await deleteDoc(doc.ref);
+    }
+
+    // Delete all associated quizzes
+    const quizzesRef = collection(db, "quizzes");
+    const quizzesQuery = query(quizzesRef, where("notebookId", "==", notebookId));
+    const quizzes = await getDocs(quizzesQuery);
+    
+    for (const doc of quizzes.docs) {
+      await deleteDoc(doc.ref);
+    }
   } catch (error) {
     console.error("Error deleting notebook:", error);
     throw error;
   }
 };
 
-export const deletePage = async (notebookId: string, pageId: string) => {
+export const deletePage = async (notebookId: string, pageId: string): Promise<{ newPageId: string; isNewPage: boolean }> => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
@@ -386,27 +421,55 @@ export const deletePage = async (notebookId: string, pageId: string) => {
     }
 
     const notebook = notebookSnap.data() as Notebook;
+    
+    // Create a new array without the deleted page
     const updatedPages = notebook.pages.filter((page) => page.id !== pageId);
+
+    let newPageId: string;
+    let isNewPage = false;
 
     // If this would leave us with no pages, create a new default page
     if (updatedPages.length === 0) {
       const newPage: Page = {
-        id: crypto.randomUUID(),
+        id: `page_${crypto.randomUUID()}`,
         title: "New Page",
         content: "",
         messages: [],
         isOpen: true,
       };
       updatedPages.push(newPage);
+      newPageId = newPage.id;
+      isNewPage = true;
+    } else {
+      // Use the first available page as the redirect target
+      newPageId = updatedPages[0].id;
     }
 
-    // Update the notebook with the filtered pages
-    await updateDoc(notebookRef, {
+    // Update the notebook document with the new pages array
+    await setDoc(notebookRef, {
+      ...notebook,
       pages: updatedPages,
-    });
+    }, { merge: true });
 
-    // Return the ID of the first page if we need to redirect
-    return updatedPages[0].id;
+    // Delete associated study card sets
+    const studyCardSetsRef = collection(db, "studyCardSets");
+    const studyCardSetsQuery = query(studyCardSetsRef, where("pageId", "==", pageId));
+    const studyCardSets = await getDocs(studyCardSetsQuery);
+    
+    for (const doc of studyCardSets.docs) {
+      await deleteDoc(doc.ref);
+    }
+
+    // Delete associated quizzes
+    const quizzesRef = collection(db, "quizzes");
+    const quizzesQuery = query(quizzesRef, where("pageId", "==", pageId));
+    const quizzes = await getDocs(quizzesQuery);
+    
+    for (const doc of quizzes.docs) {
+      await deleteDoc(doc.ref);
+    }
+
+    return { newPageId, isNewPage };
   } catch (error) {
     console.error("Error deleting page:", error);
     throw error;
@@ -429,12 +492,24 @@ export const togglePageOpenState = async (
     const notebook = notebookSnap.data() as Notebook;
     const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
 
+    // If page is not found, just return without throwing an error
     if (pageIndex === -1) {
-      throw new Error("Page not found");
+      console.warn(`Page ${pageId} not found in notebook ${notebookId}`);
+      return;
     }
 
-    notebook.pages[pageIndex].isOpen = isOpen;
-    await updateDoc(notebookRef, { pages: notebook.pages });
+    // Create a new pages array with the updated page
+    const updatedPages = [...notebook.pages];
+    updatedPages[pageIndex] = {
+      ...updatedPages[pageIndex],
+      isOpen: isOpen
+    };
+
+    // Update the notebook document with the new pages array
+    await setDoc(notebookRef, {
+      ...notebook,
+      pages: updatedPages,
+    }, { merge: true });
   } catch (error) {
     console.error("Error toggling page state:", error);
     throw error;
