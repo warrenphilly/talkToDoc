@@ -818,7 +818,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                   </div>
                                   <div className="flex flex-col items-start flex-grow mx-2 sm:mx-4">
                                     <h2 className="text-xs sm:text-md font-semibold text-slate-600 line-clamp-1">
-                                      {studyCard.title}
+                                      {studyCard.metadata.name}
                                     </h2>
                                     <p className="text-muted-foreground text-xs">
                                       {formatDate(studyCard.createdAt)}
@@ -877,7 +877,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
                                     <div className="flex gap-4 text-sm text-slate-500">
                                       <p>
-                                        Created: {formatDate(guide.createdAt)}
+                                        {formatDate(guide.createdAt)}
                                       </p>
                                     </div>
                                   </div>
