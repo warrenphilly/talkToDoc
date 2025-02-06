@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { UploadOutlined } from "@ant-design/icons";
-import { LucideFileText } from "lucide-react";
+import { LucideFileText, ImageIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Message } from "@/lib/types";
 
@@ -82,7 +82,7 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex border-t bg-slate-100 border-slate-200 flex-col gap-2 items-center justify-center rounded-2xl w-full">
+    <div className="flex border-t min-w-[300px] bg-slate-100 border-slate-200 flex-col gap-2 items-center justify-center rounded-2xl w-full">
       {showUpload && (
         <div className="flex flex-col gap-2 items-start justify-center rounded-2xl w-full h-fit p-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -161,20 +161,18 @@ const UploadArea = ({
                     return (
                       <div 
                         key={index}
-                        className=" bg-white flex items-center justify-between p-2 rounded-lg"
+                        className="bg-white min-w-[200px] flex items-center justify-between p-2 rounded-lg"
                       >
                         <div className="flex items-center gap-3 bg-white">
                           {isImage ? (
-                            <img
-                              src={file.id}
-                              alt={file.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded">
+                              <ImageIcon className="w-8 h-8 text-slate-400" />
+                            </div>
                           ) : (
                             <LucideFileText className="w-12 h-12 text-slate-600" />
                           )}
                           <div>
-                            <p className="text-sm font-medium text-slate-700">{file.name}</p>
+                            <p className="text-sm font-medium text-slate-700 line-clamp-1">{file.name}</p>
                           </div>
                         </div>
                       </div>
