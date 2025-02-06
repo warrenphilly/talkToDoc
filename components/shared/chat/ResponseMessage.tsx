@@ -73,7 +73,7 @@ export const ResponseMessage = ({
                 />
               ) : (
                 <div className="p-2 md:p-4 rounded-2xl transition-colors">
-                  <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start md:items-center mb-3">
+                  <div className="flex flex-col md:flex-row gap-2 md:gap-0 justify-between items-start  mb-3">
                     <h3
                       className="text-base md:text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer break-words"
                       onClick={() => handleSectionClick(section)}
@@ -106,9 +106,9 @@ export const ResponseMessage = ({
                         key={sentenceIdx}
                         asChild
                         onClick={() => handleSentenceClick(sentence)}
-                        className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0 w-full"
+                        className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0 w-fit"
                       >
-                        <div className="px-1 py-1 rounded cursor-pointer transition-colors w-full">
+                        <div className="px-1 py-1 rounded cursor-pointer transition-colors">
                           <p className="text-gray-800 text-xs md:text-sm text-left whitespace-normal break-words">
                             {sentence.text}
                           </p>
