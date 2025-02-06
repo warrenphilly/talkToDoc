@@ -29,13 +29,24 @@ const UploadArea = ({
   const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<Array<{id: string, name: string}>>([]);
   const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
   const [processingFiles, setProcessingFiles] = useState<boolean>(false);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [hasProcessedFiles, setHasProcessedFiles] = useState(false);
 
   // Update filesToProcess when files prop changes
+
   useEffect(() => {
-    if (!processingFiles) {
+   setHasProcessedFiles(false);
+  }, [files]);
+  
+  useEffect(() => {
+    if (!processingFiles && files.length > 0 && !hasProcessedFiles) {
       setFilesToProcess(files);
     }
-  }, [files, processingFiles]);
+  }, [files, processingFiles, hasProcessedFiles]);
+
+  useEffect(() => {
+    console.log("filesToProcess labratory",filesToProcess)
+  }, [filesToProcess])
 
   // Extract previously uploaded files from messages
   useEffect(() => {
@@ -53,24 +64,21 @@ const UploadArea = ({
   const handleGenerateNotes = async () => {
     setProcessingFiles(true);
     
-    // Create file details array with IDs and original names
-    const fileDetails = filesToProcess.map(file => ({
-      id: crypto.randomUUID(),
-      name: file.name
-    }));
-    
-    // Update previously uploaded files
-    setPreviouslyUploadedFiles(prev => [...prev, ...fileDetails]);
-    
-    // Clear the files to process
-    setFilesToProcess([]);
-    
-    // Call parent handlers with file details
-    setShowUpload(false);
-    await handleSendMessage();
-    // handleClear();
-    
-    setProcessingFiles(false);
+    try {
+      const fileDetails = filesToProcess.map(file => ({
+        id: crypto.randomUUID(),
+        name: file.name
+      }));
+      
+      setPreviouslyUploadedFiles(prev => [...prev, ...fileDetails]);
+      setFilesToProcess([]);
+      setHasProcessedFiles(true); // Mark files as processed
+      
+      setShowUpload(false);
+      await handleSendMessage();
+    } finally {
+      setProcessingFiles(false);
+    }
   };
 
   return (

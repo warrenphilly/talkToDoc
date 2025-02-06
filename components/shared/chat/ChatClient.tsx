@@ -351,7 +351,7 @@ const ChatClient = ({
     setDropdownOpen(false);
     setIsDrawerOpen(true);
     if (component === "studyGuide") {
-      setShowStudyGuides(true);
+      setShowStudyGuides(!showStudyGuides);
       setShowStudyCards(false);
       setShowChat(false);
       setShowQuiz(false);
