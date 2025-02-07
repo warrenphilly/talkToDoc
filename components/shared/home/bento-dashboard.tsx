@@ -54,10 +54,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Skeleton } from "@/components/ui/skeleton";
-import { saveStudyCardSet } from "@/lib/firebase/firestore";
-import { BookOpen } from "lucide-react";
-import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,8 +64,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { saveStudyCardSet } from "@/lib/firebase/firestore";
+import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
+import { BookOpen } from "lucide-react";
 
 interface StudyCardData {
   title: string;
@@ -162,6 +161,18 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [studyGuideFiles, setStudyGuideFiles] = useState<File[]>([]);
   const studyGuideFileInputRef = useRef<HTMLInputElement>(null);
   const [isGeneratingGuide, setIsGeneratingGuide] = useState(false);
+  const [showDeleteCardAlert, setShowDeleteCardAlert] = useState<string | null>(
+    null
+  );
+  const [showDeleteNotebookAlert, setShowDeleteNotebookAlert] = useState<
+    string | null
+  >(null);
+  const [showDeleteGuideAlert, setShowDeleteGuideAlert] = useState<
+    string | null
+  >(null);
+  const [showDeleteQuizAlert, setShowDeleteQuizAlert] = useState<string | null>(
+    null
+  );
 
   // const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(true);
 
@@ -208,62 +219,26 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     e: React.MouseEvent,
     notebookId: string
   ) => {
-    e.preventDefault(); // Prevent navigation
-    if (window.confirm("Are you sure you want to delete this notebook?")) {
-      try {
-        await deleteNotebook(notebookId);
-        setNotebooks(
-          notebooks.filter((notebook) => notebook.id !== notebookId)
-        );
-      } catch (error) {
-        console.error("Error deleting notebook:", error);
-      }
-    }
+    e.preventDefault();
+    setShowDeleteNotebookAlert(notebookId);
   };
 
   const handleDeleteStudyCard = async (e: React.MouseEvent, cardId: string) => {
     e.preventDefault(); // Prevent navigation
-    if (
-      window.confirm("Are you sure you want to delete this study card set?")
-    ) {
-      try {
-        const card = studyCards.find((c) => c.id === cardId);
-        if (card) {
-          await deleteStudyCardSet(card.notebookId, card.pageId, cardId);
-          setStudyCards(studyCards.filter((card) => card.id !== cardId));
-        }
-      } catch (error) {
-        console.error("Error deleting study card:", error);
-      }
-    }
+    setShowDeleteCardAlert(cardId);
   };
 
   const handleDeleteQuiz = async (e: React.MouseEvent, quizId: string) => {
-    e.preventDefault(); // Prevent navigation
-    if (window.confirm("Are you sure you want to delete this quiz?")) {
-      try {
-        await deleteQuiz(quizId);
-        setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
-      } catch (error) {
-        console.error("Error deleting quiz:", error);
-      }
-    }
+    e.preventDefault();
+    setShowDeleteQuizAlert(quizId);
   };
+
   const handleDeleteStudyGuide = async (
     e: React.MouseEvent,
-    studyGuideId: string
+    guideId: string
   ) => {
-    e.preventDefault(); // Prevent navigation
-    if (window.confirm("Are you sure you want to delete this study guide?")) {
-      try {
-        await deleteStudyGuide(studyGuideId);
-        setStudyGuides(
-          studyGuides.filter((studyGuide) => studyGuide.id !== studyGuideId)
-        );
-      } catch (error) {
-        console.error("Error deleting study guide:", error);
-      }
-    }
+    e.preventDefault();
+    setShowDeleteGuideAlert(guideId);
   };
 
   const handleGenerateQuiz = async () => {
@@ -303,9 +278,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           if (data.text) {
             const timestamp = new Date().getTime();
             // Use a generic path if no notebook is selected
-            const path = firstNotebookId 
+            const path = firstNotebookId
               ? `quizdocs/${firstNotebookId}/${firstPageId}_${timestamp}.md`
-              : `quizdocs/uploads/${timestamp}_${file.name.replace(/\s+/g, '_')}.md`;
+              : `quizdocs/uploads/${timestamp}_${file.name.replace(
+                  /\s+/g,
+                  "_"
+                )}.md`;
 
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
@@ -453,7 +431,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       );
     } catch (error) {
       console.error("Error generating cards:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate cards");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     }
   };
 
@@ -611,7 +591,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      if (studyGuideFiles.length === 0 && Object.keys(selectedPages).length === 0) {
+      if (
+        studyGuideFiles.length === 0 &&
+        Object.keys(selectedPages).length === 0
+      ) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
@@ -620,7 +603,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       // Get the first selected notebook and page if they exist
       const firstNotebookId = Object.keys(selectedPages)[0] || "";
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
+      const firstPageId = firstNotebookId
+        ? selectedPages[firstNotebookId]?.[0]
+        : "";
 
       // Handle file uploads
       let uploadedDocsMetadata = [];
@@ -642,9 +627,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           if (data.text) {
             const timestamp = new Date().getTime();
             // Use a generic path if no notebook/page is selected
-            const path = firstNotebookId && firstPageId
-              ? `studyguides/${firstNotebookId}/${firstPageId}_${timestamp}.md`
-              : `studyguides/uploads/${timestamp}.md`;
+            const path =
+              firstNotebookId && firstPageId
+                ? `studyguides/${firstNotebookId}/${firstPageId}_${timestamp}.md`
+                : `studyguides/uploads/${timestamp}.md`;
             const storageRef = ref(storage, path);
             await uploadString(storageRef, data.text, "raw", {
               contentType: "text/markdown",
@@ -664,9 +650,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         guideName,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -705,7 +693,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       // Refresh the study guides list
       const clerkUserId = await getCurrentUserId();
       if (clerkUserId) {
-        const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUserId);
+        const userStudyGuides = await getStudyGuidesByFirestoreUserId(
+          clerkUserId
+        );
         setStudyGuides(userStudyGuides);
       }
 
@@ -760,17 +750,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
                   <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border border-slate-300 relative">
-
-
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
                       className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
                     >
                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500" />
                     </button>
-
-
-
 
                     <CardContent className="p-3 sm:p-8 flex flex-col h-full">
                       <div className="p-2 sm:p-3 rounded-full w-fit bg-[#94b347]">
@@ -878,41 +863,41 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                       content: (
                         <div className="space-y-4">
                           {studyGuides.map((guide) => (
-                            <Link
-                              key={guide.id}
-                              href={`/study-guides/${guide.id}`}
-                              className="transition-transform hover:scale-[1.02]"
-                            >
-                              <Card className="shadow-none bg-white border-none relative">
-                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
-                                  <div className="p-2 rounded-full w-fit bg-white">
-                                    <ScrollText className="h-6 w-6 text-[#94b347]" />
-                                  </div>
-                                  <div className="flex flex-col   w-full px-4">
-                                    <h3 className="font-medium text-slate-700">
-                                      {guide.title}
-                                    </h3>
-
-                                    <div className="flex gap-4 text-sm text-slate-500">
-                                      <p>
-                                        {formatDate(guide.createdAt)}
-                                      </p>
+                            <div key={guide.id}>
+                              <Link
+                                key={guide.id}
+                                href={`/study-guides/${guide.id}`}
+                                className="transition-transform hover:scale-[1.02]"
+                              >
+                                <Card className="shadow-none bg-white border-none relative">
+                                  <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+                                    <div className="p-2 rounded-full w-fit bg-white">
+                                      <ScrollText className="h-6 w-6 text-[#94b347]" />
                                     </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={(e) =>
-                                        handleDeleteStudyGuide(e, guide.id)
-                                      }
-                                      className="p-2 hover:bg-red-100 rounded-full transition-colors"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                                    </button>
-                                    <ChevronRight className="h-5 w-5 text-slate-400" />
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
+                                    <div className="flex flex-col   w-full px-4">
+                                      <h3 className="font-medium text-slate-700">
+                                        {guide.title}
+                                      </h3>
+
+                                      <div className="flex gap-4 text-sm text-slate-500">
+                                        <p>{formatDate(guide.createdAt)}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) =>
+                                          handleDeleteStudyGuide(e, guide.id)
+                                        }
+                                        className="p-2 hover:bg-red-100 rounded-full transition-colors"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                                      </button>
+                                      <ChevronRight className="h-5 w-5 text-slate-400" />
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </Link>
+                            </div>
                           ))}
                         </div>
                       ),
@@ -1056,6 +1041,199 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           selectedPages={selectedPages}
         />
       )}
+
+      <AlertDialog
+        open={!!showDeleteCardAlert}
+        onOpenChange={() => setShowDeleteCardAlert(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              study card set.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteCardAlert(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const cardId = showDeleteCardAlert;
+                  if (!cardId) return;
+
+                  const card = studyCards.find((c) => c.id === cardId);
+                  if (card) {
+                    await deleteStudyCardSet(
+                      card.notebookId,
+                      card.pageId,
+                      cardId
+                    );
+                    setStudyCards(
+                      studyCards.filter((card) => card.id !== cardId)
+                    );
+                    toast.success("Study card set deleted successfully");
+                  }
+                } catch (error) {
+                  console.error("Error deleting study card:", error);
+                  toast.error("Failed to delete study card set");
+                } finally {
+                  setShowDeleteCardAlert(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!showDeleteNotebookAlert}
+        onOpenChange={() => setShowDeleteNotebookAlert(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              notebook and all its contents.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteNotebookAlert(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const notebookId = showDeleteNotebookAlert;
+                  if (!notebookId) return;
+
+                  await deleteNotebook(notebookId);
+                  setNotebooks(
+                    notebooks.filter((notebook) => notebook.id !== notebookId)
+                  );
+                  toast.success("Notebook deleted successfully");
+                } catch (error) {
+                  console.error("Error deleting notebook:", error);
+                  toast.error("Failed to delete notebook");
+                } finally {
+                  setShowDeleteNotebookAlert(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!showDeleteGuideAlert}
+        onOpenChange={() => setShowDeleteGuideAlert(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              study guide.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteGuideAlert(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const guideId = showDeleteGuideAlert;
+                  if (!guideId) return;
+
+                  await deleteStudyGuide(guideId);
+                  setStudyGuides(
+                    studyGuides.filter((guide) => guide.id !== guideId)
+                  );
+                  toast.success("Study guide deleted successfully");
+                } catch (error) {
+                  console.error("Error deleting study guide:", error);
+                  toast.error("Failed to delete study guide");
+                } finally {
+                  setShowDeleteGuideAlert(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!showDeleteQuizAlert}
+        onOpenChange={() => setShowDeleteQuizAlert(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              quiz and all its results.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteQuizAlert(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  const quizId = showDeleteQuizAlert;
+                  if (!quizId) return;
+
+                  await deleteQuiz(quizId);
+                  setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+                  toast.success("Quiz deleted successfully");
+                } catch (error) {
+                  console.error("Error deleting quiz:", error);
+                  toast.error("Failed to delete quiz");
+                } finally {
+                  setShowDeleteQuizAlert(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

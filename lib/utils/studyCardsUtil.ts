@@ -341,9 +341,9 @@ export const handleGenerateCards = async (
     }
 
     // Verify we have content before proceeding
-    if (uploadedDocs.length === 0 && notebookContent.length === 0) {
-      throw new Error("No content found in uploaded documents or selected pages");
-    }
+    // if (uploadedDocs.length === 0 && notebookContent.length === 0) {
+    //   throw new Error("No content found in uploaded documents or selected pages");
+    // }
 
     const metadata: StudySetMetadata = {
       name: setName,
