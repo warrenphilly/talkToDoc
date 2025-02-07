@@ -72,6 +72,7 @@ const RecentQuizzes: React.FC<RecentQuizzesProps> = ({
               return {
                 ...data,
                 id: doc.id,
+                title: data.title || `Quiz ${doc.id.slice(0, 4)}`,
                 startedAt: getTimestamp(data.startedAt),
                 lastUpdatedAt: getTimestamp(data.lastUpdatedAt),
                 createdAt: getTimestamp(data.createdAt || data.startedAt),

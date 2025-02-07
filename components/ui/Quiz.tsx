@@ -455,6 +455,7 @@ const Quiz: React.FC<QuizProps> = ({
               gptFeedback,
               quizData: data,
               createdAt: new Timestamp(new Date().getTime() / 1000, 0),
+              title: data.title || "Quiz",
             }}
             onClose={() => setShowResults(false)}
           />
