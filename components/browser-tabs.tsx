@@ -21,6 +21,7 @@ import {
   Page,
   togglePageOpenState,
   deletePage,
+  deleteNotebook,
 } from "@/lib/firebase/firestore";
 import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,10 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   const router = useRouter();
 
   useEffect(() => {
+    setAllPages(initialTabs);
+  }, [initialTabs]);
+
+  useEffect(() => {
     const openPages = initialTabs.filter((tab) => tab.isOpen);
     const convertedTabs: Tab[] = openPages.map((page) => ({
       id: page.id,
@@ -76,7 +81,6 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     }));
 
     setTabs(convertedTabs);
-    setAllPages(initialTabs);
 
     if (convertedTabs.length > 0) {
       setActiveTabId(convertedTabs[0].id);
@@ -118,14 +122,15 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   const addTab = async () => {
     const newTitle = `Untitled Page ${tabs.length + 1}`;
     try {
-      const newPage = await addPageToNotebook(notebookId, newTitle);
-      const newTab: Tab = {
-        id: newPage.id,
-        title: newPage.title,
+      // Create new page object before database call for optimistic update
+      const tempId = `temp_${crypto.randomUUID()}`;
+      const tempNewTab: Tab = {
+        id: tempId,
+        title: newTitle,
         content: (
           <ChatClient
-            title={newPage.title}
-            tabId={newPage.id}
+            title={newTitle}
+            tabId={tempId}
             notebookId={notebookId}
             onPageDelete={syncTabs}
           />
@@ -133,10 +138,42 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         messages: [],
         isOpen: true,
       };
-      setTabs([...tabs, newTab]);
+
+      // Optimistically update UI
+      setAllPages(prev => [...prev, tempNewTab]);
+      setTabs(prev => [...prev, tempNewTab]);
+      setActiveTabId(tempId);
+
+      // Actually create the page in the database
+      const newPage = await addPageToNotebook(notebookId, newTitle);
+      
+      // Update the temporary ID with the real one
+      const finalNewTab: Tab = {
+        ...tempNewTab,
+        id: newPage.id,
+        content: (
+          <ChatClient
+            title={newTitle}
+            tabId={newPage.id}
+            notebookId={notebookId}
+            onPageDelete={syncTabs}
+          />
+        ),
+      };
+
+      // Update states with the real ID
+      setAllPages(prev => 
+        prev.map(tab => tab.id === tempId ? finalNewTab : tab)
+      );
+      setTabs(prev => 
+        prev.map(tab => tab.id === tempId ? finalNewTab : tab)
+      );
       setActiveTabId(newPage.id);
     } catch (error) {
       console.error("Error adding new tab:", error);
+      alert("Failed to create new page. Please try again.");
+      // Revert optimistic updates on error
+      router.refresh();
     }
   };
 
@@ -162,74 +199,65 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     const page = allPages.find((p) => p.id === pageId);
     if (!page) return;
 
-    if (page.isOpen) {
-      await removeTab(pageId);
-    } else {
-      await togglePageOpenState(notebookId, pageId, true);
-      const newTab: Tab = {
-        id: page.id,
-        title: page.title,
-        content: (
-          <ChatClient
-            title={page.title}
-            tabId={page.id}
-            notebookId={notebookId}
-            onPageDelete={syncTabs}
-          />
-        ),
-        messages: page.messages,
-        isOpen: true,
-      };
-      setTabs([...tabs, newTab]);
-      setActiveTabId(page.id);
+    try {
+      setAllPages((prevPages) =>
+        prevPages.map((p) =>
+          p.id === pageId ? { ...p, isOpen: !p.isOpen } : p
+        )
+      );
+
+      if (page.isOpen) {
+        setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== pageId));
+        await togglePageOpenState(notebookId, pageId, false);
+      } else {
+        const newTab: Tab = {
+          id: page.id,
+          title: page.title,
+          content: (
+            <ChatClient
+              title={page.title}
+              tabId={page.id}
+              notebookId={notebookId}
+              onPageDelete={syncTabs}
+            />
+          ),
+          messages: page.messages,
+          isOpen: true,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(page.id);
+        await togglePageOpenState(notebookId, pageId, true);
+      }
+    } catch (error) {
+      console.error("Error toggling page:", error);
+      router.refresh();
     }
   };
 
   const handleDeletePage = async (pageId: string) => {
     if (confirm("Are you sure you want to delete this page?")) {
       try {
-        // If deleting current page, switch to another page first
         if (activeTabId === pageId) {
-          const currentIndex = tabs.findIndex(tab => tab.id === pageId);
+          const currentIndex = tabs.findIndex((tab) => tab.id === pageId);
           const previousTab = tabs[currentIndex - 1] || tabs[currentIndex + 1];
 
           if (previousTab) {
-            // Switch to previous/next tab if it exists
             setActiveTabId(previousTab.id);
-          } else {
-            // Create new page if no other pages exist
-            const newTitle = `Untitled Page`;
-            const newPage = await addPageToNotebook(notebookId, newTitle);
-            const newTab: Tab = {
-              id: newPage.id,
-              title: newPage.title,
-              content: (
-                <ChatClient
-                  title={newPage.title}
-                  tabId={newPage.id}
-                  notebookId={notebookId}
-                  onPageDelete={syncTabs}
-                />
-              ),
-              messages: [],
-              isOpen: true,
-            };
-            setTabs([newTab]);
-            setActiveTabId(newPage.id);
-            setAllPages(prevPages => [...prevPages, newPage]);
           }
         }
 
-        // Delete the page from database
-        await deletePage(notebookId, pageId);
-        
-        // Update local state
-        await syncTabs(pageId);
-        setAllPages(prevPages => prevPages.filter(page => page.id !== pageId));
-        
+        setAllPages((prevPages) => prevPages.filter((page) => page.id !== pageId));
+        setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== pageId));
+
+        const { newPageId, isNewPage } = await deletePage(notebookId, pageId);
+
+        if (isNewPage) {
+          router.refresh();
+        }
       } catch (error) {
         console.error("Error deleting page:", error);
         alert("Failed to delete page. Please try again.");
+        router.refresh();
       }
     }
   };
@@ -262,35 +290,34 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2 ">
-          {activeTab && (
+            {activeTab && (
+              <button
+                className="p-2 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  const titleEditor = document.querySelector(
+                    `[data-page-id="${activeTab.id}"]`
+                  );
+                  if (titleEditor) {
+                    (titleEditor as HTMLElement).focus();
+                  }
+                }}
+              >
+                <Pencil size={16} />
+              </button>
+            )}
             <button
               className="p-2 text-muted-foreground hover:text-foreground"
-              onClick={() => {
-                const titleEditor = document.querySelector(
-                  `[data-page-id="${activeTab.id}"]`
-                );
-                if (titleEditor) {
-                  (titleEditor as HTMLElement).focus();
-                }
-              }}
+              onClick={addTab}
             >
-              <Pencil size={16} />
+              <Plus size={16} />
             </button>
-          )}
-          <button
-            className="p-2 text-muted-foreground hover:text-foreground"
-            onClick={addTab}
-          >
-            <Plus size={16} />
-          </button>
-          <button
-            className="p-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <List size={16} />
-          </button>
-</div>
-
+            <button
+              className="p-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <List size={16} />
+            </button>
+          </div>
         </div>
         <div className="hidden md:flex items-center w-full">
           {tabs.map((tab) => (
@@ -358,9 +385,18 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
-            <DialogTitle >All Pages</DialogTitle>
+            <DialogTitle>All Pages</DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[300px] w-full pr-4">
+            <div className="flex justify-end mb-4">
+              <button
+                className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded hover:bg-blue-200 flex items-center gap-1"
+                onClick={addTab}
+              >
+                <Plus size={16} />
+                New Page
+              </button>
+            </div>
             {allPages.map((page) => (
               <div
                 key={page.id}
@@ -387,13 +423,17 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           <div className="mt-4 pt-4 border-t">
             <button
               className="w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
-              onClick={() => {
-                if (
-                  confirm(
-                    "Are you sure you want to delete this notebook? This action cannot be undone."
-                  )
-                ) {
-                  onNotebookDelete?.(notebookId);
+              onClick={async () => {
+                if (confirm("Are you sure you want to delete this notebook? This action cannot be undone.")) {
+                  try {
+                    await deleteNotebook(notebookId);
+                    onNotebookDelete?.(notebookId);
+                    router.push('/');
+                    router.refresh();
+                  } catch (error) {
+                    console.error("Error deleting notebook:", error);
+                    alert("Failed to delete notebook. Please try again.");
+                  }
                 }
               }}
             >

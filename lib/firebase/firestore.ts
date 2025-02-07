@@ -17,9 +17,11 @@ import {
   limit,
   orderBy,
   query,
+  runTransaction,
   serverTimestamp,
   setDoc,
   Timestamp,
+  Transaction,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -369,42 +371,41 @@ export const addPageToNotebook = async (
 
 export const deleteNotebook = async (notebookId: string) => {
   try {
-    // Get the user's document first
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
     
-    const userDoc = await getUserById(userId);
-    if (!userDoc) throw new Error("User document not found");
-
-    // Remove the notebook from the user's notebooks array
-    const updatedNotebooks = userDoc.notebooks.filter(id => id !== notebookId);
-    
-    // Update the user document
-    await updateDoc(doc(db, "users", userId), {
-      notebooks: updatedNotebooks,
-      updatedAt: serverTimestamp(),
-    });
-
-    // Delete the notebook document
+    // Delete the notebook document first
     await deleteDoc(doc(db, "notebooks", notebookId));
+
+    // Try to update user document if it exists, but don't fail if it doesn't
+    try {
+      const userDoc = await getUserById(userId);
+      if (userDoc && userDoc.notebooks) {
+        const updatedNotebooks = userDoc.notebooks.filter(id => id !== notebookId);
+        await updateDoc(doc(db, "users", userId), {
+          notebooks: updatedNotebooks,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.warn("Could not update user document, but notebook was deleted:", error);
+    }
 
     // Delete all associated study card sets
     const studyCardSetsRef = collection(db, "studyCardSets");
     const studyCardSetsQuery = query(studyCardSetsRef, where("notebookId", "==", notebookId));
     const studyCardSets = await getDocs(studyCardSetsQuery);
     
-    for (const doc of studyCardSets.docs) {
-      await deleteDoc(doc.ref);
-    }
+    // Use Promise.all to ensure all deletions complete
+    await Promise.all(studyCardSets.docs.map(doc => deleteDoc(doc.ref)));
 
     // Delete all associated quizzes
     const quizzesRef = collection(db, "quizzes");
     const quizzesQuery = query(quizzesRef, where("notebookId", "==", notebookId));
     const quizzes = await getDocs(quizzesQuery);
     
-    for (const doc of quizzes.docs) {
-      await deleteDoc(doc.ref);
-    }
+    // Use Promise.all to ensure all deletions complete
+    await Promise.all(quizzes.docs.map(doc => deleteDoc(doc.ref)));
   } catch (error) {
     console.error("Error deleting notebook:", error);
     throw error;
