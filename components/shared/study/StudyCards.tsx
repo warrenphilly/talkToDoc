@@ -128,25 +128,22 @@ export default function StudyCards({
     setSelectedSet(updatedStudySet);
   };
 
-
-
   const handleGenerateCardsClick = async () => {
     await handleGenerateCards(
       setName,
-      filesToUpload,
-      selectedPages,
       numCards,
+      selectedPages,
+      filesToUpload,
       notebooks,
-      notebookId,
-      pageId,
       setIsGenerating,
-      loadCardsetsWrapper,
       setShowNotebookModal,
       setSelectedPages,
       setSetName,
       setFilesToUpload,
       setFiles,
-      setMessages
+      setMessages,
+      loadCardsetsWrapper,
+      clerkUserId
     );
   };
 
