@@ -5,6 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY as string,
 });
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();

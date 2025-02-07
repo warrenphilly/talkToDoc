@@ -55,6 +55,8 @@ async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
   return docBuffer;
 }
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
