@@ -427,6 +427,7 @@ const PageQuiz: React.FC<QuizProps> = ({
             <QuizSummary
               quiz={{
                 id: quizId,
+                title: data.title || "Quiz",
                 userId: userId,
                 notebookId,
                 pageId,
