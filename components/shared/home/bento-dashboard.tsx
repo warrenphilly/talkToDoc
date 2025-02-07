@@ -58,6 +58,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { BookOpen } from "lucide-react";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 interface StudyCardData {
   title: string;
@@ -748,12 +760,18 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
                   <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border border-slate-300 relative">
+
+
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
                       className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
                     >
                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500" />
                     </button>
+
+
+
+
                     <CardContent className="p-3 sm:p-8 flex flex-col h-full">
                       <div className="p-2 sm:p-3 rounded-full w-fit bg-[#94b347]">
                         <NotebookPen className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
