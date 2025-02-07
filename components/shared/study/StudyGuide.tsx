@@ -372,6 +372,7 @@ export default function StudyGuideComponent({
           (n): n is NonNullable<typeof n> => n !== null
         ),
         cardCount: numCards,
+        userId: userId || "",
       };
 
       // Send to API for card generation
@@ -399,7 +400,7 @@ export default function StudyGuideComponent({
       const data = await response.json();
 
       // Save study card set and update notebook
-      await saveStudyCardSet(notebookId, pageId, data.cards, metadata);
+      await saveStudyCardSet(notebookId, pageId, data.cards, metadata, userId || "");
 
       // Update the page with study docs references if we have uploaded files
       if (uploadedDocs.length > 0) {
