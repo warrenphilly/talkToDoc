@@ -361,6 +361,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         quizData: data.quiz,
         userId: user?.id || "",
         createdAt: Timestamp.now(),
+        title: data.quiz.title,
       };
 
       // Save to Firestore

@@ -32,6 +32,17 @@ import ChatClient from "./shared/chat/ChatClient";
 import { TitleEditor } from "./shared/chat/title-editor";
 import { useRouter } from "next/navigation";
 import { Separator } from "./ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Tab {
   id: string;
@@ -235,31 +246,39 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     }
   };
 
+  const handleDeleteNotebook = async () => {
+    try {
+      await deleteNotebook(notebookId);
+      onNotebookDelete?.(notebookId);
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error("Error deleting notebook:", error);
+    }
+  };
+
   const handleDeletePage = async (pageId: string) => {
-    if (confirm("Are you sure you want to delete this page?")) {
-      try {
-        if (activeTabId === pageId) {
-          const currentIndex = tabs.findIndex((tab) => tab.id === pageId);
-          const previousTab = tabs[currentIndex - 1] || tabs[currentIndex + 1];
+    try {
+      if (activeTabId === pageId) {
+        const currentIndex = tabs.findIndex((tab) => tab.id === pageId);
+        const previousTab = tabs[currentIndex - 1] || tabs[currentIndex + 1];
 
-          if (previousTab) {
-            setActiveTabId(previousTab.id);
-          }
+        if (previousTab) {
+          setActiveTabId(previousTab.id);
         }
+      }
 
-        setAllPages((prevPages) => prevPages.filter((page) => page.id !== pageId));
-        setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== pageId));
+      setAllPages((prevPages) => prevPages.filter((page) => page.id !== pageId));
+      setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== pageId));
 
-        const { newPageId, isNewPage } = await deletePage(notebookId, pageId);
+      const { newPageId, isNewPage } = await deletePage(notebookId, pageId);
 
-        if (isNewPage) {
-          router.refresh();
-        }
-      } catch (error) {
-        console.error("Error deleting page:", error);
-        alert("Failed to delete page. Please try again.");
+      if (isNewPage) {
         router.refresh();
       }
+    } catch (error) {
+      console.error("Error deleting page:", error);
+      router.refresh();
     }
   };
 
@@ -391,7 +410,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           <ScrollArea className="h-[300px] w-full pr-4">
             <div className="flex justify-end mb-4">
               <button
-                className="px-3 py-1 text-sm  text-[#94b347] rounded-full bg-white border border-[#94b347] flex items-center gap-1"
+                className="bg-white border border-[#94b347] hover:bg-[#c6d996] text-[#94b347] rounded-full  hover:text-white px-3 py-1 text-sm flex items-center gap-1"
                 onClick={addTab}
               >
                 <Plus size={16} />
@@ -404,43 +423,61 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 className="flex items-center justify-between py-2 border-b"
               >
                 <span>{page.title}</span>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2">
                   <button
-                    className="px-2 py-1 text-sm bg-white rounded hover:bg-slate-300 text-slate-500 hover:text-slate-700 hover:bg-[#c6d996] hover:text-white"
+                    className="bg-white border border-slate-300 hover:bg-slate-200 text-slate-500 hover:text-slate-700 px-2 rounded-full px-2 py-1 text-sm"
                     onClick={() => handlePageToggle(page.id)}
                   >
                     {page.isOpen ? "Close" : "Open"}
                   </button>
-                 <div className="h-4 w-px bg-slate-300" />
-                  <button
-                    className="px-2 py-1 text-sm bg-white text-red-600 rounded hover:bg-red-200"
-                    onClick={() => handleDeletePage(page.id)}
-                  >
-                    Delete
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  hover:bg-red-200 px-2 py-1 text-sm">
+                        Delete
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to delete this page?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-white rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-700 ">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeletePage(page.id)} className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  hover:bg-red-200">
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}
           </ScrollArea>
           <div className="mt-4 pt-4 border-t">
-            <button
-              className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
-              onClick={async () => {
-                if (confirm("Are you sure you want to delete this notebook? This action cannot be undone.")) {
-                  try {
-                    await deleteNotebook(notebookId);
-                    onNotebookDelete?.(notebookId);
-                    router.push('/');
-                    router.refresh();
-                  } catch (error) {
-                    console.error("Error deleting notebook:", error);
-                    alert("Failed to delete notebook. Please try again.");
-                  }
-                }
-              }}
-            >
-              Delete Notebook
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200">
+                  Delete Notebook
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to delete this notebook?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your notebook
+                    and all its pages.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteNotebook}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </DialogContent>
       </Dialog>
