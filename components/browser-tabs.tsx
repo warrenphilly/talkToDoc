@@ -31,6 +31,7 @@ import React, { useEffect, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
 import { TitleEditor } from "./shared/chat/title-editor";
 import { useRouter } from "next/navigation";
+import { Separator } from "./ui/separator";
 
 interface Tab {
   id: string;
@@ -390,7 +391,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           <ScrollArea className="h-[300px] w-full pr-4">
             <div className="flex justify-end mb-4">
               <button
-                className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded hover:bg-blue-200 flex items-center gap-1"
+                className="px-3 py-1 text-sm  text-[#94b347] rounded-full bg-white border border-[#94b347] flex items-center gap-1"
                 onClick={addTab}
               >
                 <Plus size={16} />
@@ -403,15 +404,16 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 className="flex items-center justify-between py-2 border-b"
               >
                 <span>{page.title}</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <button
-                    className="px-2 py-1 text-sm bg-slate-200 rounded hover:bg-slate-300"
+                    className="px-2 py-1 text-sm bg-white rounded hover:bg-slate-300 text-slate-500 hover:text-slate-700 hover:bg-[#c6d996] hover:text-white"
                     onClick={() => handlePageToggle(page.id)}
                   >
                     {page.isOpen ? "Close" : "Open"}
                   </button>
+                 <div className="h-4 w-px bg-slate-300" />
                   <button
-                    className="px-2 py-1 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+                    className="px-2 py-1 text-sm bg-white text-red-600 rounded hover:bg-red-200"
                     onClick={() => handleDeletePage(page.id)}
                   >
                     Delete
@@ -422,7 +424,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </ScrollArea>
           <div className="mt-4 pt-4 border-t">
             <button
-              className="w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
+              className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200"
               onClick={async () => {
                 if (confirm("Are you sure you want to delete this notebook? This action cannot be undone.")) {
                   try {
