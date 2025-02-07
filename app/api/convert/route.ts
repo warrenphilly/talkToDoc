@@ -55,7 +55,7 @@ async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
   return docBuffer;
 }
 
-export const runtime = 'edge';
+// export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -136,5 +136,6 @@ export async function POST(req: NextRequest) {
 export const config = {
   api: {
     bodyParser: false,
+    responseLimit: false,
   },
 };
