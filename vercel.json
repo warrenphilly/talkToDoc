@@ -1,12 +1,10 @@
 {
   "functions": {
     "app/api/convert/image/route.ts": {
-      "maxDuration": 60,
-      "runtime": "nodejs@20"
+      "maxDuration": 60
     },
     "app/api/convert/route.ts": {
-      "maxDuration": 60,
-      "runtime": "nodejs@20"
+      "maxDuration": 60
     }
   }
 }
