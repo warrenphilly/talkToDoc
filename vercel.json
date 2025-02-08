@@ -1,10 +1,20 @@
 {
   "functions": {
     "app/api/convert/image/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "memory": 3008
     },
     "app/api/convert/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "memory": 3008
     }
-  }
+  },
+  "routes": [
+    {
+      "source": "/api/convert/(.*)",
+      "headers": {
+        "max-body-size": "10mb"
+      }
+    }
+  ]
 }
