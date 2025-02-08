@@ -59,6 +59,10 @@ async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
 
 export async function POST(req: NextRequest) {
   try {
+    // Set the max body size header
+    const headers = new Headers();
+    headers.set('max-body-size', '10mb');
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const fileType = file.type;
