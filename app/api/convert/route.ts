@@ -136,6 +136,7 @@ export async function POST(req: NextRequest) {
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: false,
+    responseLimit: '10mb',
+    bodyLimit: '10mb'
   },
 };

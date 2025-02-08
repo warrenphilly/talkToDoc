@@ -11,6 +11,14 @@ function getTextFromNodes(node: any, tagName: string, namespaceURI: string) {
   return text.trim();
 }
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: '10mb',
+    bodyLimit: '10mb'
+  },
+};
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
