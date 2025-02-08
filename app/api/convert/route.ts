@@ -57,7 +57,22 @@ async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
 
 // export const runtime = 'edge';
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+};
+
 export async function POST(req: NextRequest) {
+  if (req.headers.get('content-length') && 
+      parseInt(req.headers.get('content-length')!) > 10 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "File too large", details: "Maximum file size is 10MB" },
+      { status: 413 }
+    );
+  }
+
   try {
     // Set the max body size header
     const headers = new Headers();
@@ -136,11 +151,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: '10mb',
-    bodyLimit: '10mb'
-  },
-};
