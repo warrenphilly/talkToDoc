@@ -1,224 +1,185 @@
-import { Button } from "@/components/ui/button";
-import { UploadOutlined } from "@ant-design/icons";
-import { LucideFileText, ImageIcon, Trash2 } from "lucide-react";
+"use client";
+
 import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { LucideFileText, ImageIcon, Trash2 } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "@/firebase"; // or wherever your Firebase client is
+import { v4 as uuidv4 } from "uuid";
 import { Message } from "@/lib/types";
 
 interface UploadAreaProps {
-  messages: Message[];
-  files: File[];
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSendMessage: () => void;
+  handleSendMessage: (filesData: { name: string; url: string }[]) => void;
   handleClear: () => void;
   className?: string;
+  files: File[];
   showUpload: boolean;
-  setShowUpload: (show: boolean) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  setShowUpload: React.Dispatch<React.SetStateAction<boolean>>;
+  messages: Message[];
 }
 
-const UploadArea = ({
-  messages,
-  files,
-  fileInputRef,
-  handleFileUpload,
+export default function UploadArea({
   handleSendMessage,
   handleClear,
+  className,
+  files,
   showUpload,
+  fileInputRef,
+  handleFileUpload,
   setShowUpload,
-}: UploadAreaProps) => {
-  const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<Array<{id: string, name: string}>>([]);
-  const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
-  const [processingFiles, setProcessingFiles] = useState<boolean>(false);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [hasProcessedFiles, setHasProcessedFiles] = useState(false);
+  messages,
+}: UploadAreaProps) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url: string }[]>([]);
 
-  // Update filesToProcess when files prop changes
-
-  useEffect(() => {
-   setHasProcessedFiles(false);
-  }, [files]);
-  
-  useEffect(() => {
-    if (!processingFiles && files.length > 0 && !hasProcessedFiles) {
-      setFilesToProcess(files);
-    }
-  }, [files, processingFiles, hasProcessedFiles]);
-
-  useEffect(() => {
-    console.log("filesToProcess labratory",filesToProcess)
-  }, [filesToProcess])
-
-  // Extract previously uploaded files from messages
-  useEffect(() => {
-    const allUploadedFiles = messages
-      .filter(msg => msg.files && msg.files.length > 0)
-      .flatMap(msg => {
-        if (msg.fileDetails) {
-          return msg.fileDetails;
-        }
-        return (msg.files || []).map(id => ({ id, name: 'Unknown File' }));
-      });
-    setPreviouslyUploadedFiles(allUploadedFiles);
-  }, [messages]);
-
-  const handleGenerateNotes = async () => {
-    setProcessingFiles(true);
-    
-    try {
-      const fileDetails = filesToProcess.map(file => ({
-        id: crypto.randomUUID(),
-        name: file.name
-      }));
-      
-      setPreviouslyUploadedFiles(prev => [...prev, ...fileDetails]);
-      setFilesToProcess([]);
-      setHasProcessedFiles(true); // Mark files as processed
-      
-      setShowUpload(false);
-      await handleSendMessage();
-    } finally {
-      setProcessingFiles(false);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFileUpload(e);
     }
   };
 
-  const handleRemoveFile = (indexToRemove: number) => {
-    setFilesToProcess(prev => prev.filter((_, index) => index !== indexToRemove));
+  // Upload each file directly to Firebase Storage
+  const handleFileUploads = async () => {
+    if (files.length === 0) return;
+    setUploading(true);
+
+    // For storing references to all successfully uploaded files
+    const uploadedData: { name: string; url: string }[] = [];
+
+    for (const file of files) {
+      try {
+        const uniqueId = uuidv4();
+        const fileRef = ref(storage, `uploads/${uniqueId}-${file.name}`);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        const downloadUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            () => {},
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(fileRef);
+              resolve(url);
+            }
+          );
+        });
+
+        uploadedData.push({ name: file.name, url: downloadUrl });
+      } catch (error) {
+        console.error("File upload error:", error);
+      }
+    }
+
+    setUploadedFiles(uploadedData);
+    setUploading(false);
+    setShowUpload(false);
+
+    // Instead of sending large files to /api/convert, pass storage references:
+    handleSendMessage(uploadedData);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    handleFileUpload({ target: { files: files.filter((_, i) => i !== index) } } as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
-    <div className="flex  min-w-[300px] w-full bg-white  flex-col px-6 gap-2 items-start justify-start rounded-2xl w-full">
-      {showUpload && (
-        <div className="flex flex-col gap-2  bg-[] items-start justify-center rounded-2xl w-full border border-slate-400 h-fit p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Upload your files
-          </label>
+    <div className={`flex flex-col w-full max-w-lg gap-3 ${className || ""}`}>
+      <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
+        Selected Files
+        <input
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          className="hidden"
+          id="fileInput"
+          accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
+          ref={fileInputRef}
+        />
+      </label>
 
-          <div className="w-full space-y-4">
-            {/* Upload Button */}
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                multiple
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
-                disabled={processingFiles}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg"
-                disabled={processingFiles}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => document.getElementById("fileInput")?.click()}
+          className="bg-white text-slate-600 border border-slate-400"
+          disabled={uploading}
+        >
+          Choose Files ({files.length})
+        </Button>
+        <Button
+          onClick={handleFileUploads}
+          disabled={files.length === 0 || uploading}
+          className="bg-blue-600 text-white"
+        >
+          {uploading ? "Uploading..." : "Upload to Firebase"}
+        </Button>
+        <Button variant="destructive" onClick={handleClear}>
+          Clear
+        </Button>
+      </div>
+
+      {files.length > 0 && (
+        <div className="border border-slate-300 rounded-md p-2 space-y-2">
+          <p className="text-sm font-semibold">Pending Uploads</p>
+          {files.map((file, index) => {
+            const isImage = file.type.startsWith("image/");
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between gap-2 bg-slate-50 p-2 rounded"
               >
-                <UploadOutlined />
-                Upload Files ({filesToProcess.length})
-              </Button>
+                <div className="flex items-center gap-3">
+                  {isImage ? (
+                    <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded overflow-hidden">
+                      <ImageIcon className="w-6 h-6 text-slate-400" />
+                    </div>
+                  ) : (
+                    <LucideFileText className="w-12 h-12 text-slate-600" />
+                  )}
+                  <div>
+                    <p className="text-sm text-slate-700">{file.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleRemoveFile(index)}
+                  className="p-1 hover:bg-slate-200 rounded-full transition-colors"
+                  aria-label="Remove file"
+                >
+                  <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-500" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {uploadedFiles.length > 0 && (
+        <div className="border border-green-300 rounded-md p-2 space-y-2">
+          <p className="text-sm font-semibold">Uploaded Successfully</p>
+          {uploadedFiles.map((f, i) => (
+            <div
+              key={i}
+              className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-2"
+            >
+              <span className="text-sm">{f.name}</span>
+              <a
+                className="text-blue-600 text-sm underline break-all"
+                href={f.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {f.url}
+              </a>
             </div>
-
-            {/* New Files List */}
-            {filesToProcess.length > 0 && (
-              <div className="border border-slate-400 rounded-lg p-4 space-y-3">
-                <p className="text-sm text-slate-600 font-semibold">New Files to Process</p>
-                <div className="space-y-2">
-                  {filesToProcess.map((file, index) => {
-                    const isImage = file.type.startsWith('image/');
-                    
-                    return (
-                      <div 
-                        key={index}
-                        className="flex items-center justify-between bg-slate-50 p-2 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          {isImage ? (
-                            <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded overflow-hidden">
-                              {file instanceof File ? (
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={file.name}
-                                  className="w-12 h-12 object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = '';
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.parentElement?.classList.add('fallback-icon');
-                                  }}
-                                />
-                              ) : (
-                                <ImageIcon className="w-8 h-8 text-slate-400" />
-                              )}
-                            </div>
-                          ) : (
-                            <LucideFileText className="w-12 h-12 text-slate-600" />
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">{file.name}</p>
-                            <p className="text-xs text-slate-500">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRemoveFile(index)}
-                          className="p-2 hover:bg-slate-200 rounded-full transition-colors"
-                          aria-label="Remove file"
-                        >
-                          <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-500" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Previously Uploaded Files List */}
-            {previouslyUploadedFiles.length > 0 && (
-              <div className=" rounded-lg p-4 space-y-3">
-                <p className="text-sm text-slate-600 font-semibold">Previously Uploaded Files</p>
-                <div className="space-y-2">
-                  {previouslyUploadedFiles.map((file, index) => {
-                    const fileExtension = file.name.split(".").pop()?.toLowerCase();
-                    const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension || "");
-
-                    return (
-                      <div 
-                        key={index}
-                        className="bg-white flex items-center justify-between p-2 rounded-lg border border-slate-400"
-                      >
-                        <div className="flex items-center gap-3 bg-white">
-                          {isImage ? (
-                            <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded">
-                              <ImageIcon className="w-8 h-8 text-slate-400" />
-                            </div>
-                          ) : (
-                            <LucideFileText className="w-12 h-12 text-slate-600" />
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">{file.name}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Generate Button - only shown when there are new files */}
-            {filesToProcess.length > 0 && (
-              <Button 
-                className="bg-[#dae9b6] text-slate-700 hover:bg-[#c8d9a2] w-fit"
-                onClick={handleGenerateNotes}
-                disabled={processingFiles}
-              >
-                {processingFiles ? 'Processing...' : 'Generate Notes from New Files'}
-              </Button>
-            )}
-          </div>
+          ))}
         </div>
       )}
     </div>
   );
-};
-
-export default UploadArea;
+}

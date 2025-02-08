@@ -8,7 +8,7 @@ export default middleware;
 
 export const config = {
   matcher: [
-    // Exclude /api/convert routes from Clerk because it can re-parse large files
+    // Exclude the /api/convert routes (or whichever large-file routes are used)
     "/((?!^api/convert).*)",
     "/(api|trpc)(.*)",
   ],
