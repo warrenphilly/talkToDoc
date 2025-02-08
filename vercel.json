@@ -9,12 +9,15 @@
       "memory": 3008
     }
   },
-  "routes": [
+  "headers": [
     {
       "source": "/api/convert/(.*)",
-      "headers": {
-        "max-body-size": "10mb"
-      }
+      "headers": [
+        {
+          "key": "max-body-size",
+          "value": "10mb"
+        }
+      ]
     }
   ]
 }
