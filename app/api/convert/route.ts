@@ -55,12 +55,12 @@ async function convertDocToDocx(docBuffer: Buffer): Promise<Buffer> {
   return docBuffer;
 }
 
-// export const runtime = 'edge';
+export const runtime = "nodejs";
 
 export const config = {
   api: {
     bodyParser: false,
-    responseLimit: false,
+    responseLimit: "10mb",
   },
 };
 

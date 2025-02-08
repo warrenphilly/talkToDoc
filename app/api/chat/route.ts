@@ -74,14 +74,25 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages,
-        max_tokens: 15000,
-        temperature: 0.7,
+        max_tokens: 9000,
+        temperature: 0.5,
         functions,
         function_call: { name: "generate_sections", strict: true },
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return NextResponse.json(
+        {
+          error: true,
+          details: errorText || "Service unavailable",
+        },
+        { status: response.status },
+      );
+    }
 
     const responseData = await response.json();
 
