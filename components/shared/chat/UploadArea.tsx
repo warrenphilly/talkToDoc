@@ -1,22 +1,35 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { LucideFileText, ImageIcon, Trash2 } from "lucide-react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebase"; // or wherever your Firebase client is
+import { storage } from "@/firebase";
 import { v4 as uuidv4 } from "uuid";
 import { Message } from "@/lib/types";
 
+/**
+ * After uploading, this component calls handleSendMessage with the
+ * Firebase download URLs instead of posting large files to /api/convert.
+ */
 interface UploadAreaProps {
+  /** Callback to handle the resulting array of { name, url } after Firebase upload. */
   handleSendMessage: (filesData: { name: string; url: string }[]) => void;
+  /** Clears file selection in the parent. */
   handleClear: () => void;
+  /** Additional className styling. */
   className?: string;
+  /** The array of selected files from the parent. */
   files: File[];
+  /** Whether or not to show the upload area. */
   showUpload: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  /** Ref to the hidden file input. */
+  fileInputRef: RefObject<HTMLInputElement>;
+  /** A function that updates the parent's file state when <input> changes. */
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Toggles whether this component is visible. */
   setShowUpload: React.Dispatch<React.SetStateAction<boolean>>;
+  /** If you need to reference or display messages in this component. */
   messages: Message[];
 }
 
@@ -34,18 +47,20 @@ export default function UploadArea({
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url: string }[]>([]);
 
+  if (!showUpload) return null; // Hide component if showUpload is false
+
+  // Triggered by file <input>:
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      handleFileUpload(e);
+      handleFileUpload(e); // let the parent set its file state
     }
   };
 
-  // Upload each file directly to Firebase Storage
+  // Upload each file directly to Firebase Storage:
   const handleFileUploads = async () => {
     if (files.length === 0) return;
     setUploading(true);
 
-    // For storing references to all successfully uploaded files
     const uploadedData: { name: string; url: string }[] = [];
 
     for (const file of files) {
@@ -76,33 +91,39 @@ export default function UploadArea({
     setUploading(false);
     setShowUpload(false);
 
-    // Instead of sending large files to /api/convert, pass storage references:
+    // Instead of sending large files to /api/convert, we pass the download URLs
+    // so the server can optionally do what it needs, but not via a huge request body.
     handleSendMessage(uploadedData);
   };
 
+  // Remove one file from the parent's list:
   const handleRemoveFile = (index: number) => {
-    handleFileUpload({ target: { files: files.filter((_, i) => i !== index) } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    const updated = files.filter((_, i) => i !== index);
+    // Trick: simulate a "change" event so parent updates `files` state
+    handleFileUpload({
+      target: { files: updated } as unknown as HTMLInputElement,
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   return (
     <div className={`flex flex-col w-full max-w-lg gap-3 ${className || ""}`}>
       <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-        Selected Files
+        Select Files
         <input
+          ref={fileInputRef}
           type="file"
           multiple
           onChange={handleFileSelect}
           className="hidden"
           id="fileInput"
           accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
-          ref={fileInputRef}
         />
       </label>
 
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
-          onClick={() => document.getElementById("fileInput")?.click()}
+          onClick={() => fileInputRef.current?.click()}
           className="bg-white text-slate-600 border border-slate-400"
           disabled={uploading}
         >

@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   if (req.headers.get('content-length') && 
       parseInt(req.headers.get('content-length')!) > 10 * 1024 * 1024) {
     return NextResponse.json(
-      { error: "File too large", details: "Maximum file size is 10MB" },
+      { error: "File too large dude!", details: "Maximum file size is 10MB" },
       { status: 413 }
     );
   }
