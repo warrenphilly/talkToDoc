@@ -5,8 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Message } from "@/lib/types";
 import { FileText, Trash2, Upload } from "lucide-react";
 import React, { useState } from "react";
-import { storage } from "@/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 interface FormUploadProps {
   files: File[];
@@ -30,89 +28,6 @@ export default function FormUpload({
   setShowUpload,
 }: FormUploadProps) {
   const [progress, setProgress] = useState<number>(0);
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-
-  const handleProcessFile = async (file: File) => {
-    try {
-      setIsUploading(true);
-      
-      // Upload to Firebase Storage
-      const fileName = `${crypto.randomUUID()}_${file.name}`;
-      const storageRef = ref(storage, `uploads/${fileName}`);
-
-      console.log("Starting file upload to Firebase...");
-
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      await new Promise((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`Upload progress: ${progress.toFixed(2)}%`);
-            setProgress(progress);
-          },
-          (error) => {
-            console.error("Upload error:", error);
-            reject(error);
-          },
-          () => {
-            console.log("Upload completed successfully");
-            resolve(uploadTask);
-          }
-        );
-      });
-
-      // Get download URL
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log("Got download URL:", downloadURL);
-
-      // Convert file using the convert-from-storage endpoint
-      const response = await fetch("/api/convert-from-storage", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
-        },
-        body: JSON.stringify({
-          fileUrl: downloadURL,
-          fileName: file.name,
-          fileType: file.type,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to convert file");
-      }
-
-      const data = await response.json();
-      return data.text;
-
-    } catch (error) {
-      console.error("Error processing file:", error);
-      throw error;
-    } finally {
-      setIsUploading(false);
-      setProgress(0);
-    }
-  };
-
-  const handleUploadAndProcess = async () => {
-    if (files.length === 0) return;
-
-    try {
-      setIsUploading(true);
-      for (const file of files) {
-        await handleProcessFile(file);
-      }
-      handleSendMessage();
-      setShowUpload(false);
-    } catch (error) {
-      console.error("Error in upload and process:", error);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   return (
     <div className="w-full space-y-2">
@@ -124,7 +39,6 @@ export default function FormUpload({
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
-                  disabled={isUploading}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Files
@@ -134,7 +48,7 @@ export default function FormUpload({
                   onChange={handleFileUpload}
                   ref={fileInputRef}
                   style={{ display: "none" }}
-                  accept=".pdf,.doc,.docx,.txt,.pptx"
+                  accept=".pdf,.doc,.docx,.txt,.pptx,.png,.jpg,.jpeg"
                   multiple
                 />
               </div>
@@ -143,7 +57,6 @@ export default function FormUpload({
                   onClick={handleClear}
                   variant="outline"
                   className="bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500 rounded-full"
-                  disabled={isUploading}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Clear All
@@ -171,13 +84,6 @@ export default function FormUpload({
                     ></div>
                   </div>
                 )}
-                <Button
-                  onClick={handleUploadAndProcess}
-                  className="w-full bg-[#94b347] text-white hover:bg-[#7a9339]"
-                  disabled={isUploading}
-                >
-                  {isUploading ? "Processing..." : "Process Files"}
-                </Button>
               </div>
             )}
           </div>
