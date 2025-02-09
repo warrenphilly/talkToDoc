@@ -17,6 +17,27 @@
     },
     "app/api/convert/pdf/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/convert/docx/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/feedback/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/quiz/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/studycards/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/studyguide/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/sidechat/route.ts": {
+      "maxDuration": 60
     }
   }
-}
+
+  }
+
+
