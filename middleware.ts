@@ -8,6 +8,7 @@ export default middleware;
 
 export const config = {
   matcher: [
+    
     // Exclude the /api/convert routes (or whichever large-file routes are used)
     "/((?!^api/convert).*)",
     "/(api|trpc)(.*)",
