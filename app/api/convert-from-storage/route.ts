@@ -29,6 +29,13 @@ function toErrorWithMessage(maybeError: unknown): ErrorWithMessage {
 
 export async function POST(req: Request) {
   try {
+    // Log the complete request details
+    console.log('Full request details:', {
+      headers: Object.fromEntries(req.headers.entries()),
+      url: req.url,
+      method: req.method
+    });
+
     const { fileUrl, fileName, fileType } = await req.json();
     
     // Add debug logging for authorization
