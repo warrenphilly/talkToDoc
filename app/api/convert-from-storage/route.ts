@@ -62,9 +62,9 @@ export async function POST(req: Request) {
       console.log('File downloaded successfully, size:', fileBuffer.length);
 
       // Get the base URL for internal API calls
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const baseUrl = process.env.NODE_ENV === 'production'
+        ? 'https://www.gammanotes.org'  // Replace with your actual domain
+        : 'http://localhost:3000';
 
       console.log('Using base URL:', baseUrl);
 
