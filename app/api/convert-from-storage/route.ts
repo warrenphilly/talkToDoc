@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { Readable } from "stream";
 import { promisify } from "util";
 import { parseString } from "xml2js";
+import { DOMParser } from 'xmldom';
 
 const parseXMLAsync = promisify(parseString);
 
@@ -111,85 +112,47 @@ async function downloadEntireFile(filePath: string): Promise<Buffer> {
   return buffer;
 }
 
-interface TextRun {
-  t: [string];
-}
-
-interface Paragraph {
-  r: TextRun[];
-}
-
-interface TextBody {
-  a?: Paragraph[];
-  p?: Paragraph[];
-}
-
-interface Shape {
-  txBody?: TextBody[];
-}
-
-interface SlideTree {
-  sp?: Shape[];
-}
-
-interface SlideContent {
-  p: {
-    sld: [
-      {
-        cSld: [
-          {
-            spTree: [SlideTree];
-          }
-        ];
-      }
-    ];
-  };
+function getTextFromNodes(node: any, tagName: string, namespaceURI: string) {
+  let text = '';
+  const textNodes = node.getElementsByTagNameNS(namespaceURI, tagName);
+  for (let i = 0; i < textNodes.length; i++) {
+    text += textNodes[i].textContent + ' ';
+  }
+  return text.trim();
 }
 
 async function processPPTX(buffer: Buffer): Promise<string> {
   const zip = new JSZip();
-  let allText = "";
-
-  const zipContent = await zip.loadAsync(buffer);
-
-  for (const fileName of Object.keys(zipContent.files)) {
-    if (fileName.startsWith("ppt/slides/slide") && fileName.endsWith(".xml")) {
-      const slideXml = await zipContent.files[fileName].async("text");
-      const slideContent = (await parseXMLAsync(slideXml)) as SlideContent;
-
-      const shapes = slideContent?.p?.sld?.[0]?.cSld?.[0]?.spTree?.[0]?.sp;
-      if (shapes) {
-        for (const shape of shapes) {
-          if (shape.txBody) {
-            for (const textBody of shape.txBody) {
-              if (textBody.p) {
-                for (const para of textBody.p) {
-                  for (const run of para.r) {
-                    if (run.t) {
-                      allText += run.t[0] + " ";
-                    }
-                  }
-                  allText += "\n";
-                }
-              }
-              if (textBody.a) {
-                for (const para of textBody.a) {
-                  for (const run of para.r) {
-                    if (run.t) {
-                      allText += run.t[0] + " ";
-                    }
-                  }
-                  allText += "\n";
-                }
-              }
-            }
-          }
-        }
-      }
+  await zip.loadAsync(buffer);
+  
+  const aNamespace = "http://schemas.openxmlformats.org/drawingml/2006/main";
+  let text = '';
+  
+  let slideIndex = 1;
+  while (true) {
+    const slideFile = zip.file(`ppt/slides/slide${slideIndex}.xml`);
+    
+    if (!slideFile) break;
+    
+    const slideXmlStr = await slideFile.async('text');
+    
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(slideXmlStr, 'application/xml');
+    
+    const slideText = getTextFromNodes(xmlDoc, "t", aNamespace);
+    if (slideText.trim()) {
+      text += `Slide ${slideIndex}:\n${slideText}\n\n`;
     }
+    
+    slideIndex++;
   }
 
-  return allText.trim();
+  if (!text.trim()) {
+    throw new Error('No text content extracted from PPTX');
+  }
+
+  console.log(`Successfully extracted text from PPTX (${slideIndex - 1} slides)`);
+  return text.trim();
 }
 
 async function processFile(
@@ -238,6 +201,10 @@ async function processFile(
     }
   }
 
+  if (!textContent.trim()) {
+    throw new Error('No text content received from conversion');
+  }
+
   return textContent;
 }
 
@@ -278,6 +245,10 @@ export async function POST(req: Request) {
     const baseUrl = `${protocol}://${host}`;
 
     const text = await processFile(buffer, fileType, fileName, baseUrl);
+
+    if (!text.trim()) {
+      throw new Error('No text content extracted from file');
+    }
 
     return NextResponse.json({ text });
   } catch (error) {
