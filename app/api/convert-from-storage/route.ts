@@ -1,7 +1,7 @@
 import { adminStorage } from "@/lib/firebase/firebaseAdmin";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { Readable } from 'stream';
+import { Readable } from "stream";
 
 // Add these export configurations
 export const runtime = "nodejs";
@@ -53,8 +53,8 @@ function getEndpointForFileType(fileType: string): string {
 async function getBaseUrl(req: Request): Promise<string> {
   // Try to get the host from headers first
   const headersList = await headers();
-  const host = headersList.get('host');
-  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const host = headersList.get("host");
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 
   if (host) {
     return `${protocol}://${host}`;
@@ -62,22 +62,22 @@ async function getBaseUrl(req: Request): Promise<string> {
 
   // Fallback to environment variable
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
 
   // Final fallback for development
-  return process.env.NODE_ENV === 'production' 
-    ? 'https://' + process.env.VERCEL_URL 
-    : 'http://localhost:3000';
+  return process.env.NODE_ENV === "production"
+    ? "https://" + process.env.VERCEL_URL
+    : "http://localhost:3000";
 }
 
 async function streamFileFromStorage(filePath: string) {
   const bucket = adminStorage.bucket();
   const file = bucket.file(filePath);
   const [exists] = await file.exists();
-  
+
   if (!exists) {
-    throw new Error('File not found in storage');
+    throw new Error("File not found in storage");
   }
 
   return file.createReadStream({
@@ -94,11 +94,11 @@ async function processFileInChunks(
   baseUrl: string
 ): Promise<string> {
   const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-  let textContent = '';
+  let textContent = "";
   let buffer = Buffer.alloc(0);
 
   return new Promise((resolve, reject) => {
-    stream.on('data', async (chunk) => {
+    stream.on("data", async (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
 
       // Process when buffer reaches chunk size
@@ -109,17 +109,19 @@ async function processFileInChunks(
 
           const formData = new FormData();
           const file = new Blob([chunkBuffer], { type: fileType });
-          formData.append('file', file, fileName);
-          formData.append('isChunk', 'true');
+          formData.append("file", file, fileName);
+          formData.append("isChunk", "true");
 
           const converterEndpoint = getEndpointForFileType(fileType);
           const response = await fetch(`${baseUrl}${converterEndpoint}`, {
-            method: 'POST',
+            method: "POST",
             body: formData,
           });
 
           if (!response.ok) {
-            throw new Error(`Chunk conversion failed: ${await response.text()}`);
+            throw new Error(
+              `Chunk conversion failed: ${await response.text()}`
+            );
           }
 
           const result = await response.json();
@@ -132,24 +134,26 @@ async function processFileInChunks(
       }
     });
 
-    stream.on('end', async () => {
+    stream.on("end", async () => {
       // Process remaining buffer
       if (buffer.length > 0) {
         try {
           const formData = new FormData();
           const file = new Blob([buffer], { type: fileType });
-          formData.append('file', file, fileName);
-          formData.append('isChunk', 'true');
-          formData.append('isFinal', 'true');
+          formData.append("file", file, fileName);
+          formData.append("isChunk", "true");
+          formData.append("isFinal", "true");
 
           const converterEndpoint = getEndpointForFileType(fileType);
           const response = await fetch(`${baseUrl}${converterEndpoint}`, {
-            method: 'POST',
+            method: "POST",
             body: formData,
           });
 
           if (!response.ok) {
-            throw new Error(`Final chunk conversion failed: ${await response.text()}`);
+            throw new Error(
+              `Final chunk conversion failed: ${await response.text()}`
+            );
           }
 
           const result = await response.json();
@@ -163,7 +167,7 @@ async function processFileInChunks(
       resolve(textContent);
     });
 
-    stream.on('error', (error) => {
+    stream.on("error", (error) => {
       reject(error);
     });
   });
@@ -198,9 +202,9 @@ export async function POST(req: Request) {
 
     const filePath = decodeURIComponent(fileUrl.split("/o/")[1].split("?")[0]);
     const stream = await streamFileFromStorage(filePath);
-    
+
     const converterEndpoint = getEndpointForFileType(fileType);
-    const baseUrl = await getBaseUrl(req);  // Add await here
+    const baseUrl = await getBaseUrl(req); // Add await here
     console.log("Using base URL:", baseUrl);
 
     const text = await processFileInChunks(stream, fileType, fileName, baseUrl);
