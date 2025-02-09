@@ -19,6 +19,7 @@ import {
 import { Loader2, RefreshCw } from "lucide-react";
 import React, { MutableRefObject } from "react";
 import FormUpload from "../study/formUpload";
+import { uploadLargeFile } from "@/lib/fileUpload";
 
 interface QuizFormProps {
   quizName: string;
@@ -41,7 +42,7 @@ interface QuizFormProps {
   setFiles: (files: File[]) => void;
   fileInputRef: MutableRefObject<HTMLInputElement>;
   isGenerating: boolean;
-  handleGenerateQuiz: () => void;
+  setIsGenerating: (isGenerating: boolean) => void;
   setShowQuizForm: (show: boolean) => void;
   renderNotebookList: () => React.ReactNode;
   selectedPages: { [notebookId: string]: string[] };
@@ -58,11 +59,83 @@ const QuizForm = ({
   setFiles,
   fileInputRef,
   isGenerating,
-  handleGenerateQuiz,
+  setIsGenerating,
   setShowQuizForm,
   renderNotebookList,
   selectedPages = {},
 }: QuizFormProps) => {
+  const handleGenerateQuiz = async () => {
+    if (!quizName.trim()) return;
+
+    try {
+      setIsGenerating(true);
+      
+      // Process uploaded files first
+      const processedFiles = [];
+      for (const file of files) {
+        try {
+          // Upload to Firebase Storage using chunked upload
+          const downloadURL = await uploadLargeFile(file);
+          
+          // Convert file using the convert-from-storage endpoint
+          const response = await fetch("/api/convert-from-storage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fileUrl: downloadURL,
+              fileName: file.name,
+              fileType: file.type,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          processedFiles.push({
+            name: file.name,
+            content: data.text,
+            url: downloadURL
+          });
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          throw error;
+        }
+      }
+
+      // Continue with quiz generation using processed files
+      const response = await fetch("/api/generate-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quizName,
+          numberOfQuestions,
+          questionTypes: selectedQuestionTypes,
+          processedFiles,
+          selectedPages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate quiz");
+      }
+
+      // Handle successful quiz generation
+      setShowQuizForm(false);
+
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+      throw error;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
       <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">

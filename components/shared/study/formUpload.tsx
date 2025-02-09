@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Message } from "@/lib/types";
 import { FileText, Trash2, Upload } from "lucide-react";
 import React, { useState } from "react";
+import { storage } from "@/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { uploadLargeFile } from "@/lib/fileUpload";
 
 interface FormUploadProps {
   files: File[];
@@ -28,6 +31,39 @@ export default function FormUpload({
   setShowUpload,
 }: FormUploadProps) {
   const [progress, setProgress] = useState<number>(0);
+
+  const processFile = async (file: File) => {
+    try {
+      // Upload file to Firebase Storage using chunked upload
+      const downloadURL = await uploadLargeFile(file);
+      
+      // Convert file using the convert-from-storage endpoint
+      const response = await fetch("/api/convert-from-storage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.NEXT_PUBLIC_API_KEY || "",
+        },
+        body: JSON.stringify({
+          fileUrl: downloadURL,
+          fileName: file.name,
+          fileType: file.type,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Failed to convert file");
+      }
+
+      const data = await response.json();
+      return data.text;
+
+    } catch (error) {
+      console.error("Error processing file:", error);
+      throw error;
+    }
+  };
 
   return (
     <div className="w-full space-y-2">

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Message } from "@/lib/types";
 import { BookOpen, RefreshCw } from "lucide-react";
 import React, { RefObject } from "react";
+import { uploadLargeFile } from "@/lib/fileUpload";
 
 import FormUpload from "./formUpload";
 
@@ -24,6 +25,7 @@ interface StudyGuideModalProps {
   isGenerating: boolean;
   filesToUpload: File[];
   selectedPages: { [notebookId: string]: string[] };
+  setIsGenerating: (isGenerating: boolean) => void;
 }
 
 export default function StudyGuideModal({
@@ -39,11 +41,79 @@ export default function StudyGuideModal({
   setShowUpload,
   renderNotebookSelection,
   onClose,
-  handleGenerateGuide,
+  
   isGenerating,
   filesToUpload,
   selectedPages,
+  setIsGenerating,
 }: StudyGuideModalProps) {
+  const handleGenerateGuide = async () => {
+    if (!guideName.trim()) return;
+
+    try {
+      setIsGenerating(true);
+
+      // Process uploaded files
+      const processedFiles = [];
+      for (const file of filesToUpload) {
+        try {
+          const downloadURL = await uploadLargeFile(file);
+          
+          const response = await fetch("/api/convert-from-storage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fileUrl: downloadURL,
+              fileName: file.name,
+              fileType: file.type,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          processedFiles.push({
+            name: file.name,
+            content: data.text,
+            url: downloadURL
+          });
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          throw error;
+        }
+      }
+
+      // Generate study guide with processed files
+      const response = await fetch("/api/generate-guide", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guideName,
+          processedFiles,
+          selectedPages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate study guide");
+      }
+
+      onClose();
+
+    } catch (error) {
+      console.error("Error generating study guide:", error);
+      throw error;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
           <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
