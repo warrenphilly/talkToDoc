@@ -1,4 +1,5 @@
 import { adminStorage } from "@/lib/firebase/firebaseAdmin";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 // Add these export configurations
@@ -47,6 +48,27 @@ function getEndpointForFileType(fileType: string): string {
   throw new Error(`Unsupported file type: ${fileType}`);
 }
 
+async function getBaseUrl(req: Request): Promise<string> {
+  // Try to get the host from headers first
+  const headersList = await headers();
+  const host = headersList.get("host");
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  // Fallback to environment variable
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  }
+
+  // Final fallback for development
+  return process.env.NODE_ENV === "production"
+    ? "https://" + process.env.VERCEL_URL
+    : "http://localhost:3000";
+}
+
 export async function POST(req: Request) {
   try {
     // Log the complete request details
@@ -65,6 +87,7 @@ export async function POST(req: Request) {
       hasAuthHeader: !!authHeader,
       hasApiKey: !!apiKey,
       environment: process.env.NODE_ENV,
+      vercelUrl: process.env.VERCEL_URL,
     });
 
     if (!fileUrl || !fileName || !fileType) {
@@ -87,15 +110,14 @@ export async function POST(req: Request) {
 
     // Get the appropriate converter endpoint
     const converterEndpoint = getEndpointForFileType(fileType);
+    const baseUrl = await getBaseUrl(req);
+    console.log("Using base URL:", baseUrl);
 
     // Call the specific converter
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}${converterEndpoint}`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+    const response = await fetch(`${baseUrl}${converterEndpoint}`, {
+      method: "POST",
+      body: formData,
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
