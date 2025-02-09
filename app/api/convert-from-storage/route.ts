@@ -1,9 +1,9 @@
-import { adminStorage } from '@/lib/firebase/firebaseAdmin';
-import { NextResponse } from 'next/server';
+import { adminStorage } from "@/lib/firebase/firebaseAdmin";
+import { NextResponse } from "next/server";
 
 // Add these export configurations
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface ErrorWithMessage {
   message: string;
@@ -11,10 +11,10 @@ interface ErrorWithMessage {
 
 function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'message' in error &&
-    typeof (error as Record<string, unknown>).message === 'string'
+    "message" in error &&
+    typeof (error as Record<string, unknown>).message === "string"
   );
 }
 
@@ -27,94 +27,93 @@ function toErrorWithMessage(maybeError: unknown): ErrorWithMessage {
   }
 }
 
+function getEndpointForFileType(fileType: string): string {
+  if (
+    fileType === "application/msword" ||
+    fileType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "/api/convert/docx";
+  } else if (fileType === "application/pdf") {
+    return "/api/convert/pdf";
+  } else if (
+    fileType ===
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    return "/api/convert/pptx";
+  } else if (fileType.startsWith("image/")) {
+    return "/api/convert/image";
+  }
+  throw new Error(`Unsupported file type: ${fileType}`);
+}
+
 export async function POST(req: Request) {
   try {
     // Log the complete request details
-    console.log('Full request details:', {
+    console.log("Full request details:", {
       headers: Object.fromEntries(req.headers.entries()),
       url: req.url,
-      method: req.method
+      method: req.method,
     });
 
     const { fileUrl, fileName, fileType } = await req.json();
-    
+
     // Add debug logging for authorization
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get("authorization");
     const apiKey = process.env.API_KEY;
-    console.log('Auth debug:', {
+    console.log("Auth debug:", {
       hasAuthHeader: !!authHeader,
       hasApiKey: !!apiKey,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
     });
 
     if (!fileUrl || !fileName || !fileType) {
-      throw new Error('Missing required parameters');
+      throw new Error("Missing required parameters");
     }
 
-    console.log('Processing file:', { fileName, fileType });
-    
+    console.log("Processing file:", { fileName, fileType });
+
     // Extract the file path from the URL
-    const filePath = decodeURIComponent(fileUrl.split('/o/')[1].split('?')[0]);
-    
+    const filePath = decodeURIComponent(fileUrl.split("/o/")[1].split("?")[0]);
+
     // Download file from Firebase
     const [fileBuffer] = await adminStorage.bucket().file(filePath).download();
-    console.log('File downloaded successfully, size:', fileBuffer.length);
+    console.log("File downloaded successfully, size:", fileBuffer.length);
 
-    // Create FormData with the complete file
+    // Create FormData with the file
     const formData = new FormData();
     const file = new Blob([fileBuffer], { type: fileType });
-    formData.append('file', file, fileName);
+    formData.append("file", file, fileName);
 
-    // Use the main convert route instead of specific endpoints
-    const response = await fetch(`${req.headers.get('origin')}/api/convert`, {
-      method: 'POST',
-      headers: {
-        'Authorization': req.headers.get('authorization') || '',
-        'x-api-key': process.env.API_KEY || '',
-      },
-      body: formData
-    });
+    // Get the appropriate converter endpoint
+    const converterEndpoint = getEndpointForFileType(fileType);
+
+    // Call the specific converter
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL}${converterEndpoint}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
-      console.error('Conversion failed with:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
-      const contentType = response.headers.get('content-type');
-      let errorMessage = '';
-      
-      if (contentType?.includes('application/json')) {
-        const errorData = await response.json();
-        errorMessage = errorData.details || `Conversion failed with status: ${response.status}`;
-      } else {
-        const text = await response.text();
-        console.error('Received non-JSON response:', text);
-        errorMessage = `Conversion failed with status: ${response.status}. Received non-JSON response.`;
-      }
-      
-      throw new Error(errorMessage);
+      const errorText = await response.text();
+      throw new Error(`Conversion failed: ${errorText}`);
     }
 
     const result = await response.json();
-    
-    if (!result.text) {
-      throw new Error('No text content received from conversion');
-    }
-
-    console.log(`Successfully converted ${fileName}`);
     return NextResponse.json({ text: result.text });
-
-  } catch (error: unknown) {
-    console.error('Error in convert-from-storage:', error);
+  } catch (error) {
+    console.error("Error in convert-from-storage:", error);
     return NextResponse.json(
-      { 
-        error: true, 
-        details: isErrorWithMessage(error) ? error.message : 'Unknown error occurred',
-        text: null 
+      {
+        error: true,
+        details:
+          error instanceof Error ? error.message : "Unknown error occurred",
+        text: null,
       },
       { status: 500 }
     );
   }
-} 
+}
