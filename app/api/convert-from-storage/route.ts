@@ -87,90 +87,87 @@ async function streamFileFromStorage(filePath: string) {
   });
 }
 
-async function processFileInChunks(
-  stream: Readable,
+async function downloadEntireFile(filePath: string): Promise<Buffer> {
+  const file = adminStorage.bucket().file(filePath);
+  const [metadata] = await file.getMetadata();
+
+  // 50MB limit for Hobby plan
+  if (
+    metadata.size &&
+    typeof metadata.size === "number" &&
+    metadata.size > 50 * 1024 * 1024
+  ) {
+    throw new Error(
+      "File too large for current plan. Please upgrade for larger file support."
+    );
+  }
+
+  const [buffer] = await file.download();
+  return buffer;
+}
+
+async function processFile(
+  buffer: Buffer,
   fileType: string,
   fileName: string,
   baseUrl: string
 ): Promise<string> {
   const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
   let textContent = "";
-  let buffer = Buffer.alloc(0);
 
-  return new Promise((resolve, reject) => {
-    stream.on("data", async (chunk) => {
-      buffer = Buffer.concat([buffer, chunk]);
+  // For PPTX files, we need to send the entire file
+  if (
+    fileType ===
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ) {
+    const formData = new FormData();
+    const file = new Blob([buffer], { type: fileType });
+    formData.append("file", file, fileName);
 
-      // Process when buffer reaches chunk size
-      while (buffer.length >= CHUNK_SIZE) {
-        try {
-          const chunkBuffer = buffer.slice(0, CHUNK_SIZE);
-          buffer = buffer.slice(CHUNK_SIZE);
-
-          const formData = new FormData();
-          const file = new Blob([chunkBuffer], { type: fileType });
-          formData.append("file", file, fileName);
-          formData.append("isChunk", "true");
-
-          const converterEndpoint = getEndpointForFileType(fileType);
-          const response = await fetch(`${baseUrl}${converterEndpoint}`, {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(
-              `Chunk conversion failed: ${await response.text()}`
-            );
-          }
-
-          const result = await response.json();
-          if (result.text) {
-            textContent += result.text;
-          }
-        } catch (error) {
-          reject(error);
-        }
-      }
+    const converterEndpoint = getEndpointForFileType(fileType);
+    const response = await fetch(`${baseUrl}${converterEndpoint}`, {
+      method: "POST",
+      body: formData,
     });
 
-    stream.on("end", async () => {
-      // Process remaining buffer
-      if (buffer.length > 0) {
-        try {
-          const formData = new FormData();
-          const file = new Blob([buffer], { type: fileType });
-          formData.append("file", file, fileName);
-          formData.append("isChunk", "true");
-          formData.append("isFinal", "true");
+    if (!response.ok) {
+      throw new Error(`Conversion failed: ${await response.text()}`);
+    }
 
-          const converterEndpoint = getEndpointForFileType(fileType);
-          const response = await fetch(`${baseUrl}${converterEndpoint}`, {
-            method: "POST",
-            body: formData,
-          });
+    const result = await response.json();
+    return result.text || "";
+  }
 
-          if (!response.ok) {
-            throw new Error(
-              `Final chunk conversion failed: ${await response.text()}`
-            );
-          }
+  // For other file types, continue with chunked processing
+  for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
+    const chunk = buffer.slice(i, Math.min(i + CHUNK_SIZE, buffer.length));
+    const isLastChunk = i + CHUNK_SIZE >= buffer.length;
 
-          const result = await response.json();
-          if (result.text) {
-            textContent += result.text;
-          }
-        } catch (error) {
-          reject(error);
-        }
-      }
-      resolve(textContent);
+    const formData = new FormData();
+    const file = new Blob([chunk], { type: fileType });
+    formData.append("file", file, fileName);
+    formData.append("isChunk", "true");
+    if (isLastChunk) {
+      formData.append("isFinal", "true");
+    }
+
+    const converterEndpoint = getEndpointForFileType(fileType);
+    const response = await fetch(`${baseUrl}${converterEndpoint}`, {
+      method: "POST",
+      body: formData,
     });
 
-    stream.on("error", (error) => {
-      reject(error);
-    });
-  });
+    if (!response.ok) {
+      throw new Error(`Chunk conversion failed: ${await response.text()}`);
+    }
+
+    const result = await response.json();
+    if (result.text) {
+      textContent += result.text;
+    }
+  }
+
+  return textContent;
 }
 
 export async function POST(req: Request) {
@@ -201,13 +198,15 @@ export async function POST(req: Request) {
     console.log("Processing file:", { fileName, fileType });
 
     const filePath = decodeURIComponent(fileUrl.split("/o/")[1].split("?")[0]);
-    const stream = await streamFileFromStorage(filePath);
+    const buffer = await downloadEntireFile(filePath);
 
-    const converterEndpoint = getEndpointForFileType(fileType);
-    const baseUrl = await getBaseUrl(req); // Add await here
-    console.log("Using base URL:", baseUrl);
+    const headersList = await headers();
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const host =
+      headersList.get("host") || process.env.VERCEL_URL || "localhost:3000";
+    const baseUrl = `${protocol}://${host}`;
 
-    const text = await processFileInChunks(stream, fileType, fileName, baseUrl);
+    const text = await processFile(buffer, fileType, fileName, baseUrl);
 
     return NextResponse.json({ text });
   } catch (error) {
