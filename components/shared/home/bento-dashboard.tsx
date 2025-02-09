@@ -1046,7 +1046,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         open={!!showDeleteCardAlert}
         onOpenChange={() => setShowDeleteCardAlert(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1060,9 +1060,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 e.stopPropagation();
                 setShowDeleteCardAlert(null);
               }}
+              className="bg-white text-slate-600 rounded-full border border-slate-300 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </AlertDialogCancel>
+
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
@@ -1089,9 +1091,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   setShowDeleteCardAlert(null);
                 }
               }}
+              className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
             </AlertDialogAction>
+
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1100,7 +1104,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         open={!!showDeleteNotebookAlert}
         onOpenChange={() => setShowDeleteNotebookAlert(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1114,9 +1118,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 e.stopPropagation();
                 setShowDeleteNotebookAlert(null);
               }}
+              className="bg-white text-slate-600 rounded-full border border-slate-300 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </AlertDialogCancel>
+
+
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
@@ -1136,8 +1143,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   setShowDeleteNotebookAlert(null);
                 }
               }}
+              className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
+
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1147,7 +1156,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         open={!!showDeleteGuideAlert}
         onOpenChange={() => setShowDeleteGuideAlert(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1161,9 +1170,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 e.stopPropagation();
                 setShowDeleteGuideAlert(null);
               }}
+              className="bg-white text-slate-600 rounded-full border border-slate-300 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </AlertDialogCancel>
+
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
@@ -1183,10 +1194,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   setShowDeleteGuideAlert(null);
                 }
               }}
+              className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+
         </AlertDialogContent>
       </AlertDialog>
 
@@ -1194,7 +1207,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         open={!!showDeleteQuizAlert}
         onOpenChange={() => setShowDeleteQuizAlert(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1208,9 +1221,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 e.stopPropagation();
                 setShowDeleteQuizAlert(null);
               }}
+              className="bg-white text-slate-600 rounded-full border border-slate-300 hover:bg-slate-100 transition-colors"
             >
               Cancel
             </AlertDialogCancel>
+
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
@@ -1228,8 +1243,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   setShowDeleteQuizAlert(null);
                 }
               }}
+              className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
+
+
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
