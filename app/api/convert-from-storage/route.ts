@@ -46,7 +46,11 @@ export async function POST(req: Request) {
       console.log('File downloaded successfully, size:', fileBuffer.length);
 
       // Get the base URL for internal API calls
-      const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+      console.log('Using base URL:', baseUrl);
 
       // Create a FormData instance for the file
       const formData = new FormData();
@@ -75,17 +79,35 @@ export async function POST(req: Request) {
           throw new Error(`Unsupported file type: ${fileType}`);
       }
 
-      console.log(`Using conversion endpoint: ${endpoint} for file type: ${fileType}`);
+      const fullUrl = `${baseUrl}${endpoint}`;
+      console.log(`Making request to: ${fullUrl}`);
       
-      const response = await fetch(`${baseUrl}${endpoint}`, {
+      const response = await fetch(fullUrl, {
         method: 'POST',
         body: formData
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Conversion error:', errorData);
-        throw new Error(errorData.details || `Conversion failed with status: ${response.status}`);
+        const contentType = response.headers.get('content-type');
+        let errorMessage = '';
+        
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.details || `Conversion failed with status: ${response.status}`;
+        } else {
+          const text = await response.text();
+          console.error('Received non-JSON response:', text);
+          errorMessage = `Conversion failed with status: ${response.status}. Received non-JSON response.`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text();
+        console.error('Received non-JSON response:', text);
+        throw new Error('Received non-JSON response from conversion service');
       }
 
       const result = await response.json();
