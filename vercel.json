@@ -1,13 +1,13 @@
 {
   "functions": {
     "app/api/convert/image/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 50
     },
     "app/api/convert/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 50
     },
     "app/api/chat/route.ts": {
-      "maxDuration": 60
+      "maxDuration": 50
     }
   }
 }
