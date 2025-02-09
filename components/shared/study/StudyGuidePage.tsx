@@ -623,6 +623,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
           isGenerating={isGenerating}
           filesToUpload={filesToUpload}
           selectedPages={selectedPages}
+          setIsGenerating={setIsGenerating}
         />
       
         
