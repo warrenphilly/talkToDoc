@@ -81,9 +81,16 @@ export async function POST(req: Request) {
 
       const fullUrl = `${baseUrl}${endpoint}`;
       console.log(`Making request to: ${fullUrl}`);
+
+      // Get authorization header from incoming request
+      const authHeader = req.headers.get('authorization');
       
       const response = await fetch(fullUrl, {
         method: 'POST',
+        headers: {
+          ...(authHeader ? { 'authorization': authHeader } : {}),
+          'x-api-key': process.env.API_KEY || '',
+        },
         body: formData
       });
 
