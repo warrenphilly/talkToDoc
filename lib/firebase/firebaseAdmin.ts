@@ -2,6 +2,9 @@ import { getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
+// Increase max listeners to prevent warning
+require('events').EventEmitter.defaultMaxListeners = 15;
+
 function initializeFirebaseAdmin() {
   if (getApps().length === 0) {
     try {

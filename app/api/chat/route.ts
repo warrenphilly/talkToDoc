@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY as string,
+});
 
 interface Sentence {
   id: number;
   text: string;
+}
+
+interface Section {
+  title: string;
+  sentences: Sentence[];
+}
+
+interface ChunkResponse {
+  sections: Section[];
 }
 
 export async function POST(req: NextRequest) {
@@ -10,16 +24,14 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const message = data.message;
 
+    console.log("Processing message length:", message.length);
+
     // Define the expected structure for the response
     const functions = [
       {
         name: "generate_sections",
-        description:
-          "Generates a structured response with sections and cohesive sentences",
+        description: "Generates a structured response with sections and cohesive sentences",
         parameters: {
-
-
-
           type: "object",
           properties: {
             sections: {
@@ -49,120 +61,79 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    // Prepare messages for OpenAI API
-    const messages = [
-      {
-        role: "system",
-        content: `You are an Expert in all subjects. You have the ability to break down complex topics into simple, 
-        easy to understand explanations and find the best way to teach the user. You must ALWAYS respond with ONLY a JSON array of sentences. 
-        Ensure that each sentence is a complete thought and can be understood on its own, 
-        but also ensure that the sentences are related to the title of the section and all other sentences. You must simplify  the information and make it easy to understand but do not lose any information. When analyzing the text, do not focus on describing what the text is but analyze 
-         the content and break it down into sections and cohesive sentences. give the best explanation of the content possible.
-          Each section should contain a cohesive set of at least 7  sentences that are related to the title of the section. Prioritize the information of the text. keep explanation of the text as simple as possible in a way that is easy to understand.`,
-      },
-      {
-        role: "user",
-        content: [{ type: "text", text: message }],
-      },
-    ];
+    // Split long text into chunks
+    const MAX_CHUNK_LENGTH = 4000;
+    const textChunks: string[] = [];
+    
+    for (let i = 0; i < message.length; i += MAX_CHUNK_LENGTH) {
+      textChunks.push(message.slice(i, i + MAX_CHUNK_LENGTH));
+    }
 
-    // Send request to OpenAI
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        max_tokens: 9000,
-        temperature: 0.5,
-        functions,
-        function_call: { name: "generate_sections", strict: true },
-      }),
-    });
+    console.log(`Split message into ${textChunks.length} chunks`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
+    let allSections: Section[] = [];
+
+    // Process each chunk
+    for (const chunk of textChunks) {
+      const messages = [
         {
-          error: true,
-          details: errorText || "Service unavailable",
+          role: "system" as const,
+          content: `You are an Expert Document Analyzer. Analyze the following content and break it down into clear sections with at least 7 related sentences per section. Focus on the main points and key information.`,
         },
-        { status: response.status },
-      );
-    }
+        {
+          role: "user" as const,
+          content: chunk,
+        },
+      ];
 
-    const responseData = await response.json();
+      console.log("Processing chunk of length:", chunk.length);
 
-    // Handle response
-    const choices = responseData.choices;
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages,
+        temperature: 0.7,
+        max_tokens: 1500,
+        functions,
+        function_call: { name: "generate_sections" },
+      });
 
-    if (!choices || !Array.isArray(choices) || choices.length === 0) {
-      console.error(
-        "Invalid OpenAI response structure:",
-        JSON.stringify(responseData, null, 2)
-      );
-      throw new Error("Invalid API response structure");
-    }
-
-    const functionCall = choices[0]?.message?.function_call;
-    const messageContent = functionCall ? functionCall.arguments : null;
-
-    if (!messageContent) {
-      console.error(
-        "Invalid OpenAI response structure:",
-        JSON.stringify(responseData, null, 2)
-      );
-      throw new Error("Invalid API response structure");
-    }
-
-    try {
-      const finalResponse = JSON.parse(messageContent);
-      console.log("Parsed response:", finalResponse);
-
-      if (!Array.isArray(finalResponse.sections) || finalResponse.sections.length === 0) {
-        throw new Error("Response is not an array of sections");
+      const functionCall = response.choices[0]?.message?.function_call;
+      
+      if (!functionCall?.arguments) {
+        console.error("No function call arguments in response");
+        continue;
       }
 
-      // Return only the first section
-      return NextResponse.json({
-        replies: [finalResponse.sections[0]],
-      });
-    } catch (parseError) {
-      console.error("Parsing error:", parseError);
-      return NextResponse.json({
-        replies: [
-          {
-            title: "Error",
-            sentences: [
-              {
-                id: 1,
-                text: "Failed to parse the AI response.",
-              },
-            ],
-          },
-        ],
-      });
+      try {
+        const chunkResponse = JSON.parse(functionCall.arguments) as ChunkResponse;
+        if (chunkResponse.sections) {
+          allSections = [...allSections, ...chunkResponse.sections];
+        }
+      } catch (parseError) {
+        console.error("Error parsing chunk response:", parseError);
+      }
     }
+
+    console.log(`Generated ${allSections.length} total sections`);
+
+    if (allSections.length === 0) {
+      throw new Error("No sections were generated from the content");
+    }
+
+    return NextResponse.json({
+      replies: allSections,
+    });
+
   } catch (error) {
     console.error("Server error:", error);
-    return NextResponse.json(
-      {
-        replies: [
-          {
-            title: "Error",
-            sentences: [
-              {
-                id: 1,
-                text: "An error occurred while processing your request.",
-              },
-            ],
-          },
-        ],
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      replies: [{
+        title: "Error",
+        sentences: [{
+          id: 1,
+          text: error instanceof Error ? error.message : "An unexpected error occurred"
+        }]
+      }]
+    }, { status: 500 });
   }
 }

@@ -3,6 +3,8 @@ import { clsx, type ClassValue } from "clsx";
 import fs from "fs";
 import path from "path";
 import { twMerge } from "tailwind-merge";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "@/firebase";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,267 +23,262 @@ export const sendMessage = async (
   notebookId: string,
   pageId: string
 ) => {
-  if (!input.trim() && files.length === 0) return;
-
-  const formData = new FormData();
-  formData.append("message", input);
+  if (!input.trim() && files.length === 0) {
+    console.warn("No input text or files provided");
+    return;
+  }
 
   const textSections = [];
-  let markdownFilename: string | null = null;
   let allText = '';
   let messages: Message[] = [];
 
-  // Create file details array with UUIDs instead of URLs
+  // Validate file sizes before processing
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+  if (oversizedFiles.length > 0) {
+    const errorMessage: Message = {
+      user: "AI",
+      text: [{
+        title: "Error",
+        sentences: [{
+          id: 1,
+          text: `Files exceeding 10MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`,
+        }],
+      }],
+    };
+    setMessages(prev => [...prev, errorMessage]);
+    return;
+  }
+
+  // Add user message first
   const fileDetails = files.map(file => ({
     id: crypto.randomUUID(),
     name: file.name
   }));
 
-  // Add user message first
   const userMessage: Message = {
     user: "User",
     text: input,
-    files: fileDetails.map(fd => fd.id), // Use the UUIDs
+    files: fileDetails.map(fd => fd.id),
     fileDetails: fileDetails
   };
   messages.push(userMessage);
   setMessages((prevMessages) => [...prevMessages, userMessage]);
 
-  // Process all files through the convert endpoint
-  for (const file of files) {
-    const fileFormData = new FormData();
-    fileFormData.append("file", file);
-
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      
-    try {
-      console.log("Converting file:", file.name, "Type:", file.type);
-      
-      const response = await fetch(`${baseUrl}/api/convert`, {
-        method: "POST",
-        body: fileFormData,
-      });
-
-      const data = await response.json();
-      console.log("Conversion response:", data);
-
-      if (!response.ok || data.error) {
-        throw new Error(data.details || "File conversion failed");
-      }
-      
-      if (data.text) {
-        console.log("Received text content, length:", data.text.length);
-        allText += data.text + '\n\n';
+  try {
+    // Process files first
+    for (const file of files) {
+      try {
+        // Validate file type
+        const allowedTypes = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'image/jpeg',
+          'image/png',
+          'image/gif'
+        ];
         
-        // Split into sections for processing
-        const SECTION_LENGTH = 500;
-        for (let i = 0; i < data.text.length; i += SECTION_LENGTH) {
-          const section = data.text.slice(i, i + SECTION_LENGTH);
-          textSections.push(section);
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error(`Unsupported file type: ${file.type}. Supported types are PDF, Word, PowerPoint, and images.`);
         }
-      } else {
-        throw new Error("No text content received from conversion");
-      }
-    } catch (error) {
-      console.error("File conversion error:", error);
-      const errorMessage: Message = {
-        user: "AI",
-        text: [
-          {
-            title: "Error",
-            sentences: [
-              {
-                id: 1,
-                text: error instanceof Error ? error.message : "Failed to convert file. Please try again.",
-              },
-            ],
-          },
-        ],
-      };
-      messages.push(errorMessage);
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
-      continue; // Continue with next file instead of returning
-    }
-  }
 
-  // Save markdown only if we have content
-  if (allText.trim()) {
-    try {
-      console.log("Saving markdown content, length:", allText.length);
-      const initResponse = await fetch("/api/save-markdown", {
+        console.log(`Processing file: ${file.name} (${file.type}), size: ${file.size} bytes`);
+
+        // Upload to Firebase Storage
+        const fileName = `${crypto.randomUUID()}_${file.name}`;
+        const storageRef = ref(storage, `uploads/${fileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        // Monitor upload progress with detailed logging
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            const state = snapshot.state;
+            console.log(`Upload state: ${state}, Progress: ${progress.toFixed(2)}%`);
+            setProgress(progress);
+          },
+          (error) => {
+            console.error("Upload error:", {
+              code: error.code,
+              message: error.message,
+              serverResponse: error.serverResponse
+            });
+            throw new Error(`Upload failed: ${error.message}`);
+          }
+        );
+
+        // Wait for upload to complete
+        try {
+          await new Promise((resolve, reject) => {
+            uploadTask.then(resolve).catch(reject);
+          });
+          console.log(`Upload completed successfully for ${file.name}`);
+        } catch (uploadError) {
+          throw new Error(`Upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+
+        // Get the download URL
+        let downloadURL: string;
+        try {
+          downloadURL = await getDownloadURL(storageRef);
+          console.log("Download URL obtained:", downloadURL);
+        } catch (urlError) {
+          throw new Error(`Failed to get download URL: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
+        }
+
+        const response = await fetch('/api/convert-from-storage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileUrl: downloadURL,
+            fileName: file.name,
+            fileType: file.type,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to convert file');
+        }
+
+        const data = await response.json();
+        
+        if (data.text) {
+          allText += data.text + '\n\n';
+          console.log("Received converted text, length:", data.text.length);
+
+          try {
+            console.log("Saving markdown content...");
+            const initResponse = await fetch("/api/save-markdown", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ 
+                text: allText,
+                createNew: true,
+                notebookId,
+                pageId
+              }),
+            });
+
+            if (!initResponse.ok) {
+              throw new Error("Failed to save markdown content");
+            }
+
+            const responseData = await initResponse.json();
+            console.log("Markdown save response:", responseData);
+
+            // Now send to chat API
+            console.log("Sending to chat API...");
+            const chatResponse = await fetch("/api/chat", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                message: allText,
+                markdownPath: responseData.path,
+                notebookId,
+                pageId
+              }),
+            });
+
+            if (!chatResponse.ok) {
+              const errorData = await chatResponse.json();
+              console.error("Chat API error:", errorData);
+              throw new Error('Failed to process text with chat API');
+            }
+
+            const chatData = await chatResponse.json();
+            console.log("Chat API response:", chatData);
+
+            if (chatData.replies) {
+              const aiMessage: Message = {
+                user: "AI",
+                text: chatData.replies,
+              };
+              messages.push(aiMessage);
+              setMessages((prevMessages) => [...prevMessages, aiMessage]);
+            } else {
+              console.error("No replies in chat response:", chatData);
+            }
+
+          } catch (error) {
+            console.error("Error in markdown/chat processing:", error);
+            throw error;
+          }
+        } else {
+          console.warn("No text content in conversion response");
+        }
+      } catch (error) {
+        console.error("Error processing file:", error);
+        const errorMessage: Message = {
+          user: "AI",
+          text: [{
+            title: "Error",
+            sentences: [{
+              id: 1,
+              text: error instanceof Error ? error.message : "Failed to process file",
+            }],
+          }],
+        };
+        messages.push(errorMessage);
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      }
+    }
+
+    // Process text input if any
+    if (input.trim()) {
+      const chatResponse = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          text: allText, // Changed from section to text to match the API
-          createNew: true,
-          notebookId,
-          pageId
+        body: JSON.stringify({
+          message: input,
         }),
       });
 
-      if (!initResponse.ok) {
-        throw new Error("Failed to save markdown file");
+      if (!chatResponse.ok) {
+        throw new Error('Failed to process message');
       }
 
-      const responseData = await initResponse.json();
-      console.log("Markdown save response:", responseData);
+      const chatData = await chatResponse.json();
       
-      markdownFilename = responseData.path;
-    } catch (error) {
-      console.error("Error saving markdown file:", error);
-    }
-  }
-
-  // Process sections only if we have content
-  if (textSections.length > 0) {
-    setProgress(0);
-    setIsProcessing(true);
-    setTotalSections(textSections.length);
-
-    //send message logic begins here
-    const maxRetries = 3;
-
-    console.log(" totaltextSections", textSections.length);
-
-    // Process each text section
-    for (let i = 0; i < textSections.length; i++) {
-      const section = textSections[i];
-      let attempt = 0;
-      let success = false;
-
-      while (attempt < maxRetries && !success) {
-        try {
-          const response = await fetch("/api/chat", {
-            method: "POST",
-            body: JSON.stringify({ message: section }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          const data = await response.json();
-          console.log("Raw API response for section:", data);
-
-          let parsedResponse;
-
-          try {
-            if (!data.replies) {
-              throw new Error("No replies in response");
-            }
-
-            parsedResponse =
-              typeof data.replies === "string"
-                ? JSON.parse(data.replies)
-                : data.replies;
-
-            console.log("Parsed response:", parsedResponse); // Debug log
-
-            if (!Array.isArray(parsedResponse)) {
-              throw new Error("Response is not an array");
-            }
-
-            // Iterate over each set of sections
-            parsedResponse.forEach((section) => {
-              console.log("Section received:", section); // Log the section for debugging
-
-              if (
-                typeof section.title !== "string" ||
-                !Array.isArray(section.sentences)
-              ) {
-                console.error("Invalid section structure:", section);
-                throw new Error("Invalid section structure");
-              }
-
-              const validSentences = section.sentences.every(
-                (sentence: Sentence) => {
-                  console.log("Checking sentence:", sentence); // Log each sentence
-
-                  if (
-                    typeof sentence.id !== "number" ||
-                    typeof sentence.text !== "string"
-                  ) {
-                    console.error("Invalid sentence structure:", sentence);
-                    return false;
-                  }
-                  return true;
-                }
-              );
-
-              if (!validSentences) {
-                console.error("Invalid sentences found");
-                throw new Error("Invalid sentence structure");
-              }
-
-              // Send the section as a separate message
-              const aiMessage = {
-                user: "AI",
-                text: [section],
-              };
-
-              messages.push(aiMessage);
-              setMessages((prevMessages) => [...prevMessages, aiMessage]);
-            });
-
-            success = true;
-            setProgress(i + 1); // Update progress after successful processing
-          } catch (parseError) {
-            console.error("Parsing error:", parseError);
-            attempt++;
-            if (attempt >= maxRetries) {
-              const fallbackResponse = [
-                {
-                  title: "Error",
-                  sentences: [
-                    {
-                      id: 1,
-                      text: "Sorry, there was an error processing the response. Please try again.",
-                    },
-                  ],
-                },
-              ];
-
-              const fallbackMessage: Message = {
-                user: "AI",
-                text: fallbackResponse,
-              };
-              messages.push(fallbackMessage);
-              setMessages((prevMessages) => [...prevMessages, fallbackMessage]);
-              setShowUpload(false);
-            }
-          }
-        } catch (error) {
-          console.error("Network error:", error);
-          const errorResponse = [
-            {
-              title: "Error",
-              sentences: [
-                {
-                  id: 1,
-                  text: "Sorry, there was a network error. Please try again.",
-                },
-              ],
-            },
-          ];
-
-          const errorMessage: Message = {
-            user: "AI",
-            text: errorResponse,
-          };
-          messages.push(errorMessage);
-          setMessages((prevMessages) => [...prevMessages, errorMessage]);
-          break;
-        }
+      if (chatData.replies) {
+        const aiMessage: Message = {
+          user: "AI",
+          text: chatData.replies,
+        };
+        messages.push(aiMessage);
+        setMessages((prevMessages) => [...prevMessages, aiMessage]);
       }
     }
 
-    // Reset processing state when done
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    const errorMessage: Message = {
+      user: "AI",
+      text: [{
+        title: "Error",
+        sentences: [{
+          id: 1,
+          text: error instanceof Error ? error.message : "An error occurred",
+        }],
+      }],
+    };
+    messages.push(errorMessage);
+    setMessages((prevMessages) => [...prevMessages, errorMessage]);
+  } finally {
+    setProgress(0);
     setIsProcessing(false);
-  } else {
-    setIsProcessing(false);
+    setShowUpload(false);
+    setFiles([]);
+    setInput('');
   }
 };
 
