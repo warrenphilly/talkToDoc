@@ -889,6 +889,7 @@ export default function StudyGuideComponent({
                 isGenerating={isGenerating}
                 filesToUpload={filesToUpload}
                 selectedPages={selectedPages}
+                setIsGenerating={setIsGenerating}
               />
             )}
 
