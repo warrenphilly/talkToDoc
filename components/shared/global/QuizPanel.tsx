@@ -642,7 +642,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           setFiles={setFiles}
           fileInputRef={fileInputRef}
           isGenerating={isGenerating}
-          handleGenerateQuiz={handleGenerateQuiz}
+          setIsGenerating={setIsGenerating}
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
