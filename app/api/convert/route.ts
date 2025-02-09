@@ -65,62 +65,86 @@ export const config = {
 };
 
 export async function POST(req: NextRequest) {
-  if (req.headers.get('content-length') && 
-      parseInt(req.headers.get('content-length')!) > 10 * 1024 * 1024) {
-    return NextResponse.json(
-      { error: "File too large dude!", details: "Maximum file size is 10MB" },
-      { status: 413 }
-    );
-  }
-
   try {
-    // Set the max body size header
-    const headers = new Headers();
-    headers.set('max-body-size', '10mb');
-
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const totalChunks = formData.get("totalChunks");
+    const chunkIndex = formData.get("chunkIndex");
     const fileType = file.type;
 
     let text = '';
     const uniqueId = uuidv4();
     const markdownPath = `converted/${uniqueId}.md`;
 
-    let endpoint = '';
+    // Handle chunked processing
+    if (totalChunks && chunkIndex) {
+      // Store chunk temporarily
+      const tempPath = `temp/${uniqueId}_chunk${chunkIndex}`;
+      const bucket = adminStorage.bucket();
+      const tempFile = bucket.file(tempPath);
+      
+      const arrayBuffer = await file.arrayBuffer();
+      await tempFile.save(Buffer.from(arrayBuffer));
 
-    // Determine the appropriate conversion endpoint based on file type
-    if (fileType === "application/msword" || 
-        fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      endpoint = '/api/convert/docx';
-    }
-    else if (fileType === "application/pdf") {
-      endpoint = '/api/convert/pdf';
-    }
-    else if (fileType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
-      endpoint = '/api/convert/pptx';
-    }
-    else if (fileType.startsWith("image/")) {
-      endpoint = '/api/convert/image';
-    }
-    else {
-      throw new Error(`Unsupported file type: ${fileType}`);
+      // If this is the last chunk, combine all chunks and process
+      if (Number(chunkIndex) === Number(totalChunks) - 1) {
+        const chunks = [];
+        for (let i = 0; i < Number(totalChunks); i++) {
+          const chunkPath = `temp/${uniqueId}_chunk${i}`;
+          const chunkFile = bucket.file(chunkPath);
+          const [chunkData] = await chunkFile.download();
+          chunks.push(chunkData);
+          await chunkFile.delete(); // Clean up temp file
+        }
+
+        // Combine chunks
+        const completeBuffer = Buffer.concat(chunks);
+        
+        // Create new FormData with complete file
+        const completeFormData = new FormData();
+        const completeFile = new Blob([completeBuffer], { type: fileType });
+        completeFormData.append('file', completeFile, file.name);
+
+        // Process the complete file
+        const endpoint = getEndpointForFileType(fileType);
+        const response = await fetch(`${req.nextUrl.origin}${endpoint}`, {
+          method: 'POST',
+          body: completeFormData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.details || 'Conversion failed');
+        }
+
+        const result = await response.json();
+        text = result.text;
+      } else {
+        // Return success for intermediate chunks
+        return NextResponse.json({
+          success: true,
+          isChunk: true,
+          chunkIndex
+        });
+      }
+    } else {
+      // Process single file as before
+      const endpoint = getEndpointForFileType(fileType);
+      const response = await fetch(`${req.nextUrl.origin}${endpoint}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Conversion failed');
+      }
+
+      const result = await response.json();
+      text = result.text;
     }
 
-    // Forward request to the appropriate conversion route
-    const response = await fetch(`${req.nextUrl.origin}${endpoint}`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.details || 'Conversion failed');
-    }
-
-    const result = await response.json();
-    text = result.text;
-
-    // Save the converted text to Firebase Storage
+    // Save the converted text
     const bucket = adminStorage.bucket();
     const markdownFile = bucket.file(markdownPath);
     await markdownFile.save(text, {
@@ -131,7 +155,6 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Return both the path and the converted text
     return NextResponse.json({
       success: true,
       path: markdownPath,
@@ -143,11 +166,25 @@ export async function POST(req: NextRequest) {
     const error = err as Error;
     console.error("Conversion error:", error);
     return NextResponse.json(
-      { 
-        error: "Failed to convert file",
-        details: error.message || "Unknown error occurred"
-      },
+      { error: "Failed to convert file", details: error.message },
       { status: 500 }
     );
   }
+}
+
+function getEndpointForFileType(fileType: string): string {
+  if (fileType === "application/msword" || 
+      fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return '/api/convert/docx';
+  }
+  else if (fileType === "application/pdf") {
+    return '/api/convert/pdf';
+  }
+  else if (fileType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") {
+    return '/api/convert/pptx';
+  }
+  else if (fileType.startsWith("image/")) {
+    return '/api/convert/image';
+  }
+  throw new Error(`Unsupported file type: ${fileType}`);
 }
