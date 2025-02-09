@@ -989,7 +989,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           setFiles={setFiles}
           fileInputRef={fileInputRef as MutableRefObject<HTMLInputElement>}
           isGenerating={isGenerating}
-          handleGenerateQuiz={handleGenerateQuiz}
+          setIsGenerating={setIsGenerating}
+       
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
@@ -1017,6 +1018,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         isGenerating={isGenerating}
         selectedPages={selectedPages}
         filesToUpload={filesToUpload}
+        setIsGenerating={setIsGenerating}
       />
 
       {showStudyGuideModal && (
@@ -1039,6 +1041,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           isGenerating={isGeneratingGuide}
           filesToUpload={studyGuideFiles}
           selectedPages={selectedPages}
+          setIsGenerating={setIsGenerating}
         />
       )}
 
