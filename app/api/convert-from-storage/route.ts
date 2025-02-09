@@ -53,8 +53,8 @@ function getEndpointForFileType(fileType: string): string {
 async function getBaseUrl(req: Request): Promise<string> {
   // Try to get the host from headers first
   const headersList = await headers();
-  const host = headersList.get("host");
-  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const host = headersList.get('host');
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
 
   if (host) {
     return `${protocol}://${host}`;
@@ -62,13 +62,13 @@ async function getBaseUrl(req: Request): Promise<string> {
 
   // Fallback to environment variable
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
   }
 
   // Final fallback for development
-  return process.env.NODE_ENV === "production"
-    ? "https://" + process.env.VERCEL_URL
-    : "http://localhost:3000";
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://' + process.env.VERCEL_URL 
+    : 'http://localhost:3000';
 }
 
 async function streamFileFromStorage(filePath: string) {
@@ -199,10 +199,9 @@ export async function POST(req: Request) {
     const filePath = decodeURIComponent(fileUrl.split("/o/")[1].split("?")[0]);
     const stream = await streamFileFromStorage(filePath);
     
-    const headersList = await headers();
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = headersList.get('host') || process.env.VERCEL_URL || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
+    const converterEndpoint = getEndpointForFileType(fileType);
+    const baseUrl = await getBaseUrl(req);  // Add await here
+    console.log("Using base URL:", baseUrl);
 
     const text = await processFileInChunks(stream, fileType, fileName, baseUrl);
 
