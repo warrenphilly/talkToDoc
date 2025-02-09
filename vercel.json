@@ -1,20 +1,22 @@
 {
   "functions": {
-    "app/api/convert/image/route.ts": {
-      "maxDuration": 50
+    "app/api/convert/*/route.ts": {
+      "maxDuration": 60
     },
     "app/api/convert-from-storage/route.ts": {
-      "maxDuration": 50
-    },
-    "app/api/convert/route.ts": {
-      "maxDuration": 50
+      "maxDuration": 60
     },
     "app/api/chat/route.ts": {
-      "maxDuration": 50
+      "maxDuration": 60
     },
     "app/api/convert/pptx/route.ts": {
-      "maxDuration": 50
+      "maxDuration": 60
+    },
+    "app/api/convert/image/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/convert/pdf/route.ts": {
+      "maxDuration": 60
     }
-
   }
 }

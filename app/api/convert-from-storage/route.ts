@@ -6,7 +6,7 @@ import { Readable } from "stream";
 // Add these export configurations
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 60; // 5 minutes
 
 interface ErrorWithMessage {
   message: string;
