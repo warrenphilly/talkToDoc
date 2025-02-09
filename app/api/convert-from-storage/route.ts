@@ -1,7 +1,12 @@
 import { adminStorage } from "@/lib/firebase/firebaseAdmin";
+import JSZip from "jszip";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { Readable } from "stream";
+import { promisify } from "util";
+import { parseString } from "xml2js";
+
+const parseXMLAsync = promisify(parseString);
 
 // Add these export configurations
 export const runtime = "nodejs";
@@ -106,39 +111,105 @@ async function downloadEntireFile(filePath: string): Promise<Buffer> {
   return buffer;
 }
 
+interface TextRun {
+  t: [string];
+}
+
+interface Paragraph {
+  r: TextRun[];
+}
+
+interface TextBody {
+  a?: Paragraph[];
+  p?: Paragraph[];
+}
+
+interface Shape {
+  txBody?: TextBody[];
+}
+
+interface SlideTree {
+  sp?: Shape[];
+}
+
+interface SlideContent {
+  p: {
+    sld: [
+      {
+        cSld: [
+          {
+            spTree: [SlideTree];
+          }
+        ];
+      }
+    ];
+  };
+}
+
+async function processPPTX(buffer: Buffer): Promise<string> {
+  const zip = new JSZip();
+  let allText = "";
+
+  const zipContent = await zip.loadAsync(buffer);
+
+  for (const fileName of Object.keys(zipContent.files)) {
+    if (fileName.startsWith("ppt/slides/slide") && fileName.endsWith(".xml")) {
+      const slideXml = await zipContent.files[fileName].async("text");
+      const slideContent = (await parseXMLAsync(slideXml)) as SlideContent;
+
+      const shapes = slideContent?.p?.sld?.[0]?.cSld?.[0]?.spTree?.[0]?.sp;
+      if (shapes) {
+        for (const shape of shapes) {
+          if (shape.txBody) {
+            for (const textBody of shape.txBody) {
+              if (textBody.p) {
+                for (const para of textBody.p) {
+                  for (const run of para.r) {
+                    if (run.t) {
+                      allText += run.t[0] + " ";
+                    }
+                  }
+                  allText += "\n";
+                }
+              }
+              if (textBody.a) {
+                for (const para of textBody.a) {
+                  for (const run of para.r) {
+                    if (run.t) {
+                      allText += run.t[0] + " ";
+                    }
+                  }
+                  allText += "\n";
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return allText.trim();
+}
+
 async function processFile(
   buffer: Buffer,
   fileType: string,
   fileName: string,
   baseUrl: string
 ): Promise<string> {
-  const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
-  let textContent = "";
-
-  // For PPTX files, we need to send the entire file
+  // Handle PPTX files directly
   if (
     fileType ===
     "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   ) {
-    const formData = new FormData();
-    const file = new Blob([buffer], { type: fileType });
-    formData.append("file", file, fileName);
-
-    const converterEndpoint = getEndpointForFileType(fileType);
-    const response = await fetch(`${baseUrl}${converterEndpoint}`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Conversion failed: ${await response.text()}`);
-    }
-
-    const result = await response.json();
-    return result.text || "";
+    return processPPTX(buffer);
   }
 
-  // For other file types, continue with chunked processing
+  // For other file types, use chunked processing
+  const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+  let textContent = "";
+
   for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
     const chunk = buffer.slice(i, Math.min(i + CHUNK_SIZE, buffer.length));
     const isLastChunk = i + CHUNK_SIZE >= buffer.length;
