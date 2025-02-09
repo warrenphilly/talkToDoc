@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { Readable } from "stream";
 import { promisify } from "util";
 import { parseString } from "xml2js";
-import { DOMParser } from 'xmldom';
+import { DOMParser } from "xmldom";
 
 const parseXMLAsync = promisify(parseString);
 
@@ -113,10 +113,10 @@ async function downloadEntireFile(filePath: string): Promise<Buffer> {
 }
 
 function getTextFromNodes(node: any, tagName: string, namespaceURI: string) {
-  let text = '';
+  let text = "";
   const textNodes = node.getElementsByTagNameNS(namespaceURI, tagName);
   for (let i = 0; i < textNodes.length; i++) {
-    text += textNodes[i].textContent + ' ';
+    text += textNodes[i].textContent + " ";
   }
   return text.trim();
 }
@@ -124,34 +124,36 @@ function getTextFromNodes(node: any, tagName: string, namespaceURI: string) {
 async function processPPTX(buffer: Buffer): Promise<string> {
   const zip = new JSZip();
   await zip.loadAsync(buffer);
-  
+
   const aNamespace = "http://schemas.openxmlformats.org/drawingml/2006/main";
-  let text = '';
-  
+  let text = "";
+
   let slideIndex = 1;
   while (true) {
     const slideFile = zip.file(`ppt/slides/slide${slideIndex}.xml`);
-    
+
     if (!slideFile) break;
-    
-    const slideXmlStr = await slideFile.async('text');
-    
+
+    const slideXmlStr = await slideFile.async("text");
+
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(slideXmlStr, 'application/xml');
-    
+    const xmlDoc = parser.parseFromString(slideXmlStr, "application/xml");
+
     const slideText = getTextFromNodes(xmlDoc, "t", aNamespace);
     if (slideText.trim()) {
       text += `Slide ${slideIndex}:\n${slideText}\n\n`;
     }
-    
+
     slideIndex++;
   }
 
   if (!text.trim()) {
-    throw new Error('No text content extracted from PPTX');
+    throw new Error("No text content extracted from PPTX");
   }
 
-  console.log(`Successfully extracted text from PPTX (${slideIndex - 1} slides)`);
+  console.log(
+    `Successfully extracted text from PPTX (${slideIndex - 1} slides)`
+  );
   return text.trim();
 }
 
@@ -202,7 +204,7 @@ async function processFile(
   }
 
   if (!textContent.trim()) {
-    throw new Error('No text content received from conversion');
+    throw new Error("No text content received from conversion");
   }
 
   return textContent;
@@ -247,7 +249,7 @@ export async function POST(req: Request) {
     const text = await processFile(buffer, fileType, fileName, baseUrl);
 
     if (!text.trim()) {
-      throw new Error('No text content extracted from file');
+      throw new Error("No text content extracted from file");
     }
 
     return NextResponse.json({ text });
