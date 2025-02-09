@@ -34,9 +34,10 @@ export async function POST(req: Request) {
       });
       console.log('File downloaded successfully');
 
-    } catch (downloadError) {
+    } catch (downloadError: unknown) {
       console.error('Error downloading file:', downloadError);
-      throw new Error(`Failed to download file: ${downloadError instanceof Error ? downloadError.message : 'Unknown error'}`);
+      const errorMessage = downloadError instanceof Error ? downloadError.message : 'Unknown error';
+      throw new Error(`Failed to download file: ${errorMessage}`);
     }
 
     // Get the base URL for internal API calls
