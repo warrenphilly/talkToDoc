@@ -31,6 +31,15 @@ export async function POST(req: Request) {
   try {
     const { fileUrl, fileName, fileType } = await req.json();
     
+    // Add debug logging for authorization
+    const authHeader = req.headers.get('authorization');
+    const apiKey = process.env.API_KEY;
+    console.log('Auth debug:', {
+      hasAuthHeader: !!authHeader,
+      hasApiKey: !!apiKey,
+      environment: process.env.NODE_ENV
+    });
+
     if (!fileUrl || !fileName || !fileType) {
       throw new Error('Missing required parameters');
     }
@@ -82,19 +91,31 @@ export async function POST(req: Request) {
       const fullUrl = `${baseUrl}${endpoint}`;
       console.log(`Making request to: ${fullUrl}`);
 
-      // Get authorization header from incoming request
-      const authHeader = req.headers.get('authorization');
-      
+      // Construct headers with more explicit checks
+      const headers: Record<string, string> = {};
+      if (authHeader) {
+        headers['authorization'] = authHeader;
+      }
+      if (apiKey) {
+        headers['x-api-key'] = apiKey;
+      } else {
+        console.error('API_KEY environment variable is not set');
+        throw new Error('API key configuration is missing');
+      }
+
       const response = await fetch(fullUrl, {
         method: 'POST',
-        headers: {
-          ...(authHeader ? { 'authorization': authHeader } : {}),
-          'x-api-key': process.env.API_KEY || '',
-        },
+        headers,
         body: formData
       });
 
       if (!response.ok) {
+        console.error('Conversion failed with:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        
         const contentType = response.headers.get('content-type');
         let errorMessage = '';
         
