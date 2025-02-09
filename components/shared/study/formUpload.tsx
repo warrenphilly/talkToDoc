@@ -1,125 +1,151 @@
-import { Button } from "@/components/ui/button";
-import { UploadOutlined } from "@ant-design/icons";
-import { LucideFileText, LucideUpload, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Message } from "@/lib/types";
-import { Separator } from "@/components/ui/separator";
+"use client";
 
-interface UploadAreaProps {
-  messages: Message[];
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Message } from "@/lib/types";
+import { storage } from "@/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { FileText, Loader2, RefreshCw, Trash2, Upload } from "lucide-react";
+import React, { useCallback, useState } from "react";
+import { toast } from "react-hot-toast";
+
+interface FormUploadProps {
   files: File[];
-  fileInputRef: React.RefObject<HTMLInputElement>;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSendMessage: () => void;
   handleClear: () => void;
-  className?: string;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  messages: Message[];
+  handleSendMessage: () => void;
   showUpload: boolean;
   setShowUpload: (show: boolean) => void;
 }
 
-const FormUpload = ({
-  messages,
+export default function FormUpload({
   files,
-  fileInputRef,
   handleFileUpload,
-  handleSendMessage,
   handleClear,
+  fileInputRef,
+  messages,
+  handleSendMessage,
   showUpload,
   setShowUpload,
-}: UploadAreaProps) => {
-  const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
+}: FormUploadProps) {
+  const [isConverting, setIsConverting] = useState(false);
+  const [convertedFiles, setConvertedFiles] = useState<string[]>([]);
 
-  useEffect(() => {
-    setFilesToUpload([...filesToUpload, ...files]);
-  }, [files]);
+  const handleConvertFile = useCallback(async (file: File) => {
+    try {
+      setIsConverting(true);
+      
+      // Upload to Firebase Storage
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const path = `uploads/${timestamp}_${sanitizedFileName}`;
+      
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
+      // Convert using the new endpoint
+      const response = await fetch('/api/convert-from-storage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileUrl: url,
+          fileName: file.name,
+          fileType: file.type
+        }),
+      });
 
-  const handleRemoveFile = (index: number) => {
-    setFilesToUpload(prev => prev.filter((_, i) => i !== index));
-  };
+      if (!response.ok) {
+        throw new Error(`Failed to convert file: ${file.name}`);
+      }
 
-  const renderFilePreview = (file: File) => {
-    const fileType = file.type;
-    const isImage = fileType.startsWith('image/');
-
-    if (isImage) {
-      return (
-        <img
-          src={URL.createObjectURL(file)}
-          alt={file.name}
-          className="w-12 h-12 object-cover rounded"
-        />
-      );
+      const data = await response.json();
+      if (data.text) {
+        setConvertedFiles(prev => [...prev, file.name]);
+        toast.success(`Converted ${file.name} successfully`);
+      } else {
+        toast.error(`No text content extracted from ${file.name}`);
+      }
+    } catch (error) {
+      console.error("Error converting file:", error);
+      toast.error(`Failed to convert ${file.name}`);
+    } finally {
+      setIsConverting(false);
     }
-
-    return <LucideFileText className="w-12 h-12 text-slate-600" />;
-  };
+  }, []);
 
   return (
-    <div className="flex flex-col gap-2 items-center justify-center rounded-2xl w-full">
-      <div className="bg-white flex flex-col gap-2 items-start justify-center rounded-2xl w-full h-fit p-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Upload your files (optional)
-        </label>
-        
-        <div className="w-full space-y-4">
-          {/* Upload Button */}
-          <div className="flex items-center gap-2">
-            <input
-              type="file"
-              multiple
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              className="hidden"
-              accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
-            />
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg"
-              disabled={isUploading}
-            >
-              <UploadOutlined />
-              Upload Files ({filesToUpload.length})
-            </Button>
-          </div>
-
-          {/* File List */}
-          {filesToUpload.length > 0 && (
-            <div className="border border-slate-400 rounded-lg p-4 space-y-3">
-              <p className="text-sm text-slate-600 font-semibold">Uploaded Files</p>
-              <div className="space-y-2">
-                {filesToUpload.map((file, index) => (
-                  <div 
+    <div className="w-full space-y-2">
+      <Card className="w-full">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Files
+                </Button>
+                <input
+                  type="file"
+                  onChange={handleFileUpload}
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  accept=".pdf,.doc,.docx,.txt,.pptx"
+                  multiple
+                />
+              </div>
+              {files.length > 0 && (
+                <Button
+                  onClick={handleClear}
+                  variant="outline"
+                  className="bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500 rounded-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear All
+                </Button>
+              )}
+            </div>
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {files.map((file, index) => (
+                  <div
                     key={index}
-                    className="flex items-center justify-between bg-slate-50 p-2 rounded-lg"
+                    className="flex items-center justify-between p-2 border rounded-lg"
                   >
-                    <div className="flex items-center gap-3">
-                      {renderFilePreview(file)}
-                      <div>
-                        <p className="text-sm font-medium text-slate-700">{file.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-slate-600" />
+                      <span className="text-sm text-slate-600">{file.name}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFile(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!convertedFiles.includes(file.name) && (
+                      <Button
+                        onClick={() => handleConvertFile(file)}
+                        disabled={isConverting}
+                        className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+                      >
+                        {isConverting ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Convert"
+                        )}
+                      </Button>
+                    )}
+                    {convertedFiles.includes(file.name) && (
+                      <span className="text-[#94b347] text-sm">Converted ✓</span>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default FormUpload;
+}
