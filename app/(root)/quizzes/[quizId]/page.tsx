@@ -430,7 +430,7 @@ export default function QuizPage() {
             fileInputRef as unknown as React.RefObject<HTMLInputElement>
           }
           isGenerating={isGenerating}
-          handleGenerateQuiz={handleGenerateQuiz}
+          setIsGenerating={setIsGenerating}
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
