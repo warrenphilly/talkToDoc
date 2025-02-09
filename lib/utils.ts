@@ -28,47 +28,15 @@ export const sendMessage = async (
     return;
   }
 
-  const textSections = [];
   let allText = '';
   let messages: Message[] = [];
-
-  // Validate file sizes before processing
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
-  if (oversizedFiles.length > 0) {
-    const errorMessage: Message = {
-      user: "AI",
-      text: [{
-        title: "Error",
-        sentences: [{
-          id: 1,
-          text: `Files exceeding 10MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`,
-        }],
-      }],
-    };
-    setMessages(prev => [...prev, errorMessage]);
-    return;
-  }
-
-  // Add user message first
-  const fileDetails = files.map(file => ({
-    id: crypto.randomUUID(),
-    name: file.name
-  }));
-
-  const userMessage: Message = {
-    user: "User",
-    text: input,
-    files: fileDetails.map(fd => fd.id),
-    fileDetails: fileDetails
-  };
-  messages.push(userMessage);
-  setMessages((prevMessages) => [...prevMessages, userMessage]);
 
   try {
     // Process files first
     for (const file of files) {
       try {
+        console.log(`Starting to process file: ${file.name} (${file.type})`);
+
         // Validate file type
         const allowedTypes = [
           'application/pdf',
@@ -81,53 +49,46 @@ export const sendMessage = async (
         ];
         
         if (!allowedTypes.includes(file.type)) {
-          throw new Error(`Unsupported file type: ${file.type}. Supported types are PDF, Word, PowerPoint, and images.`);
+          throw new Error(`Unsupported file type: ${file.type}`);
         }
-
-        console.log(`Processing file: ${file.name} (${file.type}), size: ${file.size} bytes`);
 
         // Upload to Firebase Storage
         const fileName = `${crypto.randomUUID()}_${file.name}`;
         const storageRef = ref(storage, `uploads/${fileName}`);
+        
+        console.log('Starting file upload to Firebase...');
+        
         const uploadTask = uploadBytesResumable(storageRef, file);
+        await new Promise((resolve, reject) => {
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log(`Upload progress: ${progress.toFixed(2)}%`);
+              setProgress(progress);
+            },
+            (error) => {
+              console.error('Upload error:', error);
+              reject(error);
+            },
+            () => {
+              console.log('Upload completed successfully');
+              resolve(uploadTask);
+            }
+          );
+        });
 
-        // Monitor upload progress with detailed logging
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            const state = snapshot.state;
-            console.log(`Upload state: ${state}, Progress: ${progress.toFixed(2)}%`);
-            setProgress(progress);
-          },
-          (error) => {
-            console.error("Upload error:", {
-              code: error.code,
-              message: error.message,
-              serverResponse: error.serverResponse
-            });
-            throw new Error(`Upload failed: ${error.message}`);
-          }
-        );
-
-        // Wait for upload to complete
-        try {
-          await new Promise((resolve, reject) => {
-            uploadTask.then(resolve).catch(reject);
-          });
-          console.log(`Upload completed successfully for ${file.name}`);
-        } catch (uploadError) {
-          throw new Error(`Upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
-        }
-
-        // Get the download URL
+        // Get download URL
         let downloadURL: string;
         try {
           downloadURL = await getDownloadURL(storageRef);
-          console.log("Download URL obtained:", downloadURL);
+          console.log('Got download URL:', downloadURL);
         } catch (urlError) {
-          throw new Error(`Failed to get download URL: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
+          console.error('Error getting download URL:', urlError);
+          throw new Error('Failed to get download URL');
         }
 
+        // Convert file
+        console.log('Sending to conversion service...');
         const response = await fetch('/api/convert-from-storage', {
           method: 'POST',
           headers: {
@@ -141,81 +102,88 @@ export const sendMessage = async (
         });
 
         if (!response.ok) {
-          throw new Error('Failed to convert file');
+          const errorData = await response.json();
+          console.error('Conversion service error:', errorData);
+          throw new Error(errorData.details || 'Failed to convert file');
         }
 
         const data = await response.json();
         
-        if (data.text) {
-          allText += data.text + '\n\n';
-          console.log("Received converted text, length:", data.text.length);
-
-          try {
-            console.log("Saving markdown content...");
-            const initResponse = await fetch("/api/save-markdown", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ 
-                text: allText,
-                createNew: true,
-                notebookId,
-                pageId
-              }),
-            });
-
-            if (!initResponse.ok) {
-              throw new Error("Failed to save markdown content");
-            }
-
-            const responseData = await initResponse.json();
-            console.log("Markdown save response:", responseData);
-
-            // Now send to chat API
-            console.log("Sending to chat API...");
-            const chatResponse = await fetch("/api/chat", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                message: allText,
-                markdownPath: responseData.path,
-                notebookId,
-                pageId
-              }),
-            });
-
-            if (!chatResponse.ok) {
-              const errorData = await chatResponse.json();
-              console.error("Chat API error:", errorData);
-              throw new Error('Failed to process text with chat API');
-            }
-
-            const chatData = await chatResponse.json();
-            console.log("Chat API response:", chatData);
-
-            if (chatData.replies) {
-              const aiMessage: Message = {
-                user: "AI",
-                text: chatData.replies,
-              };
-              messages.push(aiMessage);
-              setMessages((prevMessages) => [...prevMessages, aiMessage]);
-            } else {
-              console.error("No replies in chat response:", chatData);
-            }
-
-          } catch (error) {
-            console.error("Error in markdown/chat processing:", error);
-            throw error;
-          }
-        } else {
-          console.warn("No text content in conversion response");
+        if (!data.text) {
+          console.error('No text content in conversion response:', data);
+          throw new Error('No text content received from conversion');
         }
+
+        allText += data.text + '\n\n';
+        console.log('Conversion successful, text length:', data.text.length);
+
+        // Save markdown content
+        try {
+          console.log('Saving markdown content...');
+          const initResponse = await fetch("/api/save-markdown", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
+              text: allText,
+              createNew: true,
+              notebookId,
+              pageId
+            }),
+          });
+
+          if (!initResponse.ok) {
+            const errorData = await initResponse.json();
+            console.error('Markdown save error:', errorData);
+            throw new Error('Failed to save markdown content');
+          }
+
+          const responseData = await initResponse.json();
+          console.log('Markdown saved successfully:', responseData);
+
+          // Process with chat API
+          const chatResponse = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              message: allText,
+              markdownPath: responseData.path,
+              notebookId,
+              pageId
+            }),
+          });
+
+          if (!chatResponse.ok) {
+            const errorData = await chatResponse.json();
+            console.error('Chat API error:', errorData);
+            throw new Error('Failed to process with chat API');
+          }
+
+          const chatData = await chatResponse.json();
+          console.log('Chat API response received');
+
+          if (chatData.replies) {
+            const aiMessage: Message = {
+              user: "AI",
+              text: chatData.replies,
+            };
+            messages.push(aiMessage);
+            setMessages((prevMessages) => [...prevMessages, aiMessage]);
+          } else {
+            console.error('No replies in chat response:', chatData);
+            throw new Error('No replies received from chat API');
+          }
+
+        } catch (error) {
+          console.error('Error in markdown/chat processing:', error);
+          throw error;
+        }
+
       } catch (error) {
-        console.error("Error processing file:", error);
+        console.error('Error processing file:', error);
         const errorMessage: Message = {
           user: "AI",
           text: [{
@@ -231,36 +199,8 @@ export const sendMessage = async (
       }
     }
 
-    // Process text input if any
-    if (input.trim()) {
-      const chatResponse = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: input,
-        }),
-      });
-
-      if (!chatResponse.ok) {
-        throw new Error('Failed to process message');
-      }
-
-      const chatData = await chatResponse.json();
-      
-      if (chatData.replies) {
-        const aiMessage: Message = {
-          user: "AI",
-          text: chatData.replies,
-        };
-        messages.push(aiMessage);
-        setMessages((prevMessages) => [...prevMessages, aiMessage]);
-      }
-    }
-
   } catch (error) {
-    console.error("Error in sendMessage:", error);
+    console.error('Error in sendMessage:', error);
     const errorMessage: Message = {
       user: "AI",
       text: [{
