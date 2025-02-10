@@ -373,7 +373,7 @@ export const deleteNotebook = async (notebookId: string) => {
   try {
     const userId = await getCurrentUserId();
     if (!userId) throw new Error("User not authenticated");
-    
+
     // Delete the notebook document first
     await deleteDoc(doc(db, "notebooks", notebookId));
 
@@ -381,38 +381,52 @@ export const deleteNotebook = async (notebookId: string) => {
     try {
       const userDoc = await getUserById(userId);
       if (userDoc && userDoc.notebooks) {
-        const updatedNotebooks = userDoc.notebooks.filter(id => id !== notebookId);
+        const updatedNotebooks = userDoc.notebooks.filter(
+          (id) => id !== notebookId
+        );
         await updateDoc(doc(db, "users", userId), {
           notebooks: updatedNotebooks,
           updatedAt: serverTimestamp(),
         });
       }
     } catch (error) {
-      console.warn("Could not update user document, but notebook was deleted:", error);
+      console.warn(
+        "Could not update user document, but notebook was deleted:",
+        error
+      );
     }
 
     // Delete all associated study card sets
     const studyCardSetsRef = collection(db, "studyCardSets");
-    const studyCardSetsQuery = query(studyCardSetsRef, where("notebookId", "==", notebookId));
+    const studyCardSetsQuery = query(
+      studyCardSetsRef,
+      where("notebookId", "==", notebookId)
+    );
     const studyCardSets = await getDocs(studyCardSetsQuery);
-    
+
     // Use Promise.all to ensure all deletions complete
-    await Promise.all(studyCardSets.docs.map(doc => deleteDoc(doc.ref)));
+    await Promise.all(studyCardSets.docs.map((doc) => deleteDoc(doc.ref)));
 
     // Delete all associated quizzes
     const quizzesRef = collection(db, "quizzes");
-    const quizzesQuery = query(quizzesRef, where("notebookId", "==", notebookId));
+    const quizzesQuery = query(
+      quizzesRef,
+      where("notebookId", "==", notebookId)
+    );
     const quizzes = await getDocs(quizzesQuery);
-    
+
     // Use Promise.all to ensure all deletions complete
-    await Promise.all(quizzes.docs.map(doc => deleteDoc(doc.ref)));
+    await Promise.all(quizzes.docs.map((doc) => deleteDoc(doc.ref)));
   } catch (error) {
     console.error("Error deleting notebook:", error);
     throw error;
   }
 };
 
-export const deletePage = async (notebookId: string, pageId: string): Promise<{ newPageId: string; isNewPage: boolean }> => {
+export const deletePage = async (
+  notebookId: string,
+  pageId: string
+): Promise<{ newPageId: string; isNewPage: boolean }> => {
   try {
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
@@ -422,7 +436,7 @@ export const deletePage = async (notebookId: string, pageId: string): Promise<{ 
     }
 
     const notebook = notebookSnap.data() as Notebook;
-    
+
     // Create a new array without the deleted page
     const updatedPages = notebook.pages.filter((page) => page.id !== pageId);
 
@@ -447,16 +461,23 @@ export const deletePage = async (notebookId: string, pageId: string): Promise<{ 
     }
 
     // Update the notebook document with the new pages array
-    await setDoc(notebookRef, {
-      ...notebook,
-      pages: updatedPages,
-    }, { merge: true });
+    await setDoc(
+      notebookRef,
+      {
+        ...notebook,
+        pages: updatedPages,
+      },
+      { merge: true }
+    );
 
     // Delete associated study card sets
     const studyCardSetsRef = collection(db, "studyCardSets");
-    const studyCardSetsQuery = query(studyCardSetsRef, where("pageId", "==", pageId));
+    const studyCardSetsQuery = query(
+      studyCardSetsRef,
+      where("pageId", "==", pageId)
+    );
     const studyCardSets = await getDocs(studyCardSetsQuery);
-    
+
     for (const doc of studyCardSets.docs) {
       await deleteDoc(doc.ref);
     }
@@ -465,7 +486,7 @@ export const deletePage = async (notebookId: string, pageId: string): Promise<{ 
     const quizzesRef = collection(db, "quizzes");
     const quizzesQuery = query(quizzesRef, where("pageId", "==", pageId));
     const quizzes = await getDocs(quizzesQuery);
-    
+
     for (const doc of quizzes.docs) {
       await deleteDoc(doc.ref);
     }
@@ -503,14 +524,18 @@ export const togglePageOpenState = async (
     const updatedPages = [...notebook.pages];
     updatedPages[pageIndex] = {
       ...updatedPages[pageIndex],
-      isOpen: isOpen
+      isOpen: isOpen,
     };
 
     // Update the notebook document with the new pages array
-    await setDoc(notebookRef, {
-      ...notebook,
-      pages: updatedPages,
-    }, { merge: true });
+    await setDoc(
+      notebookRef,
+      {
+        ...notebook,
+        pages: updatedPages,
+      },
+      { merge: true }
+    );
   } catch (error) {
     console.error("Error toggling page state:", error);
     throw error;
@@ -1046,7 +1071,8 @@ export const saveStudyGuide = async (
     }
 
     // Ensure content is a valid string
-    const sanitizedContent = typeof content === 'string' ? content : JSON.stringify(content);
+    const sanitizedContent =
+      typeof content === "string" ? content : JSON.stringify(content);
 
     const notebookRef = doc(db, "notebooks", notebookId);
     const notebookSnap = await getDoc(notebookRef);
@@ -1068,7 +1094,11 @@ export const saveStudyGuide = async (
   } catch (error) {
     console.error("Error saving study guide:", error);
     // Add more context to the error
-    throw new Error(`Failed to save study guide: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to save study guide: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 };
 
@@ -1090,11 +1120,15 @@ export const getStudyGuide = async (
 
     return {
       content: page.studyGuide.content,
-      updatedAt: page.studyGuide.updatedAt
+      updatedAt: page.studyGuide.updatedAt,
     };
   } catch (error) {
     console.error("Error getting study guide:", error);
-    throw new Error(`Failed to get study guide: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to get study guide: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 };
 
@@ -1116,15 +1150,15 @@ export const saveStudyCardSet = async (
   try {
     const studyCardSetId = `studycards_${crypto.randomUUID()}`;
     const timestamp = serverTimestamp();
-    
-    const studyCardSetRef = doc(db, 'studyCardSets', studyCardSetId);
-    
+
+    const studyCardSetRef = doc(db, "studyCardSets", studyCardSetId);
+
     const studyCardSetData = {
       id: studyCardSetId,
       cards,
       metadata,
-      notebookId: notebookId || '',
-      pageId: pageId || '',
+      notebookId: notebookId || "",
+      pageId: pageId || "",
       createdAt: timestamp,
       updatedAt: timestamp,
       userId: userId,
@@ -1134,7 +1168,7 @@ export const saveStudyCardSet = async (
 
     return studyCardSetId;
   } catch (error) {
-    console.error('Error saving study card set:', error);
+    console.error("Error saving study card set:", error);
     throw error;
   }
 };
@@ -1258,7 +1292,9 @@ export const deleteStudyCardSet = async (
       const pageIndex = notebook.pages.findIndex((p) => p.id === pageId);
 
       if (pageIndex === -1) {
-        console.warn("Page not found in notebook, but study card set was deleted");
+        console.warn(
+          "Page not found in notebook, but study card set was deleted"
+        );
         return;
       }
 
@@ -1294,23 +1330,33 @@ export const updateStudyGuideTitle = async (
   }
 };
 
-export async function saveQuiz(
-  quiz: QuizState,
-  metadata: any,
-  uploadedDocs: { path: string; name: string }[],
-  clerkId: string
-): Promise<void> {
-  await addDoc(collection(db, "quizzes"), {
-    ...quiz,
-    userId: clerkId,
-    metadata: {
-      ...metadata,
-      notebookId: quiz.notebookId,
-      pageId: quiz.pageId,
-    },
-    uploadedDocs,
-  });
-}
+export const saveQuiz = async (
+  quiz: any,
+  metadata: {
+    selectedPages: { [notebookId: string]: string[] };
+    questionTypes: string[];
+  },
+  files: Array<{ path: string; name: string }>,
+  userId: string
+) => {
+  try {
+    const quizRef = doc(db, "quizzes", quiz.id);
+
+    // Convert timestamp objects to Firestore Timestamps
+    const firestoreQuiz = {
+      ...quiz,
+      startedAt: Timestamp.fromMillis(quiz.startedAt.seconds * 1000),
+      lastUpdatedAt: Timestamp.fromMillis(quiz.lastUpdatedAt.seconds * 1000),
+      createdAt: Timestamp.fromMillis(quiz.createdAt.seconds * 1000),
+    };
+
+    await setDoc(quizRef, firestoreQuiz);
+    return quiz.id;
+  } catch (error) {
+    console.error("Error saving quiz:", error);
+    throw error;
+  }
+};
 
 export const getQuizzesByFirestoreUserId = async (
   userId: string

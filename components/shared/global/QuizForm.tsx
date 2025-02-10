@@ -16,10 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, RefreshCw } from "lucide-react";
-import React, { MutableRefObject } from "react";
-import FormUpload from "../study/formUpload";
 import { uploadLargeFile } from "@/lib/fileUpload";
+import { saveQuiz } from "@/lib/firebase/firestore";
+import { QuizState } from "@/types/quiz";
+import { Loader2, RefreshCw } from "lucide-react";
+import React, { MutableRefObject, useState } from "react";
+import FormUpload from "../study/formUpload";
 
 interface QuizFormProps {
   quizName: string;
@@ -46,6 +48,7 @@ interface QuizFormProps {
   setShowQuizForm: (show: boolean) => void;
   renderNotebookList: () => React.ReactNode;
   selectedPages: { [notebookId: string]: string[] };
+  user: any;
 }
 
 const QuizForm = ({
@@ -63,21 +66,30 @@ const QuizForm = ({
   setShowQuizForm,
   renderNotebookList,
   selectedPages = {},
+  user,
 }: QuizFormProps) => {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const handleGenerateQuiz = async () => {
     if (!quizName.trim()) return;
+    if (!user) {
+      setUploadError("User not authenticated");
+      return;
+    }
+    setUploadError(null);
 
     try {
       setIsGenerating(true);
-      
+
       // Process uploaded files first
       const processedFiles = [];
       for (const file of files) {
         try {
-          // Upload to Firebase Storage using chunked upload
           const downloadURL = await uploadLargeFile(file);
-          
-          // Convert file using the convert-from-storage endpoint
+          if (!downloadURL) {
+            throw new Error("File upload failed");
+          }
+
           const response = await fetch("/api/convert-from-storage", {
             method: "POST",
             headers: {
@@ -91,46 +103,109 @@ const QuizForm = ({
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to convert file: ${file.name}`);
+            const errorData = await response.json();
+            throw new Error(
+              errorData.message || `Failed to convert file: ${file.name}`
+            );
           }
 
           const data = await response.json();
           processedFiles.push({
             name: file.name,
-            content: data.text,
-            url: downloadURL
+            text: data.text,
+            path: downloadURL,
           });
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
-          throw error;
+          setUploadError(`Failed to process ${file.name}. Please try again.`);
+          return;
         }
       }
 
-      // Continue with quiz generation using processed files
-      const response = await fetch("/api/generate-quiz", {
+      // Create the message object with actual user ID
+      const message = {
+        userId: user.id,
+        quizName,
+        numberOfQuestions,
+        questionTypes: Object.entries(selectedQuestionTypes)
+          .filter(([_, selected]) => selected)
+          .map(([type]) => type),
+        selectedPages,
+        uploadedDocs: processedFiles,
+        format: "json",
+      };
+
+      // Create FormData and append the message
+      const formData = new FormData();
+      formData.append("message", JSON.stringify(message));
+
+      // Send quiz generation request
+      const response = await fetch("/api/quiz", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quizName,
-          numberOfQuestions,
-          questionTypes: selectedQuestionTypes,
-          processedFiles,
-          selectedPages,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate quiz");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to generate quiz");
       }
 
-      // Handle successful quiz generation
-      setShowQuizForm(false);
+      const quizData = await response.json();
 
+      // Get current timestamp as milliseconds
+      const now = Date.now();
+      const timestamp = {
+        seconds: Math.floor(now / 1000),
+        nanoseconds: (now % 1000) * 1000000,
+        toLocaleDateString: () => new Date(now).toLocaleDateString(),
+      };
+
+      // Create a new QuizState object with serialized timestamps
+      const newQuiz: QuizState = {
+        id: crypto.randomUUID(),
+        notebookId: Object.keys(selectedPages)[0] || "",
+        pageId: Object.values(selectedPages)[0]?.[0] || "",
+        quizData: {
+          title: quizName,
+          questions: quizData.quiz.questions,
+        },
+        currentQuestionIndex: 0,
+        userAnswers: {},
+        evaluationResults: {},
+        score: 0,
+        totalQuestions: quizData.quiz.questions.length,
+        startedAt: timestamp,
+        lastUpdatedAt: timestamp,
+        createdAt: timestamp,
+        isComplete: false,
+        incorrectAnswers: [],
+        userId: user.id,
+        title: quizName,
+      };
+
+      // Convert the quiz object to a plain object
+      const plainQuiz = JSON.parse(JSON.stringify(newQuiz));
+
+      // Save the quiz to Firestore
+      await saveQuiz(
+        plainQuiz,
+        {
+          selectedPages,
+          questionTypes: message.questionTypes,
+        },
+        processedFiles.map((file) => ({
+          path: file.path,
+          name: file.name,
+        })),
+        user.id
+      );
+
+      setShowQuizForm(false);
     } catch (error) {
       console.error("Error generating quiz:", error);
-      throw error;
+      setUploadError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -228,6 +303,12 @@ const QuizForm = ({
           />
           {renderNotebookList()}
         </div>
+
+        {uploadError && (
+          <div className="mt-2 p-2 text-sm text-red-600 bg-red-50 rounded-md">
+            {uploadError}
+          </div>
+        )}
 
         <div className="flex justify-end space-x-2 mt-5">
           <div className="flex flex-row justify-between items-center w-full">
