@@ -990,10 +990,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           fileInputRef={fileInputRef as MutableRefObject<HTMLInputElement>}
           isGenerating={isGenerating}
           setIsGenerating={setIsGenerating}
-       
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
+          user={user}
         />
       )}
 
@@ -1098,7 +1098,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             >
               Delete
             </AlertDialogAction>
-
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1126,7 +1125,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               Cancel
             </AlertDialogCancel>
 
-
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
@@ -1149,7 +1147,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
-
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1202,7 +1199,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-
         </AlertDialogContent>
       </AlertDialog>
 
@@ -1249,8 +1245,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
               className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
             >
               Delete
-
-
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
