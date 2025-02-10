@@ -16,13 +16,12 @@ interface StudyGuideSection {
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const messageStr = formData.get("message") as string;
-    if (!messageStr) {
-      throw new Error("No message provided");
-    }
+    const body = await req.json();
+    const { selectedPages, guideName, uploadedDocs } = body;
 
-    const { selectedPages, guideName, uploadedDocs } = JSON.parse(messageStr);
+    if (!guideName) {
+      throw new Error("No guide name provided");
+    }
 
     // Initialize content collection
     let allContent = "";
@@ -33,18 +32,11 @@ export async function POST(req: NextRequest) {
       
       for (const doc of uploadedDocs) {
         try {
-          const cleanPath = doc.path.replace(/^gs:\/\/[^\/]+\//, "");
-          const bucket = adminStorage.bucket();
-          const file = bucket.file(cleanPath);
-
-          const [exists] = await file.exists();
-          if (!exists) continue;
-
-          const [content] = await file.download();
-          const contentStr = content.toString();
-          allContent += `\n\nDocument: ${doc.name}\n${cleanMarkdownContent(contentStr)}`;
+          if (doc.content) {
+            allContent += `\n\nDocument: ${doc.name}\n${cleanMarkdownContent(doc.content)}`;
+          }
         } catch (error) {
-          console.error(`Error fetching uploaded file ${doc.path}:`, error);
+          console.error(`Error processing document ${doc.name}:`, error);
         }
       }
     }
@@ -167,10 +159,4 @@ The response should follow this format:
       { status: 500 }
     );
   }
-}
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}; 
+} 

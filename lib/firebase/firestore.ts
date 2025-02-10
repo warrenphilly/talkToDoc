@@ -1514,3 +1514,33 @@ export const updateStudyCardSetTitle = async (
     throw error;
   }
 };
+
+// Add this new function to save study guides to a separate collection
+export const saveGeneratedStudyGuide = async (
+  studyGuide: StudyGuide,
+  userId: string
+) => {
+  try {
+    console.log('Starting to save study guide:', { studyGuide, userId });
+    
+    const studyGuideRef = doc(db, "studyGuides", studyGuide.id);
+    
+    // Convert dates to Firestore Timestamp
+    const studyGuideData = {
+      ...studyGuide,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      userId
+    };
+
+    console.log('Saving study guide data:', studyGuideData);
+    
+    await setDoc(studyGuideRef, studyGuideData);
+    console.log('Study guide saved successfully');
+    
+    return studyGuide.id;
+  } catch (error) {
+    console.error("Error saving generated study guide:", error);
+    throw error;
+  }
+};

@@ -48,82 +48,12 @@ export default function CreateCardModal({
   setShowUpload,
   setFiles,
   renderNotebookList,
-  
+  handleGenerateCards,
   isGenerating,
   selectedPages,
   filesToUpload,
   setIsGenerating,
 }: CreateCardModalProps) {
-  const handleGenerateCards = async () => {
-    if (!setName.trim()) return;
-
-    try {
-      setIsGenerating(true);
-
-      // Process uploaded files
-      const processedFiles = [];
-      for (const file of filesToUpload) {
-        try {
-          const downloadURL = await uploadLargeFile(file);
-          
-          const response = await fetch("/api/convert-from-storage", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              fileUrl: downloadURL,
-              fileName: file.name,
-              fileType: file.type,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to convert file: ${file.name}`);
-          }
-
-          const data = await response.json();
-          processedFiles.push({
-            name: file.name,
-            content: data.text,
-            url: downloadURL
-          });
-        } catch (error) {
-          console.error(`Error processing file ${file.name}:`, error);
-          throw error;
-        }
-      }
-
-      // Generate study cards with processed files
-      const response = await fetch("/api/generate-cards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          setName,
-          numCards,
-          processedFiles,
-          selectedPages,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate study cards");
-      }
-
-      setShowNotebookModal(false);
-      setSetName("");
-      setFiles([]);
-
-    } catch (error) {
-      console.error("Error generating study cards:", error);
-      throw error;
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
     <>
       {showNotebookModal && (

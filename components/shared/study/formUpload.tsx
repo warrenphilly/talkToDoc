@@ -67,8 +67,8 @@ export default function FormUpload({
 
   return (
     <div className="w-full space-y-2">
-      <Card className="w-full">
-        <CardContent className="p-4">
+      <Card className="w-full bg-white shadow-none border-none">
+        <CardContent className="p-4 bg-white shadow-none border-none">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

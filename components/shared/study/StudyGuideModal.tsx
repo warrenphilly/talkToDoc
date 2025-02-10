@@ -5,6 +5,10 @@ import { Message } from "@/lib/types";
 import { BookOpen, RefreshCw } from "lucide-react";
 import React, { RefObject } from "react";
 import { uploadLargeFile } from "@/lib/fileUpload";
+import { saveGeneratedStudyGuide } from "@/lib/firebase/firestore";
+import { useUser } from "@clerk/nextjs";
+import { StudyGuide, StudyGuideSection } from "@/types/studyGuide";
+import { toast } from "react-hot-toast";
 
 import FormUpload from "./formUpload";
 
@@ -47,6 +51,8 @@ export default function StudyGuideModal({
   selectedPages,
   setIsGenerating,
 }: StudyGuideModalProps) {
+  const { user } = useUser();
+
   const handleGenerateGuide = async () => {
     if (!guideName.trim()) return;
 
@@ -78,8 +84,8 @@ export default function StudyGuideModal({
           const data = await response.json();
           processedFiles.push({
             name: file.name,
-            content: data.text,
-            url: downloadURL
+            path: downloadURL,
+            content: data.text
           });
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
@@ -87,27 +93,65 @@ export default function StudyGuideModal({
         }
       }
 
-      // Generate study guide with processed files
-      const response = await fetch("/api/generate-guide", {
+      // Create the request body
+      const requestBody = {
+        selectedPages,
+        guideName,
+        uploadedDocs: processedFiles
+      };
+
+      console.log('Sending request to generate study guide:', requestBody);
+
+      const response = await fetch("/api/studyguide", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          guideName,
-          processedFiles,
-          selectedPages,
-        }),
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate study guide");
+        const errorData = await response.json();
+        console.error('Study Guide API Error Response:', errorData);
+        throw new Error(errorData.details || "Failed to generate study guide");
+      }
+
+      const result = await response.json();
+      console.log('Received study guide result:', result);
+
+      if (!result.content) {
+        throw new Error("No content received from study guide generation");
+      }
+      
+      // Create a properly formatted study guide object without pageId
+      const newStudyGuide: StudyGuide = {
+        id: `guide_${crypto.randomUUID()}`,
+        title: guideName,
+        content: result.content,
+        createdAt: new Date(),
+        userId: user?.id || ""
+      };
+
+      // Save to Firestore
+      if (user?.id) {
+        try {
+          await saveGeneratedStudyGuide(newStudyGuide as StudyGuide, user.id);
+          console.log('Successfully saved study guide to database');
+          toast.success('Study guide created successfully!');
+        } catch (error) {
+          console.error('Error saving study guide to database:', error);
+          toast.error('Failed to save study guide to database');
+          throw error;
+        }
+      } else {
+        throw new Error("No user ID available");
       }
 
       onClose();
 
     } catch (error) {
-      console.error("Error generating study guide:", error);
+      console.error("Error in handleGenerateGuide:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to generate study guide");
       throw error;
     } finally {
       setIsGenerating(false);

@@ -16,8 +16,6 @@ export interface StudyGuide {
   id: string;
   title: string;
   content: StudyGuideSection[];
-  notebookId: string;
-  pageId: string;
   createdAt: Date;
   userId: string;
 }

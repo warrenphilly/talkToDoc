@@ -646,6 +646,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
+          user={user}
         />
       )}
 

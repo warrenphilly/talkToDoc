@@ -66,6 +66,7 @@ import { StudyGuideCard } from "./StudyGuideCard";
 import StudyGuideModal from "./StudyGuideModal";
 import { toast } from "react-hot-toast";
 import { User } from "@/types/users";
+import {  StudyGuideSection } from "@/types/studyGuide";
 
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
@@ -76,18 +77,12 @@ export interface StudyGuideSubtopic {
   studyTips?: string[];
 }
 
-export interface StudyGuideSection {
-  topic: string;
-  subtopics: StudyGuideSubtopic[];
-  show: boolean;
-}
-
 export interface StudyGuide {
   id: string;
   title: string;
   content: StudyGuideSection[];
  
-  pageId: string;
+  
   createdAt: Date;
   userId: string;
 }
@@ -695,7 +690,7 @@ export default function StudyGuideComponent({
         title: guideName,
         content: data.content, // This will be an array of sections with title, text, and show properties
       
-        pageId,
+   
         createdAt: new Date(),
         userId: userId || "",
       };
@@ -737,23 +732,20 @@ export default function StudyGuideComponent({
       let querySnapshot;
 
       try {
-        // Try the ordered query first
+        // Try to use the compound query
         const q = query(
           studyGuidesRef,
           where("userId", "==", userId),
           orderBy("createdAt", "desc")
-
         );
         querySnapshot = await getDocs(q);
       } catch (error) {
-        console.warn("Falling back to unordered query while index builds");
         // Fallback to unordered query if index doesn't exist
         const q = query(
           studyGuidesRef,
           where("userId", "==", userId),
         );
         querySnapshot = await getDocs(q);
-
       }
 
       const guides = querySnapshot.docs.map((doc) => {
@@ -762,10 +754,7 @@ export default function StudyGuideComponent({
           id: doc.id,
           title: data.title,
           content: data.content,
-          notebookId: data.notebookId,
-          pageId: data.pageId,
           createdAt: data.createdAt?.toDate?.() || new Date(),
-          updatedAt: data.updatedAt?.toDate?.() || new Date(),
           userId: data.userId || "",
         } as StudyGuide;
       });
