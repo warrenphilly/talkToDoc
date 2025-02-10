@@ -199,8 +199,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
         id: newStudyGuideId,
         title: guideName,
         content: data.content,
-        pageId: pageIdToUse,
-        notebookId: notebookIdToUse,
+  
         createdAt: new Date(),
         userId: user?.id || "",
       };
@@ -334,8 +333,8 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
               id: studyGuideSnap.id,
               title: data.title,
               content: data.content,
-              notebookId: data.notebookId || "", // Add notebookId with empty string fallback
-              pageId: data.pageId || "",
+      // Add notebookId with empty string fallback
+ 
               createdAt: createdAtDate,
               userId: data.userId || "",
             });
