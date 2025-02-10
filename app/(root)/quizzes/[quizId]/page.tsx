@@ -434,6 +434,7 @@ export default function QuizPage() {
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
+          user={user}
         />
       )}
 

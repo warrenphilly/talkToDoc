@@ -37,8 +37,8 @@ export default function StudyGuidePage() {
               id: studyGuideSnap.id,
               title: data.title,
               content: data.content,
-              notebookId: data.notebookId,
-              pageId: data.pageId,
+          
+    
               createdAt: createdAtDate, // Now properly typed as Date
               userId: data.userId || "",
             });
