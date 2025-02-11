@@ -1030,9 +1030,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           files={studyGuideFiles}
           handleFileUpload={handleStudyGuideFileUpload}
           handleClear={() => setStudyGuideFiles([])}
-          fileInputRef={
-            studyGuideFileInputRef as MutableRefObject<HTMLInputElement>
-          }
+          fileInputRef={studyGuideFileInputRef as MutableRefObject<HTMLInputElement>}
           messages={messages}
           handleSendMessage={() => {}}
           showUpload={showUpload}
@@ -1043,7 +1041,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           isGenerating={isGeneratingGuide}
           filesToUpload={studyGuideFiles}
           selectedPages={selectedPages}
-          setIsGenerating={setIsGenerating}
+          setIsGenerating={setIsGeneratingGuide}
         />
       )}
 
