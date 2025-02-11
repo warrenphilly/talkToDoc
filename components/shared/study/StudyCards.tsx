@@ -142,7 +142,7 @@ export default function StudyCards({
       setFilesToUpload,
       setFiles,
       setMessages,
-      loadCardsetsWrapper,
+  
       clerkUserId
     );
   };

@@ -397,7 +397,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         setFilesToUpload,
         setFiles,
         setMessages,
+     
         user.id
+
       );
       
       await refreshStudyCards();

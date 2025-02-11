@@ -243,7 +243,7 @@ export const handleGenerateCards = async (
   setFilesToUpload: (files: File[]) => void,
   setFiles: (files: File[]) => void,
   setMessages: (messages: any[]) => void,
-  loadCardsetsWrapper: () => Promise<void>,
+ 
   // loadCardSets: () => Promise<void>,
   
   userId: string
