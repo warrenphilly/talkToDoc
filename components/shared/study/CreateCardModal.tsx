@@ -6,6 +6,7 @@ import { Message } from "@/lib/types";
 import { Notebook } from "@/types/notebooks";
 import { Loader2, RefreshCw } from "lucide-react";
 import { uploadLargeFile } from "@/lib/fileUpload";
+import { toast } from "react-hot-toast";
 
 interface CreateCardModalProps {
   showNotebookModal: boolean;
@@ -27,6 +28,7 @@ interface CreateCardModalProps {
   handleGenerateCards: () => Promise<void>;
   isGenerating: boolean;
   selectedPages: { [notebookId: string]: string[] };
+  setSelectedPages: React.Dispatch<React.SetStateAction<{ [notebookId: string]: string[] }>>;
   filesToUpload: File[];
   setIsGenerating: (isGenerating: boolean) => void;
 }
@@ -51,9 +53,113 @@ export default function CreateCardModal({
   handleGenerateCards,
   isGenerating,
   selectedPages,
+  setSelectedPages,
   filesToUpload,
   setIsGenerating,
 }: CreateCardModalProps) {
+
+  const handleGenerateStudyCards = async () => {
+    if (!setName.trim()) {
+      toast.error("Please enter a name for the card set");
+      return;
+    }
+
+    if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
+      toast.error("Please either upload files or select notebook pages");
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+
+      // Process uploaded files
+      const processedFiles = [];
+      for (const file of filesToUpload) {
+        try {
+          const downloadURL = await uploadLargeFile(file);
+          
+          const response = await fetch("/api/convert-from-storage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              fileUrl: downloadURL,
+              fileName: file.name,
+              fileType: file.type,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to convert file: ${file.name}`);
+          }
+
+          const data = await response.json();
+          processedFiles.push({
+            name: file.name,
+            path: downloadURL,
+            content: data.text
+          });
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          throw error;
+        }
+      }
+
+      // Create the request body
+      const requestBody = {
+        selectedPages,
+        setName,
+        numCards,
+        uploadedDocs: processedFiles
+      };
+
+      console.log("Sending request with:", requestBody);
+
+      const response = await fetch("/api/studycards", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log("Response status:", response.status);
+      const result = await response.json();
+      console.log("API Response:", result);
+
+      if (!response.ok) {
+        console.error('Study Cards API Error Response:', result);
+        throw new Error(result.error || "Failed to generate study cards");
+      }
+
+      if (result.success && result.studySet) {
+        console.log("Successfully created study set:", result.studySet);
+        // Clear the form
+        setSetName("");
+        setFiles([]);
+        if (setSelectedPages) {
+          setSelectedPages({});
+        }
+        setShowNotebookModal(false);
+        
+        toast.success("Study cards generated and saved successfully!");
+        
+        // Optionally refresh the study cards list or navigate to the new set
+        // if you have such functionality
+      } else {
+        console.error("Invalid response format:", result);
+        throw new Error("Failed to save study cards");
+      }
+
+    } catch (error: any) {
+      console.error("Error generating study cards:", error);
+      toast.error(error.message || "Failed to generate study cards");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <>
       {showNotebookModal && (
@@ -129,7 +235,7 @@ export default function CreateCardModal({
                 Cancel
               </Button>
               <Button
-                onClick={handleGenerateCards}
+                onClick={handleGenerateStudyCards}
                 className="rounded-full bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
                 disabled={
                   isGenerating ||

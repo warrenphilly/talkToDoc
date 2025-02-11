@@ -243,7 +243,7 @@ export const handleGenerateCards = async (
   setFilesToUpload: (files: File[]) => void,
   setFiles: (files: File[]) => void,
   setMessages: (messages: any[]) => void,
-  loadCardSets: () => Promise<void>,
+  // loadCardSets: () => Promise<void>,
   
   userId: string
 ) => {
@@ -308,7 +308,7 @@ export const handleGenerateCards = async (
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/convert", {
+        const response = await fetch("/api/convert-from-storage", {
           method: "POST",
           body: formData,
         });
@@ -396,7 +396,7 @@ export const handleGenerateCards = async (
     setFilesToUpload([]);
     setFiles([]);
     setMessages([]);
-    await loadCardSets();
+    // await loadCardSets();
 
   } catch (error) {
     console.error("Error generating study cards:", error);

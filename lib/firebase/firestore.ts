@@ -1438,43 +1438,45 @@ export const getStudyGuidesByFirestoreUserId = async (
 export const getStudyCardsByClerkId = async (
   clerkId: string
 ): Promise<StudyCardSet[]> => {
-  const studyCardsRef = collection(db, "studyCardSets");
-  const q = query(studyCardsRef, where("userId", "==", clerkId));
-  const querySnapshot = await getDocs(q);
+  try {
+    // Change to "studyCards" collection to match where we save the cards
+    const studyCardsRef = collection(db, "studyCards");
+    const q = query(studyCardsRef, where("userId", "==", clerkId));
+    const querySnapshot = await getDocs(q);
 
-  const studyCards = querySnapshot.docs.map((doc) => {
-    const data = doc.data();
+    const studyCards = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
 
-    // Helper function to safely convert Firestore timestamps
-    const convertTimestamp = (timestamp: any) => {
-      if (!timestamp) return null;
-      if (timestamp.toDate) {
-        return timestamp.toDate().toISOString();
-      }
-      return timestamp;
-    };
+      // Helper function to safely convert Firestore timestamps
+      const convertTimestamp = (timestamp: any) => {
+        if (!timestamp) return null;
+        if (timestamp.toDate) {
+          return timestamp.toDate().toISOString();
+        }
+        return timestamp;
+      };
 
-    const cardData = {
-      id: doc.id,
-      title: data.title,
-      cards: data.cards,
-      metadata: {
-        name: data.metadata.name,
-        createdAt: convertTimestamp(data.metadata.createdAt),
-        sourceNotebooks: data.metadata.sourceNotebooks,
-        cardCount: data.metadata.cardCount,
-      },
-      pageId: data.pageId,
-      notebookId: data.notebookId,
-      createdAt: convertTimestamp(data.createdAt),
-      userId: data.userId,
-    } as StudyCardSet;
+      // Match the structure of how we save study cards
+      const cardData = {
+        id: doc.id,
+        title: data.title || "Untitled Set",
+        cards: data.cards || [],
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
+        userId: data.userId
+      } as StudyCardSet;
 
-    // Parse and stringify to ensure complete serialization
-    return JSON.parse(JSON.stringify(cardData));
-  });
+      // Parse and stringify to ensure complete serialization
+      return JSON.parse(JSON.stringify(cardData));
+    });
 
-  return studyCards;
+    console.log("Retrieved study cards:", studyCards);
+    return studyCards;
+    
+  } catch (error) {
+    console.error("Error getting study cards by clerk ID:", error);
+    throw error;
+  }
 };
 
 export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
@@ -1544,3 +1546,25 @@ export const saveGeneratedStudyGuide = async (
     throw error;
   }
 };
+
+// Add this function to save study cards
+export async function saveStudyCards(userId: string, setName: string, cards: any) {
+  try {
+    const studySetRef = doc(db, 'studyCards', `set_${crypto.randomUUID()}`);
+    
+    const studySet = {
+      id: studySetRef.id,
+      userId,
+      title: setName,
+      cards: cards,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    await setDoc(studySetRef, studySet);
+    return studySet;
+  } catch (error) {
+    console.error('Error saving study cards:', error);
+    throw error;
+  }
+}

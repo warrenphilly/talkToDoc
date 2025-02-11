@@ -1,6 +1,8 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { saveStudyCards } from "@/lib/firebase/firestore";
 
 interface StudySetMetadata {
   name: string;
@@ -16,21 +18,123 @@ interface StudySetMetadata {
   cardCount: number;
 }
 
+// Helper function to chunk text into optimal sizes
+function chunkText(text: string, maxLength: number = 8000): string[] {
+  const chunks: string[] = [];
+  let currentChunk = "";
+  
+  // Split by paragraphs
+  const paragraphs = text.split('\n\n');
+  
+  for (const paragraph of paragraphs) {
+    if ((currentChunk + paragraph).length > maxLength) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+      }
+      currentChunk = paragraph;
+    } else {
+      currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+    }
+  }
+  
+  if (currentChunk) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  return chunks;
+}
+
+// Helper function to delay execution
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to make OpenAI API call with retries
+async function makeOpenAIRequest(content: string, numCards: number, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information:
+                ${content}
+                Format your response as a valid JSON object with this structure:
+                {
+                  "cards": [
+                    {
+                      "title": "Question or key concept",
+                      "content": "Clear, concise explanation"
+                    }
+                  ]
+                }
+                Important: Respond ONLY with the JSON object, no additional text.`,
+              },
+            ],
+            temperature: 0.7,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        console.log(`Rate limited, attempt ${i + 1}/${retries}. Waiting before retry...`);
+        await delay(2000 * (i + 1)); // Exponential backoff
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      console.log(`Error in attempt ${i + 1}/${retries}:`, error);
+      await delay(2000 * (i + 1));
+    }
+  }
+
+  throw new Error("Failed after all retry attempts");
+}
+
+// Helper function to clean JSON string from markdown
+function cleanJsonResponse(content: string): string {
+  // Remove markdown code block syntax if present
+  let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+  
+  // Trim whitespace
+  cleanContent = cleanContent.trim();
+  
+  return cleanContent;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const messageStr = formData.get("message") as string;
-    if (!messageStr) {
-      throw new Error("No message provided");
+    const authInfo = await auth();
+    const userId = authInfo.userId;
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
-    const { selectedPages, numberOfCards, metadata, uploadedDocs } = JSON.parse(messageStr);
+    const { selectedPages, setName, numCards, uploadedDocs } = await req.json();
 
-    // Debug log
-    console.log("Processing request with:", {
+    // Debug log the request
+    console.log("Received request:", {
       selectedPages,
-      numberOfCards,
-      uploadedDocs
+      setName,
+      numCards,
+      uploadedDocsCount: uploadedDocs?.length
     });
 
     // Initialize content collection
@@ -42,7 +146,9 @@ export async function POST(req: NextRequest) {
       
       for (const doc of uploadedDocs) {
         try {
-          const cleanPath = doc.path.replace(/^gs:\/\/[^\/]+\//, "");
+          // Extract the path from the full URL
+          const url = new URL(doc.path);
+          const cleanPath = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
           console.log("Processing uploaded file:", cleanPath);
 
           const bucket = adminStorage.bucket();
@@ -150,47 +256,14 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("Collected content length:", allContent.length);
-    console.log("Content preview:", allContent.slice(0, 200) + "...");
-
-    // First, get a summary of the content
-    const summaryResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: `Summarize the following content, focusing on the key concepts and main points that would be important for study cards. Keep the summary concise but comprehensive:
-
-${allContent}`,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      }
-    );
-
-    if (!summaryResponse.ok) {
-      const errorText = await summaryResponse.text();
-      console.error("OpenAI Summary API error details:", {
-        status: summaryResponse.status,
-        statusText: summaryResponse.statusText,
-        error: errorText,
-      });
-      throw new Error(`OpenAI Summary API error: ${summaryResponse.status}`);
+    
+    // Limit content length if necessary
+    const maxContentLength = 4000;
+    if (allContent.length > maxContentLength) {
+      allContent = allContent.slice(0, maxContentLength);
+      console.log("Content truncated to", maxContentLength, "characters");
     }
 
-    const summaryData = await summaryResponse.json();
-    const summary = summaryData.choices[0].message.content;
-
-    // Now create study cards from the summary
     const cardsResponse = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -200,91 +273,72 @@ ${allContent}`,
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o",
+          model: "gpt-3.5-turbo-16k",
           messages: [
             {
               role: "system",
-              content: `Create ${numberOfCards} study cards from this summarized content:
-
-${summary}
-
-Format your response as a valid JSON object with this exact structure:
-{
-  "cards": [
-    {
-      "title": "Question or key concept",
-      "content": "Clear, concise explanation"
-    }
-  ]
-}
-
-Important: Respond ONLY with the JSON object, no additional text or explanations.`,
+              content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information. Return ONLY a JSON object with this exact structure, no markdown formatting:
+              {
+                "cards": [
+                  {
+                    "title": "Question or key concept",
+                    "content": "Clear, concise explanation"
+                  }
+                ]
+              }`,
             },
           ],
           temperature: 0.7,
-          max_tokens: 1000,
         }),
       }
     );
 
     if (!cardsResponse.ok) {
-      const errorText = await cardsResponse.text();
-      console.error("OpenAI Cards API error details:", {
+      console.error("OpenAI API error:", {
         status: cardsResponse.status,
-        statusText: cardsResponse.statusText,
-        error: errorText,
+        statusText: cardsResponse.statusText
       });
-      throw new Error(`OpenAI Cards API error: ${cardsResponse.status}`);
+      throw new Error(`Failed to generate cards: ${cardsResponse.status}`);
     }
 
     const cardsData = await cardsResponse.json();
-
-    if (!cardsData.choices?.[0]?.message?.content) {
-      throw new Error("Invalid response format from OpenAI");
-    }
-
-    // Clean the response content by removing markdown code block syntax
-    let contentStr = cardsData.choices[0].message.content;
-
-    // Remove markdown code block syntax if present
-    contentStr = contentStr.replace(/```json\n?/, "").replace(/```\n?$/, "");
-
-    // Remove any leading/trailing whitespace
-    contentStr = contentStr.trim();
-
-    console.log("Cleaned content string:", contentStr);
-
+    console.log("OpenAI Response:", cardsData);
+    
+    // Clean and parse the response
+    const cleanedContent = cleanJsonResponse(cardsData.choices[0].message.content);
+    console.log("Cleaned content:", cleanedContent);
+    
+    let generatedCards;
     try {
-      // Parse the cleaned content as JSON
-      const finalCardsData = {
-        cards: JSON.parse(contentStr).cards,
-        metadata: {
-          ...metadata,
-          createdAt: new Date(metadata.createdAt), // Convert string date back to Date object
-        },
-      };
-
-      // Validate the structure
-      if (!finalCardsData.cards || !Array.isArray(finalCardsData.cards)) {
-        throw new Error("Invalid cards data structure");
-      }
-
-      return NextResponse.json(finalCardsData);
-    } catch (error: unknown) {
-      console.error("JSON parsing error:", error);
-      console.error("Content that failed to parse:", contentStr);
-
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown JSON parsing error";
-
-      throw new Error(`Failed to parse cards data: ${errorMessage}`);
+      generatedCards = JSON.parse(cleanedContent);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      console.error("Content that failed to parse:", cleanedContent);
+      throw new Error("Failed to parse generated cards");
     }
+    
+    console.log("Parsed cards:", generatedCards);
+
+    // Validate the parsed data structure
+    if (!generatedCards.cards || !Array.isArray(generatedCards.cards)) {
+      throw new Error("Invalid card data structure");
+    }
+
+    // Save the study cards to the database
+    const savedSet = await saveStudyCards(userId, setName, generatedCards.cards);
+    console.log("Saved study set:", savedSet);
+    
+    return NextResponse.json({ 
+      success: true,
+      studySet: savedSet
+    });
+
   } catch (error) {
-    console.error("Study card generation error:", error);
+    console.error("Error in studycards API:", error);
     return NextResponse.json(
-      {
-        error: "Failed to generate study cards",
-        details: error instanceof Error ? error.message : "Unknown error occurred",
+      { 
+        error: error instanceof Error ? error.message : "Failed to generate study cards",
+        details: error instanceof Error ? error.stack : undefined
       },
       { status: 500 }
     );

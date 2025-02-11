@@ -349,7 +349,7 @@ export function SidebarNav() {
                                 ? "text-white"
                                 : "text-[#94b347]"
                             }`} />
-                            <span>{set.metadata.name}</span>
+                            <span>{set.title}</span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

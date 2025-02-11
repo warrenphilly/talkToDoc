@@ -24,7 +24,7 @@ import type { QuizState } from "@/types/quiz";
 import { StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 import { useUser } from "@clerk/nextjs";
 import CircularProgress from "@mui/material/CircularProgress";
-import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc, Timestamp, deleteDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
   Check,
@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MutableRefObject, useEffect, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { toast } from "react-hot-toast";
 
 import QuizForm from "@/components/shared/global/QuizForm";
@@ -69,6 +69,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 import { BookOpen } from "lucide-react";
+import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 
 interface StudyCardData {
   title: string;
@@ -173,8 +174,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [showDeleteQuizAlert, setShowDeleteQuizAlert] = useState<string | null>(
     null
   );
-
-  // const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchNotebooks = async () => {
@@ -209,12 +209,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     fetchNotebooks();
   }, []);
 
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     setLoading(false);
-  //   }, 4000);
-  // }, []);
-
   const handleDeleteNotebook = async (
     e: React.MouseEvent,
     notebookId: string
@@ -224,7 +218,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   };
 
   const handleDeleteStudyCard = async (e: React.MouseEvent, cardId: string) => {
-    e.preventDefault(); // Prevent navigation
+    e.preventDefault();
     setShowDeleteCardAlert(cardId);
   };
 
@@ -357,24 +351,14 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         createdAt: serverTimestamp(),
       });
 
+      await refreshQuizzes();
+
       setQuizName("");
       setFiles([]);
       setSelectedPages({});
       setShowQuizForm(false);
 
       toast.success("Quiz generated successfully!");
-
-      // Add this to refresh the quizzes list
-      const clerkUserId = await getCurrentUserId();
-      if (clerkUserId) {
-        const firestoreUser = await getUserByClerkId(clerkUserId);
-        if (firestoreUser) {
-          const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
-          setQuizzes(userQuizzes);
-        }
-      }
-
-      // Navigate to the new quiz
       router.push(`/quizzes/${newQuiz.id}`);
     } catch (error: any) {
       console.error("Error generating quiz:", error);
@@ -390,19 +374,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   ) => {
     if (event.target.files) {
       setFiles(Array.from(event.target.files));
-    }
-  };
-
-  const loadCardSets = async () => {
-    try {
-      const clerkUserId = await getCurrentUserId();
-      if (clerkUserId) {
-        const userStudyCards = await getStudyCardsByClerkId(clerkUserId);
-        setStudyCards(userStudyCards);
-      }
-    } catch (error) {
-      console.error("Error loading card sets:", error);
-      toast.error("Failed to load study cards");
     }
   };
 
@@ -426,9 +397,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         setFilesToUpload,
         setFiles,
         setMessages,
-        loadCardSets,
         user.id
       );
+      
+      await refreshStudyCards();
     } catch (error) {
       console.error("Error generating cards:", error);
       toast.error(
@@ -683,22 +655,14 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
       await setDoc(studyGuideRef, newStudyGuide);
 
+      await refreshStudyGuides();
+
       setGuideName("");
       setStudyGuideFiles([]);
       setSelectedPages({});
       setShowStudyGuideModal(false);
 
       toast.success("Study guide generated successfully!");
-
-      // Refresh the study guides list
-      const clerkUserId = await getCurrentUserId();
-      if (clerkUserId) {
-        const userStudyGuides = await getStudyGuidesByFirestoreUserId(
-          clerkUserId
-        );
-        setStudyGuides(userStudyGuides);
-      }
-
       router.push(`/study-guides/${newStudyGuide.id}`);
     } catch (error: any) {
       console.error("Error generating study guide:", error);
@@ -707,6 +671,79 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setIsGeneratingGuide(false);
     }
   };
+
+  const refreshStudyCards = useCallback(async () => {
+    if (!user?.id) return;
+    const userStudyCards = await getStudyCardsByClerkId(user.id);
+    setStudyCards(userStudyCards);
+  }, [user?.id]);
+
+  const refreshStudyGuides = useCallback(async () => {
+    const clerkUserId = await getCurrentUserId();
+    if (!clerkUserId) return;
+    const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUserId);
+    setStudyGuides(userStudyGuides);
+  }, []);
+
+  const refreshQuizzes = useCallback(async () => {
+    const clerkUserId = await getCurrentUserId();
+    if (!clerkUserId) return;
+    const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
+    setQuizzes(userQuizzes);
+  }, []);
+
+  useEffect(() => {
+    console.log("Study cards state:", studyCards);
+    setIsLoading(false);
+  }, [studyCards]);
+
+  const renderStudyCards = useMemo(() => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-4">
+          <CircularProgress size={24} sx={{ color: "#94b347" }} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 sm:space-y-4">
+        {studyCards.map((studyCard) => (
+          <Link
+            key={studyCard.id}
+            href={`/study-cards/${studyCard.id}`}
+          >
+            <Card className="transition-transform shadow-none bg-white border-none relative">
+              <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+                <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
+                  <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
+                </div>
+                <div className="flex flex-col items-start flex-grow mx-2 sm:mx-4">
+                  <h2 className="text-xs sm:text-md font-semibold text-slate-600 line-clamp-1">
+                    {studyCard.title}
+                  </h2>
+                  <p className="text-muted-foreground text-xs">
+                    {formatDate(studyCard.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <p className="text-muted-foreground text-xs hidden sm:block">
+                    {studyCard.cards?.length || 0} cards
+                  </p>
+                  <button
+                    onClick={(e) => handleDeleteStudyCard(e, studyCard.id)}
+                    className="p-1 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 hover:text-red-500" />
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    );
+  }, [studyCards]);
 
   return (
     <div className="container mx-auto px-2 sm:px-6">
@@ -807,45 +844,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                         label: "New Study Cards",
                         onClick: () => setShowCardModal(true),
                       },
-                      content: (
-                        <div className="space-y-2 sm:space-y-4">
-                          {studyCards.map((studyCard) => (
-                            <Link
-                              key={studyCard.id}
-                              href={`/study-cards/${studyCard.id}`}
-                            >
-                              <Card className="transition-transform shadow-none bg-white border-none relative">
-                                <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
-                                  <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
-                                    <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
-                                  </div>
-                                  <div className="flex flex-col items-start flex-grow mx-2 sm:mx-4">
-                                    <h2 className="text-xs sm:text-md font-semibold text-slate-600 line-clamp-1">
-                                      {studyCard.metadata.name}
-                                    </h2>
-                                    <p className="text-muted-foreground text-xs">
-                                      {formatDate(studyCard.createdAt)}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1 sm:gap-2">
-                                    <p className="text-muted-foreground text-xs hidden sm:block">
-                                      {studyCard.cards.length} cards
-                                    </p>
-                                    <button
-                                      onClick={(e) =>
-                                        handleDeleteStudyCard(e, studyCard.id)
-                                      }
-                                      className="p-1 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
-                                    >
-                                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400 hover:text-red-500" />
-                                    </button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      ),
+                      content: renderStudyCards
                     },
                   ]}
                 />
@@ -1019,6 +1018,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         selectedPages={selectedPages}
         filesToUpload={filesToUpload}
         setIsGenerating={setIsGenerating}
+        setSelectedPages={setSelectedPages}
       />
 
       {showStudyGuideModal && (
@@ -1071,22 +1071,24 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 try {
                   const cardId = showDeleteCardAlert;
                   if (!cardId) return;
 
                   const card = studyCards.find((c) => c.id === cardId);
-                  if (card) {
-                    await deleteStudyCardSet(
-                      card.notebookId,
-                      card.pageId,
-                      cardId
-                    );
-                    setStudyCards(
-                      studyCards.filter((card) => card.id !== cardId)
-                    );
-                    toast.success("Study card set deleted successfully");
+                  if (!card) {
+                    toast.error("Study card not found");
+                    return;
                   }
+
+                  // Delete from Firestore
+                  const cardRef = doc(db, "studyCards", cardId);
+                  await deleteDoc(cardRef);
+                  
+                  // Refresh the study cards list
+                  await refreshStudyCards();
+                  toast.success("Study card set deleted successfully");
                 } catch (error) {
                   console.error("Error deleting study card:", error);
                   toast.error("Failed to delete study card set");
@@ -1183,9 +1185,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   if (!guideId) return;
 
                   await deleteStudyGuide(guideId);
-                  setStudyGuides(
-                    studyGuides.filter((guide) => guide.id !== guideId)
-                  );
+                  await refreshStudyGuides();
                   toast.success("Study guide deleted successfully");
                 } catch (error) {
                   console.error("Error deleting study guide:", error);
@@ -1233,7 +1233,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   if (!quizId) return;
 
                   await deleteQuiz(quizId);
-                  setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+                  await refreshQuizzes();
                   toast.success("Quiz deleted successfully");
                 } catch (error) {
                   console.error("Error deleting quiz:", error);

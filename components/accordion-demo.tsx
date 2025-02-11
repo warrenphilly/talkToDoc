@@ -21,30 +21,33 @@ export function AccordionDemo({ sections }: AccordionDemoProps) {
   const [openItems, setOpenItems] = useState<string[]>([])
 
   useEffect(() => {
-    if (isLargeScreen) {
-      setOpenItems(sections.map(section => section.id))
-    } else {
-      setOpenItems([])
-    }
-  }, [isLargeScreen, sections])
+    // Always keep sections open
+    setOpenItems(sections.map(section => section.id))
+  }, [sections])
 
   return (
-    <Accordion type="multiple" value={openItems} onValueChange={setOpenItems} className="w-full">
+    <Accordion 
+      type="multiple" 
+      value={openItems} 
+      onValueChange={setOpenItems} 
+      className="w-full"
+      defaultValue={sections.map(section => section.id)}
+    >
       {sections.map((section) => (
         <AccordionItem key={section.id} value={section.id}>
           <AccordionTrigger className="flex justify-between">
             <div className="flex items-center justify-between w-full">
-            {section.button && (
-            
-                  <CirclePlus className="h-6 w-6 text-slate-400 hover:text-[#94b347] " onClick={(e) => {
-                    e.stopPropagation(); // Prevent accordion from toggling
+              {section.button && (
+                <CirclePlus 
+                  className="h-6 w-6 text-slate-400 hover:text-[#94b347]" 
+                  onClick={(e) => {
+                    e.stopPropagation();
                     section.button?.onClick();
-                  }} />
-             
+                  }} 
+                />
               )}
               <span>{section.title}</span>
               <div></div>
-             
             </div>
           </AccordionTrigger>
           <AccordionContent>{section.content}</AccordionContent>
