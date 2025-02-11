@@ -602,7 +602,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
           </div>
         ))}
       </div>
-      <div className="bg-red-500 container mx-auto p-10 m-10">
+      <div className="container mx-auto p-10 m-10">
       {showModal && (
         
           <StudyGuideModal

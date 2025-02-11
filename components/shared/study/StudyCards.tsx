@@ -169,10 +169,9 @@ export default function StudyCards({
         notebooks
       );
 
-      // Create the study card set with the correct card structure
       const studyCardSet: Partial<StudyCardSet> = {
         title: setName,
-        cards: [], // Will be populated by the API
+        cards: [],
         metadata: {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -182,7 +181,6 @@ export default function StudyCards({
         pageId: null,
       };
 
-      // Call your API to generate cards
       const response = await fetch("/api/studycards", {
         method: "POST",
         headers: {
@@ -202,20 +200,16 @@ export default function StudyCards({
       }
 
       const data = await response.json();
-
-      // Ensure the cards have the correct structure
       const formattedCards = data.cards.map((card: any) => ({
-        title: card.title || card.front || "", // Handle potential legacy data
-        content: card.content || card.back || "", // Handle potential legacy data
+        title: card.title || card.front || "",
+        content: card.content || card.back || "",
       }));
 
-      // Update the study card set with the generated cards
       const finalStudyCardSet = {
         ...studyCardSet,
         cards: formattedCards,
       };
 
-      // Save to Firestore
       const setId = await saveStudyCardSet(
         finalStudyCardSet.cards,
         {
@@ -227,6 +221,18 @@ export default function StudyCards({
         },
         clerkUserId
       );
+
+      // Reload card sets
+      await loadCardsetsWrapper();
+
+      // Find the newly created set from the cardSets state
+      const newSet = cardSets.find(
+        (set: StudyCardSet) => set.title === setName
+      );
+
+      if (newSet) {
+        setSelectedSet(newSet);
+      }
 
       setShowNotebookModal(false);
       setSelectedPages({});
