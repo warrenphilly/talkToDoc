@@ -22,13 +22,16 @@ export interface StudyCardSet {
   id: string;
   title: string;
   cards: Array<{
-    front: string;
-    back: string;
+    title: string;
+    content: string;
   }>;
-  metadata: StudySetMetadata;
-  notebookId: string;
-  pageId: string;
   createdAt: string;
   updatedAt: string;
   userId: string;
+  metadata: {
+    createdAt: string;
+    updatedAt: string;
+  };
+  notebookId: string | null;
+  pageId: string | null;
 }

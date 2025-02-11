@@ -32,6 +32,7 @@ import { MutableRefObject, useEffect, useRef, useState } from "react";
 
 import { Message } from "@/lib/types";
 
+import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import {
   handleClear,
   handleDeleteSet,
@@ -47,15 +48,42 @@ import {
   toggleAnswer,
   toggleNotebookExpansion,
 } from "@/lib/utils/studyCardsUtil";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "react-hot-toast";
 import CreateCardModal from "./CreateCardModal";
 import { StudyCardCarousel } from "./StudyCardCarousel";
 import { StudyCardList } from "./StudyCardList";
-import { useUser } from "@clerk/nextjs";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
   pageId: string;
 }
+
+const getSelectedPagesData = async (
+  selectedPages: { [notebookId: string]: string[] },
+  notebooks: Notebook[]
+) => {
+  const selectedPagesData = [];
+
+  for (const notebookId in selectedPages) {
+    const notebook = notebooks.find((n) => n.id === notebookId);
+    if (notebook) {
+      const selectedPageIds = selectedPages[notebookId];
+      const selectedPagesInNotebook = notebook.pages
+        .filter((page) => selectedPageIds.includes(page.id))
+        .map((page) => ({
+          notebookId: notebook.id,
+          notebookTitle: notebook.title,
+          pageId: page.id,
+          pageTitle: page.title,
+          content: page.content || "",
+        }));
+      selectedPagesData.push(...selectedPagesInNotebook);
+    }
+  }
+
+  return selectedPagesData;
+};
 
 export default function StudyCards({
   notebookId,
@@ -128,23 +156,92 @@ export default function StudyCards({
     setSelectedSet(updatedStudySet);
   };
 
-  const handleGenerateCardsClick = async () => {
-    await handleGenerateCards(
-      setName,
-      numCards,
-      selectedPages,
-      filesToUpload,
-      notebooks,
-      setIsGenerating,
-      setShowNotebookModal,
-      setSelectedPages,
-      setSetName,
-      setFilesToUpload,
-      setFiles,
-      setMessages,
-  
-      clerkUserId
-    );
+  const handleGenerateCards = async () => {
+    try {
+      if (!setName.trim()) {
+        toast.error("Please enter a set name");
+        return;
+      }
+
+      setIsGenerating(true);
+      const selectedPagesData = await getSelectedPagesData(
+        selectedPages,
+        notebooks
+      );
+
+      // Create the study card set with the correct card structure
+      const studyCardSet: Partial<StudyCardSet> = {
+        title: setName,
+        cards: [], // Will be populated by the API
+        metadata: {
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        userId: clerkUserId,
+        notebookId: null,
+        pageId: null,
+      };
+
+      // Call your API to generate cards
+      const response = await fetch("/api/studycards", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          setName,
+          numCards,
+          selectedPages: selectedPagesData,
+          files: filesToUpload,
+          userId: clerkUserId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate cards");
+      }
+
+      const data = await response.json();
+
+      // Ensure the cards have the correct structure
+      const formattedCards = data.cards.map((card: any) => ({
+        title: card.title || card.front || "", // Handle potential legacy data
+        content: card.content || card.back || "", // Handle potential legacy data
+      }));
+
+      // Update the study card set with the generated cards
+      const finalStudyCardSet = {
+        ...studyCardSet,
+        cards: formattedCards,
+      };
+
+      // Save to Firestore
+      const setId = await saveStudyCardSet(
+        finalStudyCardSet.cards,
+        {
+          title: setName,
+          notebookId: notebookId || null,
+          pageId: pageId || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        clerkUserId
+      );
+
+      setShowNotebookModal(false);
+      setSelectedPages({});
+      setSetName("");
+      setFilesToUpload([]);
+      setFiles([]);
+      setMessages([]);
+
+      toast.success("Study cards generated successfully!");
+    } catch (error) {
+      console.error("Error generating cards:", error);
+      toast.error("Failed to generate study cards");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleToggleAnswer = (cardIndex: number) => {
@@ -331,7 +428,7 @@ export default function StudyCards({
             onClick={() => setShowNotebookModal(true)}
             className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
           >
-              <PlusCircle className="h-4 w-4" />
+            <PlusCircle className="h-4 w-4" />
             Create Study Cards
           </Button>
         </div>
@@ -353,7 +450,7 @@ export default function StudyCards({
           setShowUpload={setShowUpload}
           setFiles={setFiles}
           renderNotebookList={renderNotebookList}
-          handleGenerateCards={handleGenerateCardsClick}
+          handleGenerateCards={handleGenerateCards}
           isGenerating={isGenerating}
           selectedPages={selectedPages}
           filesToUpload={filesToUpload}
@@ -370,14 +467,14 @@ export default function StudyCards({
                 className="flex flex-row justify-between items-center"
               >
                 <Card className="  bg-white border-none   transition-colors w-full shadow-none  rounded-none ">
-                  <CardContent className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer" onClick={() => setSelectedSet(set)}>
+                  <CardContent
+                    className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer"
+                    onClick={() => setSelectedSet(set)}
+                  >
                     <div className="flex flex-col items-start justify-between w-full">
                       <div className="items-center flex flex-row justify-between w-full">
                         <div className="flex flex-row items-center">
-                          <h3
-                            className="font-medium text-slate-700 "
-                            
-                          >
+                          <h3 className="font-medium text-slate-700 ">
                             {set.title}
                           </h3>
                           <p className="text-sm text-slate-500 mx-5">
@@ -387,13 +484,13 @@ export default function StudyCards({
                         <div className="flex flex-row justify-end items-center gap-2">
                           <Button
                             variant="ghost"
-                             className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
+                            className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSetDeletion(set.id);
                             }}
                           >
-                            <Trash   className="w-4 h-4" />
+                            <Trash className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -420,7 +517,11 @@ export default function StudyCards({
           // Show selected set's cards
           <div className="w-full h-full overflow-y-auto">
             <div className="flex items-center justify-between mb-4 max-w-7xl mx-auto">
-              <Button onClick={() => setSelectedSet(null)} variant="ghost" className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent">
+              <Button
+                onClick={() => setSelectedSet(null)}
+                variant="ghost"
+                className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent"
+              >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Sets
               </Button>
@@ -433,23 +534,26 @@ export default function StudyCards({
                 Delete Set
               </Button>
             </div>
-              <div className="space-y-2 w-full overflow-y-auto h-full">
+            <div className="space-y-2 w-full overflow-y-auto h-full">
               <StudyCardCarousel studySet={selectedSet} />
-              <StudyCardList studySet={selectedSet} onUpdate={handleStudySetUpdate} />
+              <StudyCardList
+                studySet={selectedSet}
+                onUpdate={handleStudySetUpdate}
+              />
               {selectedSet.cards.map(
-                (card: { front: string; back: string }, index: number) => (
+                (card: { title: string; content: string }, index: number) => (
                   <div
                     key={index}
                     onClick={() => handleToggleAnswer(index)}
-                    className="bg-white border border-slate-400  p-4 rounded cursor-pointer hover:bg-slate-100 transition-colors w-full  max-w-4xl mx-auto"
+                    className="bg-white border border-slate-400 p-4 rounded cursor-pointer hover:bg-slate-100 transition-colors w-full max-w-4xl mx-auto"
                   >
-                    <h3 className="font-bold text-[#94b347]">{card.front}</h3>
+                    <h3 className="font-bold text-[#94b347]">{card.title}</h3>
                     <div
                       className={`mt-2 text-slate-600 ${
                         showAnswer[index] ? "block" : "hidden"
                       }`}
                     >
-                      <p>{card.back}</p>
+                      <p>{card.content}</p>
                     </div>
                     {!showAnswer[index] && (
                       <p className="text-sm text-slate-500 mt-2">

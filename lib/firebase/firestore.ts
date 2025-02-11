@@ -1141,8 +1141,6 @@ const convertTimestampToDate = (timestamp: any): Date => {
 };
 
 export const saveStudyCardSet = async (
-  notebookId: string,
-  pageId: string,
   cards: any[],
   metadata: any,
   userId: string
@@ -1151,14 +1149,12 @@ export const saveStudyCardSet = async (
     const studyCardSetId = `studycards_${crypto.randomUUID()}`;
     const timestamp = serverTimestamp();
 
-    const studyCardSetRef = doc(db, "studyCardSets", studyCardSetId);
+    const studyCardSetRef = doc(db, "studyCards", studyCardSetId);
 
     const studyCardSetData = {
       id: studyCardSetId,
       cards,
       metadata,
-      notebookId: notebookId || "",
-      pageId: pageId || "",
       createdAt: timestamp,
       updatedAt: timestamp,
       userId: userId,
@@ -1222,12 +1218,16 @@ export const getStudyCardSet = async (
   setId: string
 ): Promise<StudyCardSet | null> => {
   try {
-    const setRef = doc(db, "studyCardSets", setId);
+    const setRef = doc(db, "studyCards", setId);
     const setSnap = await getDoc(setRef);
 
-    if (!setSnap.exists()) return null;
+    if (!setSnap.exists()) {
+      console.log("Study card set not found:", setId);
+      return null;
+    }
 
     const data = setSnap.data();
+    console.log("Raw study card data:", data);
 
     // Helper function to safely convert timestamps to ISO strings
     const convertTimestamp = (timestamp: any): string => {
@@ -1241,25 +1241,24 @@ export const getStudyCardSet = async (
       return new Date(timestamp).toISOString();
     };
 
-    // Create a serialized version of the study card set
+    // Create a serialized version of the study card set with simpler structure
     const serializedSet = {
       id: setSnap.id,
-      title: data.title,
-      cards: data.cards,
+      title: data.title || "Untitled Set",
+      cards: data.cards || [],
       metadata: {
-        ...data.metadata,
-        createdAt: convertTimestamp(data.metadata?.createdAt),
-        sourceNotebooks: data.metadata?.sourceNotebooks || [],
-        cardCount: data.metadata?.cardCount || 0,
+        createdAt: convertTimestamp(data.createdAt),
+        updatedAt: convertTimestamp(data.updatedAt),
       },
-      pageId: data.pageId,
-      notebookId: data.notebookId,
+      userId: data.userId,
+      // Add any other required fields with fallbacks
+      pageId: data.pageId || null,
+      notebookId: data.notebookId || null,
       createdAt: convertTimestamp(data.createdAt),
       updatedAt: convertTimestamp(data.updatedAt || data.createdAt),
-      userId: data.userId,
     };
 
-    // Parse and stringify to ensure complete serialization of any nested timestamps
+    console.log("Serialized study card set:", serializedSet);
     return JSON.parse(JSON.stringify(serializedSet));
   } catch (error) {
     console.error("Error getting study card set:", error);
@@ -1463,7 +1462,7 @@ export const getStudyCardsByClerkId = async (
         cards: data.cards || [],
         createdAt: convertTimestamp(data.createdAt),
         updatedAt: convertTimestamp(data.updatedAt),
-        userId: data.userId
+        userId: data.userId,
       } as StudyCardSet;
 
       // Parse and stringify to ensure complete serialization
@@ -1472,7 +1471,6 @@ export const getStudyCardsByClerkId = async (
 
     console.log("Retrieved study cards:", studyCards);
     return studyCards;
-    
   } catch (error) {
     console.error("Error getting study cards by clerk ID:", error);
     throw error;
@@ -1523,23 +1521,23 @@ export const saveGeneratedStudyGuide = async (
   userId: string
 ) => {
   try {
-    console.log('Starting to save study guide:', { studyGuide, userId });
-    
+    console.log("Starting to save study guide:", { studyGuide, userId });
+
     const studyGuideRef = doc(db, "studyGuides", studyGuide.id);
-    
+
     // Convert dates to Firestore Timestamp
     const studyGuideData = {
       ...studyGuide,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      userId
+      userId,
     };
 
-    console.log('Saving study guide data:', studyGuideData);
-    
+    console.log("Saving study guide data:", studyGuideData);
+
     await setDoc(studyGuideRef, studyGuideData);
-    console.log('Study guide saved successfully');
-    
+    console.log("Study guide saved successfully");
+
     return studyGuide.id;
   } catch (error) {
     console.error("Error saving generated study guide:", error);
@@ -1548,23 +1546,27 @@ export const saveGeneratedStudyGuide = async (
 };
 
 // Add this function to save study cards
-export async function saveStudyCards(userId: string, setName: string, cards: any) {
+export async function saveStudyCards(
+  userId: string,
+  setName: string,
+  cards: any
+) {
   try {
-    const studySetRef = doc(db, 'studyCards', `set_${crypto.randomUUID()}`);
-    
+    const studySetRef = doc(db, "studyCards", `set_${crypto.randomUUID()}`);
+
     const studySet = {
       id: studySetRef.id,
       userId,
       title: setName,
       cards: cards,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     };
 
     await setDoc(studySetRef, studySet);
     return studySet;
   } catch (error) {
-    console.error('Error saving study cards:', error);
+    console.error("Error saving study cards:", error);
     throw error;
   }
 }

@@ -1,26 +1,45 @@
 "use client";
 
-import { useEffect, useState, useRef, MutableRefObject, RefObject } from "react";
-import { useParams } from "next/navigation";
-import { getStudyCardSet, getAllNotebooks, getUserByClerkId, getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
-import { StudyCardSet } from "@/types/studyCards";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, ChevronRight, ChevronDown, Plus, RefreshCw, ChevronLeft } from "lucide-react";
-import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import FormUpload from "@/components/shared/study/formUpload";
-import { Message } from "@/lib/types";
-import { Notebook } from "@/types/notebooks";
 import { StudyCardCarousel } from "@/components/shared/study/StudyCardCarousel";
 import { StudyCardList } from "@/components/shared/study/StudyCardList";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { storage } from "@/firebase";
 import { getCurrentUserId } from "@/lib/auth";
-import { useAuth } from "@clerk/nextjs";
+import {
+  getAllNotebooks,
+  getNotebooksByFirestoreUserId,
+  getStudyCardSet,
+  getUserByClerkId,
+  saveStudyCardSet,
+} from "@/lib/firebase/firestore";
+import { Message } from "@/lib/types";
+import { Notebook } from "@/types/notebooks";
+import { StudyCardSet } from "@/types/studyCards";
 import { User } from "@/types/users";
+import { useAuth } from "@clerk/nextjs";
+import { getDownloadURL, ref, uploadString } from "firebase/storage";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  RefreshCw,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import {
+  MutableRefObject,
+  RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
-import { ref, uploadString, getDownloadURL } from "firebase/storage";
-import { storage } from "@/firebase";
-import { saveStudyCardSet } from "@/lib/firebase/firestore";
 
 // Add CreateCardModal component
 interface CreateCardModalProps {
@@ -34,7 +53,10 @@ interface CreateCardModalProps {
   files: File[];
   showUpload: boolean;
   fileInputRef: RefObject<HTMLInputElement>;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>, setFiles: (files: File[]) => void) => void;
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => void;
   handleSendMessage: () => void;
   handleClear: () => void;
   setShowUpload: (show: boolean) => void;
@@ -119,7 +141,9 @@ function CreateCardModal({
                   files={files}
                   showUpload={showUpload}
                   fileInputRef={fileInputRef}
-                  handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                  handleFileUpload={(event) =>
+                    handleFileUpload(event, setFiles)
+                  }
                   handleSendMessage={handleSendMessage}
                   handleClear={handleClear}
                   setShowUpload={setShowUpload}
@@ -148,7 +172,8 @@ function CreateCardModal({
                 disabled={
                   isGenerating ||
                   !setName.trim() ||
-                  (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)
+                  (filesToUpload.length === 0 &&
+                    Object.keys(selectedPages).length === 0)
                 }
               >
                 {isGenerating ? "Generating..." : "Generate Cards"}
@@ -167,7 +192,7 @@ export default function StudyCardPage() {
   const [studySet, setStudySet] = useState<StudyCardSet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Add states for CreateCardModal
   const [showNotebookModal, setShowNotebookModal] = useState(false);
   const [setName, setSetName] = useState("");
@@ -176,57 +201,57 @@ export default function StudyCardPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedPages, setSelectedPages] = useState<{ [notebookId: string]: string[] }>({});
+  const [selectedPages, setSelectedPages] = useState<{
+    [notebookId: string]: string[];
+  }>({});
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
-  const fileInputRef = useRef<HTMLInputElement>(null) as MutableRefObject<HTMLInputElement>;
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
+    new Set()
+  );
+  const fileInputRef = useRef<HTMLInputElement>(
+    null
+  ) as MutableRefObject<HTMLInputElement>;
   const { userId } = useAuth();
   const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
   useEffect(() => {
     loadStudySet();
-  }, [studyCardId]);
+  }, [studyCardId, userId]);
 
   useEffect(() => {
     const loadFirestoreUser = async () => {
-
       if (!userId) return null;
-      
+
       const user = await getUserByClerkId(userId);
 
       setFirestoreUser(user);
 
       if (user?.id) {
-        const userNotebooks = await getNotebooksByFirestoreUserId(
-          user?.id
-        );
+        const userNotebooks = await getNotebooksByFirestoreUserId(user?.id);
         setNotebooks(userNotebooks);
-   
       }
     };
 
-    
     loadFirestoreUser();
- 
-    
   }, [userId]);
 
   const loadStudySet = async () => {
     try {
       if (!studyCardId) {
+        console.log("No study card ID:", studyCardId);
         setError("No study card ID provided");
         return;
       }
 
-      
+      console.log("Fetching study set with ID:", studyCardId);
       const set = await getStudyCardSet(studyCardId);
-      
+      console.log("Fetched study set:", set);
+
       if (!set) {
         setError("Study set not found");
         return;
       }
-
 
       setStudySet(set);
     } catch (error) {
@@ -264,7 +289,9 @@ export default function StudyCardPage() {
       }
 
       // Check if we have either uploaded files or selected pages
-      const hasSelectedPages = Object.values(selectedPages).some(pages => pages.length > 0);
+      const hasSelectedPages = Object.values(selectedPages).some(
+        (pages) => pages.length > 0
+      );
       if (filesToUpload.length === 0 && !hasSelectedPages) {
         toast.error("Please either upload files or select notebook pages");
         return;
@@ -279,9 +306,11 @@ export default function StudyCardPage() {
 
       // Get the first selected notebook and page for storage path
       const firstNotebookId = Object.keys(selectedPages).find(
-        notebookId => selectedPages[notebookId]?.length > 0
+        (notebookId) => selectedPages[notebookId]?.length > 0
       );
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId][0] : null;
+      const firstPageId = firstNotebookId
+        ? selectedPages[firstNotebookId][0]
+        : null;
 
       // Generate random IDs if using only uploaded files
       const pageIdToUse = firstPageId || `page_${uuidv4()}`;
@@ -357,7 +386,8 @@ export default function StudyCardPage() {
         selectedPages: hasSelectedPages ? selectedPages : undefined,
         numberOfCards: numCards,
         metadata,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -376,9 +406,9 @@ export default function StudyCardPage() {
 
       // Save the study card set with user ID
       await saveStudyCardSet(
-        notebookIdToUse, 
-        pageIdToUse, 
-        data.cards, 
+        notebookIdToUse,
+        pageIdToUse,
+        data.cards,
         metadata,
         firestoreUser.id
       );
@@ -392,7 +422,7 @@ export default function StudyCardPage() {
 
       // Refresh the study set list
       await loadStudySet();
-      
+
       toast.success("Study cards generated successfully!");
     } catch (error: any) {
       console.error("Error generating cards:", error);
@@ -430,7 +460,10 @@ export default function StudyCardPage() {
     pageId: string,
     isSelected: boolean
   ) => {
-    setSelectedPages((prev) => ({ ...prev, [notebookId]: isSelected ? [pageId] : [] }));
+    setSelectedPages((prev) => ({
+      ...prev,
+      [notebookId]: isSelected ? [pageId] : [],
+    }));
   };
 
   const isNotebookFullySelected = (notebookId: string, pages: any[]) => {
@@ -440,20 +473,17 @@ export default function StudyCardPage() {
   const isPageFullySelected = (notebookId: string, pageId: string) => {
     return selectedPages[notebookId]?.includes(pageId);
   };
-  
-
 
   const loadAllNotebooks = async () => {
     if (!firestoreUser) return;
-    
+
     try {
       setIsLoadingNotebooks(true);
 
       const userNotebooks = await getNotebooksByFirestoreUserId(
         firestoreUser.id
       );
-    
-      
+
       setNotebooks(userNotebooks);
     } catch (error) {
       console.error("Failed to load notebooks:", error);
@@ -461,9 +491,6 @@ export default function StudyCardPage() {
       setIsLoadingNotebooks(false);
     }
   };
-
-
-
 
   useEffect(() => {
     if (showNotebookModal && userId) {
@@ -610,16 +637,16 @@ export default function StudyCardPage() {
     <div className="container mx-auto px-4 py-8  h-full ">
       <div className="flex justify-between my-8">
         <Link href="/">
-          <Button variant="ghost" className="gap-2 text-slate-600 flex items-center justify-center w-fit  rounded-full hover:bg-slate-100">
+          <Button
+            variant="ghost"
+            className="gap-2 text-slate-600 flex items-center justify-center w-fit  rounded-full hover:bg-slate-100"
+          >
             <ChevronLeft className="h-4 w-4" />
-
             Back to Dashboard
           </Button>
         </Link>
         <Button
           onClick={() => setShowNotebookModal(true)}
-
-
           className="bg-white border border-slate-400 text-slate-600  hover:bg-white hover:border-[#94b347] rounded-full hover:text-[#94b347]"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -649,9 +676,17 @@ export default function StudyCardPage() {
         selectedPages={selectedPages}
         filesToUpload={filesToUpload}
       />
-      
-      <StudyCardCarousel studySet={studySet} />
-      <StudyCardList studySet={studySet} onUpdate={handleStudySetUpdate} />
+
+      {studySet && studySet.cards && studySet.cards.length > 0 ? (
+        <>
+          <StudyCardCarousel studySet={studySet} />
+          <StudyCardList studySet={studySet} onUpdate={handleStudySetUpdate} />
+        </>
+      ) : (
+        <div className="text-center py-8 text-slate-600">
+          No study cards found in this set.
+        </div>
+      )}
     </div>
   );
 }

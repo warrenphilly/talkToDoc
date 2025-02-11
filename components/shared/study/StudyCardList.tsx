@@ -1,12 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StudyCardSet } from "@/types/studyCards";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, X } from "lucide-react";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/firebase";
+import { StudyCardSet } from "@/types/studyCards";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { PlusCircle, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface StudyCardListProps {
@@ -15,15 +15,17 @@ interface StudyCardListProps {
 }
 
 export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
-  const [showListAnswer, setShowListAnswer] = useState<{ [key: number]: boolean }>({});
+  const [showListAnswer, setShowListAnswer] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [newCardContent, setNewCardContent] = useState("");
 
   const toggleListAnswer = (index: number) => {
-    setShowListAnswer(prev => ({
+    setShowListAnswer((prev) => ({
       ...prev,
-      [index]: !prev[index]
+      [index]: !prev[index],
     }));
   };
 
@@ -31,20 +33,18 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
     try {
       if (!newCardTitle.trim() || !newCardContent.trim()) return;
 
-      const studyCardRef = doc(db, "studyCardSets", studySet.id);
+      const studyCardRef = doc(db, "studyCards", studySet.id);
       const newCard = {
-        front: newCardTitle,
-        back: newCardContent
+        title: newCardTitle,
+        content: newCardContent,
       };
-      
+
       const updatedCards = [
-        ...studySet.cards.map((card) => {
-          return {
-            front: card.front,
-            back: card.back
-          } as { front: string; back: string };
-        }),
-        newCard
+        ...studySet.cards.map((card) => ({
+          title: card.title,
+          content: card.content,
+        })),
+        newCard,
       ];
 
       await updateDoc(studyCardRef, {
@@ -60,7 +60,7 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
       setNewCardTitle("");
       setNewCardContent("");
       setShowAddModal(false);
-      
+
       toast.success("Card added successfully!");
     } catch (error) {
       console.error("Error adding card:", error);
@@ -76,12 +76,12 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
             All Study Cards
           </CardTitle>
           <Button
-              onClick={() => setShowAddModal(true)}
-              className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
-            >
-              <PlusCircle className="w-4 h-4 mr-2" />
-              Add New Card
-            </Button>
+            onClick={() => setShowAddModal(true)}
+            className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Add New Card
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -91,24 +91,26 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
                 className="bg-white border border-slate-200 p-4 rounded hover:bg-slate-50 transition-colors"
               >
                 <h3 className="font-semibold text-[#94b347]">
-                  {index + 1}. {card.front}
+                  {index + 1}. {card.title}
                 </h3>
-                <div className={`mt-2 text-slate-600 ${showListAnswer[index] ? 'block' : 'hidden'}`}>
-                  <p>{card.back}</p>
+                <div
+                  className={`mt-2 text-slate-600 ${
+                    showListAnswer[index] ? "block" : "hidden"
+                  }`}
+                >
+                  <p>{card.content}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => toggleListAnswer(index)}
                   className="text-sm text-slate-500 mt-2 hover:text-[#94b347]"
                 >
-                  {showListAnswer[index] ? 'Hide Answer' : 'Show Answer'}
+                  {showListAnswer[index] ? "Hide Answer" : "Show Answer"}
                 </button>
               </div>
             ))}
           </div>
 
-          <div className="flex justify-center mt-6">
-            
-          </div>
+          <div className="flex justify-center mt-6"></div>
         </CardContent>
       </Card>
 
@@ -116,7 +118,9 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-slate-700">Add New Study Card</h3>
+              <h3 className="text-lg font-semibold text-slate-700">
+                Add New Study Card
+              </h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -130,7 +134,7 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -143,7 +147,7 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
                   className="w-full border-slate-300"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Answer/Content
