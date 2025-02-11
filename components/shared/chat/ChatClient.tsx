@@ -26,6 +26,12 @@ import SideChat from "@/components/shared/global/SideChat";
 
 import StudyMaterialTabs from "@/components/StudyMaterialTabs";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -67,12 +73,6 @@ import StudyCards from "../study/StudyCards";
 import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 interface ChatClientProps {
   title: string;
@@ -158,7 +158,6 @@ const ChatClient = ({
 
       // First check if a sidechat already exists
       const existingSideChat = await getSideChat(notebookId, tabId);
-    
 
       if (existingSideChat) {
         // If sidechat exists, just add the new context section to it
@@ -223,7 +222,6 @@ const ChatClient = ({
     setPrimeSentence(null);
   };
 
-
   // Load messages when component mounts
   useEffect(() => {
     const loadMessages = async () => {
@@ -274,7 +272,7 @@ const ChatClient = ({
       updatedMessages.splice(index + 1, 0, newMessage);
 
       setMessages(updatedMessages);
-     
+
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
       console.error("Error saving paragraph:", error);
@@ -344,7 +342,7 @@ const ChatClient = ({
     const handleResize = () => {
       const newIsSmallScreen = window.innerWidth < 1068;
       setIsSmallScreen(newIsSmallScreen);
-      
+
       // Close modal if screen becomes large
       if (!newIsSmallScreen) {
         setShowUploadModal(false);
@@ -406,7 +404,11 @@ const ChatClient = ({
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center">
             <Button
-              onClick={() => isSmallScreen ? setShowUploadModal(true) : setShowUpload(!showUpload)}
+              onClick={() =>
+                isSmallScreen
+                  ? setShowUploadModal(true)
+                  : setShowUpload(!showUpload)
+              }
               className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 `}
             >
               {showUpload ? "Close Uploads" : "Uploaded Files"}
@@ -525,7 +527,9 @@ const ChatClient = ({
                   files={files}
                   showUpload={showUpload}
                   fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
-                  handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                  handleFileUpload={(event) =>
+                    handleFileUpload(event, setFiles)
+                  }
                   handleSendMessage={handleSendMessage}
                   handleClear={handleClear}
                   setShowUpload={setShowUpload}
@@ -705,7 +709,7 @@ const ChatClient = ({
                       <ResizablePanel
                         className={`relative ${
                           showStudyCards
-                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
+                            ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
                             : "hidden"
                         }`}
                         defaultSize={isStudyCardsFullscreen ? 100 : 50}
@@ -723,7 +727,14 @@ const ChatClient = ({
                             <Maximize2 size={16} />
                           )}
                         </Button>
-                        <StudyCards notebookId={notebookId} pageId={tabId} />
+                        <div className="h-full overflow-hidden">
+                          <div className="h-full overflow-y-auto px-2">
+                            <StudyCards
+                              notebookId={notebookId}
+                              pageId={tabId}
+                            />
+                          </div>
+                        </div>
                       </ResizablePanel>
                     )}
                     {showStudyGuides && (

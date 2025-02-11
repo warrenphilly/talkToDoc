@@ -406,8 +406,7 @@ export default function StudyCardPage() {
 
       // Save the study card set with user ID
       await saveStudyCardSet(
-        notebookIdToUse,
-        pageIdToUse,
+       
         data.cards,
         metadata,
         firestoreUser.id
