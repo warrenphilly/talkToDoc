@@ -70,6 +70,7 @@ import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 import { BookOpen } from "lucide-react";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import { useCollectionData } from '@/hooks/useCollectionData';
 
 interface StudyCardData {
   title: string;
@@ -129,9 +130,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const router = useRouter();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [studyCards, setStudyCards] = useState<StudyCardSet[]>([]);
-  const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
-  const [quizzes, setQuizzes] = useState<QuizState[]>([]);
+  
+  const { 
+    data: studyCards, 
+    loading: loadingStudyCards 
+  } = useCollectionData<StudyCardSet>('studyCards');
+  
+  const { 
+    data: studyGuides, 
+    loading: loadingStudyGuides 
+  } = useCollectionData<StudyGuide>('studyGuides');
+  
+  const { 
+    data: quizzes, 
+    loading: loadingQuizzes 
+  } = useCollectionData<QuizState>('quizzes');
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [quizName, setQuizName] = useState("");
@@ -180,29 +194,17 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     const fetchNotebooks = async () => {
       try {
         const clerkUserId = await getCurrentUserId();
-
         if (!clerkUserId) return;
 
         const firestoreUser = await getUserByClerkId(clerkUserId);
-
         if (!firestoreUser) return;
 
-        const userNotebooks = await getNotebooksByFirestoreUserId(
-          firestoreUser.id
-        );
-        const userStudyCards = await getStudyCardsByClerkId(clerkUserId);
-        const userStudyGuides = await getStudyGuidesByFirestoreUserId(
-          clerkUserId
-        );
-        const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
-
+        const userNotebooks = await getNotebooksByFirestoreUserId(firestoreUser.id);
         setNotebooks(userNotebooks);
-        setStudyCards(userStudyCards);
-        setStudyGuides(userStudyGuides);
-        setQuizzes(userQuizzes);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching notebooks:", error);
+        setLoading(false);
       }
     };
 
@@ -233,6 +235,19 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   ) => {
     e.preventDefault();
     setShowDeleteGuideAlert(guideId);
+  };
+
+  const handleConfirmDeleteCard = async (cardId: string) => {
+    try {
+      const cardRef = doc(db, "studyCards", cardId);
+      await deleteDoc(cardRef);
+      toast.success("Study card set deleted successfully");
+    } catch (error) {
+      console.error("Error deleting study card:", error);
+      toast.error("Failed to delete study card set");
+    } finally {
+      setShowDeleteCardAlert(null);
+    }
   };
 
   const handleGenerateQuiz = async () => {
@@ -351,8 +366,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         createdAt: serverTimestamp(),
       });
 
-      await refreshQuizzes();
-
       setQuizName("");
       setFiles([]);
       setSelectedPages({});
@@ -384,7 +397,15 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      await generateCards(
+      if (!setName.trim()) {
+        toast.error("Please enter a name for the study card set");
+        return;
+      }
+
+      setIsGenerating(true);
+
+      // Generate the cards using the existing utility function
+      const generatedCards = await generateCards(
         setName,
         numCards,
         selectedPages,
@@ -397,17 +418,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         setFilesToUpload,
         setFiles,
         setMessages,
-     
         user.id
-
       );
-      
-      await refreshStudyCards();
+
+      // Clear form and close modal
+      setSetName("");
+      setNumCards(10);
+      setFilesToUpload([]);
+      setSelectedPages({});
+      setShowCardModal(false);
+
+      toast.success("Study cards generated successfully!");
     } catch (error) {
       console.error("Error generating cards:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to generate cards"
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to generate cards");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -565,10 +591,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      if (
-        studyGuideFiles.length === 0 &&
-        Object.keys(selectedPages).length === 0
-      ) {
+      if (studyGuideFiles.length === 0 && Object.keys(selectedPages).length === 0) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
@@ -577,9 +600,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       // Get the first selected notebook and page if they exist
       const firstNotebookId = Object.keys(selectedPages)[0] || "";
-      const firstPageId = firstNotebookId
-        ? selectedPages[firstNotebookId]?.[0]
-        : "";
+      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
 
       // Handle file uploads
       let uploadedDocsMetadata = [];
@@ -624,11 +645,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages:
-          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         guideName,
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -657,8 +676,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
       await setDoc(studyGuideRef, newStudyGuide);
 
-      await refreshStudyGuides();
-
       setGuideName("");
       setStudyGuideFiles([]);
       setSelectedPages({});
@@ -674,33 +691,13 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     }
   };
 
-  const refreshStudyCards = useCallback(async () => {
-    if (!user?.id) return;
-    const userStudyCards = await getStudyCardsByClerkId(user.id);
-    setStudyCards(userStudyCards);
-  }, [user?.id]);
-
-  const refreshStudyGuides = useCallback(async () => {
-    const clerkUserId = await getCurrentUserId();
-    if (!clerkUserId) return;
-    const userStudyGuides = await getStudyGuidesByFirestoreUserId(clerkUserId);
-    setStudyGuides(userStudyGuides);
-  }, []);
-
-  const refreshQuizzes = useCallback(async () => {
-    const clerkUserId = await getCurrentUserId();
-    if (!clerkUserId) return;
-    const userQuizzes = await getQuizzesByFirestoreUserId(clerkUserId);
-    setQuizzes(userQuizzes);
-  }, []);
-
   useEffect(() => {
     console.log("Study cards state:", studyCards);
     setIsLoading(false);
   }, [studyCards]);
 
   const renderStudyCards = useMemo(() => {
-    if (isLoading) {
+    if (loadingStudyCards) {
       return (
         <div className="text-center py-4">
           <CircularProgress size={24} sx={{ color: "#94b347" }} />
@@ -745,7 +742,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         ))}
       </div>
     );
-  }, [studyCards]);
+  }, [studyCards, loadingStudyCards]);
 
   return (
     <div className="container mx-auto px-2 sm:px-6">
@@ -842,6 +839,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                     {
                       id: "study-cards",
                       title: "Study Cards",
+                      loading: loadingStudyCards,
                       button: {
                         label: "New Study Cards",
                         onClick: () => setShowCardModal(true),
@@ -857,6 +855,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                     {
                       id: "study-guides",
                       title: "Study Guides",
+                      loading: loadingStudyGuides,
                       button: {
                         label: "New Study Guide",
                         onClick: () => setShowStudyGuideModal(true),
@@ -912,6 +911,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                     {
                       id: "quizzes",
                       title: "Quizzes",
+                      loading: loadingQuizzes,
                       button: {
                         label: "New Quiz",
                         onClick: () => setShowQuizForm(true),
@@ -1078,24 +1078,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   const cardId = showDeleteCardAlert;
                   if (!cardId) return;
 
-                  const card = studyCards.find((c) => c.id === cardId);
-                  if (!card) {
-                    toast.error("Study card not found");
-                    return;
-                  }
-
-                  // Delete from Firestore
-                  const cardRef = doc(db, "studyCards", cardId);
-                  await deleteDoc(cardRef);
-                  
-                  // Refresh the study cards list
-                  await refreshStudyCards();
-                  toast.success("Study card set deleted successfully");
+                  await handleConfirmDeleteCard(cardId);
                 } catch (error) {
                   console.error("Error deleting study card:", error);
                   toast.error("Failed to delete study card set");
-                } finally {
-                  setShowDeleteCardAlert(null);
                 }
               }}
               className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"
@@ -1187,7 +1173,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   if (!guideId) return;
 
                   await deleteStudyGuide(guideId);
-                  await refreshStudyGuides();
                   toast.success("Study guide deleted successfully");
                 } catch (error) {
                   console.error("Error deleting study guide:", error);
@@ -1235,7 +1220,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   if (!quizId) return;
 
                   await deleteQuiz(quizId);
-                  await refreshQuizzes();
                   toast.success("Quiz deleted successfully");
                 } catch (error) {
                   console.error("Error deleting quiz:", error);
