@@ -1,11 +1,12 @@
+import FormUpload from "@/components/shared/study/formUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import FormUpload from "@/components/shared/study/formUpload";
-import { RefObject } from "react";
+import { uploadLargeFile } from "@/lib/fileUpload";
 import { Message } from "@/lib/types";
 import { Notebook } from "@/types/notebooks";
+import { StudyCardSet } from "@/types/studyCards";
 import { Loader2, RefreshCw } from "lucide-react";
-import { uploadLargeFile } from "@/lib/fileUpload";
+import { RefObject } from "react";
 import { toast } from "react-hot-toast";
 
 interface CreateCardModalProps {
@@ -19,7 +20,10 @@ interface CreateCardModalProps {
   files: File[];
   showUpload: boolean;
   fileInputRef: RefObject<HTMLInputElement>;
-  handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>, setFiles: (files: File[]) => void) => void;
+  handleFileUpload: (
+    event: React.ChangeEvent<HTMLInputElement>,
+    setFiles: (files: File[]) => void
+  ) => void;
   handleSendMessage: () => void;
   handleClear: () => void;
   setShowUpload: (show: boolean) => void;
@@ -28,9 +32,12 @@ interface CreateCardModalProps {
   handleGenerateCards: () => Promise<void>;
   isGenerating: boolean;
   selectedPages: { [notebookId: string]: string[] };
-  setSelectedPages: React.Dispatch<React.SetStateAction<{ [notebookId: string]: string[] }>>;
+  setSelectedPages: React.Dispatch<
+    React.SetStateAction<{ [notebookId: string]: string[] }>
+  >;
   filesToUpload: File[];
   setIsGenerating: (isGenerating: boolean) => void;
+  onSetCreated?: (studySet: StudyCardSet) => void;
 }
 
 export default function CreateCardModal({
@@ -56,11 +63,11 @@ export default function CreateCardModal({
   setSelectedPages,
   filesToUpload,
   setIsGenerating,
+  onSetCreated,
 }: CreateCardModalProps) {
-
   const handleGenerateStudyCards = async () => {
     if (!setName.trim()) {
-      toast.error("Please enter a name for the card set");
+      toast.error("Please enter a set name");
       return;
     }
 
@@ -77,7 +84,7 @@ export default function CreateCardModal({
       for (const file of filesToUpload) {
         try {
           const downloadURL = await uploadLargeFile(file);
-          
+
           const response = await fetch("/api/convert-from-storage", {
             method: "POST",
             headers: {
@@ -98,7 +105,7 @@ export default function CreateCardModal({
           processedFiles.push({
             name: file.name,
             path: downloadURL,
-            content: data.text
+            content: data.text,
           });
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
@@ -111,7 +118,7 @@ export default function CreateCardModal({
         selectedPages,
         setName,
         numCards,
-        uploadedDocs: processedFiles
+        uploadedDocs: processedFiles,
       };
 
       console.log("Sending request with:", requestBody);
@@ -121,7 +128,7 @@ export default function CreateCardModal({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       console.log("Response status:", response.status);
@@ -129,7 +136,7 @@ export default function CreateCardModal({
       console.log("API Response:", result);
 
       if (!response.ok) {
-        console.error('Study Cards API Error Response:', result);
+        console.error("Study Cards API Error Response:", result);
         throw new Error(result.error || "Failed to generate study cards");
       }
 
@@ -142,16 +149,17 @@ export default function CreateCardModal({
           setSelectedPages({});
         }
         setShowNotebookModal(false);
-        
+
+        // Set the newly created set as selected
+        if (onSetCreated) {
+          onSetCreated(result.studySet);
+        }
+
         toast.success("Study cards generated and saved successfully!");
-        
-        // Optionally refresh the study cards list or navigate to the new set
-        // if you have such functionality
       } else {
         console.error("Invalid response format:", result);
         throw new Error("Failed to save study cards");
       }
-
     } catch (error: any) {
       console.error("Error generating study cards:", error);
       toast.error(error.message || "Failed to generate study cards");
@@ -163,7 +171,7 @@ export default function CreateCardModal({
   return (
     <>
       {showNotebookModal && (
-       <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
+        <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
           <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
@@ -211,7 +219,9 @@ export default function CreateCardModal({
                   files={files}
                   showUpload={showUpload}
                   fileInputRef={fileInputRef}
-                  handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+                  handleFileUpload={(event) =>
+                    handleFileUpload(event, setFiles)
+                  }
                   handleSendMessage={handleSendMessage}
                   handleClear={handleClear}
                   setShowUpload={setShowUpload}
@@ -240,12 +250,13 @@ export default function CreateCardModal({
                 disabled={
                   isGenerating ||
                   !setName.trim() ||
-                  (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0)
+                  (filesToUpload.length === 0 &&
+                    Object.keys(selectedPages).length === 0)
                 }
               >
                 {isGenerating ? (
                   <div className="flex items-center gap-2">
-                   <RefreshCw className="h-4 w-4 animate-spin" /> 
+                    <RefreshCw className="h-4 w-4 animate-spin" />
                     Generating...
                   </div>
                 ) : (
@@ -256,7 +267,6 @@ export default function CreateCardModal({
           </div>
         </div>
       )}
-
     </>
   );
 }

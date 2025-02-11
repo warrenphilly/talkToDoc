@@ -462,6 +462,7 @@ export default function StudyCards({
           filesToUpload={filesToUpload}
           setIsGenerating={setIsGenerating}
           setSelectedPages={setSelectedPages}
+          onSetCreated={(newSet) => setSelectedSet(newSet)}
         />
 
         {!selectedSet ? (
