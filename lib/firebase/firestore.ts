@@ -1509,17 +1509,23 @@ export const getQuiz = async (quizId: string): Promise<QuizState> => {
   } as QuizState;
 };
 
-export const updateStudyCardSetTitle = async (
-  setId: string,
-  newTitle: string
-): Promise<void> => {
+export const updateStudyCardSetTitle = async (setId: string, newTitle: string) => {
   try {
-    const studyCardSetRef = doc(db, "studyCardSets", setId);
+    // Change from 'studyCardSets' to 'studyCards'
+    const studyCardRef = doc(db, "studyCards", setId);
+    
+    // Check if document exists first
+    const docSnap = await getDoc(studyCardRef);
+    if (!docSnap.exists()) {
+      throw new Error(`Study card set with ID ${setId} not found`);
+    }
 
-    await updateDoc(studyCardSetRef, {
+    await updateDoc(studyCardRef, {
       title: newTitle,
-      updatedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
+
+    return true;
   } catch (error) {
     console.error("Error updating study card set title:", error);
     throw error;

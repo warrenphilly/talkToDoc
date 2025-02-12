@@ -1,37 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { updateStudyCardSetTitle } from "@/lib/firebase/firestore";
 import { StudyCardSet } from "@/types/studyCards";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import {
+  Check,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  Pencil,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 interface StudyCardCarouselProps {
-  studySet: {
-    id: string;
-    title: string;
-    cards: Array<{
-      title: string;
-      content: string;
-    }>;
-    createdAt: string;
-    updatedAt: string;
-    userId: string;
-    metadata: {
-      createdAt: string;
-      updatedAt: string;
-    };
-    notebookId: string | null;
-    pageId: string | null;
-  };
+  studySet: StudyCardSet;
+  onTitleUpdate?: (newTitle: string) => void;
 }
 
-export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
+export function StudyCardCarousel({
+  studySet,
+  onTitleUpdate,
+}: StudyCardCarouselProps) {
   const [showAnswer, setShowAnswer] = useState<{ [key: number]: boolean }>({});
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(studySet.title);
+  const [currentTitle, setCurrentTitle] = useState(studySet.title);
 
   useEffect(() => {
     console.log("Current study set:", studySet);
     console.log("Current cards:", studySet?.cards);
     console.log("Current card:", studySet?.cards[currentCardIndex]);
+    setCurrentTitle(studySet.title);
+    setEditedTitle(studySet.title);
   }, [studySet, currentCardIndex]);
 
   if (!studySet?.cards || studySet.cards.length === 0) {
@@ -67,14 +69,91 @@ export function StudyCardCarousel({ studySet }: StudyCardCarouselProps) {
     }
   };
 
+  const handleSaveTitle = async () => {
+    if (editedTitle.trim() === "") {
+      toast.error("Title cannot be empty");
+      return;
+    }
+
+    try {
+      await updateStudyCardSetTitle(studySet.id, editedTitle.trim());
+      setIsEditing(false);
+      setCurrentTitle(editedTitle.trim());
+      if (onTitleUpdate) {
+        onTitleUpdate(editedTitle.trim());
+      }
+      toast.success("Title updated successfully");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      setEditedTitle(currentTitle);
+      setIsEditing(false);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update title. Please try again."
+      );
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(currentTitle);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveTitle();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
+    }
+  };
+
   return (
     <Card className="max-w-4xl mx-auto my-0 py-0 shadow-none border-none h-fit bg-white mb-8">
       <CardHeader className="flex flex-row py-0 my-0 items-center justify-between h-fit">
         <div className="flex flex-col w-full items-center justify-center">
           <div className="flex flex-row items-center justify-between w-full">
-            <CardTitle className="text-2xl font-bold text-[#94b347]">
-              Study Deck:{" "}
-              <span className="text-slate-500">{studySet.title}</span>
+            <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2">
+             
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="text-slate-500 flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-fit"
+                    autoFocus
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={handleSaveTitle}
+                      className="p-1 hover:bg-green-100 rounded-full text-green-600"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="p-1 hover:bg-red-100 rounded-full text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                  <>
+                Study Deck:{" "}
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-600 font-bold">{currentTitle}</span>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="p-1 hover:bg-slate-100 rounded-full"
+                  >
+                    <Pencil className="h-4 w-4 text-slate-400 hover:text-[#94b347]" />
+                  </button>
+                    </div>
+                    </>
+              )}
+              
             </CardTitle>
           </div>
 

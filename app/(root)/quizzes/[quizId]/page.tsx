@@ -10,15 +10,23 @@ import { getNotebooksByFirestoreUserId } from "@/lib/firebase/firestore";
 import { QuizState } from "@/types/quiz";
 import { User } from "@/types/users";
 import { useUser } from "@clerk/nextjs";
-import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
+import {
+  doc,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pencil,
   Plus,
   RefreshCw,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -54,6 +62,9 @@ export default function QuizPage() {
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
     new Set()
   );
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [currentTitle, setCurrentTitle] = useState("");
 
   useEffect(() => {
     const fetchFirestoreUser = async () => {
@@ -108,6 +119,11 @@ export default function QuizPage() {
 
     fetchQuiz();
   }, [params.quizId]);
+
+  useEffect(() => {
+    setCurrentTitle(quiz?.quizData.title || "");
+    setEditedTitle(quiz?.quizData.title || "");
+  }, [quiz?.quizData.title]);
 
   const handleGenerateQuiz = async () => {
     try {
@@ -234,6 +250,35 @@ export default function QuizPage() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleSaveTitle = async () => {
+    if (editedTitle.trim() === "") {
+      toast.error("Title cannot be empty");
+      return;
+    }
+
+    try {
+      const quizRef = doc(db, "quizzes", quiz?.id || "");
+      await updateDoc(quizRef, {
+        "quizData.title": editedTitle.trim(),
+        lastUpdatedAt: serverTimestamp(),
+      });
+
+      setIsEditingTitle(false);
+      setCurrentTitle(editedTitle.trim());
+      toast.success("Title updated successfully");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      setEditedTitle(currentTitle);
+      setIsEditingTitle(false);
+      toast.error("Failed to update title. Please try again.");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(currentTitle);
+    setIsEditingTitle(false);
   };
 
   if (loading) {
@@ -435,14 +480,47 @@ export default function QuizPage() {
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
           user={user}
+          setSelectedPages={setSelectedPages}
         />
       )}
 
       <div className="flex flex-col items-center justify-start w-full max-w-8xl overflow-y-auto px-16">
         <div></div>
         <div className="flex p-4 flex-col items-start justify-between w-full">
-          <h1 className="text-2xl font-bold ">
-            <span className="text-[#94b347]">{quiz.quizData.title}</span>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            {isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347]"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSaveTitle}
+                  className="p-1 hover:bg-green-100 rounded-full"
+                >
+                  <Check className="h-4 w-4 text-green-600" />
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="p-1 hover:bg-red-100 rounded-full"
+                >
+                  <X className="h-4 w-4 text-red-600" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-[#94b347]">{currentTitle}</span>
+                <button
+                  onClick={() => setIsEditingTitle(true)}
+                  className="p-1 hover:bg-slate-100 rounded-full"
+                >
+                  <Pencil className="h-4 w-4 text-slate-400 hover:text-[#94b347]" />
+                </button>
+              </div>
+            )}
           </h1>
           <p className="text-sm text-slate-500">
             Created:{" "}
