@@ -30,6 +30,7 @@ interface StudyGuideModalProps {
   filesToUpload: File[];
   selectedPages: { [notebookId: string]: string[] };
   setIsGenerating: (isGenerating: boolean) => void;
+  onGuideCreated?: (guide: StudyGuide) => void;
 }
 
 export default function StudyGuideModal({
@@ -50,6 +51,7 @@ export default function StudyGuideModal({
   filesToUpload,
   selectedPages,
   setIsGenerating,
+  onGuideCreated,
 }: StudyGuideModalProps) {
   const { user } = useUser();
 
@@ -133,7 +135,7 @@ export default function StudyGuideModal({
         throw new Error("No content received from study guide generation");
       }
       
-      // Create a properly formatted study guide object without pageId
+      // Create a properly formatted study guide object
       const newStudyGuide: StudyGuide = {
         id: `guide_${crypto.randomUUID()}`,
         title: guideName,
@@ -148,6 +150,11 @@ export default function StudyGuideModal({
           await saveGeneratedStudyGuide(newStudyGuide as StudyGuide, user.id);
           console.log('Successfully saved study guide to database');
           toast.success('Study guide created successfully!');
+          
+          // Call the callback with the new guide
+          if (onGuideCreated) {
+            onGuideCreated(newStudyGuide);
+          }
         } catch (error) {
           console.error('Error saving study guide to database:', error);
           toast.error('Failed to save study guide to database');
@@ -230,13 +237,7 @@ export default function StudyGuideModal({
         </div>
 
         {/* Add error message when button is disabled */}
-        {isGenerateDisabled && !isGenerating && (
-          <p className="text-red-500 text-sm mt-2 text-center">
-            {!guideName.trim() 
-              ? "Please enter a title for your study guide"
-              : "Please either upload files or select notebook pages"}
-          </p>
-        )}
+
       </div>
     </div>
   );

@@ -53,6 +53,17 @@ import { toast } from "react-hot-toast";
 import CreateCardModal from "./CreateCardModal";
 import { StudyCardCarousel } from "./StudyCardCarousel";
 import { StudyCardList } from "./StudyCardList";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -489,16 +500,45 @@ export default function StudyCards({
                           </p>
                         </div>
                         <div className="flex flex-row justify-end items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetDeletion(set.id);
-                            }}
-                          >
-                            <Trash className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Are you absolutely sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete your Study Card Set and
+                                  remove your data from our servers.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
+                                >
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSetDeletion(set.id);
+                                  }}
+                                  className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
 

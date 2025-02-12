@@ -55,19 +55,29 @@ import { useEffect, useRef, useState } from "react";
 
 import FormUpload from "@/components/shared/study/formUpload";
 import StudyGuide from "@/components/shared/study/StudyGuide";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { storage } from "@/firebase";
 import { Message } from "@/lib/types";
 import { fileUpload } from "@/lib/utils";
+import { StudyGuideSection } from "@/types/studyGuide";
+import { User } from "@/types/users";
 import { useUser } from "@clerk/nextjs";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { RefObject } from "react";
+import { toast } from "react-hot-toast";
 import { StudyGuideCard } from "./StudyGuideCard";
 import StudyGuideModal from "./StudyGuideModal";
-import { toast } from "react-hot-toast";
-import { User } from "@/types/users";
-import {  StudyGuideSection } from "@/types/studyGuide";
-
 // Export the interfaces so they can be imported by StudyGuideCard
 export interface StudyGuideSubtopic {
   title: string;
@@ -81,8 +91,7 @@ export interface StudyGuide {
   id: string;
   title: string;
   content: StudyGuideSection[];
- 
-  
+
   createdAt: Date;
   userId: string;
 }
@@ -144,30 +153,21 @@ export default function StudyGuideComponent({
   const user = useUser();
   const userId = user?.user?.id;
 
-
-
-
   useEffect(() => {
-
     setFilesToUpload([...filesToUpload, ...files]);
   }, [files]);
 
   useEffect(() => {
-  
-    
     loadCardSets();
   }, [pageId]);
 
   useEffect(() => {
     if (showNotebookModal) {
-    
       fetchNotebooks();
     }
   }, [showNotebookModal]);
 
-
   useEffect(() => {
-
     loadStudyGuides();
   }, [pageId]);
 
@@ -188,11 +188,14 @@ export default function StudyGuideComponent({
     console.log("Sending message");
   };
 
-  {/* error zone*/}
+  {
+    /* error zone*/
+  }
 
   useEffect(() => {
     const fetchFirestoreUser = async () => {
-      if (user?.user?.id) {  // Check for user ID specifically
+      if (user?.user?.id) {
+        // Check for user ID specifically
         try {
           const firestoreUser = await getUserByClerkId(user.user.id);
           setFirestoreUser(firestoreUser);
@@ -203,16 +206,12 @@ export default function StudyGuideComponent({
       }
     };
     fetchFirestoreUser();
-  }, [user?.user?.id]);  // Only depend on the user ID
-
+  }, [user?.user?.id]); // Only depend on the user ID
 
   const handleClear = () => {
     setMessages([]);
     setFiles([]);
   };
-
-
-
 
   const fetchNotebooks = async () => {
     if (firestoreUser) {
@@ -221,7 +220,7 @@ export default function StudyGuideComponent({
         const fetchedNotebooks = await getNotebooksByFirestoreUserId(
           firestoreUser.id
         );
-       
+
         setNotebooks(fetchedNotebooks);
       } catch (error) {
         console.error("Error fetching notebooks:", error);
@@ -230,7 +229,7 @@ export default function StudyGuideComponent({
         setIsLoadingNotebooks(false);
       }
     }
-  }
+  };
 
   const handlePageSelection = (
     notebookId: string,
@@ -395,7 +394,7 @@ export default function StudyGuideComponent({
       const data = await response.json();
 
       // Save study card set and update notebook
-      await saveStudyCardSet(notebookId, pageId, data.cards, metadata, userId || "");
+      await saveStudyCardSet(data.cards, metadata, userId || "");
 
       // Update the page with study docs references if we have uploaded files
       if (uploadedDocs.length > 0) {
@@ -688,9 +687,7 @@ export default function StudyGuideComponent({
       const newStudyGuide: StudyGuide = {
         id: `guide_${crypto.randomUUID()}`,
         title: guideName,
-        content: data.content, // This will be an array of sections with title, text, and show properties
-      
-   
+        content: data.content,
         createdAt: new Date(),
         userId: userId || "",
       };
@@ -705,18 +702,22 @@ export default function StudyGuideComponent({
       // Refresh the study guides list
       await loadStudyGuides();
 
+      // Automatically open the new guide
+      setSelectedGuideView(newStudyGuide);
+
       // Close modal and reset state
       setShowNotebookModal(false);
       setGuideName("");
       setFilesToUpload([]);
       setFiles([]);
       setMessages([]);
+      setSelectedPages({});
 
       // Show success message
-      alert("Study guide generated successfully!");
+      toast.success("Study guide generated successfully!");
     } catch (error) {
       console.error("Error generating study guide:", error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to generate study guide"
@@ -741,10 +742,7 @@ export default function StudyGuideComponent({
         querySnapshot = await getDocs(q);
       } catch (error) {
         // Fallback to unordered query if index doesn't exist
-        const q = query(
-          studyGuidesRef,
-          where("userId", "==", userId),
-        );
+        const q = query(studyGuidesRef, where("userId", "==", userId));
         querySnapshot = await getDocs(q);
       }
 
@@ -767,7 +765,6 @@ export default function StudyGuideComponent({
       console.error("Error loading study guides:", error);
     }
   };
-  
 
   const handleDeleteStudyGuide = async (guideId: string) => {
     try {
@@ -833,6 +830,16 @@ export default function StudyGuideComponent({
     }
   };
 
+  const handleGuideCreated = (newGuide: StudyGuide) => {
+    setSelectedGuideView(newGuide);
+    setShowNotebookModal(false);
+    setGuideName("");
+    setFilesToUpload([]);
+    setFiles([]);
+    setMessages([]);
+    setSelectedPages({});
+  };
+
   return (
     <Card className="h-full bg-white border-none shadow-none overflow-y-auto">
       <CardContent className=" bg-white h-full p-4">
@@ -879,6 +886,7 @@ export default function StudyGuideComponent({
                 filesToUpload={filesToUpload}
                 selectedPages={selectedPages}
                 setIsGenerating={setIsGenerating}
+                onGuideCreated={handleGuideCreated}
               />
             )}
 
@@ -900,17 +908,46 @@ export default function StudyGuideComponent({
                       Created: {new Date(guide.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteStudyGuide(guide.id);
-                    }}
-                    className="text-slate-400 hover:text-red-500 transition-colors hover:bg-transparent"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete your Study Card Set and remove your data from
+                          our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
+                        >
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteStudyGuide(guide.id);
+                          }}
+                          className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               ))}
 

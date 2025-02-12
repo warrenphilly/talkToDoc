@@ -16,11 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { db } from "@/firebase";
 import { uploadLargeFile } from "@/lib/fileUpload";
 import { saveQuiz } from "@/lib/firebase/firestore";
 import { QuizState } from "@/types/quiz";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
 import { Loader2, RefreshCw } from "lucide-react";
 import React, { MutableRefObject, useState } from "react";
+import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
 
 interface QuizFormProps {
@@ -48,7 +51,11 @@ interface QuizFormProps {
   setShowQuizForm: (show: boolean) => void;
   renderNotebookList: () => React.ReactNode;
   selectedPages: { [notebookId: string]: string[] };
+  setSelectedPages: React.Dispatch<
+    React.SetStateAction<{ [notebookId: string]: string[] }>
+  >;
   user: any;
+  onQuizCreated?: (quiz: QuizState) => void;
 }
 
 const QuizForm = ({
@@ -65,8 +72,10 @@ const QuizForm = ({
   setIsGenerating,
   setShowQuizForm,
   renderNotebookList,
-  selectedPages = {},
+  selectedPages,
+  setSelectedPages,
   user,
+  onQuizCreated,
 }: QuizFormProps) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -152,16 +161,8 @@ const QuizForm = ({
 
       const quizData = await response.json();
 
-      // Get current timestamp as milliseconds
-      const now = Date.now();
-      const timestamp = {
-        seconds: Math.floor(now / 1000),
-        nanoseconds: (now % 1000) * 1000000,
-        toLocaleDateString: () => new Date(now).toLocaleDateString(),
-      };
-
-      // Create a new QuizState object with serialized timestamps
-      const newQuiz: QuizState = {
+      const now = Timestamp.now();
+      const newQuiz = {
         id: crypto.randomUUID(),
         notebookId: Object.keys(selectedPages)[0] || "",
         pageId: Object.values(selectedPages)[0]?.[0] || "",
@@ -174,37 +175,52 @@ const QuizForm = ({
         evaluationResults: {},
         score: 0,
         totalQuestions: quizData.quiz.questions.length,
-        startedAt: timestamp,
-        lastUpdatedAt: timestamp,
-        createdAt: timestamp,
+        startedAt: now,
+        lastUpdatedAt: now,
+        createdAt: now,
         isComplete: false,
         incorrectAnswers: [],
         userId: user.id,
         title: quizName,
       };
 
-      // Convert the quiz object to a plain object
-      const plainQuiz = JSON.parse(JSON.stringify(newQuiz));
-
-      // Save the quiz to Firestore
-      await saveQuiz(
-        plainQuiz,
-        {
-          selectedPages,
-          questionTypes: message.questionTypes,
+      // Create a serializable version of the quiz
+      const serializableQuiz = {
+        ...newQuiz,
+        startedAt: {
+          seconds: newQuiz.startedAt.seconds,
+          nanoseconds: newQuiz.startedAt.nanoseconds,
         },
-        processedFiles.map((file) => ({
-          path: file.path,
-          name: file.name,
-        })),
-        user.id
-      );
+        lastUpdatedAt: {
+          seconds: newQuiz.lastUpdatedAt.seconds,
+          nanoseconds: newQuiz.lastUpdatedAt.nanoseconds,
+        },
+        createdAt: {
+          seconds: newQuiz.createdAt.seconds,
+          nanoseconds: newQuiz.createdAt.nanoseconds,
+        },
+      };
 
+      // Save to Firestore directly
+      const docRef = await addDoc(collection(db, "quizzes"), newQuiz);
+      const newQuizWithId = { ...newQuiz, id: docRef.id } as QuizState;
+
+      // Update local state
+      if (onQuizCreated) {
+        onQuizCreated(newQuizWithId);
+      }
+
+      // Clear form and close modal
       setShowQuizForm(false);
+      setQuizName("");
+      setFiles([]);
+      setSelectedPages({});
+
+      toast.success("Quiz generated successfully!");
     } catch (error) {
       console.error("Error generating quiz:", error);
-      setUploadError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate quiz"
       );
     } finally {
       setIsGenerating(false);

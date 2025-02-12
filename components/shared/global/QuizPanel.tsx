@@ -9,7 +9,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getQuizzesByFirestoreUserId, saveQuizState } from "@/lib/firebase/firestore";
+import {
+  getQuizzesByFirestoreUserId,
+  saveQuizState,
+} from "@/lib/firebase/firestore";
 import {
   BookOpen,
   Check,
@@ -30,6 +33,17 @@ import {
 import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 
 // import { Quiz } from "@/components/ui/Quiz";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Card,
   CardContent,
@@ -173,8 +187,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       // First get the Firestore user
       const firestoreUser = await getUserByClerkId(user.id);
 
-      
-
       if (!firestoreUser) {
         console.error("No Firestore user found for Clerk ID:", user.id);
         return;
@@ -185,13 +197,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // Get ALL notebooks for debugging
       const allNotebooks = await getDocs(collection(db, "notebooks"));
-    
 
       // Query using Firestore user ID
       const q = query(notebooksRef, where("userId", "==", firestoreUser.id));
       const querySnapshot = await getDocs(q);
-
-   
 
       const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
         const data = doc.data();
@@ -203,7 +212,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           createdAt: data.createdAt?.toDate() || new Date(),
         };
       });
-
 
       setNotebooks(fetchedNotebooks);
     } catch (error) {
@@ -291,7 +299,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           }
 
           const convertData = await convertResponse.json();
-   
 
           if (!convertData.path && !convertData.text) {
             throw new Error(
@@ -323,8 +330,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
         quizName,
       };
 
-    
-
       quizFormData.append("message", JSON.stringify(message));
 
       const response = await fetch("/api/quiz", {
@@ -339,7 +344,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       const data = await response.json();
 
-
       // Ensure required fields are present
       if (!notebookId) {
         throw new Error("Notebook ID is required");
@@ -348,7 +352,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       // Create a new quiz state with required fields
       const newQuiz: Omit<QuizState, "id"> = {
         notebookId: notebookId,
-        pageId: pageId || "", // Provide empty string fallback
+        pageId: pageId || "",
         currentQuestionIndex: 0,
         score: 0,
         userAnswers: {},
@@ -366,9 +370,36 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       // Save to Firestore
       const docRef = await addDoc(collection(db, "quizzes"), newQuiz);
-      
 
+      // Get the newly created quiz with its ID
+      const newQuizWithId = { ...newQuiz, id: docRef.id } as QuizState;
+
+      // Update local state
+      setQuizzes((prevQuizzes) => [...prevQuizzes, newQuizWithId]);
+
+      // Automatically select and open the new quiz
+      const serializedQuiz: SerializedQuizState = {
+        ...newQuizWithId,
+        startedAt: {
+          seconds: newQuizWithId.startedAt.seconds,
+          nanoseconds: newQuizWithId.startedAt.nanoseconds,
+        },
+        lastUpdatedAt: {
+          seconds: newQuizWithId.lastUpdatedAt.seconds,
+          nanoseconds: newQuizWithId.lastUpdatedAt.nanoseconds,
+        },
+      };
+
+      setSelectedQuiz(serializedQuiz);
+      setQuizData(data.quiz);
       setShowQuizForm(false);
+
+      // Clear form state
+      setQuizName("");
+      setFiles([]);
+      setSelectedPages({});
+
+      toast.success("Quiz generated successfully!");
     } catch (error) {
       console.error("Error generating quiz:", error);
       toast.error(
@@ -381,7 +412,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Function to handle quiz selection
   const handleQuizSelect = (quiz: QuizState) => {
-
     if (quiz.quizData) {
       // Convert timestamps to serializable format
       const serializedQuiz: SerializedQuizState = {
@@ -436,6 +466,45 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     };
   };
 
+  // Add real-time listener for quizzes
+  useEffect(() => {
+    if (!user) return;
+
+    const quizzesRef = collection(db, "quizzes");
+    const q = query(quizzesRef, where("userId", "==", user.id));
+
+    // Set up real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedQuizzes: QuizState[] = [];
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        updatedQuizzes.push({
+          ...data,
+          id: doc.id,
+          startedAt: data.startedAt,
+          lastUpdatedAt: data.lastUpdatedAt,
+          createdAt: data.createdAt,
+        } as QuizState);
+      });
+
+      setQuizzes(updatedQuizzes);
+
+      // If the currently selected quiz was deleted, clear the selection
+      if (
+        selectedQuiz &&
+        !updatedQuizzes.find((quiz) => quiz.id === selectedQuiz.id)
+      ) {
+        setSelectedQuiz(null);
+        setQuizData(null);
+      }
+    });
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [user]);
+
+  // Add delete quiz function
   const handleDeleteQuiz = async (quizId: string) => {
     try {
       await deleteDoc(doc(db, "quizzes", quizId));
@@ -444,6 +513,39 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       console.error("Error deleting quiz:", error);
       toast.error("Failed to delete quiz");
     }
+  };
+
+  const handleQuizCreated = (newQuiz: QuizState) => {
+    // Convert timestamps to serializable format without functions
+    const serializedQuiz: SerializedQuizState = {
+      ...newQuiz,
+      startedAt: {
+        seconds:
+          newQuiz.startedAt instanceof Timestamp
+            ? newQuiz.startedAt.seconds
+            : Math.floor(new Date(newQuiz.startedAt as any).getTime() / 1000),
+        nanoseconds:
+          newQuiz.startedAt instanceof Timestamp
+            ? newQuiz.startedAt.nanoseconds
+            : 0,
+      },
+      lastUpdatedAt: {
+        seconds:
+          newQuiz.lastUpdatedAt instanceof Timestamp
+            ? newQuiz.lastUpdatedAt.seconds
+            : Math.floor(
+                new Date(newQuiz.lastUpdatedAt as any).getTime() / 1000
+              ),
+        nanoseconds:
+          newQuiz.lastUpdatedAt instanceof Timestamp
+            ? newQuiz.lastUpdatedAt.nanoseconds
+            : 0,
+      },
+    };
+
+    setSelectedQuiz(serializedQuiz);
+    setQuizData(newQuiz.quizData);
+    setShowQuizForm(false);
   };
 
   const renderNotebookList = () => {
@@ -559,8 +661,12 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {/* Header with Create Quiz button */}
       <div className="flex justify-between items-center mb-4 sm:mb-6">
         <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">Quiz Me</h2>
-          <p className="text-slate-600 text-sm sm:text-base text-center">Create and review quizzes</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">
+            Quiz Me
+          </h2>
+          <p className="text-slate-600 text-sm sm:text-base text-center">
+            Create and review quizzes
+          </p>
 
           <Button
             onClick={() => setShowQuizForm(true)}
@@ -576,48 +682,71 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {!showQuizForm && !selectedQuiz && (
         <div className="w-full max-w-lg mx-auto">
           {quizzes.map((quiz) => (
-            <div
-              key={quiz.id}
-              className="border-t p-1 bg-white border-slate-300 cursor-pointer hover:bg-slate-50 transition-colors"
-              onClick={() => handleQuizSelect(quiz)}
-            >
-              <div className="flex items-center justify-between p-2 sm:p-3 text-slate-600">
-                <div className="flex items-center gap-2 flex-1">
-                  <button
-                    onClick={() => handleQuizSelect(quiz)}
-                    className="flex-1 flex items-center gap-2 sm:gap-4 text-left"
-                  >
-                    <div className="flex flex-col w-full">
-                      <h3 className="font-medium text-slate-700 text-sm sm:text-base truncate">
-                        {quiz.quizData?.title || "Untitled Quiz"}
-                      </h3>
-                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs sm:text-sm text-slate-500">
-                        <p>Questions: {quiz.totalQuestions}</p>
-                        <p className="hidden sm:block">
-                          Created:{" "}
-                          {quiz.startedAt instanceof Date
-                            ? quiz.startedAt.toLocaleDateString()
-                            : new Date(quiz.startedAt.seconds * 1000).toLocaleDateString()}
-                        </p>
-                        {quiz.isComplete && (
-                          <p>
-                            Score: {quiz.score}/{quiz.totalQuestions}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteQuiz(quiz.id);
-                  }}
-                  className="p-1 sm:p-2 text-slate-400 hover:text-red-500 transition-colors"
-                >
-                  <Trash className="h-4 w-4" />
-                </button>
-              </div>
+            <div key={quiz.id} className="relative">
+              <Card
+                className="cursor-pointer hover:bg-slate-50 bg-white shadow-none rounded-none border-x-0 border-t border-b-0 border-slate-200"
+                onClick={() => {
+                  const serializedQuiz: SerializedQuizState = {
+                    ...quiz,
+                    startedAt: {
+                      seconds: quiz.startedAt.seconds,
+                      nanoseconds: quiz.startedAt.nanoseconds,
+                    },
+                    lastUpdatedAt: {
+                      seconds: quiz.lastUpdatedAt.seconds,
+                      nanoseconds: quiz.lastUpdatedAt.nanoseconds,
+                    },
+                  };
+                  setSelectedQuiz(serializedQuiz);
+                  setQuizData(quiz.quizData);
+                }}
+              >
+                <CardContent className="flex justify-between items-center p-4">
+                  <div>
+                    <h3 className="font-medium text-slate-800">{quiz.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      Questions: {quiz.totalQuestions}
+                    </p>
+                  </div>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Are you absolutely sure?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently
+                          delete your quiz and remove your data from our
+                          servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={(e) => e.stopPropagation()} className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteQuiz(quiz.id);
+                          }}
+                          className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardContent>
+              </Card>
             </div>
           ))}
 
@@ -646,7 +775,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           setShowQuizForm={setShowQuizForm}
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
+          setSelectedPages={setSelectedPages}
           user={user}
+          onQuizCreated={handleQuizCreated}
         />
       )}
 

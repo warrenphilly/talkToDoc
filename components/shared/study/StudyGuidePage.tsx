@@ -25,6 +25,7 @@ import {
   Trash2,
   Edit2,
   Save,
+  Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -491,7 +492,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
         </Button>
       </div>
 
-      <div className="shadow-none border-none p-4  h-full max-h-[calc(100vh-100px)] overflow-y-auto">
+      <div className="shadow-none border-none p-4  mx-16 h-full max-h-[calc(100vh-100px)] overflow-y-auto">
         <div className="flex flex-row items-center justify-between w-full  px-4    pb-2">
           {isEditing ? (
             <div className="flex items-center gap-2 flex-1 mr-4 w-full  ">
@@ -509,7 +510,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
                   onClick={handleSaveTitle}
                   className="text-green-600 hover:text-green-700 "
                 >
-                  <Save className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -524,11 +525,14 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
           ) : (
             <div
               className="flex items-center rounded-lg w-fit  justify-center hover:cursor-pointer "
-              onClick={() => setIsEditing(true)}
+              
             >
-              <h3 className="text-2xl font-bold text-[#94b347]  rounded-lg cursor-pointer hover:text-[#7a943a]">
+              <h3 className="text-2xl  text-[#94b347]  rounded-lg cursor-pointer ">
                 Study Guide:{" "}
-                <span className="text-slate-500">{guide.title}</span>
+                  <span className="text-slate-800 font-bold">{guide.title}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="hover:bg-white">
+                    <Pencil className="h-4 w-4 text-slate-600 " />
+                  </Button>
               </h3>
             </div>
           )}

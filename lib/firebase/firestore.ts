@@ -1330,27 +1330,38 @@ export const updateStudyGuideTitle = async (
 };
 
 export const saveQuiz = async (
-  quiz: any,
+  quiz: Omit<QuizState, "id"> & {
+    startedAt: { seconds: number; nanoseconds: number };
+    lastUpdatedAt: { seconds: number; nanoseconds: number };
+    createdAt: { seconds: number; nanoseconds: number };
+  },
   metadata: {
     selectedPages: { [notebookId: string]: string[] };
     questionTypes: string[];
-  },
-  files: Array<{ path: string; name: string }>,
-  userId: string
+  }
 ) => {
-  try {
-    const quizRef = doc(db, "quizzes", quiz.id);
+  "use server";
 
-    // Convert timestamp objects to Firestore Timestamps
-    const firestoreQuiz = {
+  try {
+    // Convert the serialized timestamps back to Firestore Timestamps
+    const quizWithTimestamps = {
       ...quiz,
-      startedAt: Timestamp.fromMillis(quiz.startedAt.seconds * 1000),
-      lastUpdatedAt: Timestamp.fromMillis(quiz.lastUpdatedAt.seconds * 1000),
-      createdAt: Timestamp.fromMillis(quiz.createdAt.seconds * 1000),
+      startedAt: new Timestamp(
+        quiz.startedAt.seconds,
+        quiz.startedAt.nanoseconds
+      ),
+      lastUpdatedAt: new Timestamp(
+        quiz.lastUpdatedAt.seconds,
+        quiz.lastUpdatedAt.nanoseconds
+      ),
+      createdAt: new Timestamp(
+        quiz.createdAt.seconds,
+        quiz.createdAt.nanoseconds
+      ),
     };
 
-    await setDoc(quizRef, firestoreQuiz);
-    return quiz.id;
+    const docRef = await addDoc(collection(db, "quizzes"), quizWithTimestamps);
+    return docRef.id;
   } catch (error) {
     console.error("Error saving quiz:", error);
     throw error;
