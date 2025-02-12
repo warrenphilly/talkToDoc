@@ -29,6 +29,10 @@ import {
   Upload,
   Volume2,
   VolumeOff,
+  Pencil,
+  X,
+  ChevronUp,
+  Trophy,
 } from "lucide-react"; // Import icons
 import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 
@@ -77,11 +81,14 @@ import {
   query,
   Timestamp,
   where,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
 import QuizForm from "./QuizForm";
+import PageQuiz from "@/components/ui/PageQuiz";
 
 // First, let's define our message types
 interface Sentence {
@@ -137,6 +144,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     shortAnswer: false,
   });
 
+  const [showSummary, setShowSummary] = useState(false);
+
   // Document selection state
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
@@ -152,6 +161,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Add these new state variables
   const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState("");
+  const [currentTitle, setCurrentTitle] = useState("");
 
   // Add the user hook
   const { user } = useUser();
@@ -548,6 +560,58 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     setShowQuizForm(false);
   };
 
+  // Update title states when selected quiz changes
+  useEffect(() => {
+    if (selectedQuiz?.quizData?.title) {
+      setCurrentTitle(selectedQuiz.quizData.title);
+      setEditedTitle(selectedQuiz.quizData.title);
+    }
+  }, [selectedQuiz]);
+
+  const handleSaveTitle = async () => {
+    if (!selectedQuiz) return;
+
+    if (editedTitle.trim() === "") {
+      toast.error("Title cannot be empty");
+      return;
+    }
+
+    try {
+      const quizRef = doc(db, "quizzes", selectedQuiz.id);
+      await updateDoc(quizRef, {
+        "quizData.title": editedTitle.trim(),
+        lastUpdatedAt: serverTimestamp(),
+      });
+
+      setIsEditingTitle(false);
+      setCurrentTitle(editedTitle.trim());
+
+      // Update the local state
+      setSelectedQuiz((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          quizData: {
+            ...prev.quizData,
+            title: editedTitle.trim(),
+          },
+        };
+      });
+
+      toast.success("Title updated successfully");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      setEditedTitle(currentTitle);
+      setIsEditingTitle(false);
+      toast.error("Failed to update title. Please try again.");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedTitle(currentTitle);
+    setIsEditingTitle(false);
+  };
+
   const renderNotebookList = () => {
     if (isLoadingNotebooks) {
       return (
@@ -659,24 +723,26 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   return (
     <div className="w-full max-w-7xl mx-auto p-2 sm:p-4 h-full overflow-y-auto auto-scroll">
       {/* Header with Create Quiz button */}
-      <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">
-            Quiz Me
-          </h2>
-          <p className="text-slate-600 text-sm sm:text-base text-center">
-            Create and review quizzes
-          </p>
+      {!selectedQuiz && (
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">
+              Quiz Me
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base text-center">
+              Create and review quizzes
+            </p>
 
-          <Button
-            onClick={() => setShowQuizForm(true)}
-            className="bg-white border border-slate-400 text-slate-800 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Create Quiz
-          </Button>
+            <Button
+              onClick={() => setShowQuizForm(true)}
+              className="bg-white border border-slate-400 text-slate-800 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Create Quiz
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quiz List */}
       {!showQuizForm && !selectedQuiz && (
@@ -730,7 +796,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel onClick={(e) => e.stopPropagation()} className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500">
+                        <AlertDialogCancel
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
+                        >
                           Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction
@@ -793,20 +862,55 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             Back to List
           </Button>
           <div className="flex flex-col justify-between items-start my-2">
-            <p className="text-base sm:text-lg font-semibold text-[#94b347] break-words">
-              {selectedQuiz.quizData?.title}
-            </p>
+            <div className="flex items-center gap-2">
+              {isEditingTitle ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveTitle}
+                    className="p-1 hover:bg-green-100 rounded-full"
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-1 hover:bg-red-100 rounded-full"
+                  >
+                    <X className="h-4 w-4 text-red-600" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-base sm:text-lg font-semibold text-[#94b347] break-words">
+                    {currentTitle}
+                  </p>
+                  <button
+                    onClick={() => setIsEditingTitle(true)}
+                    className="p-1 hover:bg-slate-100 rounded-full"
+                  >
+                    <Pencil className="h-4 w-4 text-slate-400 hover:text-[#94b347]" />
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex flex-row justify-center items-center text-sm sm:text-base">
               <p>Questions: {selectedQuiz.totalQuestions}</p>
             </div>
           </div>
 
-          <Quiz
+          <PageQuiz
             data={quizData}
             notebookId={notebookId || ""}
             pageId={pageId || ""}
             initialState={getQuizState(selectedQuiz)}
           />
+      
         </div>
       )}
     </div>

@@ -116,7 +116,7 @@ export function StudyCardCarousel({
             <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2">
              
               {isEditing ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-2">
                   <Input
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}

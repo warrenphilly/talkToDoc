@@ -402,32 +402,9 @@ const Quiz: React.FC<QuizProps> = ({
   };
 
   return (
+    
     <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-yellow-500" />
-          <span className="font-medium text-slate-500">
-            Score: {score}/{data.questions.length} |{" "}
-            {Math.round((score / data.questions.length) * 100)}%
-          </span>
-        </div>
-
-        <div className="text-sm flex flex-row items-center gap-2 text-gray-500">
-          <Button
-            onClick={() => setShowSummary(!showSummary)}
-            variant="outline"
-            className="w-fit bg-slate-50 hover:bg-slate-200"
-          >
-            <BookOpen className="w-5 h-5 mr-2" />
-            <span>{showSummary ? "Hide" : "Show"} Question Summary</span>
-            {showSummary ? (
-              <ChevronUp className="w-5 h-5 ml-2" />
-            ) : (
-              <ChevronDown className="w-5 h-5 ml-2" />
-            )}
-          </Button>
-        </div>
-      </div>
+     
       <div className="w-full  flex justify-end"></div>
       {showResults && (
         <>

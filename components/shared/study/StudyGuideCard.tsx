@@ -98,9 +98,9 @@ export function StudyGuideCard({
               onClick={() => setIsEditing(true)}
               >
             
-              <h3 className="text-2xl font-bold text-[#94b347]  rounded-lg cursor-pointer ">
+              <h3 className="text-2xl  text-[#94b347]  rounded-lg cursor-pointer ">
 
-                Study Guide: <span className="text-slate-500">{guide.title}</span>
+                Study Guide: <span className="text-slate-600 font-bold">{guide.title}</span>
                 </h3>
                 <div className="flex items-center gap-2 h-6 w-6 justify-center rounded-lg ml-2"  onClick={() => setIsEditing(true)}>
                   <Pencil className="h-4 w-4 text-slate-500 hover:text-[#7a943a]" />
