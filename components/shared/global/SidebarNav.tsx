@@ -182,10 +182,10 @@ export function SidebarNav() {
 
                 {/* Buttons */}
                 <div className="flex flex-row items-center justify-center gap-4 px-4 pb-2">
-                  <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-white border border-slate-400 hover:bg-slate-300 rounded-full shadow-none">
+                  {/* <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-white border border-slate-400 hover:bg-slate-300 rounded-full shadow-none">
                     <Settings className="text-[#94b347] text-[30px]" />
                     Settings
-                  </Button>
+                  </Button> */}
                   <SignOutButton>
                     <Button className="flex flex-row items-center gap-2 text-sm p-3 bg-white border border-slate-400 hover:bg-slate-300 rounded-full shadow-none">
                       <LogOut className="text-[#94b347] text-[30px]" />
