@@ -995,6 +995,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           renderNotebookList={renderNotebookList}
           selectedPages={selectedPages}
           user={user}
+          setSelectedPages={setSelectedPages}
         />
       )}
 

@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Message } from "@/lib/types";
-import { BookOpen, RefreshCw } from "lucide-react";
-import React, { RefObject, useMemo } from "react";
 import { uploadLargeFile } from "@/lib/fileUpload";
 import { saveGeneratedStudyGuide } from "@/lib/firebase/firestore";
-import { useUser } from "@clerk/nextjs";
+import { Message } from "@/lib/types";
 import { StudyGuide, StudyGuideSection } from "@/types/studyGuide";
+import { useUser } from "@clerk/nextjs";
+import { BookOpen, RefreshCw } from "lucide-react";
+import React, { RefObject, useMemo } from "react";
 import { toast } from "react-hot-toast";
 
 import FormUpload from "./formUpload";
