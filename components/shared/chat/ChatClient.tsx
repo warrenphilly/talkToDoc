@@ -254,7 +254,8 @@ const ChatClient = ({
 
   const handleParagraphSave = async (
     paragraphData: ParagraphData,
-    index: number
+    index: number,
+    sectionIndex: number
   ) => {
     if (!paragraphData?.text) {
       console.error("Invalid paragraph data");
@@ -263,21 +264,24 @@ const ChatClient = ({
 
     setIsSaving(true);
     try {
-      const newMessage: Message = {
-        text: paragraphData.text,
-        user: "AI",
-      };
+      // Create a deep copy of messages
+      const updatedMessages = [...messages];
 
-      const updatedMessages = JSON.parse(JSON.stringify(messages));
-      updatedMessages.splice(index + 1, 0, newMessage);
+      // Get the target message
+      const targetMessage = updatedMessages[index];
+
+      if (Array.isArray(targetMessage.text)) {
+        // Insert the new section after the specified sectionIndex
+        targetMessage.text.splice(sectionIndex + 1, 0, paragraphData.text[0]);
+      }
 
       setMessages(updatedMessages);
 
+      // Save to Firestore
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
       console.error("Error saving paragraph:", error);
       setMessages(messages); // Revert on error
-      // Optionally show an error toast/notification here
     } finally {
       setIsSaving(false);
     }
@@ -527,18 +531,46 @@ const ChatClient = ({
               )}
 
               <div className="flex  flex-col overflow-y-auto   rounded-2xl m w-full h-full">
-                <ParagraphEditor
-                  onSave={(data: ParagraphData) => handleParagraphSave(data, 0)}
-                  messageIndex={0}
-                />
-
                 {messages.map((msg, index) => {
-                  const sections = Array.isArray(msg.text) ? msg.text : [];
-
-                  return (
-                    <div key={`message-${index}`} className="">
-                      {msg.user === "AI" && (
-                        <>
+                  if (msg.user === "AI") {
+                    return (
+                      <div key={`message-${index}`}>
+                        {Array.isArray(msg.text) ? (
+                          msg.text.map((section, sectionIndex) => (
+                            <React.Fragment key={`section-${sectionIndex}`}>
+                              <ResponseMessage
+                                msg={{ ...msg, text: [section] }}
+                                index={index}
+                                handleSectionClick={(section) =>
+                                  handleSectionClick(
+                                    section,
+                                    setPrimeSentence,
+                                    setShowChat
+                                  )
+                                }
+                                handleSentenceClick={(sentence) =>
+                                  handleSentenceClick(
+                                    sentence,
+                                    setPrimeSentence,
+                                    setShowChat
+                                  )
+                                }
+                                handleParagraphSave={handleParagraphSave}
+                                onEdit={() => handleMessageEdit(null, index)}
+                                onDelete={() => handleMessageDelete(index)}
+                                onSave={(data) =>
+                                  handleMessageEdit(data, index)
+                                }
+                              />
+                              <ParagraphEditor
+                                onSave={(data) =>
+                                  handleParagraphSave(data, index, sectionIndex)
+                                }
+                                messageIndex={index}
+                              />
+                            </React.Fragment>
+                          ))
+                        ) : (
                           <ResponseMessage
                             msg={msg}
                             index={index}
@@ -556,23 +588,16 @@ const ChatClient = ({
                                 setShowChat
                               )
                             }
+                            handleParagraphSave={handleParagraphSave}
                             onEdit={() => handleMessageEdit(null, index)}
                             onDelete={() => handleMessageDelete(index)}
                             onSave={(data) => handleMessageEdit(data, index)}
                           />
-
-                          <div key={`editor-${index}`}>
-                            <ParagraphEditor
-                              onSave={(data: ParagraphData) =>
-                                handleParagraphSave(data, index)
-                              }
-                              messageIndex={index}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
                 })}
                 {isProcessing && (
                   <div className="w-full px-4">
