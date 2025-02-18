@@ -342,11 +342,6 @@ const ChatClient = ({
     const handleResize = () => {
       const newIsSmallScreen = window.innerWidth < 1068;
       setIsSmallScreen(newIsSmallScreen);
-
-      // Close modal if screen becomes large
-      if (!newIsSmallScreen) {
-        setShowUploadModal(false);
-      }
     };
 
     // Set initial value
@@ -402,16 +397,12 @@ const ChatClient = ({
     <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
-          <div className="flex flex-row gap-2 items-center">
+          <div className="flex flex-row gap-2 items-center md:pl-8 ">
             <Button
-              onClick={() =>
-                isSmallScreen
-                  ? setShowUploadModal(true)
-                  : setShowUpload(!showUpload)
-              }
-              className={`bg-white text-xs md:text-sm shadow-none border border-slate-0 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 rounded-2xl w-fit px-2 md:px-4 `}
+              onClick={() => setShowUploadModal(true)}
+              className={` bg-white text-xs md:text-sm shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 w-fit px-4 md:px-4 rounded-full`}
             >
-              {showUpload ? "Close Uploads" : "Uploaded Files"}
+              Uploads
             </Button>
           </div>
 
@@ -438,7 +429,7 @@ const ChatClient = ({
               onClick={() => handleComponentSelect("chat")}
               className="text-slate-500 md:px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold  border border-slate-400 shadow-none"
             >
-              {showChat ? "Close Chat" : "Talk to my notes"}
+              Chat
             </Button>
           </div>
 
@@ -495,7 +486,7 @@ const ChatClient = ({
                   }}
                   className="cursor-pointer hover:bg-white hover:text-[#94b347] hover:border-[#94b347] hover:border"
                 >
-                  {showChat ? "Close Chat" : "Talk to my notes"}
+                  Chat
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -521,28 +512,6 @@ const ChatClient = ({
                 flex flex-col gap-1 md:gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
-              {!isSmallScreen && (
-                <UploadArea
-                  messages={messages}
-                  files={files}
-                  showUpload={showUpload}
-                  fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
-                  handleFileUpload={(event) =>
-                    handleFileUpload(event, setFiles)
-                  }
-                  handleSendMessage={handleSendMessage}
-                  handleClear={handleClear}
-                  setShowUpload={setShowUpload}
-                />
-              )}
-              {/* {!isProcessing && !showUpload && (
-                <div className="w-full">
-                  <p className="text-sm text-slate-500 text-center mt-2">
-                    Processing section {progress} of {totalSections}
-                  </p>
-                </div>
-              )} */}
-
               {isProcessing && (
                 <div className="w-full ">
                   <div className="w-full bg-slate-200 rounded-full h-2.5">
@@ -808,31 +777,30 @@ const ChatClient = ({
           </DrawerContent>
         </Drawer>
       )}
-      {isSmallScreen && (
-        <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-          <DialogContent className="sm:max-w-[425px] bg-white p-6">
-            <DialogHeader>
-              <DialogTitle hidden>Upload Files</DialogTitle>
-            </DialogHeader>
-            <UploadArea
-              messages={messages}
-              files={files}
-              showUpload={true}
-              fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
-              handleFileUpload={(event) => handleFileUpload(event, setFiles)}
-              handleSendMessage={() => {
-                handleSendMessage();
-                setShowUploadModal(false);
-              }}
-              handleClear={() => {
-                handleClear();
-                setShowUploadModal(false);
-              }}
-              setShowUpload={setShowUpload}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="w-full max-w-[340px] md:max-w-[625px] bg-white p-6 h-fit flex flex-col items-start justify-start rounded-2xl">
+          <DialogHeader>
+            <DialogTitle hidden>Upload Files</DialogTitle>
+          </DialogHeader>
+          <UploadArea
+            messages={messages}
+            files={files}
+            showUpload={true}
+            fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
+            handleFileUpload={(event) => handleFileUpload(event, setFiles)}
+            handleSendMessage={() => {
+              handleSendMessage();
+              setShowUploadModal(false);
+            }}
+            handleClear={() => {
+              handleClear();
+              setShowUploadModal(false);
+            }}
+            setShowUpload={setShowUpload}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

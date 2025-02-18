@@ -392,7 +392,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className=" h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden border border-slate-300 z-10 "
+          className=" h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden md:border border-slate-300 z-10 "
         >
           <ChatClient
             title={activeTab?.title || ""}
