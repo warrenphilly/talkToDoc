@@ -31,6 +31,11 @@ export const ResponseMessage = ({
 }: ResponseProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
+  const handleEditClick = () => {
+    setIsEditing(true);
+    onEdit(); // Call the parent's onEdit handler
+  };
+
   if (typeof msg.text === "string") {
     return (
       <div className="md:p-2 rounded mb-2">
@@ -45,8 +50,31 @@ export const ResponseMessage = ({
     );
   }
 
-  // Get the first section from the array
+  // Now msg.text will be a single section
   const section = msg.text[0];
+
+  if (isEditing) {
+    return (
+      <div className="md:p-2 rounded mb-2">
+        <ParagraphEditor
+          onSave={(data) => {
+            onSave(data, index);
+            setIsEditing(false);
+          }}
+          messageIndex={index}
+          initialData={{
+            user: "AI",
+            text: [
+              {
+                title: section.title,
+                sentences: section.sentences,
+              },
+            ],
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="md:p-2 rounded mb-2">
@@ -60,7 +88,7 @@ export const ResponseMessage = ({
           </h3>
           <div className="flex gap-6">
             <Button
-              onClick={onEdit}
+              onClick={handleEditClick}
               variant="ghost"
               size="sm"
               className="text-slate-400 rounded-full border border-slate-400 hover:bg-slate-100 w-8 h-8"

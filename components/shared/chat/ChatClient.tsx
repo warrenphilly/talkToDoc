@@ -289,7 +289,8 @@ const ChatClient = ({
 
   const handleMessageEdit = async (
     editedData: ParagraphData | null,
-    index: number
+    index: number,
+    sectionIndex: number
   ) => {
     if (!editedData) {
       // This is just the initial edit click, not the actual save
@@ -298,10 +299,13 @@ const ChatClient = ({
 
     try {
       const updatedMessages = [...messages];
-      updatedMessages[index] = {
-        user: "AI",
-        text: editedData.text,
-      };
+      const targetMessage = updatedMessages[index];
+
+      if (Array.isArray(targetMessage.text)) {
+        // Update only the specific section being edited
+        targetMessage.text[sectionIndex] = editedData.text[0];
+      }
+
       setMessages(updatedMessages);
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
@@ -556,18 +560,26 @@ const ChatClient = ({
                                   )
                                 }
                                 handleParagraphSave={handleParagraphSave}
-                                onEdit={() => handleMessageEdit(null, index)}
+                                onEdit={() =>
+                                  handleMessageEdit(null, index, sectionIndex)
+                                }
                                 onDelete={() => handleMessageDelete(index)}
                                 onSave={(data) =>
-                                  handleMessageEdit(data, index)
+                                  handleMessageEdit(data, index, sectionIndex)
                                 }
                               />
-                              <ParagraphEditor
-                                onSave={(data) =>
-                                  handleParagraphSave(data, index, sectionIndex)
-                                }
-                                messageIndex={index}
-                              />
+                              {!isSaving && (
+                                <ParagraphEditor
+                                  onSave={(data) =>
+                                    handleParagraphSave(
+                                      data,
+                                      index,
+                                      sectionIndex
+                                    )
+                                  }
+                                  messageIndex={index}
+                                />
+                              )}
                             </React.Fragment>
                           ))
                         ) : (
@@ -589,9 +601,9 @@ const ChatClient = ({
                               )
                             }
                             handleParagraphSave={handleParagraphSave}
-                            onEdit={() => handleMessageEdit(null, index)}
+                            onEdit={() => handleMessageEdit(null, index, 0)}
                             onDelete={() => handleMessageDelete(index)}
-                            onSave={(data) => handleMessageEdit(data, index)}
+                            onSave={(data) => handleMessageEdit(data, index, 0)}
                           />
                         )}
                       </div>
@@ -625,8 +637,6 @@ const ChatClient = ({
               (showQuiz || showChat || showStudyCards || showStudyGuides) && (
                 <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
               )}
-
-            {/* <div> */}
 
             {!isNotebookFullscreen &&
               !isSmallScreen &&
@@ -759,8 +769,6 @@ const ChatClient = ({
                   </ResizablePanel>
                 </>
               )}
-
-            {/* </div> */}
           </ResizablePanelGroup>
         </div>
       </div>
