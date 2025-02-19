@@ -94,7 +94,7 @@ function CreateCardModal({
     <>
       {showNotebookModal && (
         <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-          <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
+          <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full  max-w-xl">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
                 Create Study Cards
@@ -405,12 +405,7 @@ export default function StudyCardPage() {
       const data = await response.json();
 
       // Save the study card set with user ID
-      await saveStudyCardSet(
-       
-        data.cards,
-        metadata,
-        firestoreUser.id
-      );
+      await saveStudyCardSet(data.cards, metadata, firestoreUser.id);
 
       // Reset form state
       setShowNotebookModal(false);
@@ -633,8 +628,8 @@ export default function StudyCardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8  h-full ">
-      <div className="flex justify-between my-8">
+    <div className="  ">
+      <div className="flex justify-between my-8 pt-5 md:pt-0 px-5">
         <Link href="/">
           <Button
             variant="ghost"
@@ -648,44 +643,49 @@ export default function StudyCardPage() {
           onClick={() => setShowNotebookModal(true)}
           className="bg-white border border-slate-400 text-slate-600  hover:bg-white hover:border-[#94b347] rounded-full hover:text-[#94b347]"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Study Cards
+          <Plus className="w-4 h-4 " />
+          <span className="hidden md:block">Create Study Cards</span>
+          
         </Button>
       </div>
+      <div className="p-6 rounded-lg w-full h-[calc(100vh-8rem)] overflow-y-auto bg-white">
+        <CreateCardModal
+          showNotebookModal={showNotebookModal}
+          setShowNotebookModal={setShowNotebookModal}
+          setName={setName}
+          setSetName={setSetName}
+          numCards={numCards}
+          setNumCards={setNumCards}
+          messages={messages}
+          files={files}
+          showUpload={showUpload}
+          fileInputRef={fileInputRef}
+          handleFileUpload={handleFileUpload}
+          handleSendMessage={handleSendMessage}
+          handleClear={handleClear}
+          setShowUpload={setShowUpload}
+          setFiles={setFiles}
+          renderNotebookList={renderNotebookList}
+          handleGenerateCards={handleGenerateCardsClick}
+          isGenerating={isGenerating}
+          selectedPages={selectedPages}
+          filesToUpload={filesToUpload}
+        />
 
-      <CreateCardModal
-        showNotebookModal={showNotebookModal}
-        setShowNotebookModal={setShowNotebookModal}
-        setName={setName}
-        setSetName={setSetName}
-        numCards={numCards}
-        setNumCards={setNumCards}
-        messages={messages}
-        files={files}
-        showUpload={showUpload}
-        fileInputRef={fileInputRef}
-        handleFileUpload={handleFileUpload}
-        handleSendMessage={handleSendMessage}
-        handleClear={handleClear}
-        setShowUpload={setShowUpload}
-        setFiles={setFiles}
-        renderNotebookList={renderNotebookList}
-        handleGenerateCards={handleGenerateCardsClick}
-        isGenerating={isGenerating}
-        selectedPages={selectedPages}
-        filesToUpload={filesToUpload}
-      />
-
-      {studySet && studySet.cards && studySet.cards.length > 0 ? (
-        <>
-          <StudyCardCarousel studySet={studySet} />
-          <StudyCardList studySet={studySet} onUpdate={handleStudySetUpdate} />
-        </>
-      ) : (
-        <div className="text-center py-8 text-slate-600">
-          No study cards found in this set.
-        </div>
-      )}
+        {studySet && studySet.cards && studySet.cards.length > 0 ? (
+          <>
+            <StudyCardCarousel studySet={studySet} />
+            <StudyCardList
+              studySet={studySet}
+              onUpdate={handleStudySetUpdate}
+            />
+          </>
+        ) : (
+          <div className="text-center py-8 text-slate-600">
+            No study cards found in this set.
+          </div>
+        )}
+      </div>
     </div>
   );
 }
