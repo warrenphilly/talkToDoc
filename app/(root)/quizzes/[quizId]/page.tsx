@@ -352,7 +352,7 @@ export default function QuizPage() {
     };
 
     return (
-      <div className="space-y-2 p-2 max-h-72 overflow-y-auto bg-red-500">
+      <div className="space-y-2 p-2 h-full ">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
@@ -443,8 +443,8 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start h-full  w-full px-4 sm:px-6 lg:px-8">
-      <div className=" flex flex-row mt-16  justify-between items-start sm:items-center w-full gap-4">
+    <div className="flex flex-col items-center justify-start   w-full px-4 sm:px-6 lg:px-8">
+      <div className=" flex flex-row mt-16  justify-between  items-start sm:items-center w-full gap-4 ">
         <Link href="/">
           <Button variant="ghost" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
@@ -486,7 +486,7 @@ export default function QuizPage() {
         />
       )}
 
-      <div className="flex flex-col items-center justify-start w-full max-w-7xl">
+      <div className="flex flex-col items-center justify-start w-full max-w-7xl h-[calc(100vh-8rem)] overflow-y-auto">
         <div className="flex p-4 flex-col items-start justify-between w-full">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             {isEditingTitle ? (
