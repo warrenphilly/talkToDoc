@@ -861,7 +861,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                         onClick: () => setShowStudyGuideModal(true),
                       },
                       content: (
-                        <div className="space-y-4">
+                        <div className="">
                           {studyGuides.map((guide) => (
                             <div key={guide.id}>
                               <Link

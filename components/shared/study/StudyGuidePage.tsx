@@ -462,7 +462,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
   };
 
   return (
-    <Card className="p-6 bg-white shadow-none border-none w-full h-full max-h-[calc(100vh-100px)]  px-8  mt-12">
+    <Card className="py-6 bg-red-500 shadow-none border-none w-full h-full    mt-12">
       <div className="flex justify-between items-center mb-4 w-full">
         <Link href="/">
           <Button
@@ -473,26 +473,29 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
             Back to Dashboard
           </Button>
         </Link>
-
-        <Button
+<div className="flex flex-row gap-4">
+        {/* <Button
           variant="ghost"
           className="gap-2 text-red-500 flex items-center justify-center w-fit border border-red-500 rounded-full"
           onClick={() => onDelete(guide.id)}
         >
           <Trash2 className="h-4 w-4" />
-          Delete Guide
-        </Button>
+          <span className="hidden md:block">Delete Guide</span>
+        </Button> */}
 
         <Button
           variant="ghost"
           className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-600 rounded-full"
           onClick={() => setShowModal(true)}
-        >
-          + Create New Guide
-        </Button>
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden md:block">Create New Guide</span>
+   
+          </Button>
+          </div>
       </div>
 
-      <div className="shadow-none border-none p-4  mx-16 h-full max-h-[calc(100vh-100px)] overflow-y-auto">
+      <div className="shadow-none border-none p-4   h-full max-h-[calc(100vh-100px)] overflow-y-auto">
         <div className="flex flex-row items-center justify-between w-full  px-4    pb-2">
           {isEditing ? (
             <div className="flex items-center gap-2 flex-1 mr-4 w-full  ">
