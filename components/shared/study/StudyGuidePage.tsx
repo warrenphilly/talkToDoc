@@ -462,7 +462,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
   };
 
   return (
-    <Card className="py-6 bg-red-500 shadow-none border-none w-full h-full    mt-12">
+    <Card className="py-6 bg-white overflow-hidden shadow-none border-none w-full h-full    mt-12">
       <div className="flex justify-between items-center mb-4 w-full">
         <Link href="/">
           <Button
@@ -503,7 +503,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="text-xl font-bold text-[#94b347] p-2 border-none text-center flex items-center justify-center w-fit border border-slate-600 rounded-lg"
+                className="text-slate-500 max-w-56  flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-full"
                 autoFocus
               />
               <div className="flex gap-2">
