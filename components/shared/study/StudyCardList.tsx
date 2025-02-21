@@ -12,9 +12,14 @@ import { toast } from "react-hot-toast";
 interface StudyCardListProps {
   studySet: StudyCardSet;
   onUpdate: (updatedStudySet: StudyCardSet) => void;
+  activeCardIndex?: number;
 }
 
-export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
+export function StudyCardList({
+  studySet,
+  onUpdate,
+  activeCardIndex,
+}: StudyCardListProps) {
   const [showListAnswer, setShowListAnswer] = useState<{
     [key: number]: boolean;
   }>({});
@@ -81,7 +86,6 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
           >
             <Plus className="w-24 h-24 md:w-4 md:h-4 md:mr-2" />
             <span className="hidden md:block">Add New Card</span>
-       
           </Button>
         </CardHeader>
         <CardContent>
@@ -89,7 +93,11 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
             {studySet.cards.map((card, index) => (
               <div
                 key={index}
-                className="bg-white border rounded-xl border-slate-400 p-4  hover:bg-slate-50 transition-colors"
+                className={`bg-white border rounded-xl p-4 hover:bg-slate-50 transition-colors ${
+                  activeCardIndex === index
+                    ? "border-[#94b347] border-2"
+                    : "border-slate-400"
+                }`}
               >
                 <h3 className="font-semibold text-[#94b347]">
                   {index + 1}. {card.title}

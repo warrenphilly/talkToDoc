@@ -215,6 +215,8 @@ export default function StudyCardPage() {
   ) as MutableRefObject<HTMLInputElement>;
   const { userId } = useAuth();
   const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
   useEffect(() => {
     loadStudySet();
   }, [studyCardId, userId]);
@@ -645,7 +647,6 @@ export default function StudyCardPage() {
         >
           <Plus className="w-4 h-4 " />
           <span className="hidden md:block">Create Study Cards</span>
-          
         </Button>
       </div>
       <div className="p-6 rounded-lg w-full h-[calc(100vh-8rem)] overflow-y-auto bg-white">
@@ -674,10 +675,14 @@ export default function StudyCardPage() {
 
         {studySet && studySet.cards && studySet.cards.length > 0 ? (
           <>
-            <StudyCardCarousel studySet={studySet} />
+            <StudyCardCarousel
+              studySet={studySet}
+              onCardChange={setActiveCardIndex}
+            />
             <StudyCardList
               studySet={studySet}
               onUpdate={handleStudySetUpdate}
+              activeCardIndex={activeCardIndex}
             />
           </>
         ) : (

@@ -16,11 +16,13 @@ import { toast } from "react-hot-toast";
 interface StudyCardCarouselProps {
   studySet: StudyCardSet;
   onTitleUpdate?: (newTitle: string) => void;
+  onCardChange?: (index: number) => void;
 }
 
 export function StudyCardCarousel({
   studySet,
   onTitleUpdate,
+  onCardChange,
 }: StudyCardCarouselProps) {
   const [showAnswer, setShowAnswer] = useState<{ [key: number]: boolean }>({});
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -57,15 +59,19 @@ export function StudyCardCarousel({
 
   const nextCard = () => {
     if (currentCardIndex < studySet.cards.length - 1) {
-      setCurrentCardIndex((prev) => prev + 1);
+      const newIndex = currentCardIndex + 1;
+      setCurrentCardIndex(newIndex);
       setShowAnswer({});
+      onCardChange?.(newIndex);
     }
   };
 
   const previousCard = () => {
     if (currentCardIndex > 0) {
-      setCurrentCardIndex((prev) => prev - 1);
+      const newIndex = currentCardIndex - 1;
+      setCurrentCardIndex(newIndex);
       setShowAnswer({});
+      onCardChange?.(newIndex);
     }
   };
 
@@ -116,24 +122,24 @@ export function StudyCardCarousel({
             <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2">
              
               {isEditing ? (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-row justify-between items-center gap-2 mt-2 ">
                   <Input
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    className="text-slate-500 flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-fit"
+                    className="text-slate-500 max-w-56  flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-fit"
                     autoFocus
                   />
-                  <div className="flex gap-1">
+                  <div className="flex gap-4">
                     <button
                       onClick={handleSaveTitle}
-                      className="p-1 hover:bg-green-100 rounded-full text-green-600"
+                      className="p-1 hover:bg-green-100 rounded-full text-green-600 border border-green-600"
                     >
                       <Check className="h-4 w-4" />
                     </button>
                     <button
                       onClick={handleCancelEdit}
-                      className="p-1 hover:bg-red-100 rounded-full text-red-500"
+                      className="p-1 hover:bg-red-100 rounded-full text-red-500 border border-red-500"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -157,11 +163,12 @@ export function StudyCardCarousel({
             </CardTitle>
           </div>
 
-          <div className="flex w-full flex-col items-start justify-between ">
-            <p className="text-md text-slate-500 mt-2">
+          <div className="flex w-full flex-row items-center justify-start gap-2 my-4 ">
+            <p className="text-md text-slate-500 ">
               Created: {new Date(studySet.createdAt).toLocaleDateString()}
             </p>
-            <p className="text-md text-slate-500 mb-4 ">
+            <div className="w-px h-full bg-slate-600 border border-slate-600"></div>
+            <p className="text-md text-slate-500  ">
               {studySet.cards.length} cards
             </p>
           </div>
