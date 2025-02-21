@@ -782,7 +782,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       ) : (
         <div className="space-y-4 sm:space-y-8">
           <section className="w-full">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
                   <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border border-slate-300 relative">
