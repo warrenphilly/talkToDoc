@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { db } from "@/firebase";
 import { StudyCardSet } from "@/types/studyCards";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { PlusCircle, X } from "lucide-react";
+import { Plus, PlusCircle, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -77,10 +77,11 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
           </CardTitle>
           <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+            className="bg-white border border-slate-600 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full md:px-4 shadow-none  px-2"
           >
-            <PlusCircle className="w-4 h-4 mr-2" />
-            Add New Card
+            <Plus className="w-24 h-24 md:w-4 md:h-4 md:mr-2" />
+            <span className="hidden md:block">Add New Card</span>
+       
           </Button>
         </CardHeader>
         <CardContent>
@@ -88,7 +89,7 @@ export function StudyCardList({ studySet, onUpdate }: StudyCardListProps) {
             {studySet.cards.map((card, index) => (
               <div
                 key={index}
-                className="bg-white border border-slate-200 p-4 rounded hover:bg-slate-50 transition-colors"
+                className="bg-white border rounded-xl border-slate-400 p-4  hover:bg-slate-50 transition-colors"
               >
                 <h3 className="font-semibold text-[#94b347]">
                   {index + 1}. {card.title}

@@ -641,7 +641,7 @@ export default function StudyCardPage() {
         </Link>
         <Button
           onClick={() => setShowNotebookModal(true)}
-          className="bg-white border border-slate-400 text-slate-600  hover:bg-white hover:border-[#94b347] rounded-full hover:text-[#94b347]"
+          className="bg-white md:px-4 px-2 border border-slate-600 text-slate-600  hover:bg-white hover:border-[#94b347] rounded-full hover:text-[#94b347]"
         >
           <Plus className="w-4 h-4 " />
           <span className="hidden md:block">Create Study Cards</span>

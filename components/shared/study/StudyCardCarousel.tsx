@@ -194,22 +194,22 @@ export function StudyCardCarousel({
         {studySet.cards[currentCardIndex] && (
           <div
             onClick={() => toggleAnswer(currentCardIndex)}
-            className="bg-white border border-[#94b347] p-4 flex flex-col justify-center items-center py-32 rounded-xl cursor-pointer transition-colors"
+            className="bg-white border border-[#94b347] h-fit  min-h-48 md:min-h-72  w-full p-4 flex flex-col justify-center items-center  rounded-xl cursor-pointer transition-colors"
           >
-            <h3 className="font-bold text-[#94b347] text-2xl">
+            <h3 className="font-bold text-[#94b347] text-lg md:text-2xl">
               {studySet.cards[currentCardIndex].title}
             </h3>
             {showAnswer[currentCardIndex] && (
               <div className="mt-4 w-full h-px bg-[#94b347]"></div>
             )}
             <div
-              className={`mt-5 px-8 mx-5 text-xl text-[#94b347] ${
+              className={`mt-5 text-center  mx-5 text-md md:text-xl text-[#94b347] ${
                 showAnswer[currentCardIndex] ? "block" : "hidden"
               }`}
             >
               <p>{studySet.cards[currentCardIndex].content}</p>
             </div>
-            <p className="text-slate-500 mt-2 text-xl">
+            <p className="text-slate-500 mt-4 md:mt-10 text-sm md:text-lg">
               {!showAnswer[currentCardIndex]
                 ? "Click to reveal answer"
                 : "Click to hide answer"}
