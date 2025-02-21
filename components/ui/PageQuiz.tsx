@@ -404,8 +404,8 @@ const PageQuiz: React.FC<QuizProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-start w-full">
-      <div className="bg-white w-full border border-slate-400 rounded-xl  p-8  ">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-white w-full border border-slate-400 rounded-xl p-4 md:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
             <span className="font-medium text-slate-500">
@@ -413,14 +413,11 @@ const PageQuiz: React.FC<QuizProps> = ({
               {Math.round((score / data.questions.length) * 100)}%
             </span>
           </div>
-
-     
         </div>
-        <div className="w-full  flex justify-end"></div>
         {showResults && (
           <>
-            <div className="mt-6 text-center p-6 rounded-lg">
-              <h3 className="text-2xl font-bold text-slate-500 mb-2">
+            <div className="mt-6 text-center p-4 md:p-6 rounded-lg">
+              <h3 className="text-xl md:text-2xl font-bold text-slate-500 mb-2">
                 Quiz Completed!
               </h3>
             </div>
@@ -448,15 +445,14 @@ const PageQuiz: React.FC<QuizProps> = ({
             />
           </>
         )}
-
         {!showResults && (
-          <div className="flex flex-col items-center justify-center ">
+          <div className="flex flex-col items-center justify-center w-full">
             <div className="mb-6 w-full">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-sm font-medium text-gray-500  ">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                <span className="text-sm font-medium text-gray-500">
                   Question {currentQuestionIndex + 1} of {data.questions.length}
                 </span>
-                <div className="h-2 flex-1 mx-4 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 w-full sm:flex-1 sm:mx-4 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#94b347] transition-all duration-300"
                     style={{
@@ -468,65 +464,66 @@ const PageQuiz: React.FC<QuizProps> = ({
                   />
                 </div>
               </div>
-              <div className="w-full flex flex-col items-center justify-center bg-red-">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              <div className="w-full flex flex-col items-center justify-center">
+                <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-6 text-center px-2">
                   {questionsWithIds[currentQuestionIndex].question}
                 </h2>
               </div>
-
-              <div className=" w-full flex flex-row  gap-6 items-center justify-center">
+              <div className="w-full flex flex-col items-center justify-center gap-4">
                 {currentQuestion.type === "trueFalse" ? (
-                  ["True", "False"].map((answer) => (
-                    <Button
-                      key={answer}
-                      onClick={() => !selectedAnswer && handleAnswer(answer)}
-                      disabled={!!selectedAnswer}
-                      variant="outline"
-                      className={`w-fit justify-between ${
-                        selectedAnswer === answer
-                          ? isCorrect
-                            ? "border-green-600 bg-green-50 text-green-600"
-                            : "border-red-500 bg-red-50 text-red-500"
-                          : " border border-slate-400 text-slate-400 bg-white"
-                      }`}
-                    >
-                      <span className="font-medium">{answer}</span>
-                      {selectedAnswer === answer &&
-                        (isCorrect ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        ))}
-                    </Button>
-                  ))
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 w-full sm:w-fit justify-center">
+                    {["True", "False"].map((answer) => (
+                      <Button
+                        key={answer}
+                        onClick={() => !selectedAnswer && handleAnswer(answer)}
+                        disabled={!!selectedAnswer}
+                        variant="outline"
+                        className={`w-full sm:w-32 justify-between ${
+                          selectedAnswer === answer
+                            ? isCorrect
+                              ? "border-green-600 bg-green-50 text-green-600"
+                              : "border-red-500 bg-red-50 text-red-500"
+                            : "border border-slate-400 text-slate-400 bg-white"
+                        }`}
+                      >
+                        <span className="font-medium">{answer}</span>
+                        {selectedAnswer === answer &&
+                          (isCorrect ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          ))}
+                      </Button>
+                    ))}
+                  </div>
                 ) : currentQuestion.type === "multipleChoice" ? (
-                  <div className="flex flex-col items-center w-fit p-4">
+                  <div className="flex flex-col items-center w-full max-w-2xl p-2 sm:p-4">
                     {(currentQuestion.options || []).map((option) => (
                       <Button
                         key={option}
                         onClick={() => !selectedAnswer && handleAnswer(option)}
                         disabled={!!selectedAnswer}
                         variant="outline"
-                        className={`w-fit min-w-[400px]  max-w-[600px] p-4 hover:bg-slate-300 justify-between my-1 ${
+                        className={`w-full min-h-[48px] p-3 sm:p-4 hover:bg-slate-300 justify-between my-1 ${
                           selectedAnswer === option
                             ? isCorrect
                               ? "border-green-500 bg-green-50 text-green-500"
                               : "border-red-500 bg-red-50 text-red-500"
-                            : " border border-slate-400 text-slate-400 bg-white"
+                            : "border border-slate-400 text-slate-400 bg-white"
                         }`}
                       >
-                        <span className="font-medium">{option}</span>
+                        <span className="font-medium text-left">{option}</span>
                         {selectedAnswer === option &&
                           (isCorrect ? (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                           ) : (
-                            <XCircle className="w-5 h-5 text-red-500 " />
+                            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                           ))}
                       </Button>
                     ))}
                   </div>
                 ) : currentQuestion.type === "shortAnswer" ? (
-                  <div className="space-y-4 w-full max-w-md">
+                  <div className="space-y-4 w-full max-w-md px-4">
                     <Input
                       type="text"
                       placeholder="Type your answer here..."
@@ -557,8 +554,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                           disabled={
                             isLoading ||
                             selectedAnswer === "" ||
-                            showExplanation ||
-                            userAnswers[currentQuestionIndex] !== undefined
+                            showExplanation
                           }
                           className="w-full bg-[#94b347] hover:bg-[#a5c05f] text-slate-100"
                         >
@@ -566,9 +562,9 @@ const PageQuiz: React.FC<QuizProps> = ({
                         </Button>
                       )}
                     {isLoading && (
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-center gap-2">
                         <Loader2 className="w-6 h-6 animate-spin text-[#94b347]" />
-                        <span className="ml-2 text-slate-600">
+                        <span className="text-slate-600">
                           Evaluating your answer...
                         </span>
                       </div>
@@ -578,7 +574,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                       currentQuestion.correctAnswer !== null &&
                       selectedAnswer &&
                       showExplanation && (
-                        <div className={`p-4 rounded-lg bg-slate-50 mt-4`}>
+                        <div className="p-4 rounded-lg bg-slate-50 mt-4">
                           <div className="flex items-center gap-2 mb-2">
                             {isCorrect ? (
                               <CheckCircle className="w-5 h-5 text-green-500" />
@@ -593,7 +589,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                               {isCorrect ? "Correct!" : "Needs Improvement"}
                             </span>
                           </div>
-                          <p className="text-slate-700 whitespace-pre-line">
+                          <p className="text-slate-700 whitespace-pre-line text-sm md:text-base">
                             {gptFeedback}
                           </p>
                         </div>
@@ -602,32 +598,33 @@ const PageQuiz: React.FC<QuizProps> = ({
                 ) : null}
               </div>
             </div>
-
             {showExplanation && currentQuestion.type !== "shortAnswer" && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg w-full max-w-2xl">
                 <h3 className="font-semibold text-gray-700 mb-2">
                   Explanation:
                 </h3>
-                <p className="text-gray-600">{currentQuestion.explanation}</p>
+                <p className="text-gray-600 text-sm md:text-base">
+                  {currentQuestion.explanation}
+                </p>
               </div>
             )}
-
             {selectedAnswer && !isLastQuestion ? (
-              <div className="w-full flex flex-row items-center justify-center ">
+              <div className="w-full flex justify-center mt-6">
                 <Button
                   onClick={nextQuestion}
-                  className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
+                  className="w-full sm:w-fit bg-[#94b347] hover:bg-[#a5c05f] px-6"
                 >
                   <span className="text-slate-100">Next Question</span>
                   <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
                 </Button>
               </div>
             ) : (
-              isLastQuestion && (
-                <div className="w-full flex flex-row items-center justify-end">
+              isLastQuestion &&
+              selectedAnswer && (
+                <div className="w-full flex justify-center mt-6">
                   <Button
                     onClick={handleViewResults}
-                    className="mt-6 w-fit bg-[#94b347] hover:bg-[#a5c05f] self-end"
+                    className="w-full sm:w-fit bg-[#94b347] hover:bg-[#a5c05f] px-6"
                   >
                     <span className="text-slate-100">View Results</span>
                     <ArrowRight className="w-4 h-4 ml-2 text-slate-100" />
@@ -640,12 +637,14 @@ const PageQuiz: React.FC<QuizProps> = ({
       </div>
       {!showResults && (
         <>
-              <div className="w-full flex flex-row items-center justify-between gap-2 text-gray-500 my-2 p-4">
-              <h3 className="font-semibold text-gray-800 mb-4">Question Summary</h3>
+          <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-gray-500 my-2 p-4">
+            <h3 className="font-semibold text-gray-800 mb-2 sm:mb-0">
+              Question Summary
+            </h3>
             <Button
               onClick={() => setShowSummary(!showSummary)}
               variant="outline"
-              className="w-fit bg-slate-50 hover:bg-slate-200"
+              className="w-full sm:w-fit bg-slate-50 hover:bg-slate-200"
             >
               <BookOpen className="w-5 h-5 mr-2" />
               <span>{showSummary ? "Hide" : "Show"} Question Summary</span>

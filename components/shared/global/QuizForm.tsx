@@ -228,8 +228,8 @@ const QuizForm = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-      <div className="bg-white p-6 rounded-lg h-full max-h-[60vh] w-full overflow-y-auto max-w-xl">
+    <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-60 w-full ">
+      <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] w-full overflow-y-hidden max-w-xl pt-16">
         <div className="flex flex-row justify-center items-center">
           <CardTitle className="text-[#94b347] text-xl font-bold">
             Create New Quiz
@@ -317,7 +317,9 @@ const QuizForm = ({
             showUpload={true}
             setShowUpload={() => {}}
           />
-          {renderNotebookList()}
+           <div className="max-h-72 overflow-y-auto ">
+            {renderNotebookList()}
+            </div>
         </div>
 
         {uploadError && (

@@ -352,7 +352,7 @@ export default function QuizPage() {
     };
 
     return (
-      <div className="space-y-2 p-2">
+      <div className="space-y-2 p-2 max-h-72 overflow-y-auto bg-red-500">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
@@ -443,21 +443,23 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="mx-auto p-16 flex flex-col items-center justify-start  h-full max-h-screen">
-      <div className="mb-6 flex flex-row justify-between w-full">
+    <div className="flex flex-col items-center justify-start h-full  w-full px-4 sm:px-6 lg:px-8">
+      <div className=" flex flex-row mt-16  justify-between items-start sm:items-center w-full gap-4">
         <Link href="/">
           <Button variant="ghost" className="gap-2">
             <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </Link>
 
         <Button
           variant="ghost"
-          className="gap-2 rounded-full border border-slate-400"
+          className="gap-2 rounded-full border border-slate-400 sm:w-auto"
           onClick={() => setShowQuizForm(true)}
         >
-          Create New Quiz
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:block">Create New Quiz</span>
         </Button>
       </div>
 
@@ -484,35 +486,36 @@ export default function QuizPage() {
         />
       )}
 
-      <div className="flex flex-col items-center justify-start w-full max-w-8xl overflow-y-auto px-16">
-        <div></div>
+      <div className="flex flex-col items-center justify-start w-full max-w-7xl">
         <div className="flex p-4 flex-col items-start justify-between w-full">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             {isEditingTitle ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <input
                   type="text"
                   value={editedTitle}
                   onChange={(e) => setEditedTitle(e.target.value)}
-                  className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347]"
+                  className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] w-full sm:w-auto"
                   autoFocus
                 />
-                <button
-                  onClick={handleSaveTitle}
-                  className="p-1 hover:bg-green-100 rounded-full"
-                >
-                  <Check className="h-4 w-4 text-green-600" />
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  className="p-1 hover:bg-red-100 rounded-full"
-                >
-                  <X className="h-4 w-4 text-red-600" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveTitle}
+                    className="p-1 hover:bg-green-100 rounded-full"
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-1 hover:bg-red-100 rounded-full"
+                  >
+                    <X className="h-4 w-4 text-red-600" />
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-[#94b347]">{currentTitle}</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-[#94b347] break-all">{currentTitle}</span>
                 <button
                   onClick={() => setIsEditingTitle(true)}
                   className="p-1 hover:bg-slate-100 rounded-full"
@@ -522,19 +525,22 @@ export default function QuizPage() {
               </div>
             )}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 mt-2">
             Created:{" "}
             {quiz.startedAt instanceof Timestamp
               ? quiz.startedAt.toDate().toLocaleDateString()
               : new Date(quiz.startedAt.seconds * 1000).toLocaleDateString()}
           </p>
         </div>
-        <PageQuiz
-          data={quiz.quizData}
-          notebookId={quiz.notebookId}
-          pageId={quiz.pageId}
-          initialState={quiz}
-        />
+
+        <div className="w-full">
+          <PageQuiz
+            data={quiz.quizData}
+            notebookId={quiz.notebookId}
+            pageId={quiz.pageId}
+            initialState={quiz}
+          />
+        </div>
       </div>
     </div>
   );
