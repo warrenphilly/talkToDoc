@@ -40,7 +40,7 @@ export const ResponseMessage = ({
     return (
       <div className="md:p-2 rounded mb-2">
         <div className="text-sm">
-          <div className="bg-white border border-[#94b347] p-2 md:p-4 rounded-2xl transition-colors">
+          <div className="bg-white  p-2 md:p-4 rounded-2xl transition-colors">
             <p className="text-gray-800 whitespace-normal break-words">
               {msg.text}
             </p>
@@ -78,7 +78,7 @@ export const ResponseMessage = ({
 
   return (
     <div className="md:p-2 rounded mb-2">
-      <div className="p-2 md:p-4 rounded-2xl transition-colors bg-white border border-[#94b347]">
+      <div className="p-2 md:p-4 rounded-2xl transition-colors bg-white ">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-3">
           <h3
             className="text-base md:text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer break-words"
