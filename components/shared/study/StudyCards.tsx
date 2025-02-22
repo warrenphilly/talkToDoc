@@ -32,6 +32,17 @@ import { MutableRefObject, useEffect, useRef, useState } from "react";
 
 import { Message } from "@/lib/types";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import {
   handleClear,
@@ -53,17 +64,6 @@ import { toast } from "react-hot-toast";
 import CreateCardModal from "./CreateCardModal";
 import { StudyCardCarousel } from "./StudyCardCarousel";
 import { StudyCardList } from "./StudyCardList";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 
 interface StudyMaterialTabsProps {
   notebookId: string;
@@ -325,11 +325,11 @@ export default function StudyCards({
     }
 
     return (
-      <div className="space-y-2 p-2 overflow-y-auto">
+      <div className="space-y-2 p-2 overflow-y-auto w-full">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
-            className="border rounded-xl  p-1  bg-white border-slate-400 overflow-y-auto"
+            className="border rounded-xl  p-1   border-slate-400 overflow-y-auto"
           >
             <div className="flex items-center justify-between p-3 bg-white text-slate-600">
               <div className="flex items-center gap-2 ">
@@ -432,24 +432,28 @@ export default function StudyCards({
   };
 
   return (
-    <Card className=" shadow-none border-none w-full bg-white flex flex-col gap-4 p-4 items-center justify-center  ">
-      <CardHeader className="flex flex-col items-center justify-center">
-        <CardTitle className="text-2xl font-bold text-[#94b347]">
-          Study Cards
-        </CardTitle>
-        <CardDescription>Create and review study card sets</CardDescription>
-      </CardHeader>
-      <CardContent className="w-full flex flex-col items-center justify-center h-full overflow-y-auto">
-        <div className="flex flex-col items-center justify-center gap-4 mb-6">
-          <Button
-            onClick={() => setShowNotebookModal(true)}
-            className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Create Study Cards
-          </Button>
-        </div>
+    <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 p-4 items-center justify-center">
+      {!selectedSet && (
+        <>
+          <CardHeader className="flex flex-col items-center justify-center">
+            <CardTitle className="text-2xl font-bold text-[#94b347]">
+              Study Cards
+            </CardTitle>
+            <CardDescription>Create and review study card sets</CardDescription>
+          </CardHeader>
+          <div className="flex flex-col items-center justify-center gap-4 mb-6">
+            <Button
+              onClick={() => setShowNotebookModal(true)}
+              className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Create Study Cards
+            </Button>
+          </div>
+        </>
+      )}
 
+      <CardContent className="w-full flex flex-col items-center justify-center h-full overflow-y-auto">
         <CreateCardModal
           showNotebookModal={showNotebookModal}
           setShowNotebookModal={setShowNotebookModal}
@@ -572,14 +576,7 @@ export default function StudyCards({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Sets
               </Button>
-              <Button
-                variant="ghost"
-                className="text-red-500 hover:text-red-700 hover:bg-red-50 "
-                onClick={() => handleSetDeletion(selectedSet.id)}
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                Delete Set
-              </Button>
+              
             </div>
             <div className="space-y-2 w-full overflow-y-auto h-full">
               <StudyCardCarousel studySet={selectedSet} />
@@ -587,7 +584,6 @@ export default function StudyCards({
                 studySet={selectedSet}
                 onUpdate={handleStudySetUpdate}
               />
-          
             </div>
           </div>
         )}

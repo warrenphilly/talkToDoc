@@ -177,7 +177,7 @@ export default function StudyGuideModal({
 
   return (
     <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-      <div className="bg-white p-6 py-16 rounded-lg h-full md:max-h-[75vh] w-full max-w-xl">
+      <div className="bg-white p-6 py-16 rounded-lg h-full md:max-h-[75vh] w-full max-w-3xl overflow-y-auto">
         <div className="flex flex-col gap-2 my-4 items-center justify-center">
           <h2 className="text-xl font-bold mb-4 text-[#94b347]">
             Create Study Guide

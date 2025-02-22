@@ -122,28 +122,26 @@ export function StudyCardCarousel({
             <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2">
              
               {isEditing ? (
-                <div className="flex flex-row justify-between items-center gap-2 mt-2 ">
-                  <Input
-                    value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="text-slate-500 max-w-56  flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-fit"
-                    autoFocus
-                  />
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleSaveTitle}
-                      className="p-1 hover:bg-green-100 rounded-full text-green-600 border border-green-600"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="p-1 hover:bg-red-100 rounded-full text-red-500 border border-red-500"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
+                 <div className="flex items-center gap-2">
+                 <input
+                   type="text"
+                   value={editedTitle}
+                   onChange={(e) => setEditedTitle(e.target.value)}
+                   className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                   autoFocus
+                 />
+                 <button
+                   onClick={handleSaveTitle}
+                   className="p-1 hover:bg-green-100 rounded-full"
+                 >
+                   <Check className="h-4 w-4 text-green-600" />
+                 </button>
+                 <button
+                   onClick={handleCancelEdit}
+                   className="p-1 hover:bg-red-100 rounded-full"
+                 >
+                   <X className="h-4 w-4 text-red-600" />
+                 </button>
                 </div>
               ) : (
                   <>

@@ -45,7 +45,7 @@ export function StudyGuideCard({
   };
 
   return (
-    <Card className="px-6 bg-white  border-none w-full h-full shadow-none">
+    <Card className=" bg-white  border-none w-full h-full shadow-none">
       <div className="flex justify-between items-center mb-4 w-full">
         <Button
           variant="ghost"
@@ -63,34 +63,28 @@ export function StudyGuideCard({
       </div>
 
       <div className="shadow-none border-none">
-        <div className="flex flex-row items-center justify-between w-full  px-4  pb-2">
+        <div className="flex flex-row items-center justify-between w-full  pb-2">
           {isEditing ? (
-            <div className="flex items-center gap-2 flex-1 mr-4 w-full  ">
-              <Input
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="text-xl font-bold text-[#94b347] p-2 border-none text-center flex items-center justify-center w-fit border border-slate-600 rounded-lg"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSave}
-                  className="text-green-600 hover:text-green-700 "
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCancel}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSave}
+                    className="p-1 hover:bg-green-100 rounded-full"
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="p-1 hover:bg-red-100 rounded-full"
+                  >
+                    <X className="h-4 w-4 text-red-600" />
+                  </button>
             </div>
           ) : (
             <div

@@ -843,21 +843,24 @@ export default function StudyGuideComponent({
   return (
     <Card className="h-full bg-white border-none shadow-none overflow-y-auto">
       <CardContent className=" bg-white h-full p-4">
-        <CardHeader className="flex flex-col items-center justify-center">
-          <CardTitle className="text-2xl font-bold text-[#94b347] ">
-            Study Guides
-          </CardTitle>
-          <CardDescription>Create and review study guides</CardDescription>
-          <div className="flex flex-col justify-center items-center ">
-            <Button
-              onClick={() => setShowNotebookModal(true)}
-              className="flex items-center gap-2 m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Generate Study Guide
-            </Button>
-          </div>
-        </CardHeader>
+        {!selectedGuideView && (
+          <CardHeader className="flex flex-col items-center justify-center">
+            <CardTitle className="text-2xl font-bold text-[#94b347]">
+              Study Guides
+            </CardTitle>
+            <CardDescription>Create and review study guides</CardDescription>
+            <div className="flex flex-col justify-center items-center">
+              <Button
+                onClick={() => setShowNotebookModal(true)}
+                className="flex items-center gap-2 m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Generate Study Guide
+              </Button>
+            </div>
+          </CardHeader>
+        )}
+
         {selectedGuideView ? (
           <StudyGuideCard
             guide={selectedGuideView}
