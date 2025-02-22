@@ -467,10 +467,11 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
         <Link href="/">
           <Button
             variant="ghost"
-            className="gap-2 text-slate-600 flex items-center justify-center w-fit"
+            className="gap-2 text-slate-600 flex items-center justify-center w-fit hover:bg-slate-100 rounded-full"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
+            <span className="hidden md:block">Back to Dashboard</span>
+            <span className="md:hidden">Back</span>
           </Button>
         </Link>
 <div className="flex flex-row gap-4">

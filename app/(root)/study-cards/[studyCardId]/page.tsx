@@ -94,7 +94,7 @@ function CreateCardModal({
     <>
       {showNotebookModal && (
         <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-          <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh]  w-full  max-w-xl">
+          <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] py-16  w-full  max-w-xl">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
                 Create Study Cards
@@ -151,7 +151,7 @@ function CreateCardModal({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Select Notes
                 </label>
-                <div className="flex flex-col gap-2 items-center justify-center h-96 overflow-y-auto  pt-16">
+                <div className="flex flex-col gap-2 items-center justify-center h-72 overflow-y-auto  pt-16">
                   {renderNotebookList()}
                   </div>
               </div>
@@ -640,7 +640,8 @@ export default function StudyCardPage() {
             className="gap-2 text-slate-600 flex items-center justify-center w-fit  rounded-full hover:bg-slate-100"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
+            <span className="hidden md:block">Back to Dashboard</span>
+            <span className="md:hidden">Back</span>
           </Button>
         </Link>
         <Button

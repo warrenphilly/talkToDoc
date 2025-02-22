@@ -446,7 +446,7 @@ export default function QuizPage() {
     <div className="flex flex-col items-center justify-start   w-full px-4 sm:px-6 lg:px-8">
       <div className=" flex flex-row mt-16  justify-between  items-start sm:items-center w-full gap-4 ">
         <Link href="/">
-          <Button variant="ghost" className="gap-2">
+          <Button variant="ghost" className="gap-2 hover:bg-slate-100 rounded-full">
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back to Dashboard</span>
             <span className="sm:hidden">Back</span>
@@ -455,7 +455,7 @@ export default function QuizPage() {
 
         <Button
           variant="ghost"
-          className="gap-2 rounded-full border border-slate-400 sm:w-auto"
+          className="gap-2 rounded-full border border-slate-400 w-4 sm:w-auto"
           onClick={() => setShowQuizForm(true)}
         >
           <Plus className="h-4 w-4" />
