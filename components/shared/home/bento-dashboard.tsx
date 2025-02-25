@@ -752,15 +752,18 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         </h1>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-2 sm:gap-4 mb-4 sm:mb-6">
+      <div className="flex flex-row items-center justify-between w-full gap-2 sm:gap-4 mb-4 sm:mb-6">
         <h1 className="text-base sm:text-xl font-semibold text-slate-600">
           My Notebooks
         </h1>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
-          className="w-full sm:w-auto text-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-full border border-slate-300 shadow-none font-semibold hover:bg-slate-50 text-sm sm:text-base"
+          className="w-fit sm:w-auto text-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-full border border-slate-300 shadow-none font-semibold hover:bg-slate-50 text-sm sm:text-base"
         >
-          New Notebook
+
+          <Plus className="h-4 w-4 md:hidden" />
+          <span className="hidden md:block">New Notebook</span>
+          
         </Button>
       </div>
 
@@ -785,22 +788,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
-                  <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border border-slate-300 relative">
+                  <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border-none  relative dark:text-black">
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
                       className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
                     >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white dark:text-black hover:text-red-500" />
                     </button>
 
                     <CardContent className="p-3 sm:p-8 flex flex-col h-full">
                       <div className="p-2 sm:p-3 rounded-full w-fit bg-[#94b347]">
                         <NotebookPen className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
                       </div>
-                      <h2 className="text-base sm:text-xl font-semibold mt-2 sm:mt-4 text-white">
+                      <h2 className="text-base sm:text-xl font-semibold mt-2 sm:mt-4 text-black dark:text-black">
                         {notebook.title}
                       </h2>
-                      <p className="mt-1 sm:mt-2 flex-grow text-white text-xs sm:text-base">
+                      <p className="mt-1 sm:mt-2 flex-grow text-black dark:text-black text-xs sm:text-base">
                         {formatDate(notebook.createdAt)}
                       </p>
                     </CardContent>
