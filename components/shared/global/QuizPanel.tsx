@@ -726,7 +726,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {!selectedQuiz && (
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#94b347]">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#94b347] hidden md:block">
               Quiz Me
             </h2>
             <p className="text-slate-600 text-sm sm:text-base text-center">

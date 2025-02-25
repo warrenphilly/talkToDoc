@@ -436,7 +436,7 @@ export default function StudyCards({
       {!selectedSet && (
         <>
           <CardHeader className="flex flex-col items-center justify-center">
-            <CardTitle className="text-2xl font-bold text-[#94b347]">
+            <CardTitle className="text-2xl font-bold text-[#94b347] hidden md:block">
               Study Cards
             </CardTitle>
             <CardDescription>Create and review study card sets</CardDescription>

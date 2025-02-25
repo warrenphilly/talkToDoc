@@ -781,13 +781,13 @@ const ChatClient = ({
             }
           }}
         >
-          <DrawerContent className="h-[90vh] bg-white">
+          <DrawerContent className="h-[80vh] bg-white">
             <DrawerHeader className="p-4">
-              <DrawerTitle>
+              <DrawerTitle className="text-lg font-bold text-center text-[#94b347] ">
                 {showStudyGuides && "Study Guide"}
                 {showStudyCards && "Study Cards"}
                 {showQuiz && "Quiz"}
-                {showChat && "Chat"}
+                {showChat && "Talk to Notes"}
               </DrawerTitle>
             </DrawerHeader>
             <div className="h-full overflow-y-auto px-4">

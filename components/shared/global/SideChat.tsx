@@ -312,7 +312,7 @@ const SideChat = ({
           Clear
         </Button>
         <div className="flex flex-row items-center justify-center">
-          <h1 className="text-lg sm:text-xl font-semibold text-[#94b347] truncate">Talk to Notes</h1>
+          <h1 className=" hidden md:block text-lg sm:text-xl font-semibold text-[#94b347] truncate">Talk to Notes</h1>
         </div>
       </div>
 

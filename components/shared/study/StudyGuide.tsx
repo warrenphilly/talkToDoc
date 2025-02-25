@@ -845,7 +845,7 @@ export default function StudyGuideComponent({
       <CardContent className=" bg-white h-full p-4">
         {!selectedGuideView && (
           <CardHeader className="flex flex-col items-center justify-center">
-            <CardTitle className="text-2xl font-bold text-[#94b347]">
+            <CardTitle className="hidden md:block text-2xl font-bold text-[#94b347]">
               Study Guides
             </CardTitle>
             <CardDescription>Create and review study guides</CardDescription>
