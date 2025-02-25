@@ -721,21 +721,21 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-2 sm:p-4 h-full overflow-y-auto auto-scroll">
+    <div className="w-full max-w-7xl mx-auto md:p-2 sm:p-4 h-full overflow-y-auto auto-scroll">
       {/* Header with Create Quiz button */}
       {!selectedQuiz && (
-        <div className="flex justify-between items-center mb-4 sm:mb-6">
-          <div className="flex flex-col justify-center items-center w-full gap-2 sm:gap-4">
+        <div className="flex justify-between items-center  md:mb-4 sm:mb-6">
+          <div className="flex flex-col justify-center items-center  w-full gap-2 sm:gap-4 mb-4 md:mb-0">
             <h2 className="text-xl sm:text-2xl font-bold text-[#94b347] hidden md:block">
               Quiz Me
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base text-center">
+            <p className="text-slate-600 text-sm sm:text-base text-center hidden md:block">
               Create and review quizzes
             </p>
 
             <Button
               onClick={() => setShowQuizForm(true)}
-              className="bg-white border border-slate-400 text-slate-800 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
+              className="bg-white border border-slate-400 text-slate-800 mb-4 md:mb-0 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               Create Quiz

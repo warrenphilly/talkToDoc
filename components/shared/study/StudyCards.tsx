@@ -432,16 +432,16 @@ export default function StudyCards({
   };
 
   return (
-    <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 p-4 items-center justify-center">
+    <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 md:p-4 items-center justify-center">
       {!selectedSet && (
         <>
-          <CardHeader className="flex flex-col items-center justify-center">
-            <CardTitle className="text-2xl font-bold text-[#94b347] hidden md:block">
+          <CardHeader className="hidden md:flex flex-col items-center justify-center p-0  md:p-4 ">
+            <CardTitle className="text-2xl font-bold text-[#94b347] ">
               Study Cards
             </CardTitle>
-            <CardDescription>Create and review study card sets</CardDescription>
+            <CardDescription className="">Create and review study card sets</CardDescription>
           </CardHeader>
-          <div className="flex flex-col items-center justify-center gap-4 mb-6">
+          <div className="flex flex-col items-center justify-center md:gap-4 ">
             <Button
               onClick={() => setShowNotebookModal(true)}
               className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"

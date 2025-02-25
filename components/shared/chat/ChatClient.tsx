@@ -34,6 +34,7 @@ import {
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -789,6 +790,13 @@ const ChatClient = ({
                 {showQuiz && "Quiz"}
                 {showChat && "Talk to Notes"}
               </DrawerTitle>
+              <DrawerDescription className="text-sm text-center text-slate-500"> 
+                {showStudyGuides && "Create and review study guides"}
+                {showStudyCards && "Create and review study cards"}
+                {showQuiz && "Create and review quizzes"}
+                {showChat && ""}
+
+              </DrawerDescription>
             </DrawerHeader>
             <div className="h-full overflow-y-auto px-4">
               {showChat && (
