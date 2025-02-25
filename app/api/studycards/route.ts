@@ -127,24 +127,75 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { selectedPages, setName, numCards, uploadedDocs } = await req.json();
+    // Handle form data
+    const formData = await req.formData();
+    const messageData = formData.get('message');
+
+    if (!messageData) {
+      return NextResponse.json(
+        { error: "No message data provided" },
+        { status: 400 }
+      );
+    }
+
+    // Parse the message string into JSON
+    let requestData;
+    try {
+      requestData = typeof messageData === 'string' 
+        ? JSON.parse(messageData)
+        : JSON.parse(messageData.toString());
+    } catch (error) {
+      console.error("JSON parsing error:", error);
+      console.error("Attempted to parse:", messageData);
+      return NextResponse.json(
+        { 
+          error: "Invalid JSON in message data",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          receivedData: messageData
+        },
+        { status: 400 }
+      );
+    }
+
+    const { selectedPages, numberOfCards, metadata } = requestData;
+
+    // Validate required fields
+    if (!metadata?.name || typeof numberOfCards !== 'number') {
+      return NextResponse.json(
+        { error: "Missing required fields: name and numberOfCards" },
+        { status: 400 }
+      );
+    }
+
+    // Update the rest of your code to use these new field names
+    const setName = metadata.name;
+    const numCards = numberOfCards;
+
+    // Validate that either selectedPages or uploadedDocs is provided
+    if ((!selectedPages || Object.keys(selectedPages).length === 0) && 
+        (!metadata?.uploadedDocs || metadata.uploadedDocs.length === 0)) {
+      return NextResponse.json(
+        { error: "Either selectedPages or uploadedDocs must be provided" },
+        { status: 400 }
+      );
+    }
 
     // Debug log the request
     console.log("Received request:", {
       selectedPages,
       setName,
       numCards,
-      uploadedDocsCount: uploadedDocs?.length
+      uploadedDocsCount: metadata?.uploadedDocs?.length
     });
 
     // Initialize content collection
     let allContent = "";
 
     // 1. Process uploaded docs if they exist
-    if (uploadedDocs && uploadedDocs.length > 0) {
-      console.log(`Processing ${uploadedDocs.length} uploaded documents`);
+    if (metadata?.uploadedDocs && metadata.uploadedDocs.length > 0) {
+      console.log(`Processing ${metadata.uploadedDocs.length} uploaded documents`);
       
-      for (const doc of uploadedDocs) {
+      for (const doc of metadata.uploadedDocs) {
         try {
           // Extract the path from the full URL
           const url = new URL(doc.path);

@@ -235,7 +235,7 @@ const QuizForm = ({
             Create New Quiz
           </CardTitle>
         </div>
-
+<div className="overflow-y-auto h-full pb-8 pt-4">
         {/* Quiz Name */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -360,6 +360,9 @@ const QuizForm = ({
             </Button>
           </div>
         </div>
+
+        </div>
+
       </div>
     </div>
   );
