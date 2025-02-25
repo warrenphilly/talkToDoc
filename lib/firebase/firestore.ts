@@ -1566,68 +1566,71 @@ export const saveGeneratedStudyGuide = async (
 export async function saveStudyCards(
   userId: string,
   setName: string,
-  cards: StudyCard[]
+  cards: StudyCard[] | string // Accept either StudyCard array or string
 ) {
   try {
-    // Validate input data
-    if (!userId || !setName) {
-      throw new Error("Missing required fields: userId and setName");
-    }
-
-    // Validate cards array
-    if (!cards || !Array.isArray(cards)) {
-      console.error("Invalid cards data:", cards);
-      throw new Error("Invalid cards data: must be an array");
-    }
-
-    // Log incoming data
-    console.log("Incoming cards data:", JSON.stringify(cards, null, 2));
-
-    // Ensure each card has the required fields and no undefined values
-    const validatedCards = cards.filter(card => card && typeof card === 'object').map(card => {
-      if (!card.title || !card.content) {
-        console.warn("Card missing required fields:", card);
-      }
-      return {
-        title: String(card.title || "").trim() || "Untitled Card",
-        content: String(card.content || "").trim() || "No content provided"
-      };
-    });
-
-    // Check if we have any cards after validation
-    if (validatedCards.length === 0) {
-      throw new Error("No valid cards to save after validation");
-    }
-
-    // Create document reference with custom ID
-    const studySetId = `studycards_${crypto.randomUUID()}`;
-    const studySetRef = doc(db, "studyCards", studySetId);
-
-    // Create the study set object
-    const studySet = {
-      id: studySetId,
-      userId: userId,
-      title: setName.trim(),
-      cards: validatedCards,
-      createdAt: new Date().toISOString(), // Use ISO string instead of Firestore timestamp
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Log the final data being saved
-    console.log("Final study set data:", JSON.stringify(studySet, null, 2));
-
-    // Save to Firestore
-    await setDoc(studySetRef, studySet);
-
-    return studySet;
-  } catch (error) {
-    console.error("Error saving study cards:", error);
-    console.error("Error details:", {
+    // Debug log incoming data
+    console.log("saveStudyCards called with:", {
       userId,
       setName,
-      cardsLength: cards?.length,
-      cards: JSON.stringify(cards, null, 2)
+      cards: typeof cards === 'string' ? 'string (length: ' + cards.length + ')' : (cards as StudyCard[]).length + ' cards'
     });
+
+    // Parse cards if they're passed as a string
+    const parsedCards: StudyCard[] = typeof cards === 'string' ? JSON.parse(cards) : cards;
+
+    // Validate input data
+    if (!userId || !setName) {
+      throw new Error(`Missing required fields: userId=${userId}, setName=${setName}`);
+    }
+
+    // Strict cards validation
+    if (!parsedCards) {
+      throw new Error("Cards array is undefined");
+    }
+
+    if (!Array.isArray(parsedCards)) {
+      throw new Error(`Cards must be an array, received: ${typeof parsedCards}`);
+    }
+
+    if (parsedCards.length === 0) {
+      throw new Error("Cards array is empty");
+    }
+
+    // Create timestamps
+    const now = new Date().toISOString();
+
+    // Create document ID
+    const studySetId = `studycards_${crypto.randomUUID()}`;
+
+    // Create the complete study set object
+    const studySet: StudyCardSet = {
+      id: studySetId,
+      title: setName.trim(),
+      cards: parsedCards,
+      createdAt: now,
+      updatedAt: now,
+      userId: userId,
+      metadata: {
+        createdAt: now,
+        updatedAt: now
+      },
+      notebookId: null,
+      pageId: null
+    };
+
+    // Debug log the final object
+    console.log("About to save study set:", JSON.stringify(studySet, null, 2));
+
+    // Save to Firestore
+    const studySetRef = doc(db, "studyCards", studySetId);
+    await setDoc(studySetRef, studySet);
+
+    console.log("Successfully saved study set:", studySetId);
+    return studySet;
+
+  } catch (error) {
+    console.error("Error in saveStudyCards:", error);
     throw error;
   }
 }

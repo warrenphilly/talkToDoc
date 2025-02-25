@@ -315,73 +315,13 @@ export async function POST(req: NextRequest) {
       console.log("Content truncated to", maxContentLength, "characters");
     }
 
-    const cardsResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo-16k",
-          messages: [
-            {
-              role: "system",
-              content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information. Return ONLY a JSON object with this exact structure, no markdown formatting:
-              {
-                "cards": [
-                  {
-                    "title": "Question or key concept",
-                    "content": "Clear, concise explanation"
-                  }
-                ]
-              }`,
-            },
-          ],
-          temperature: 0.7,
-        }),
-      }
-    );
+    const response = await makeOpenAIRequest(allContent, numCards);
+    const cleanedResponse = cleanJsonResponse(response.choices[0].message.content);
+    const parsedResponse = JSON.parse(cleanedResponse);
 
-    if (!cardsResponse.ok) {
-      console.error("OpenAI API error:", {
-        status: cardsResponse.status,
-        statusText: cardsResponse.statusText
-      });
-      throw new Error(`Failed to generate cards: ${cardsResponse.status}`);
-    }
-
-    const cardsData = await cardsResponse.json();
-    console.log("OpenAI Response:", cardsData);
-    
-    // Clean and parse the response
-    const cleanedContent = cleanJsonResponse(cardsData.choices[0].message.content);
-    console.log("Cleaned content:", cleanedContent);
-    
-    let generatedCards;
-    try {
-      generatedCards = JSON.parse(cleanedContent);
-    } catch (parseError) {
-      console.error("JSON Parse Error:", parseError);
-      console.error("Content that failed to parse:", cleanedContent);
-      throw new Error("Failed to parse generated cards");
-    }
-    
-    console.log("Parsed cards:", generatedCards);
-
-    // Validate the parsed data structure
-    if (!generatedCards.cards || !Array.isArray(generatedCards.cards)) {
-      throw new Error("Invalid card data structure");
-    }
-
-    // Save the study cards to the database
-    const savedSet = await saveStudyCards(userId, setName, generatedCards.cards);
-    console.log("Saved study set:", savedSet);
-    
-    return NextResponse.json({ 
-      success: true,
-      studySet: savedSet
+    return NextResponse.json({
+      cards: parsedResponse.cards,
+      success: true
     });
 
   } catch (error) {

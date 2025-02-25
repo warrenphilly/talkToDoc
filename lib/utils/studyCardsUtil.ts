@@ -389,7 +389,7 @@ export const handleGenerateCards = async (
     }
 
     const data = await response.json();
-    await saveStudyCardSet( data.cards, metadata, userId);
+    await saveStudyCardSet(data.cards, metadata, userId);
 
     setShowNotebookModal(false);
     setSelectedPages({});
