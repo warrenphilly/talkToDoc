@@ -11,12 +11,14 @@ interface TitleEditorProps {
   initialTitle: string;
   noteId: string;
   notebookId: string;
+  onComplete?: (title: string) => void;
 }
 
 export const TitleEditor: React.FC<TitleEditorProps> = ({
   initialTitle,
   noteId,
   notebookId,
+  onComplete,
 }) => {
   const [title, setTitle] = useState(initialTitle);
   const [isEditing, setIsEditing] = useState(false);
@@ -26,6 +28,7 @@ export const TitleEditor: React.FC<TitleEditorProps> = ({
       await updatePageTitle(notebookId, noteId, newTitle);
       setTitle(newTitle);
       setIsEditing(false);
+      onComplete?.(newTitle);
     } catch (error) {
       console.error("Error updating title:", error);
     }
@@ -38,9 +41,9 @@ export const TitleEditor: React.FC<TitleEditorProps> = ({
         onChange={(e) => setTitle(e.target.value)}
         onFocus={() => setIsEditing(true)}
         onBlur={(e) => {
-          // Only hide the save button if we're not clicking it
           if (!e.relatedTarget?.classList.contains('save-button')) {
             setIsEditing(false);
+            onComplete?.(title);
           }
         }}
         placeholder="Note Title"

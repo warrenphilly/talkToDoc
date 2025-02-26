@@ -53,6 +53,7 @@ interface Tab {
   content: React.ReactNode;
   messages: Message[];
   isOpen: boolean;
+  isEditing?: boolean;
 }
 
 interface BrowserTabsProps {
@@ -97,6 +98,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       ),
       messages: page.messages,
       isOpen: page.isOpen,
+      isEditing: false,
     }));
 
     setTabs(convertedTabs);
@@ -130,6 +132,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         ),
         messages: [],
         isOpen: true,
+        isEditing: false,
       };
       setTabs([newTab]);
       setActiveTabId(newPage.id);
@@ -156,16 +159,17 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         ),
         messages: [],
         isOpen: true,
+        isEditing: false,
       };
 
       // Optimistically update UI
-      setAllPages(prev => [...prev, tempNewTab]);
-      setTabs(prev => [...prev, tempNewTab]);
+      setAllPages((prev) => [...prev, tempNewTab]);
+      setTabs((prev) => [...prev, tempNewTab]);
       setActiveTabId(tempId);
 
       // Actually create the page in the database
       const newPage = await addPageToNotebook(notebookId, newTitle);
-      
+
       // Update the temporary ID with the real one
       const finalNewTab: Tab = {
         ...tempNewTab,
@@ -181,11 +185,11 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       };
 
       // Update states with the real ID
-      setAllPages(prev => 
-        prev.map(tab => tab.id === tempId ? finalNewTab : tab)
+      setAllPages((prev) =>
+        prev.map((tab) => (tab.id === tempId ? finalNewTab : tab))
       );
-      setTabs(prev => 
-        prev.map(tab => tab.id === tempId ? finalNewTab : tab)
+      setTabs((prev) =>
+        prev.map((tab) => (tab.id === tempId ? finalNewTab : tab))
       );
       setActiveTabId(newPage.id);
     } catch (error) {
@@ -242,6 +246,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           ),
           messages: page.messages,
           isOpen: true,
+          isEditing: false,
         };
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(page.id);
@@ -257,7 +262,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
     try {
       await deleteNotebook(notebookId);
       onNotebookDelete?.(notebookId);
-      router.push('/');
+      router.push("/");
       router.refresh();
     } catch (error) {
       console.error("Error deleting notebook:", error);
@@ -275,7 +280,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         }
       }
 
-      setAllPages((prevPages) => prevPages.filter((page) => page.id !== pageId));
+      setAllPages((prevPages) =>
+        prevPages.filter((page) => page.id !== pageId)
+      );
       setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== pageId));
 
       const { newPageId, isNewPage } = await deletePage(notebookId, pageId);
@@ -302,15 +309,15 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-row items-center justify-start w-fit">
         {isEditing ? (
           <div className="flex items-center gap-2">
-            <Input 
-              type="text" 
-              value={editedTitle} 
+            <Input
+              type="text"
+              value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
               className="w-[200px]"
             />
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="rounded-full hover:bg-green-100 hover:text-green-600"
               onClick={async () => {
                 try {
@@ -325,9 +332,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             >
               Save
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="rounded-full hover:bg-red-100 hover:text-red-600"
               onClick={() => {
                 setEditedTitle(notebookTitle);
@@ -340,65 +347,89 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         ) : (
           <div className="flex items-center gap-2">
             <p className="text-xl font-semibold text-slate-500">
-              Title: <span className="font-medium text-[#94b347]">{notebookTitle}</span>
+              Title:{" "}
+              <span className="font-medium text-[#94b347]">
+                {notebookTitle}
+              </span>
             </p>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full hover:bg-transparent hover:text-[#94b347]" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full hover:bg-transparent hover:text-[#94b347]"
               onClick={() => setIsEditing(true)}
             >
-              <Pencil size={16} /> 
+              <Pencil size={16} />
             </Button>
           </div>
         )}
       </div>
       <div className="flex  items-center z-50 h-fit w-full rounded-t-lg scrollbar-hide">
         <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2  ">
-          <Select
-            value={activeTabId}
-            onValueChange={(value) => setActiveTabId(value)}
-          >
-            <SelectTrigger className="w-full max-w-[200px]">
-              <SelectValue placeholder="Select a page" />
-            </SelectTrigger>
-            <SelectContent>
-              {tabs.map((tab) => (
-                <SelectItem key={tab.id} value={tab.id}>
-                  {tab.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2 ">
-            {activeTab && (
-              <button
-                className="p-2 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  const titleEditor = document.querySelector(
-                    `[data-page-id="${activeTab.id}"]`
-                  );
-                  if (titleEditor) {
-                    (titleEditor as HTMLElement).focus();
-                  }
-                }}
-              >
-                <Pencil size={16} />
-              </button>
-            )}
-            <button
-              className="p-2 text-muted-foreground hover:text-foreground"
-              onClick={addTab}
-            >
-              <Plus size={16} />
-            </button>
-            <button
-              className="p-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsModalOpen(true)}
-            >
-              <List size={16} />
-            </button>
-          </div>
+          {activeTab &&
+            (activeTab.isEditing ? (
+              <div className="flex items-center gap-2 w-full max-w-[200px]">
+                <TitleEditor
+                  initialTitle={activeTab.title}
+                  noteId={activeTab.id}
+                  notebookId={notebookId}
+                  onComplete={(newTitle) => {
+                    setTabs(prev => 
+                      prev.map(tab => 
+                        tab.id === activeTab.id 
+                          ? { ...tab, isEditing: false, title: newTitle } 
+                          : tab
+                      )
+                    );
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                <Select
+                  value={activeTabId}
+                  onValueChange={(value) => setActiveTabId(value)}
+                >
+                  <SelectTrigger className="w-full max-w-[200px]">
+                    <SelectValue placeholder="Select a page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tabs.map((tab) => (
+                      <SelectItem key={tab.id} value={tab.id}>
+                        {tab.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="p-2 text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setTabs((prev) =>
+                        prev.map((tab) =>
+                          tab.id === activeTab.id
+                            ? { ...tab, isEditing: true }
+                            : tab
+                        )
+                      );
+                    }}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className="p-2 text-muted-foreground hover:text-foreground"
+                    onClick={addTab}
+                  >
+                    <Plus size={16} />
+                  </button>
+                  <button
+                    className="p-2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    <List size={16} />
+                  </button>
+                </div>
+              </>
+            ))}
         </div>
         <div className="hidden md:flex items-center w-full">
           {tabs.map((tab) => (
@@ -499,14 +530,21 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                     </AlertDialogTrigger>
                     <AlertDialogContent className="bg-white">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to delete this page?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          Are you sure you want to delete this page?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
                           This action cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-white rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-700 ">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeletePage(page.id)} className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  ">
+                        <AlertDialogCancel className="bg-white rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-700 ">
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeletePage(page.id)}
+                          className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  "
+                        >
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -525,10 +563,12 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure you want to delete this notebook?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Are you sure you want to delete this notebook?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your notebook
-                    and all its pages.
+                    This action cannot be undone. This will permanently delete
+                    your notebook and all its pages.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
