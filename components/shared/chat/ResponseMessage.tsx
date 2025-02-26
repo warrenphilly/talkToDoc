@@ -1,4 +1,15 @@
 import ParagraphEditor from "@/components/ParagraphEditor";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Message, ParagraphData, Section, Sentence } from "@/lib/types";
 import { Edit2, Trash2 } from "lucide-react";
@@ -95,14 +106,37 @@ export const ResponseMessage = ({
             >
               <Edit2 className="h-4 w-4" />
             </Button>
-            <Button
-              onClick={onDelete}
-              variant="ghost"
-              size="sm"
-              className="border rounded-full border-red-600 text-red-600 hover:text-red-700 hover:bg-red-100 w-8 h-8"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="border rounded-full border-red-600 text-red-600 hover:text-red-700 hover:bg-red-100 w-8 h-8"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-white">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Section</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this section? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-white border border-slate-300 hover:bg-slate-100">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onDelete}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
         <div className="space-y-2">

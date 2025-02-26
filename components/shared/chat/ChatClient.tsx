@@ -126,9 +126,7 @@ const ChatClient = ({
     setFiles: (files: File[]) => void
   ) => {
     fileUpload(event, setFiles);
-    if (isSmallScreen) {
-      setShowUploadModal(false);
-    }
+  
   };
 
   const handleSentenceClick = (
@@ -315,14 +313,28 @@ const ChatClient = ({
     }
   };
 
-  const handleMessageDelete = async (index: number) => {
+  const handleMessageDelete = async (index: number, sectionIndex: number) => {
     try {
       const updatedMessages = [...messages];
-      updatedMessages.splice(index, 1);
+      const targetMessage = updatedMessages[index];
+
+      if (Array.isArray(targetMessage.text)) {
+        // Only remove the specific section
+        targetMessage.text.splice(sectionIndex, 1);
+        
+        // If there are no sections left, remove the entire message
+        if (targetMessage.text.length === 0) {
+          updatedMessages.splice(index, 1);
+        }
+      } else {
+        // For non-array text messages, remove the entire message
+        updatedMessages.splice(index, 1);
+      }
+
       setMessages(updatedMessages);
       await saveNote(notebookId, tabId, updatedMessages);
     } catch (error) {
-      console.error("Error deleting message:", error);
+      console.error("Error deleting message section:", error);
       setMessages(messages); // Revert on error
     }
   };
@@ -521,21 +533,31 @@ const ChatClient = ({
                 flex flex-col gap-1 md:gap-2 h-full overflow-hidden`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
+              {/* Add Progress Indicator */}
               {isProcessing && (
-                <div className="w-full ">
+                <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
                   <div className="w-full bg-slate-200 rounded-full h-2.5">
                     <div
                       className="bg-[#94b347] h-2.5 rounded-full transition-all duration-300"
                       style={{ width: `${(progress / totalSections) * 100}%` }}
                     />
                   </div>
-                  <p className="text-sm text-slate-500 text-center mt-2">
-                    Processing section {progress} of {totalSections}
-                  </p>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <CircularProgress
+                      size={16}
+                      sx={{
+                        color: "#94b347",
+                      }}
+                    />
+                    <p className="text-sm text-slate-500">
+                      Processing section {progress} of {totalSections}
+                    </p>
+                  </div>
                 </div>
               )}
 
-              <div className="flex  flex-col overflow-y-auto   rounded-2xl m w-full h-full">
+              {/* Messages Container */}
+              <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
                 {messages.map((msg, index) => {
                   if (msg.user === "AI") {
                     return (
@@ -564,7 +586,7 @@ const ChatClient = ({
                                 onEdit={() =>
                                   handleMessageEdit(null, index, sectionIndex)
                                 }
-                                onDelete={() => handleMessageDelete(index)}
+                                onDelete={() => handleMessageDelete(index, sectionIndex)}
                                 onSave={(data) =>
                                   handleMessageEdit(data, index, sectionIndex)
                                 }
@@ -603,7 +625,7 @@ const ChatClient = ({
                             }
                             handleParagraphSave={handleParagraphSave}
                             onEdit={() => handleMessageEdit(null, index, 0)}
-                            onDelete={() => handleMessageDelete(index)}
+                            onDelete={() => handleMessageDelete(index, 0)}
                             onSave={(data) => handleMessageEdit(data, index, 0)}
                           />
                         )}
@@ -612,8 +634,9 @@ const ChatClient = ({
                   }
                   return null;
                 })}
+                {/* Add a loading indicator at the bottom when processing */}
                 {isProcessing && (
-                  <div className="w-full px-4">
+                  <div className="w-full px-4 py-8">
                     <p className="text-sm text-slate-500 text-center mt-2 flex flex-col items-center justify-center gap-2">
                       Generating note sections {progress} of {totalSections}
                       <CircularProgress
@@ -636,7 +659,7 @@ const ChatClient = ({
               isStudyGuidesFullscreen
             ) &&
               (showQuiz || showChat || showStudyCards || showStudyGuides) && (
-                <ResizableHandle withHandle className="bg-slate-300 m-2 ml-5" />
+                <ResizableHandle className="bg-slate-300 m-2 ml-5" />
               )}
 
             {!isNotebookFullscreen &&
@@ -790,12 +813,11 @@ const ChatClient = ({
                 {showQuiz && "Quiz"}
                 {showChat && "Talk to Notes"}
               </DrawerTitle>
-              <DrawerDescription className="text-sm text-center text-slate-500"> 
+              <DrawerDescription className="text-sm text-center text-slate-500">
                 {showStudyGuides && "Create and review study guides"}
                 {showStudyCards && "Create and review study cards"}
                 {showQuiz && "Create and review quizzes"}
                 {showChat && ""}
-
               </DrawerDescription>
             </DrawerHeader>
             <div className="h-full overflow-y-auto px-4">
@@ -839,11 +861,16 @@ const ChatClient = ({
               setShowUploadModal(false);
             }}
             setShowUpload={setShowUpload}
+            isProcessing={isProcessing}
+            progress={progress}
+            totalSections={totalSections}
           />
         </DialogContent>
       </Dialog>
     </div>
   );
 };
+  
+
 
 export default ChatClient;

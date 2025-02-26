@@ -75,6 +75,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
         <div className="h-[calc(100vh-2rem)] sm:h-[calc(100vh-4rem)] w-full overflow-hidden rounded-lg">
           <BrowserTabs 
             notebookId={notebook.id} 
+            notebookTitle={notebook.title}
             initialTabs={tabs}
             className="h-full w-full"
           />

@@ -898,7 +898,7 @@ export default function StudyGuideComponent({
               {studyGuides.map((guide) => (
                 <div
                   key={guide.id}
-                  className="flex items-center justify-between p-4 bg-white border-t border-slate-200  hover:bg-slate-50 transition-colors "
+                  className="flex items-center justify-between p-4 bg-white border-t border-slate-200  hover:bg-slate-50 transition-colors h-full  overflow-y-auto pb-8"
                 >
                   <div
                     className="flex-1 cursor-pointer"

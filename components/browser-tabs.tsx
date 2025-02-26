@@ -43,6 +43,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 interface Tab {
   id: string;
@@ -54,6 +56,7 @@ interface Tab {
 
 interface BrowserTabsProps {
   notebookId: string;
+  notebookTitle: string;
   initialTabs: Tab[];
   className?: string;
   onNotebookDelete?: (notebookId: string) => void;
@@ -61,6 +64,7 @@ interface BrowserTabsProps {
 
 export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   notebookId,
+  notebookTitle,
   initialTabs,
   className,
   onNotebookDelete,
@@ -69,6 +73,8 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   const [activeTabId, setActiveTabId] = useState(tabs[0]?.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [allPages, setAllPages] = useState<Tab[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(notebookTitle);
   const router = useRouter();
 
   useEffect(() => {
@@ -288,12 +294,23 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   return (
     <div
       className={cn(
-        "w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center pt-16 ",
+        "w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center pt-16 md:pt-4 ",
         className
       )}
     >
-      <div className="flex items-center z-50 h-fit w-full rounded-t-lg scrollbar-hide">
-        <div className="md:hidden flex justify-between w-full items-center gap-2 py-2  ">
+      <div className=" p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-4 left-0 h-fit flex flex-row items-center justify-start w-fit">
+        {isEditing ? (
+          <Input type="text" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} />
+        ) : (
+          <p className="text-xl font-semibold text-slate-500">Title: <span className="font-medium text-[#94b347]">{notebookTitle}</span></p>
+        )}
+        <Button variant="ghost" size="icon" className="rounded-full hover:bg-transparent hover:text-[#94b347]" onClick={() => setIsEditing(!isEditing)}>
+          <Pencil size={16} /> 
+        </Button>
+    
+      </div>
+      <div className="flex  items-center z-50 h-fit w-full rounded-t-lg scrollbar-hide">
+        <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2  ">
           <Select
             value={activeTabId}
             onValueChange={(value) => setActiveTabId(value)}

@@ -14,6 +14,9 @@ interface UploadAreaProps {
   className?: string;
   showUpload: boolean;
   setShowUpload: (show: boolean) => void;
+  isProcessing: boolean;
+  progress: number;
+  totalSections: number;
 }
 
 const UploadArea = ({
@@ -25,6 +28,9 @@ const UploadArea = ({
   handleClear,
   showUpload,
   setShowUpload,
+  isProcessing,
+  progress,
+  totalSections,
 }: UploadAreaProps) => {
   const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<
     Array<{ id: string; name: string }>
@@ -90,9 +96,22 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex  md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit">
+    <div className="flex  md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-white">
       {showUpload && (
-        <div className="flex flex-col gap-2  items-center justify-start rounded-2xl w-full md:max-w-[800px] md:border border-slate-400 h-full md:h-fit p-6">
+        <div className="flex flex-col gap-2  items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px] md:border border-slate-400 h-full md:h-fit p-6">
+          {isProcessing && (
+            <div className="w-full space-y-2">
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div
+                  className="bg-[#94b347] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(progress / totalSections) * 100}%` }}
+                />
+              </div>
+              <p className="text-sm text-slate-500 text-center">
+                Processing section {progress} of {totalSections}
+              </p>
+            </div>
+          )}
           <label className="block text-lg font-medium text-gray-700 mb-1">
             Upload your files
           </label>
@@ -233,9 +252,11 @@ const UploadArea = ({
               <Button
                 className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
                 onClick={handleGenerateNotes}
-                disabled={processingFiles || filesToProcess.length === 0}
+                disabled={
+                  processingFiles || filesToProcess.length === 0 || isProcessing
+                }
               >
-                {processingFiles
+                {processingFiles || isProcessing
                   ? "Processing..."
                   : "Generate Notes from New Files"}
               </Button>
