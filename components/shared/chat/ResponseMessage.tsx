@@ -106,7 +106,7 @@ export const ResponseMessage = ({
             >
               <Edit2 className="h-4 w-4" />
             </Button>
-            <AlertDialog>
+            <AlertDialog >
               <AlertDialogTrigger asChild>
                 <Button
                   variant="ghost"
@@ -116,7 +116,7 @@ export const ResponseMessage = ({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white">
+              <AlertDialogContent className="bg-white p-6 max-w-sm rounded-lg  ">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Section</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -124,13 +124,13 @@ export const ResponseMessage = ({
                     cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="bg-white border border-slate-300 hover:bg-slate-100">
+                <AlertDialogFooter className="flex flex-row gap-2 justify-between items-center ">
+                  <AlertDialogCancel className="bg-white border border-slate-300 hover:bg-slate-100 rounded-full">
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={onDelete}
-                    className="bg-red-600 text-white hover:bg-red-700"
+                    className="bg-red-600 text-white hover:bg-red-700 rounded-full"
                   >
                     Delete
                   </AlertDialogAction>
@@ -145,7 +145,7 @@ export const ResponseMessage = ({
               key={sentenceIdx}
               asChild
               onClick={() => handleSentenceClick(sentence)}
-              className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-0 w-fit"
+              className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-2 h-fit w-fit"
             >
               <div className="px-1 py-1 rounded cursor-pointer transition-colors">
                 <p className="text-gray-800 text-xs md:text-sm text-left whitespace-normal break-words">

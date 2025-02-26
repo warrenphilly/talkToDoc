@@ -121,12 +121,14 @@ const ChatClient = ({
 
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  // Add new state for tracking database update status
+  const [isDatabaseUpdating, setIsDatabaseUpdating] = useState(false);
+
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
     setFiles: (files: File[]) => void
   ) => {
     fileUpload(event, setFiles);
-  
   };
 
   const handleSentenceClick = (
@@ -193,24 +195,28 @@ const ChatClient = ({
   };
 
   const handleSendMessage = async () => {
-    await sendMessage(
-      input,
-      files,
-      setMessages,
-      setInput,
-      setFiles,
-      setShowUpload,
-      setProgress,
-      setTotalSections,
-      setIsProcessing,
-      notebookId,
-      tabId
-    );
-
+    setIsDatabaseUpdating(true);
     try {
+      await sendMessage(
+        input,
+        files,
+        setMessages,
+        setInput,
+        setFiles,
+        setShowUpload,
+        setProgress,
+        setTotalSections,
+        setIsProcessing,
+        notebookId,
+        tabId
+      );
+
+      // Save to database
       await saveNote(notebookId, tabId, messages);
     } catch (error) {
-      console.error("Error saving chat:", error);
+      console.error("Error processing files:", error);
+    } finally {
+      setIsDatabaseUpdating(false);
     }
   };
 
@@ -321,7 +327,7 @@ const ChatClient = ({
       if (Array.isArray(targetMessage.text)) {
         // Only remove the specific section
         targetMessage.text.splice(sectionIndex, 1);
-        
+
         // If there are no sections left, remove the entire message
         if (targetMessage.text.length === 0) {
           updatedMessages.splice(index, 1);
@@ -416,6 +422,8 @@ const ChatClient = ({
 
   return (
     <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
+      {/* Show loading overlay when processing or updating database */}
+  
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center md:pl-8 ">
@@ -530,28 +538,22 @@ const ChatClient = ({
                     ? "hidden"
                     : "w-full p-1 md:p-2"
                 } 
-                flex flex-col gap-1 md:gap-2 h-full overflow-hidden`}
+                flex flex-col gap-1 md:gap-2 h-full overflow-hidden md:min-w-[400px]`}
               defaultSize={isNotebookFullscreen ? 100 : 50}
             >
               {/* Add Progress Indicator */}
               {isProcessing && (
                 <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-                  <div className="w-full bg-slate-200 rounded-full h-2.5">
-                    <div
-                      className="bg-[#94b347] h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${(progress / totalSections) * 100}%` }}
-                    />
-                  </div>
+                  
                   <div className="flex items-center justify-center gap-2 mt-2">
+                    Generating note sections
                     <CircularProgress
                       size={16}
                       sx={{
                         color: "#94b347",
                       }}
                     />
-                    <p className="text-sm text-slate-500">
-                      Processing section {progress} of {totalSections}
-                    </p>
+                  
                   </div>
                 </div>
               )}
@@ -586,7 +588,9 @@ const ChatClient = ({
                                 onEdit={() =>
                                   handleMessageEdit(null, index, sectionIndex)
                                 }
-                                onDelete={() => handleMessageDelete(index, sectionIndex)}
+                                onDelete={() =>
+                                  handleMessageDelete(index, sectionIndex)
+                                }
                                 onSave={(data) =>
                                   handleMessageEdit(data, index, sectionIndex)
                                 }
@@ -634,20 +638,7 @@ const ChatClient = ({
                   }
                   return null;
                 })}
-                {/* Add a loading indicator at the bottom when processing */}
-                {isProcessing && (
-                  <div className="w-full px-4 py-8">
-                    <p className="text-sm text-slate-500 text-center mt-2 flex flex-col items-center justify-center gap-2">
-                      Generating note sections {progress} of {totalSections}
-                      <CircularProgress
-                        size={20}
-                        sx={{
-                          color: "#94b347",
-                        }}
-                      />
-                    </p>
-                  </div>
-                )}
+             
               </div>
             </ResizablePanel>
 
@@ -862,6 +853,8 @@ const ChatClient = ({
             }}
             setShowUpload={setShowUpload}
             isProcessing={isProcessing}
+            setIsProcessing={setIsProcessing}
+            isDatabaseUpdating={isDatabaseUpdating}
             progress={progress}
             totalSections={totalSections}
           />
@@ -870,7 +863,5 @@ const ChatClient = ({
     </div>
   );
 };
-  
-
 
 export default ChatClient;

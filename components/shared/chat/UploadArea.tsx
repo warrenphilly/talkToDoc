@@ -17,6 +17,8 @@ interface UploadAreaProps {
   isProcessing: boolean;
   progress: number;
   totalSections: number;
+  setIsProcessing: (isProcessing: boolean) => void;
+  isDatabaseUpdating: boolean;
 }
 
 const UploadArea = ({
@@ -31,6 +33,8 @@ const UploadArea = ({
   isProcessing,
   progress,
   totalSections,
+  setIsProcessing,
+  isDatabaseUpdating,
 }: UploadAreaProps) => {
   const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<
     Array<{ id: string; name: string }>
@@ -70,7 +74,7 @@ const UploadArea = ({
   }, [messages]);
 
   const handleGenerateNotes = async () => {
-    setProcessingFiles(true);
+    setIsProcessing(true);
 
     try {
       const fileDetails = filesToProcess.map((file) => ({
@@ -80,7 +84,7 @@ const UploadArea = ({
 
       setPreviouslyUploadedFiles((prev) => [...prev, ...fileDetails]);
       setFilesToProcess([]);
-      setHasProcessedFiles(true); // Mark files as processed
+      setHasProcessedFiles(true);
 
       setShowUpload(false);
       await handleSendMessage();
@@ -118,7 +122,7 @@ const UploadArea = ({
 
           <div className="w-fit space-y-4 flex flex-col gap-2 items-start justify-start h-full">
             {/* Upload Button */}
-            <div className="flex items-center gap-2 w-full justify-center my-4">
+            <div className="flex items-center gap-2 w-full justify-center ">
               <input
                 type="file"
                 multiple
@@ -128,23 +132,25 @@ const UploadArea = ({
                 accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
                 disabled={processingFiles}
               />
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg data-[state=active]:bg-white data-[state=active]:text-slate-600 data-[state=active]:border-slate-400"
-                disabled={processingFiles}
-              >
-                <UploadOutlined />
-                Upload Files ({filesToProcess.length})
-              </Button>
+              {filesToProcess.length === 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg data-[state=active]:bg-white data-[state=active]:text-slate-600 data-[state=active]:border-slate-400"
+                  disabled={processingFiles}
+                >
+                  <UploadOutlined />
+                  Upload Files ({filesToProcess.length})
+                </Button>
+              )}
             </div>
 
             {/* New Files List */}
             <div className="flex flex-col  gap-2 w-full">
               {filesToProcess.length > 0 && (
-                <div className="border-t border-slate-400  p-4 space-y-3 w-full flex flex-col gap-2 items-center justify-center">
+                <div className="   space-y-3 w-full flex flex-col gap-2 items-center justify-center">
                   <p className="text-sm text-slate-600 font-semibold">
-                    New Files to Process
+                    File to Process
                   </p>
                   <div className="space-y-2 w-full max-w-md">
                     {filesToProcess.map((file, index) => {
@@ -253,10 +259,12 @@ const UploadArea = ({
                 className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
                 onClick={handleGenerateNotes}
                 disabled={
-                  processingFiles || filesToProcess.length === 0 || isProcessing
+                  processingFiles ||
+                  filesToProcess.length === 0 ||
+                  isDatabaseUpdating
                 }
               >
-                {processingFiles || isProcessing
+                {processingFiles || isDatabaseUpdating
                   ? "Processing..."
                   : "Generate Notes from New Files"}
               </Button>

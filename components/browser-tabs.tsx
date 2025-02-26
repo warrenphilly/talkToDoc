@@ -1,6 +1,17 @@
 "use client";
 
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,33 +29,23 @@ import {
 } from "@/components/ui/select";
 import {
   addPageToNotebook,
+  deleteNotebook,
+  deletePage,
   Page,
   togglePageOpenState,
-  deletePage,
-  deleteNotebook,
+  updateNotebookTitle,
 } from "@/lib/firebase/firestore";
 import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { List, Pencil, Plus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
 import { TitleEditor } from "./shared/chat/title-editor";
-import { useRouter } from "next/navigation";
-import { Separator } from "./ui/separator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Separator } from "./ui/separator";
 
 interface Tab {
   id: string;
@@ -298,16 +299,59 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         className
       )}
     >
-      <div className=" p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-4 left-0 h-fit flex flex-row items-center justify-start w-fit">
+      <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-row items-center justify-start w-fit">
         {isEditing ? (
-          <Input type="text" value={editedTitle} onChange={(e) => setEditedTitle(e.target.value)} />
+          <div className="flex items-center gap-2">
+            <Input 
+              type="text" 
+              value={editedTitle} 
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="w-[200px]"
+            />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="rounded-full hover:bg-green-100 hover:text-green-600"
+              onClick={async () => {
+                try {
+                  await updateNotebookTitle(notebookId, editedTitle);
+                  setIsEditing(false);
+                  router.refresh();
+                } catch (error) {
+                  console.error("Error updating title:", error);
+                  alert("Failed to update title. Please try again.");
+                }
+              }}
+            >
+              Save
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="rounded-full hover:bg-red-100 hover:text-red-600"
+              onClick={() => {
+                setEditedTitle(notebookTitle);
+                setIsEditing(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
         ) : (
-          <p className="text-xl font-semibold text-slate-500">Title: <span className="font-medium text-[#94b347]">{notebookTitle}</span></p>
+          <div className="flex items-center gap-2">
+            <p className="text-xl font-semibold text-slate-500">
+              Title: <span className="font-medium text-[#94b347]">{notebookTitle}</span>
+            </p>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full hover:bg-transparent hover:text-[#94b347]" 
+              onClick={() => setIsEditing(true)}
+            >
+              <Pencil size={16} /> 
+            </Button>
+          </div>
         )}
-        <Button variant="ghost" size="icon" className="rounded-full hover:bg-transparent hover:text-[#94b347]" onClick={() => setIsEditing(!isEditing)}>
-          <Pencil size={16} /> 
-        </Button>
-    
       </div>
       <div className="flex  items-center z-50 h-fit w-full rounded-t-lg scrollbar-hide">
         <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2  ">
@@ -442,14 +486,14 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 <span>{page.title}</span>
                 <div className="flex gap-2">
                   <button
-                    className="bg-white border border-slate-300 hover:bg-slate-200 text-slate-500 hover:text-slate-700 px-2 rounded-full px-2 py-1 text-sm"
+                    className="bg-white border border-slate-300 hover:bg-slate-200 text-slate-500 hover:text-slate-700  rounded-full px-2 py-1 text-sm"
                     onClick={() => handlePageToggle(page.id)}
                   >
                     {page.isOpen ? "Close" : "Open"}
                   </button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  hover:bg-red-200 px-2 py-1 text-sm">
+                      <button className="bg-white border border-red-600  text-red-600 rounded-full  hover:bg-red-200 px-2 py-1 text-sm">
                         Delete
                       </button>
                     </AlertDialogTrigger>
@@ -462,7 +506,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel className="bg-white rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-700 ">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeletePage(page.id)} className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  hover:bg-red-200">
+                        <AlertDialogAction onClick={() => handleDeletePage(page.id)} className="bg-white border border-red-600 hover:bg-red-200 text-red-600 rounded-full  ">
                           Delete
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -475,7 +519,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           <div className="mt-4 pt-4 border-t">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <button className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600 rounded hover:bg-red-200">
+                <button className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600  hover:bg-red-200">
                   Delete Notebook
                 </button>
               </AlertDialogTrigger>

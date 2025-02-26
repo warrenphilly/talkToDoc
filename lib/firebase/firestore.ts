@@ -1512,11 +1512,14 @@ export const getQuiz = async (quizId: string): Promise<QuizState> => {
   } as QuizState;
 };
 
-export const updateStudyCardSetTitle = async (setId: string, newTitle: string) => {
+export const updateStudyCardSetTitle = async (
+  setId: string,
+  newTitle: string
+) => {
   try {
     // Change from 'studyCardSets' to 'studyCards'
     const studyCardRef = doc(db, "studyCards", setId);
-    
+
     // Check if document exists first
     const docSnap = await getDoc(studyCardRef);
     if (!docSnap.exists()) {
@@ -1525,7 +1528,7 @@ export const updateStudyCardSetTitle = async (setId: string, newTitle: string) =
 
     await updateDoc(studyCardRef, {
       title: newTitle,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
 
     return true;
@@ -1576,15 +1579,21 @@ export async function saveStudyCards(
     console.log("saveStudyCards called with:", {
       userId,
       setName,
-      cards: typeof cards === 'string' ? 'string (length: ' + cards.length + ')' : (cards as StudyCard[]).length + ' cards'
+      cards:
+        typeof cards === "string"
+          ? "string (length: " + cards.length + ")"
+          : (cards as StudyCard[]).length + " cards",
     });
 
     // Parse cards if they're passed as a string
-    const parsedCards: StudyCard[] = typeof cards === 'string' ? JSON.parse(cards) : cards;
+    const parsedCards: StudyCard[] =
+      typeof cards === "string" ? JSON.parse(cards) : cards;
 
     // Validate input data
     if (!userId || !setName) {
-      throw new Error(`Missing required fields: userId=${userId}, setName=${setName}`);
+      throw new Error(
+        `Missing required fields: userId=${userId}, setName=${setName}`
+      );
     }
 
     // Strict cards validation
@@ -1593,7 +1602,9 @@ export async function saveStudyCards(
     }
 
     if (!Array.isArray(parsedCards)) {
-      throw new Error(`Cards must be an array, received: ${typeof parsedCards}`);
+      throw new Error(
+        `Cards must be an array, received: ${typeof parsedCards}`
+      );
     }
 
     if (parsedCards.length === 0) {
@@ -1634,9 +1645,24 @@ export async function saveStudyCards(
 
     console.log("Successfully saved study set:", studySetId);
     return studySet;
-
   } catch (error) {
     console.error("Error in saveStudyCards:", error);
     throw error;
   }
 }
+
+export const updateNotebookTitle = async (
+  notebookId: string,
+  newTitle: string
+): Promise<void> => {
+  try {
+    const notebookRef = doc(db, "notebooks", notebookId);
+    await updateDoc(notebookRef, {
+      title: newTitle,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Error updating notebook title:", error);
+    throw error;
+  }
+};
