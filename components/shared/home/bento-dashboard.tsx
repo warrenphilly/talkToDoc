@@ -719,7 +719,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 </div>
                 <div className="flex flex-col items-start flex-grow mx-2 sm:mx-4">
                   <h2 className="text-xs sm:text-md font-semibold text-slate-600 line-clamp-1">
-                    {studyCard.title}
+                    {studyCard.metadata.name}
                   </h2>
                   <p className="text-muted-foreground text-xs">
                     {formatDate(studyCard.createdAt)}
@@ -878,7 +878,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                       <ScrollText className="h-6 w-6 text-[#94b347]" />
                                     </div>
                                     <div className="flex flex-col   w-full px-4">
-                                      <h3 className="font-medium text-slate-700">
+                                      <h3 className="font-medium text-slate-700 line-clamp-1">
                                         {guide.title}
                                       </h3>
 
@@ -933,7 +933,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                     <MessageCircleQuestion className="h-6 w-6 text-[#94b347]" />
                                   </div>
                                   <div className="flex flex-col  w-full px-4">
-                                    <h3 className="font-medium text-slate-700">
+                                    <h3 className="font-medium text-slate-700 line-clamp-1">
                                       {quiz.quizData?.title || "Untitled Quiz"}
                                     </h3>
                                     <p className="text-muted-foreground">

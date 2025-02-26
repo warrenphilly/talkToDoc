@@ -31,6 +31,12 @@ export interface StudyCardSet {
   metadata: {
     createdAt: string;
     updatedAt: string;
+    name: string;
+    cardCount: number;
+    sourceNotebooks: {
+      notebookId: string;
+      notebookTitle: string;
+    }[];
   };
   notebookId: string | null;
   pageId: string | null;

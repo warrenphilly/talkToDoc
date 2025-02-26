@@ -27,15 +27,15 @@ export function StudyCardCarousel({
   const [showAnswer, setShowAnswer] = useState<{ [key: number]: boolean }>({});
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(studySet.title);
-  const [currentTitle, setCurrentTitle] = useState(studySet.title);
+  const [editedTitle, setEditedTitle] = useState(studySet.metadata.name);
+  const [currentTitle, setCurrentTitle] = useState(studySet.metadata.name);
 
   useEffect(() => {
     console.log("Current study set:", studySet);
     console.log("Current cards:", studySet?.cards);
     console.log("Current card:", studySet?.cards[currentCardIndex]);
-    setCurrentTitle(studySet.title);
-    setEditedTitle(studySet.title);
+    setCurrentTitle(studySet.metadata.name);
+    setEditedTitle(studySet.metadata.name);
   }, [studySet, currentCardIndex]);
 
   if (!studySet?.cards || studySet.cards.length === 0) {

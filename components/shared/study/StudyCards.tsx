@@ -186,6 +186,9 @@ export default function StudyCards({
         metadata: {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          name: setName,
+          cardCount: 0,
+          sourceNotebooks: [],
         },
         userId: clerkUserId,
         notebookId: null,

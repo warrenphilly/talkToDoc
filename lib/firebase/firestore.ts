@@ -1247,6 +1247,9 @@ export const getStudyCardSet = async (
       title: data.title || "Untitled Set",
       cards: data.cards || [],
       metadata: {
+        name: data.metadata.name,
+        cardCount: data.metadata.cardCount,
+        sourceNotebooks: data.metadata.sourceNotebooks,
         createdAt: convertTimestamp(data.createdAt),
         updatedAt: convertTimestamp(data.updatedAt),
       },
@@ -1613,10 +1616,13 @@ export async function saveStudyCards(
       userId: userId,
       metadata: {
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        name: setName,
+        cardCount: parsedCards.length,
+        sourceNotebooks: [],
       },
       notebookId: null,
-      pageId: null
+      pageId: null,
     };
 
     // Debug log the final object
