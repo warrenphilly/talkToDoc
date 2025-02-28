@@ -24,7 +24,13 @@ import type { QuizState } from "@/types/quiz";
 import { StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 import { useUser } from "@clerk/nextjs";
 import CircularProgress from "@mui/material/CircularProgress";
-import { doc, serverTimestamp, setDoc, Timestamp, deleteDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
   Check,
@@ -42,7 +48,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MutableRefObject, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "react-hot-toast";
 
 import QuizForm from "@/components/shared/global/QuizForm";
@@ -66,11 +79,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCollectionData } from "@/hooks/useCollectionData";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
+import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { BookOpen } from "lucide-react";
-import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { useCollectionData } from '@/hooks/useCollectionData';
 
 interface StudyCardData {
   title: string;
@@ -130,21 +143,15 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const router = useRouter();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const { 
-    data: studyCards, 
-    loading: loadingStudyCards 
-  } = useCollectionData<StudyCardSet>('studyCards');
-  
-  const { 
-    data: studyGuides, 
-    loading: loadingStudyGuides 
-  } = useCollectionData<StudyGuide>('studyGuides');
-  
-  const { 
-    data: quizzes, 
-    loading: loadingQuizzes 
-  } = useCollectionData<QuizState>('quizzes');
+
+  const { data: studyCards, loading: loadingStudyCards } =
+    useCollectionData<StudyCardSet>("studyCards");
+
+  const { data: studyGuides, loading: loadingStudyGuides } =
+    useCollectionData<StudyGuide>("studyGuides");
+
+  const { data: quizzes, loading: loadingQuizzes } =
+    useCollectionData<QuizState>("quizzes");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showQuizForm, setShowQuizForm] = useState(false);
@@ -199,7 +206,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         const firestoreUser = await getUserByClerkId(clerkUserId);
         if (!firestoreUser) return;
 
-        const userNotebooks = await getNotebooksByFirestoreUserId(firestoreUser.id);
+        const userNotebooks = await getNotebooksByFirestoreUserId(
+          firestoreUser.id
+        );
         setNotebooks(userNotebooks);
         setLoading(false);
       } catch (error) {
@@ -404,21 +413,32 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       setIsGenerating(true);
 
+      // Convert Firestore notebooks to the expected type format
+      const adaptedNotebooks = notebooks.map((notebook) => ({
+        ...notebook,
+        createdAt:
+          typeof notebook.createdAt === "object" && notebook.createdAt !== null
+            ? (notebook.createdAt as Timestamp).toDate()
+            : new Date(notebook.createdAt as any),
+      }));
+
       // Generate the cards using the existing utility function
       const generatedCards = await generateCards(
         setName,
         numCards,
         selectedPages,
         filesToUpload,
-        notebooks,
-        setIsGenerating,
-        setShowCardModal,
-        setSelectedPages,
-        setSetName,
-        setFilesToUpload,
-        setFiles,
-        setMessages,
-        user.id
+        adaptedNotebooks, // Use the adapted notebooks
+        isGenerating, // Pass the boolean value
+        (isGenerating: boolean) => setIsGenerating(isGenerating), // Wrap the setter
+        (show: boolean) => setShowCardModal(show), // Convert to expected function signature
+        (pages: { [notebookId: string]: string[] }) => setSelectedPages(pages), // Fix the type
+        (name: string) => setSetName(name), // Wrap the setter
+        (files: File[]) => setFilesToUpload(files), // Wrap the setter
+        (files: File[]) => setFiles(files), // Wrap the setter
+        (messages: any[]) => setMessages(messages), // Wrap the setter
+        user.id,
+      
       );
 
       // Clear form and close modal
@@ -431,7 +451,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       toast.success("Study cards generated successfully!");
     } catch (error) {
       console.error("Error generating cards:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate cards");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -591,7 +613,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         return;
       }
 
-      if (studyGuideFiles.length === 0 && Object.keys(selectedPages).length === 0) {
+      if (
+        studyGuideFiles.length === 0 &&
+        Object.keys(selectedPages).length === 0
+      ) {
         toast.error("Please either upload files or select notebook pages");
         return;
       }
@@ -600,7 +625,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       // Get the first selected notebook and page if they exist
       const firstNotebookId = Object.keys(selectedPages)[0] || "";
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
+      const firstPageId = firstNotebookId
+        ? selectedPages[firstNotebookId]?.[0]
+        : "";
 
       // Handle file uploads
       let uploadedDocsMetadata = [];
@@ -645,9 +672,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const formData = new FormData();
       const messageData = {
-        selectedPages: Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
+        selectedPages:
+          Object.keys(selectedPages).length > 0 ? selectedPages : undefined,
         guideName,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
+        uploadedDocs:
+          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
       };
 
       formData.append("message", JSON.stringify(messageData));
@@ -708,10 +737,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     return (
       <div className="space-y-2 sm:space-y-4">
         {studyCards.map((studyCard) => (
-          <Link
-            key={studyCard.id}
-            href={`/study-cards/${studyCard.id}`}
-          >
+          <Link key={studyCard.id} href={`/study-cards/${studyCard.id}`}>
             <Card className="transition-transform shadow-none bg-white border-none relative">
               <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
                 <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
@@ -760,10 +786,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           onClick={() => setIsCreateModalOpen(true)}
           className="w-fit sm:w-auto text-slate-900 px-3 py-1.5 sm:px-4 sm:py-2 bg-white rounded-full border border-slate-300 shadow-none font-semibold hover:bg-slate-50 text-sm sm:text-base"
         >
-
           <Plus className="h-4 w-4 md:hidden" />
           <span className="hidden md:block">New Notebook</span>
-          
         </Button>
       </div>
 
@@ -847,7 +871,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                         label: "New Study Cards",
                         onClick: () => setShowCardModal(true),
                       },
-                      content: renderStudyCards
+                      content: renderStudyCards,
                     },
                   ]}
                 />
@@ -1034,7 +1058,9 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           files={studyGuideFiles}
           handleFileUpload={handleStudyGuideFileUpload}
           handleClear={() => setStudyGuideFiles([])}
-          fileInputRef={studyGuideFileInputRef as MutableRefObject<HTMLInputElement>}
+          fileInputRef={
+            studyGuideFileInputRef as MutableRefObject<HTMLInputElement>
+          }
           messages={messages}
           handleSendMessage={() => {}}
           showUpload={showUpload}

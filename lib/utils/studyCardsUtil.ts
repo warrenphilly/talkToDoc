@@ -236,6 +236,7 @@ export const handleGenerateCards = async (
   selectedPages: { [notebookId: string]: string[] },
   filesToUpload: File[],
   notebooks: Notebook[],
+  isGenerating: boolean,
   setIsGenerating: (isGenerating: boolean) => void,
   setShowNotebookModal: (show: boolean) => void,
   setSelectedPages: (pages: { [notebookId: string]: string[] }) => void,
