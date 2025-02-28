@@ -222,6 +222,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           userId: data.userId || "",
           pages: data.pages || [],
           createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
         };
       });
 

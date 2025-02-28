@@ -56,7 +56,8 @@ export interface Page {
 export interface Notebook {
   id: string;
   title: string;
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
   userId: string;
   pages: Page[];
 }
@@ -249,27 +250,19 @@ export const createNewNotebook = async (title: string): Promise<string> => {
     let user = await getUserByClerkId(clerkUser.id);
 
     if (!user) {
-      // Create new Firestore user
-      // await createFirestoreUser({
-      //   id: clerkUser.id,
-      //   email: clerkUser.emailAddresses[0]?.emailAddress,
-      //   firstName: clerkUser.firstName ?? "",
-      //   lastName: clerkUser.lastName ?? "",
-      //   imageUrl: clerkUser.imageUrl ?? "",
-      // });
-
-      // Fetch the newly created user
       user = await getUserByClerkId(clerkUser.id);
       if (!user) throw new Error("Failed to create user");
     }
 
     const notebookId = `notebook_${crypto.randomUUID()}`;
     const firstPageId = `page_${crypto.randomUUID()}`;
+    const now = new Date().toISOString(); // Use ISO string for dates
 
     const notebookData: Notebook = {
       id: notebookId,
       title,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       userId: user.id,
       pages: [
         {
@@ -283,14 +276,19 @@ export const createNewNotebook = async (title: string): Promise<string> => {
     };
 
     // Create the notebook
-    await setDoc(doc(db, "notebooks", notebookId), notebookData);
+    await setDoc(doc(db, "notebooks", notebookId), {
+      ...notebookData,
+      createdAt: serverTimestamp(), // Use server timestamp for Firestore
+      updatedAt: serverTimestamp(),
+    });
 
     // Update user's notebooks array
     await updateDoc(doc(db, "users", user.id), {
       notebooks: [...(user.notebooks || []), notebookId],
-      updatedAt: new Date(),
+      updatedAt: serverTimestamp(),
     });
 
+    // Return the serialized notebook data
     return notebookId;
   } catch (error) {
     console.error("Error creating notebook:", error);
@@ -314,22 +312,62 @@ export const getAllNotebooks = async (): Promise<Notebook[]> => {
     const querySnapshot = await getDocs(q);
     console.log("[getAllNotebooks] Total documents found:", querySnapshot.size);
 
-    // Log the raw data of each document
-    querySnapshot.forEach((doc) => {
-      console.log("[getAllNotebooks] Document data:", {
+    // Helper function to serialize timestamps and dates
+    const serializeTimestamp = (timestamp: any) => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+      }
+      if (timestamp?.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      if (timestamp?.seconds) {
+        return new Date(timestamp.seconds * 1000).toISOString();
+      }
+      return timestamp;
+    };
+
+    // Serialize the notebooks data
+    const notebooks = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+
+      // Serialize the notebook-level dates
+      const serializedNotebook = {
         id: doc.id,
-        userId: doc.data().userId,
-        data: doc.data(),
-      });
+        title: data.title,
+        userId: data.userId,
+        createdAt: serializeTimestamp(data.createdAt),
+        updatedAt: serializeTimestamp(data.updatedAt),
+        pages: data.pages.map((page: any) => ({
+          ...page,
+          // Serialize dates in study guide
+          studyGuide: page.studyGuide
+            ? {
+                ...page.studyGuide,
+                updatedAt: serializeTimestamp(page.studyGuide.updatedAt),
+              }
+            : undefined,
+          // Serialize dates in markdown refs
+          markdownRefs: page.markdownRefs?.map((ref: any) => ({
+            ...ref,
+            timestamp: serializeTimestamp(ref.timestamp),
+          })),
+          // Serialize dates in study docs
+          studyDocs: page.studyDocs?.map((doc: any) => ({
+            ...doc,
+            timestamp: serializeTimestamp(doc.timestamp),
+          })),
+        })),
+      };
+
+      return serializedNotebook;
     });
 
-    const notebooks = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Notebook[];
+    // Final safety check to ensure everything is serializable
+    const serializedNotebooks = JSON.parse(JSON.stringify(notebooks));
 
-    console.log("[getAllNotebooks] Processed notebooks:", notebooks);
-    return notebooks;
+    console.log("[getAllNotebooks] Processed notebooks:", serializedNotebooks);
+    return serializedNotebooks;
   } catch (error) {
     console.error("[getAllNotebooks] Error:", error);
     throw error;
@@ -650,9 +688,35 @@ export const getUserByClerkId = async (clerkId: string) => {
     const user = querySnapshot.docs.find(
       (doc) => doc.data().clerkId === clerkId
     );
-    // user ? ({ id: user.id, ...user.data() } as FirestoreUser) : null;
+
     if (!user) return null;
-    return JSON.parse(JSON.stringify(user.data())) as FirestoreUser;
+
+    // Helper function to serialize timestamps
+    const serializeTimestamp = (timestamp: any) => {
+      if (!timestamp) return null;
+      if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+      }
+      if (timestamp?.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      if (timestamp?.seconds) {
+        return new Date(timestamp.seconds * 1000).toISOString();
+      }
+      return timestamp;
+    };
+
+    // Get the user data and serialize timestamps
+    const userData = user.data();
+    const serializedUser = {
+      ...userData,
+      id: user.id,
+      createdAt: serializeTimestamp(userData.createdAt),
+      updatedAt: serializeTimestamp(userData.updatedAt),
+    };
+
+    // Final safety check to ensure everything is serializable
+    return JSON.parse(JSON.stringify(serializedUser)) as FirestoreUser;
   } catch (error) {
     console.error("Error getting user:", error);
     throw error;
@@ -760,18 +824,60 @@ export const getNotebooksByFirestoreUserId = async (
     const q = query(notesCollection, where("userId", "==", firestoreUserId));
 
     const querySnapshot = await getDocs(q);
+
+    // Helper function to serialize timestamps
+    const serializeTimestamp = (timestamp: any): string => {
+      if (!timestamp) return "";
+      if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+      }
+      if (timestamp?.toDate) {
+        return timestamp.toDate().toISOString();
+      }
+      if (timestamp?.seconds) {
+        return new Date(timestamp.seconds * 1000).toISOString();
+      }
+      return timestamp;
+    };
+
+    // Process and serialize each notebook
     const notebooks = querySnapshot.docs.map((doc) => {
       const data = doc.data();
-      return {
+
+      // Serialize the notebook-level timestamps
+      const serializedNotebook = {
         id: doc.id,
         ...data,
-        // Convert Firestore Timestamp to JavaScript Date
-        createdAt: data.createdAt?.toDate() || new Date(),
+        createdAt: serializeTimestamp(data.createdAt),
+        updatedAt: serializeTimestamp(data.updatedAt),
+        // Process pages array if it exists
+        pages:
+          data.pages?.map((page: any) => ({
+            ...page,
+            createdAt: serializeTimestamp(page.createdAt),
+            updatedAt: serializeTimestamp(page.updatedAt),
+            // Process any nested timestamps in the page
+            messages: page.messages?.map((msg: any) => ({
+              ...msg,
+              timestamp: serializeTimestamp(msg.timestamp),
+            })),
+            markdownRefs: page.markdownRefs?.map((ref: any) => ({
+              ...ref,
+              timestamp: serializeTimestamp(ref.timestamp),
+            })),
+          })) || [],
       };
-    }) as Notebook[];
 
-    return notebooks.sort(
-      (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      return serializedNotebook;
+    });
+
+    // Final safety check to ensure everything is serializable
+    const serializedNotebooks = JSON.parse(JSON.stringify(notebooks));
+
+    // Sort by createdAt in descending order
+    return serializedNotebooks.sort(
+      (a: Notebook, b: Notebook) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (error) {
     console.error("Error getting notebooks by Firestore user ID:", error);
