@@ -39,17 +39,18 @@ export function CreateNotebookModal({ isOpen, onClose }: CreateNotebookModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-100">
+      <DialogContent className="bg-slate-100 flex flex-col items-center justify-center">
         <DialogHeader>
           <DialogTitle>Create New Notebook</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 flex flex-col gap-4 ">
           <Input
             placeholder="Enter notebook title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className='w-full'
           />
-          <Button onClick={handleCreate} className={`w-full  ${title ==="" ? "text-slate-400 bg-slate-200" : "text-slate-100 bg-[#94b347] "}  hover:border hover:border-[#94b347] `}>
+          <Button onClick={handleCreate} disabled={title === ""} className='rounded-full w-full border border-[#94b347] bg-slate-100 text-white hover:bg-slate-100 hover:text-[#94b347] '  >
             Create Notebook
           </Button>
         </div>

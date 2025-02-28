@@ -495,14 +495,14 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         </motion.div>
       </AnimatePresence>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
+        <DialogContent className="sm:max-w-[425px] bg-white ">
           <DialogHeader>
             <DialogTitle>All Pages</DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[300px] w-full pr-4">
             <div className="flex justify-end mb-4">
               <button
-                className="bg-white border border-[#94b347] hover:bg-[#c6d996] text-[#94b347] rounded-full  hover:text-white px-3 py-1 text-sm flex items-center gap-1"
+                className="bg-white border border-[#94b347] hover:bg-[#c6d996] text-[#94b347] rounded-full  hover:text-white px-3 py-1 text-sm flex items-center gap-1 w-full p-4 justify-center"
                 onClick={addTab}
               >
                 <Plus size={16} />
