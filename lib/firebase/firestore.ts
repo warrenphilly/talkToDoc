@@ -1601,72 +1601,59 @@ export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
   await deleteDoc(doc(db, "studyGuides", studyGuideId));
 };
 
-export const getQuiz = async (quizId: string): Promise<QuizState> => {
+export const getQuiz = async (
+  quizId: string,
+  userId: string
+): Promise<QuizState> => {
   try {
-    console.log("Attempting to fetch quiz with ID:", quizId);
-
     // Check if db is initialized
     if (!db) {
       console.error("Firestore db instance is not initialized");
       throw new Error("Database not initialized");
     }
 
-    // Validate quiz ID
-    if (!quizId) {
-      console.error("Quiz ID is required");
-      throw new Error("Quiz ID is required");
+    // Validate quiz ID and user ID
+    if (!quizId ) {
+      console.error("Quiz ID and User ID are required");
+      throw new Error("Quiz ID and User ID are required");
     }
 
-    const quizRef = doc(db, "quizzes", quizId);
-    console.log("Quiz reference path:", quizRef.path);
+    const quizzesRef = collection(db, "quizzes");
+    const q = query(quizzesRef, where("id", "==", quizId));
 
-    try {
-      const quizDoc = await getDoc(quizRef);
+    const querySnapshot = await getDocs(q);
 
-      if (!quizDoc || !quizDoc.exists()) {
-        console.log("Quiz document not found in Firestore");
-        throw new Error("Quiz not found");
-      }
-
-      const data = quizDoc.data();
-      if (!data) {
-        console.error("Quiz document exists but has no data");
-        throw new Error("Quiz data is empty");
-      }
-
-      console.log("Retrieved quiz data:", data);
-
-      // Create a properly formatted QuizState object with type safety
-      const quizState: QuizState = {
-        id: quizId,
-        notebookId: data.notebookId ?? "",
-        pageId: data.pageId ?? "",
-        quizData: data.quizData ?? {},
-        currentQuestionIndex: data.currentQuestionIndex ?? 0,
-        startedAt: data.startedAt ?? null,
-        lastUpdatedAt: data.lastUpdatedAt ?? null,
-        createdAt: data.createdAt ?? new Date(),
-        userAnswers: Array.isArray(data.userAnswers) ? data.userAnswers : [],
-        evaluationResults: Array.isArray(data.evaluationResults)
-          ? data.evaluationResults
-          : [],
-        score: typeof data.score === "number" ? data.score : 0,
-        isComplete: Boolean(data.isComplete),
-        incorrectAnswers: Array.isArray(data.incorrectAnswers)
-          ? data.incorrectAnswers
-          : [],
-        totalQuestions:
-          typeof data.totalQuestions === "number" ? data.totalQuestions : 0,
-        userId: data.userId ?? "",
-        title: data.title ?? "",
-      };
-
-      console.log("Formatted quiz state:", quizState);
-      return quizState;
-    } catch (getDocError) {
-      console.error("Error getting document:", getDocError);
-      throw getDocError;
+    if (querySnapshot.empty) {
+      console.log("Quiz document not found in Firestore");
+      throw new Error("Quiz not found");
     }
+
+    const quizDoc = querySnapshot.docs[0];
+    const data = quizDoc.data();
+
+    // Create a properly typed QuizState object with serialized timestamps
+    const quizState: QuizState = {
+      id: quizDoc.id,
+      notebookId: data.notebookId || "",
+      pageId: data.pageId || "",
+      quizData: data.quizData || {},
+      currentQuestionIndex: data.currentQuestionIndex || 0,
+      startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
+      lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
+      createdAt:
+        data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      userAnswers: data.userAnswers || [],
+      evaluationResults: data.evaluationResults || [],
+      score: data.score || 0,
+      isComplete: data.isComplete || false,
+      incorrectAnswers: data.incorrectAnswers || [],
+      totalQuestions: data.totalQuestions || 0,
+      userId: data.userId || userId,
+      title: data.title || "",
+    };
+
+    // Final safety check to ensure everything is serializable
+    return JSON.parse(JSON.stringify(quizState));
   } catch (error) {
     console.error("Error in getQuiz:", error);
     throw error;
