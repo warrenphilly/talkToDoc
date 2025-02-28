@@ -167,7 +167,7 @@ export default function StudyCards({
     setSelectedSet(updatedStudySet);
   };
 
-  const handleGenerateCards = async () => {
+  const handleGenerateCardsWrapper = async () => {
     try {
       if (!setName.trim()) {
         toast.error("Please enter a set name");
@@ -175,64 +175,21 @@ export default function StudyCards({
       }
 
       setIsGenerating(true);
-      const selectedPagesData = await getSelectedPagesData(
+
+      await handleGenerateCards(
+        setName,
+        numCards,
         selectedPages,
-        notebooks
-      );
-
-      const studyCardSet: Partial<StudyCardSet> = {
-        title: setName,
-        cards: [],
-        metadata: {
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          name: setName,
-          cardCount: 0,
-          sourceNotebooks: [],
-        },
-        userId: clerkUserId,
-        notebookId: null,
-        pageId: null,
-      };
-
-      const response = await fetch("/api/studycards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          setName,
-          numCards,
-          selectedPages: selectedPagesData,
-          files: filesToUpload,
-          userId: clerkUserId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate cards");
-      }
-
-      const data = await response.json();
-      const formattedCards = data.cards.map((card: any) => ({
-        title: card.title || card.front || "",
-        content: card.content || card.back || "",
-      }));
-
-      const finalStudyCardSet = {
-        ...studyCardSet,
-        cards: formattedCards,
-      };
-
-      const setId = await saveStudyCardSet(
-        finalStudyCardSet.cards,
-        {
-          title: setName,
-          notebookId: notebookId || null,
-          pageId: pageId || null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        filesToUpload,
+        notebooks,
+        isGenerating,
+        setIsGenerating,
+        setShowNotebookModal,
+        setSelectedPages,
+        setSetName,
+        setFilesToUpload,
+        setFiles,
+        setMessages,
         clerkUserId
       );
 
@@ -248,19 +205,10 @@ export default function StudyCards({
         setSelectedSet(newSet);
       }
 
-      setShowNotebookModal(false);
-      setSelectedPages({});
-      setSetName("");
-      setFilesToUpload([]);
-      setFiles([]);
-      setMessages([]);
-
       toast.success("Study cards generated successfully!");
     } catch (error) {
       console.error("Error generating cards:", error);
       toast.error("Failed to generate study cards");
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -442,7 +390,9 @@ export default function StudyCards({
             <CardTitle className="text-2xl font-bold text-[#94b347] ">
               Study Cards
             </CardTitle>
-            <CardDescription className="">Create and review study card sets</CardDescription>
+            <CardDescription className="">
+              Create and review study card sets
+            </CardDescription>
           </CardHeader>
           <div className="flex flex-col items-center justify-center md:gap-4 ">
             <Button
@@ -474,7 +424,7 @@ export default function StudyCards({
           setShowUpload={setShowUpload}
           setFiles={setFiles}
           renderNotebookList={renderNotebookList}
-          handleGenerateCards={handleGenerateCards}
+          handleGenerateCards={handleGenerateCardsWrapper}
           isGenerating={isGenerating}
           selectedPages={selectedPages}
           filesToUpload={filesToUpload}
@@ -579,7 +529,6 @@ export default function StudyCards({
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Sets
               </Button>
-              
             </div>
             <div className="space-y-2 w-full overflow-y-auto h-full">
               <StudyCardCarousel studySet={selectedSet} />
