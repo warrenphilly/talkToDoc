@@ -264,3 +264,25 @@ export const sectionClick = (
   setPrimeSentence(sectionText);
   setShowChat(true);
 };
+
+// Add this utility function to serialize Firestore timestamps
+export function serializeData(data: any): any {
+  if (!data) return data;
+  
+  if (data.seconds !== undefined && data.nanoseconds !== undefined) {
+    return new Date(data.seconds * 1000 + data.nanoseconds / 1000000).toISOString();
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(item => serializeData(item));
+  }
+  
+  if (typeof data === 'object') {
+    return Object.keys(data).reduce((acc, key) => {
+      acc[key] = serializeData(data[key]);
+      return acc;
+    }, {} as any);
+  }
+  
+  return data;
+}

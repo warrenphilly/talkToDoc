@@ -40,6 +40,7 @@ export default function QuizPage() {
   const { user } = useUser();
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [quizName, setQuizName] = useState("");
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
@@ -105,12 +106,22 @@ export default function QuizPage() {
 
   useEffect(() => {
     const fetchQuiz = async () => {
+      console.log("Fetching quiz with ID:", params.quizId);
       if (params.quizId) {
         try {
+          setLoading(true);
+          setError(null);
           const quizData = await getQuiz(params.quizId as string);
+          if (!quizData) {
+            throw new Error("Quiz not found");
+          }
+          console.log("Quiz data:", quizData);
           setQuiz(quizData);
         } catch (error) {
           console.error("Error fetching quiz:", error);
+          setError(
+            error instanceof Error ? error.message : "Failed to load quiz"
+          );
         } finally {
           setLoading(false);
         }
@@ -282,11 +293,34 @@ export default function QuizPage() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <RefreshCw className="h-8 w-8 animate-spin text-[#94b347]" />
+          <p className="text-slate-600">Loading quiz...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!quiz || !quiz.quizData) {
-    return <div>Quiz not found</div>;
+  if (error || !quiz || !quiz.quizData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <div className="text-red-500 text-center">
+          <p className="text-xl font-semibold">Error</p>
+          <p className="text-slate-600">{error || "Quiz not found"}</p>
+        </div>
+        <Link href="/">
+          <Button
+            variant="ghost"
+            className="gap-2 hover:bg-slate-100 rounded-full"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Return to Dashboard
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   const renderNotebookList = () => {
@@ -446,7 +480,10 @@ export default function QuizPage() {
     <div className="flex flex-col items-center justify-start   w-full px-4 sm:px-6 lg:px-8">
       <div className=" flex flex-row mt-16  justify-between  items-start sm:items-center w-full gap-4 ">
         <Link href="/">
-          <Button variant="ghost" className="gap-2 hover:bg-slate-100 rounded-full">
+          <Button
+            variant="ghost"
+            className="gap-2 hover:bg-slate-100 rounded-full"
+          >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back to Dashboard</span>
             <span className="sm:hidden">Back</span>

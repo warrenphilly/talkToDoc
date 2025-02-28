@@ -1494,22 +1494,77 @@ export const getStudyCardsByClerkId = async (
 export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
   await deleteDoc(doc(db, "studyGuides", studyGuideId));
 };
+
 export const getQuiz = async (quizId: string): Promise<QuizState> => {
-  const quizDoc = await getDoc(doc(db, "quizzes", quizId));
-  if (!quizDoc.exists()) {
-    throw new Error("Quiz not found");
+  try {
+    console.log("Attempting to fetch quiz with ID:", quizId);
+
+    // Check if db is initialized
+    if (!db) {
+      console.error("Firestore db instance is not initialized");
+      throw new Error("Database not initialized");
+    }
+
+    // Validate quiz ID
+    if (!quizId) {
+      console.error("Quiz ID is required");
+      throw new Error("Quiz ID is required");
+    }
+
+    const quizRef = doc(db, "quizzes", quizId);
+    console.log("Quiz reference path:", quizRef.path);
+
+    try {
+      const quizDoc = await getDoc(quizRef);
+
+      if (!quizDoc || !quizDoc.exists()) {
+        console.log("Quiz document not found in Firestore");
+        throw new Error("Quiz not found");
+      }
+
+      const data = quizDoc.data();
+      if (!data) {
+        console.error("Quiz document exists but has no data");
+        throw new Error("Quiz data is empty");
+      }
+
+      console.log("Retrieved quiz data:", data);
+
+      // Create a properly formatted QuizState object with type safety
+      const quizState: QuizState = {
+        id: quizId,
+        notebookId: data.notebookId ?? "",
+        pageId: data.pageId ?? "",
+        quizData: data.quizData ?? {},
+        currentQuestionIndex: data.currentQuestionIndex ?? 0,
+        startedAt: data.startedAt ?? null,
+        lastUpdatedAt: data.lastUpdatedAt ?? null,
+        createdAt: data.createdAt ?? new Date(),
+        userAnswers: Array.isArray(data.userAnswers) ? data.userAnswers : [],
+        evaluationResults: Array.isArray(data.evaluationResults)
+          ? data.evaluationResults
+          : [],
+        score: typeof data.score === "number" ? data.score : 0,
+        isComplete: Boolean(data.isComplete),
+        incorrectAnswers: Array.isArray(data.incorrectAnswers)
+          ? data.incorrectAnswers
+          : [],
+        totalQuestions:
+          typeof data.totalQuestions === "number" ? data.totalQuestions : 0,
+        userId: data.userId ?? "",
+        title: data.title ?? "",
+      };
+
+      console.log("Formatted quiz state:", quizState);
+      return quizState;
+    } catch (getDocError) {
+      console.error("Error getting document:", getDocError);
+      throw getDocError;
+    }
+  } catch (error) {
+    console.error("Error in getQuiz:", error);
+    throw error;
   }
-
-  const data = quizDoc.data();
-
-  // Serialize timestamps to ISO strings
-  return {
-    ...data,
-    startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
-    lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
-    createdAt:
-      data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-  } as QuizState;
 };
 
 export const updateStudyCardSetTitle = async (

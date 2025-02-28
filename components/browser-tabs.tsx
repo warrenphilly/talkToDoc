@@ -59,7 +59,16 @@ interface Tab {
 interface BrowserTabsProps {
   notebookId: string;
   notebookTitle: string;
-  initialTabs: Tab[];
+  initialTabs: {
+    id: string;
+    title: string;
+    content?: React.ReactNode;
+    messages: Message[];
+    isOpen: boolean;
+    isEditing?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+  }[];
   className?: string;
   onNotebookDelete?: (notebookId: string) => void;
 }
@@ -80,12 +89,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   const router = useRouter();
 
   useEffect(() => {
-    setAllPages(initialTabs);
-  }, [initialTabs]);
-
-  useEffect(() => {
-    const openPages = initialTabs.filter((tab) => tab.isOpen);
-    const convertedTabs: Tab[] = openPages.map((page) => ({
+    const convertedPages: Tab[] = initialTabs.map((page) => ({
       id: page.id,
       title: page.title,
       content: (
@@ -101,11 +105,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       isEditing: false,
     }));
 
-    setTabs(convertedTabs);
-
-    if (convertedTabs.length > 0) {
-      setActiveTabId(convertedTabs[0].id);
-    }
+    setAllPages(convertedPages);
   }, [initialTabs, notebookId]);
 
   useEffect(() => {
@@ -373,10 +373,10 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                   noteId={activeTab.id}
                   notebookId={notebookId}
                   onComplete={(newTitle) => {
-                    setTabs(prev => 
-                      prev.map(tab => 
-                        tab.id === activeTab.id 
-                          ? { ...tab, isEditing: false, title: newTitle } 
+                    setTabs((prev) =>
+                      prev.map((tab) =>
+                        tab.id === activeTab.id
+                          ? { ...tab, isEditing: false, title: newTitle }
                           : tab
                       )
                     );
@@ -557,7 +557,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           <div className="mt-4 pt-4 border-t">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <button className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm bg-red-100 text-red-600  hover:bg-red-200">
+                <button className="rounded-full bg-white border border-red-600 w-full px-4 py-2 text-sm  text-red-600  hover:bg-red-200">
                   Delete Notebook
                 </button>
               </AlertDialogTrigger>
