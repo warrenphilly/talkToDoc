@@ -1,8 +1,8 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
-import { cleanMarkdownContent } from "@/lib/markdownUtils";
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { saveStudyCards } from "@/lib/firebase/firestore";
+import { cleanMarkdownContent } from "@/lib/markdownUtils";
+import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
 interface StudySetMetadata {
   name: string;
@@ -22,10 +22,10 @@ interface StudySetMetadata {
 function chunkText(text: string, maxLength: number = 8000): string[] {
   const chunks: string[] = [];
   let currentChunk = "";
-  
+
   // Split by paragraphs
-  const paragraphs = text.split('\n\n');
-  
+  const paragraphs = text.split("\n\n");
+
   for (const paragraph of paragraphs) {
     if ((currentChunk + paragraph).length > maxLength) {
       if (currentChunk) {
@@ -33,22 +33,26 @@ function chunkText(text: string, maxLength: number = 8000): string[] {
       }
       currentChunk = paragraph;
     } else {
-      currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+      currentChunk += (currentChunk ? "\n\n" : "") + paragraph;
     }
   }
-  
+
   if (currentChunk) {
     chunks.push(currentChunk.trim());
   }
-  
+
   return chunks;
 }
 
 // Helper function to delay execution
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Helper function to make OpenAI API call with retries
-async function makeOpenAIRequest(content: string, numCards: number, retries = 3) {
+async function makeOpenAIRequest(
+  content: string,
+  numCards: number,
+  retries = 3
+) {
   for (let i = 0; i < retries; i++) {
     try {
       const response = await fetch(
@@ -84,7 +88,9 @@ async function makeOpenAIRequest(content: string, numCards: number, retries = 3)
       );
 
       if (response.status === 429) {
-        console.log(`Rate limited, attempt ${i + 1}/${retries}. Waiting before retry...`);
+        console.log(
+          `Rate limited, attempt ${i + 1}/${retries}. Waiting before retry...`
+        );
         await delay(2000 * (i + 1)); // Exponential backoff
         continue;
       }
@@ -107,11 +113,11 @@ async function makeOpenAIRequest(content: string, numCards: number, retries = 3)
 // Helper function to clean JSON string from markdown
 function cleanJsonResponse(content: string): string {
   // Remove markdown code block syntax if present
-  let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-  
+  let cleanContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+
   // Trim whitespace
   cleanContent = cleanContent.trim();
-  
+
   return cleanContent;
 }
 
@@ -119,61 +125,78 @@ export async function POST(req: NextRequest) {
   try {
     const authInfo = await auth();
     const userId = authInfo.userId;
-    
+
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Handle form data
-    const formData = await req.formData();
-    const messageData = formData.get('message');
-
-    if (!messageData) {
-      return NextResponse.json(
-        { error: "No message data provided" },
-        { status: 400 }
-      );
-    }
-
-    // Parse the message string into JSON
+    // Check content type to determine how to parse the request
+    const contentType = req.headers.get("content-type") || "";
     let requestData;
-    try {
-      requestData = typeof messageData === 'string' 
-        ? JSON.parse(messageData)
-        : JSON.parse(messageData.toString());
-    } catch (error) {
-      console.error("JSON parsing error:", error);
-      console.error("Attempted to parse:", messageData);
+
+    if (contentType.includes("application/json")) {
+      // Handle JSON request
+      requestData = await req.json();
+      console.log("Received JSON request");
+    } else if (contentType.includes("multipart/form-data")) {
+      // Handle form data request
+      const formData = await req.formData();
+      const messageData = formData.get("message");
+
+      if (!messageData) {
+        return NextResponse.json(
+          { error: "No message data provided" },
+          { status: 400 }
+        );
+      }
+
+      try {
+        requestData =
+          typeof messageData === "string"
+            ? JSON.parse(messageData)
+            : JSON.parse(messageData.toString());
+      } catch (error) {
+        console.error("JSON parsing error:", error);
+        console.error("Attempted to parse:", messageData);
+        return NextResponse.json(
+          {
+            error: "Invalid JSON in message data",
+            details:
+              error instanceof Error ? error.message : "Unknown parsing error",
+            receivedData: messageData,
+          },
+          { status: 400 }
+        );
+      }
+    } else {
       return NextResponse.json(
-        { 
-          error: "Invalid JSON in message data",
-          details: error instanceof Error ? error.message : "Unknown parsing error",
-          receivedData: messageData
+        {
+          error:
+            "Unsupported content type. Use application/json or multipart/form-data",
         },
         { status: 400 }
       );
     }
 
-    const { selectedPages, numberOfCards, metadata } = requestData;
+    // Extract data from the request
+    const setName = requestData.setName || requestData.metadata?.name;
+    const numCards = requestData.numCards || requestData.numberOfCards;
+    const selectedPages = requestData.selectedPages || {};
+    const uploadedDocs = requestData.uploadedDocs || [];
 
     // Validate required fields
-    if (!metadata?.name || typeof numberOfCards !== 'number') {
+    if (!setName || typeof numCards !== "number") {
       return NextResponse.json(
-        { error: "Missing required fields: name and numberOfCards" },
+        { error: "Missing required fields: name and numberOfCards/numCards" },
         { status: 400 }
       );
     }
 
-    // Update the rest of your code to use these new field names
-    const setName = metadata.name;
-    const numCards = numberOfCards;
-
     // Validate that either selectedPages or uploadedDocs is provided
-    if ((!selectedPages || Object.keys(selectedPages).length === 0) && 
-        (!metadata?.uploadedDocs || metadata.uploadedDocs.length === 0)) {
+    if (
+      (!selectedPages || Object.keys(selectedPages).length === 0) &&
+      (!uploadedDocs || uploadedDocs.length === 0)
+    ) {
       return NextResponse.json(
         { error: "Either selectedPages or uploadedDocs must be provided" },
         { status: 400 }
@@ -181,25 +204,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Debug log the request
-    console.log("Received request:", {
-      selectedPages,
+    console.log("Processed request:", {
       setName,
       numCards,
-      uploadedDocsCount: metadata?.uploadedDocs?.length
+      selectedPagesCount: Object.keys(selectedPages).length,
+      uploadedDocsCount: uploadedDocs.length,
     });
 
     // Initialize content collection
     let allContent = "";
 
     // 1. Process uploaded docs if they exist
-    if (metadata?.uploadedDocs && metadata.uploadedDocs.length > 0) {
-      console.log(`Processing ${metadata.uploadedDocs.length} uploaded documents`);
-      
-      for (const doc of metadata.uploadedDocs) {
+    if (uploadedDocs && uploadedDocs.length > 0) {
+      console.log(`Processing ${uploadedDocs.length} uploaded documents`);
+
+      for (const doc of uploadedDocs) {
         try {
-          // Extract the path from the full URL
-          const url = new URL(doc.path);
-          const cleanPath = decodeURIComponent(url.pathname.split('/o/')[1].split('?')[0]);
+          // Extract the path from the full URL if it exists
+          const path = doc.path || doc.url;
+          if (!path) {
+            console.warn("Document missing path:", doc);
+            continue;
+          }
+
+          // Handle both full URLs and direct paths
+          let cleanPath;
+          if (path.startsWith("http")) {
+            const url = new URL(path);
+            cleanPath = decodeURIComponent(
+              url.pathname.split("/o/")[1]?.split("?")[0] || path
+            );
+          } else {
+            cleanPath = path.replace(/^gs:\/\/[^\/]+\//, "");
+          }
+
           console.log("Processing uploaded file:", cleanPath);
 
           const bucket = adminStorage.bucket();
@@ -213,87 +251,127 @@ export async function POST(req: NextRequest) {
 
           const [content] = await file.download();
           const contentStr = content.toString();
-          allContent += `## ${doc.name}\n\n${cleanMarkdownContent(contentStr)}\n\n`;
+          allContent += `## ${doc.name}\n\n${cleanMarkdownContent(
+            contentStr
+          )}\n\n`;
         } catch (error) {
-          console.error(`Error fetching uploaded file ${doc.path}:`, error);
+          console.error(`Error fetching uploaded file:`, error);
         }
       }
     }
 
     // 2. Process selected pages and their associated documents
     if (selectedPages && Object.keys(selectedPages).length > 0) {
-      // Iterate through each notebook
-      for (const notebookId of Object.keys(selectedPages)) {
-        const pageIds = selectedPages[notebookId];
+      // Handle both array format and object format
+      if (Array.isArray(selectedPages)) {
+        // Handle array format (from JSON request)
+        for (const notebook of selectedPages) {
+          const notebookId = notebook.notebookId;
+          const notebookTitle = notebook.notebookTitle;
 
-        // Get the notebook document
-        console.log("Fetching notebook:", notebookId);
-        const notebookRef = adminDb.collection("notebooks").doc(notebookId);
-        const notebookSnap = await notebookRef.get();
-
-        if (!notebookSnap.exists) {
-          console.warn(`Notebook ${notebookId} not found, skipping`);
-          continue;
+          // Process each page in the notebook
+          for (const page of notebook.pages) {
+            allContent += `## ${page.pageTitle || "Untitled Page"}\n\n`;
+            if (page.content) {
+              allContent += `${cleanMarkdownContent(page.content)}\n\n`;
+            }
+          }
         }
+      } else {
+        // Handle object format (from form data)
+        // Iterate through each notebook
+        for (const notebookId of Object.keys(selectedPages)) {
+          const pageIds = selectedPages[notebookId];
 
-        const notebookData = notebookSnap.data();
-        if (!notebookData) {
-          console.warn(`Notebook ${notebookId} data is empty, skipping`);
-          continue;
-        }
+          // Get the notebook document
+          console.log("Fetching notebook:", notebookId);
+          const notebookRef = adminDb.collection("notebooks").doc(notebookId);
+          const notebookSnap = await notebookRef.get();
 
-        // Process each selected page in the notebook
-        for (const pageId of pageIds) {
-          const page = notebookData.pages?.find((p: any) => p.id === pageId);
-          if (!page) {
-            console.warn(`Page ${pageId} not found in notebook ${notebookId}, skipping`);
+          if (!notebookSnap.exists) {
+            console.warn(`Notebook ${notebookId} not found, skipping`);
             continue;
           }
 
-          // Add page title and content
-          allContent += `## ${page.title}\n\n`;
-          if (page.content) {
-            allContent += `${page.content}\n\n`;
+          const notebookData = notebookSnap.data();
+          if (!notebookData) {
+            console.warn(`Notebook ${notebookId} data is empty, skipping`);
+            continue;
           }
 
-          // Process markdown references
-          if (page.markdownRefs && page.markdownRefs.length > 0) {
-            console.log(`Processing ${page.markdownRefs.length} markdown refs for page ${page.title}`);
-            for (const markdownRef of page.markdownRefs) {
-              try {
-                const cleanPath = markdownRef.path.replace(/^gs:\/\/[^\/]+\//, "");
-                const bucket = adminStorage.bucket();
-                const file = bucket.file(cleanPath);
+          // Process each selected page in the notebook
+          for (const pageId of pageIds) {
+            const page = notebookData.pages?.find((p: any) => p.id === pageId);
+            if (!page) {
+              console.warn(
+                `Page ${pageId} not found in notebook ${notebookId}, skipping`
+              );
+              continue;
+            }
 
-                const [exists] = await file.exists();
-                if (!exists) continue;
+            // Add page title and content
+            allContent += `## ${page.title}\n\n`;
+            if (page.content) {
+              allContent += `${page.content}\n\n`;
+            }
 
-                const [content] = await file.download();
-                const contentStr = content.toString();
-                allContent += cleanMarkdownContent(contentStr) + "\n\n";
-              } catch (error) {
-                console.error(`Error fetching markdown file ${markdownRef.path}:`, error);
+            // Process markdown references
+            if (page.markdownRefs && page.markdownRefs.length > 0) {
+              console.log(
+                `Processing ${page.markdownRefs.length} markdown refs for page ${page.title}`
+              );
+              for (const markdownRef of page.markdownRefs) {
+                try {
+                  const cleanPath = markdownRef.path.replace(
+                    /^gs:\/\/[^\/]+\//,
+                    ""
+                  );
+                  const bucket = adminStorage.bucket();
+                  const file = bucket.file(cleanPath);
+
+                  const [exists] = await file.exists();
+                  if (!exists) continue;
+
+                  const [content] = await file.download();
+                  const contentStr = content.toString();
+                  allContent += cleanMarkdownContent(contentStr) + "\n\n";
+                } catch (error) {
+                  console.error(
+                    `Error fetching markdown file ${markdownRef.path}:`,
+                    error
+                  );
+                }
               }
             }
-          }
 
-          // Process study documents
-          if (page.studyDocs && page.studyDocs.length > 0) {
-            console.log(`Processing ${page.studyDocs.length} study docs for page ${page.title}`);
-            for (const studyDoc of page.studyDocs) {
-              try {
-                const cleanPath = studyDoc.path.replace(/^gs:\/\/[^\/]+\//, "");
-                const bucket = adminStorage.bucket();
-                const file = bucket.file(cleanPath);
+            // Process study documents
+            if (page.studyDocs && page.studyDocs.length > 0) {
+              console.log(
+                `Processing ${page.studyDocs.length} study docs for page ${page.title}`
+              );
+              for (const studyDoc of page.studyDocs) {
+                try {
+                  const cleanPath = studyDoc.path.replace(
+                    /^gs:\/\/[^\/]+\//,
+                    ""
+                  );
+                  const bucket = adminStorage.bucket();
+                  const file = bucket.file(cleanPath);
 
-                const [exists] = await file.exists();
-                if (!exists) continue;
+                  const [exists] = await file.exists();
+                  if (!exists) continue;
 
-                const [content] = await file.download();
-                const contentStr = content.toString();
-                allContent += `## ${studyDoc.name}\n\n${cleanMarkdownContent(contentStr)}\n\n`;
-              } catch (error) {
-                console.error(`Error fetching study doc ${studyDoc.path}:`, error);
+                  const [content] = await file.download();
+                  const contentStr = content.toString();
+                  allContent += `## ${studyDoc.name}\n\n${cleanMarkdownContent(
+                    contentStr
+                  )}\n\n`;
+                } catch (error) {
+                  console.error(
+                    `Error fetching study doc ${studyDoc.path}:`,
+                    error
+                  );
+                }
               }
             }
           }
@@ -303,11 +381,13 @@ export async function POST(req: NextRequest) {
 
     // Validate that we have some content to work with
     if (!allContent.trim()) {
-      throw new Error("No content found in uploaded documents or selected pages");
+      throw new Error(
+        "No content found in uploaded documents or selected pages"
+      );
     }
 
     console.log("Collected content length:", allContent.length);
-    
+
     // Limit content length if necessary
     const maxContentLength = 4000;
     if (allContent.length > maxContentLength) {
@@ -316,20 +396,24 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await makeOpenAIRequest(allContent, numCards);
-    const cleanedResponse = cleanJsonResponse(response.choices[0].message.content);
+    const cleanedResponse = cleanJsonResponse(
+      response.choices[0].message.content
+    );
     const parsedResponse = JSON.parse(cleanedResponse);
 
     return NextResponse.json({
       cards: parsedResponse.cards,
-      success: true
+      success: true,
     });
-
   } catch (error) {
     console.error("Error in studycards API:", error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : "Failed to generate study cards",
-        details: error instanceof Error ? error.stack : undefined
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate study cards",
+        details: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

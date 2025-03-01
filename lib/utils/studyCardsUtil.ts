@@ -1,14 +1,33 @@
-import { Page, Notebook } from "@/types/notebooks";
-import { doc, updateDoc, serverTimestamp, collection, getDocs, orderBy, query, getDoc, where } from "firebase/firestore";
 import { db, storage } from "@/firebase";
-import { toast } from "react-hot-toast";
-import { deleteStudyCardSet, getStudyCardsByClerkId, getStudyCardSets, getUserByClerkId, saveStudyCardSet } from "@/lib/firebase/firestore";
+import {
+  deleteStudyCardSet,
+  getStudyCardsByClerkId,
+  getStudyCardSets,
+  getUserByClerkId,
+  saveStudyCardSet,
+} from "@/lib/firebase/firestore";
 import { fileUpload } from "@/lib/utils";
-import { getDownloadURL, ref, uploadString } from "firebase/storage";
+import { Notebook, Page } from "@/types/notebooks";
 import { StudySetMetadata } from "@/types/studyCards";
 import { UserResource } from "@clerk/types";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import { getDownloadURL, ref, uploadString } from "firebase/storage";
+import { toast } from "react-hot-toast";
 
-export const toggleAnswer = (showAnswer: Record<string, boolean>, cardIndex: number) => {
+export const toggleAnswer = (
+  showAnswer: Record<string, boolean>,
+  cardIndex: number
+) => {
   return {
     ...showAnswer,
     [cardIndex]: !showAnswer[cardIndex],
@@ -89,7 +108,11 @@ export const handleUpdateTitle = async (
   }
 };
 
-export const loadCardSets = (pageId: string, setCardSets: (sets: any[]) => void, clerkUserId: string) => {
+export const loadCardSets = (
+  pageId: string,
+  setCardSets: (sets: any[]) => void,
+  clerkUserId: string
+) => {
   return async () => {
     try {
       const sets = await getStudyCardSets(pageId);
@@ -117,8 +140,8 @@ export const handleClear = (
 };
 
 export const loadAllNotebooks = async (
-  setIsLoadingNotebooks: (isLoading: boolean) => void, 
-  setNotebooks: (notebooks: Notebook[]) => void, 
+  setIsLoadingNotebooks: (isLoading: boolean) => void,
+  setNotebooks: (notebooks: Notebook[]) => void,
   user: UserResource | null | undefined
 ) => {
   try {
@@ -244,9 +267,6 @@ export const handleGenerateCards = async (
   setFilesToUpload: (files: File[]) => void,
   setFiles: (files: File[]) => void,
   setMessages: (messages: any[]) => void,
- 
-  // loadCardSets: () => Promise<void>,
-  
   userId: string
 ) => {
   try {
@@ -266,7 +286,9 @@ export const handleGenerateCards = async (
 
     // Get the first selected notebook and page if they exist
     const firstNotebookId = Object.keys(selectedPages)[0] || "";
-    const firstPageId = firstNotebookId ? selectedPages[firstNotebookId]?.[0] : "";
+    const firstPageId = firstNotebookId
+      ? selectedPages[firstNotebookId]?.[0]
+      : "";
 
     let uploadedDocs = [];
     let notebookContent = [];
@@ -290,7 +312,7 @@ export const handleGenerateCards = async (
           notebookPages.push({
             pageId,
             pageTitle: page.title,
-            content: pageData.content
+            content: pageData.content,
           });
         }
       }
@@ -299,18 +321,18 @@ export const handleGenerateCards = async (
         notebookContent.push({
           notebookId,
           notebookTitle: notebook.title,
-          pages: notebookPages
+          pages: notebookPages,
         });
       }
     }
 
-    // Process uploaded files
+    // Process uploaded files - using the /api/convert endpoint instead of convert-from-storage
     if (filesToUpload.length > 0) {
       for (const file of filesToUpload) {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/convert-from-storage", {
+        const response = await fetch("/api/convert", {
           method: "POST",
           body: formData,
         });
@@ -322,9 +344,9 @@ export const handleGenerateCards = async (
         const data = await response.json();
         if (data.text) {
           const timestamp = Date.now();
-          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
           const path = `studycards/${timestamp}_${sanitizedFileName}`;
-          
+
           const storageRef = ref(storage, path);
           await uploadString(storageRef, data.text, "raw", {
             contentType: "text/markdown",
@@ -342,55 +364,61 @@ export const handleGenerateCards = async (
       }
     }
 
-    // Verify we have content before proceeding
-    // if (uploadedDocs.length === 0 && notebookContent.length === 0) {
-    //   throw new Error("No content found in uploaded documents or selected pages");
-    // }
-
     const metadata: StudySetMetadata = {
       name: setName,
       createdAt: new Date().toISOString(),
-      sourceNotebooks: notebookContent.map(notebook => ({
+      sourceNotebooks: notebookContent.map((notebook) => ({
         notebookId: notebook.notebookId,
         notebookTitle: notebook.notebookTitle,
-        pages: notebook.pages.map(page => ({
+        pages: notebook.pages.map((page) => ({
           pageId: page.pageId,
-          pageTitle: page.pageTitle
-        }))
+          pageTitle: page.pageTitle,
+        })),
       })),
       cardCount: numCards,
       userId: userId,
     };
 
-    const formData = new FormData();
-    const messageData = {
-      selectedPages,
-      numberOfCards: numCards,
-      metadata,
+    // Use JSON format for the API request
+    const requestData = {
+      setName,
+      numCards,
+      selectedPages: notebookContent,
       uploadedDocs: uploadedDocs.length > 0 ? uploadedDocs : undefined,
-      notebookContent: notebookContent.length > 0 ? notebookContent : undefined
+      userId,
     };
 
     console.log("Sending request with data:", {
       hasUploadedDocs: uploadedDocs.length > 0,
       hasNotebookContent: notebookContent.length > 0,
-      numberOfCards: numCards
+      numberOfCards: numCards,
     });
 
-    formData.append("message", JSON.stringify(messageData));
-
+    // Make sure to explicitly set the Content-Type header to application/json
     const response = await fetch("/api/studycards", {
       method: "POST",
-      body: formData,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.details || "Failed to generate cards");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.details || errorData.error || "Failed to generate cards"
+      );
     }
 
     const data = await response.json();
-    await saveStudyCardSet(data.cards, metadata, userId);
+
+    // Format cards if needed
+    const formattedCards = data.cards.map((card: any) => ({
+      title: card.title || card.front || "",
+      content: card.content || card.back || "",
+    }));
+
+    await saveStudyCardSet(formattedCards, metadata, userId);
 
     setShowNotebookModal(false);
     setSelectedPages({});
@@ -398,12 +426,12 @@ export const handleGenerateCards = async (
     setFilesToUpload([]);
     setFiles([]);
     setMessages([]);
-    // await loadCardSets();
 
+    return formattedCards;
   } catch (error) {
     console.error("Error generating study cards:", error);
     throw error;
   } finally {
     setIsGenerating(false);
   }
-}; 
+};

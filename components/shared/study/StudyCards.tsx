@@ -176,22 +176,78 @@ export default function StudyCards({
 
       setIsGenerating(true);
 
-      await handleGenerateCards(
-        setName,
-        numCards,
+      // Get the selected pages data
+      const selectedPagesData = await getSelectedPagesData(
         selectedPages,
-        filesToUpload,
-        notebooks,
-        isGenerating,
-        setIsGenerating,
-        setShowNotebookModal,
-        setSelectedPages,
-        setSetName,
-        setFilesToUpload,
-        setFiles,
-        setMessages,
+        notebooks
+      );
+
+      // Create a study card set object
+      const studyCardSet: Partial<StudyCardSet> = {
+        title: setName,
+        cards: [],
+        metadata: {
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          name: setName,
+          cardCount: 0,
+          sourceNotebooks: [],
+        },
+        userId: clerkUserId,
+        notebookId: null,
+        pageId: null,
+      };
+
+      // Use a different API request format that matches what the original function was doing
+      const response = await fetch("/api/studycards", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          setName,
+          numCards,
+          selectedPages: selectedPagesData,
+          files: filesToUpload,
+          userId: clerkUserId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate cards");
+      }
+
+      const data = await response.json();
+      const formattedCards = data.cards.map((card: any) => ({
+        title: card.title || card.front || "",
+        content: card.content || card.back || "",
+      }));
+
+      const finalStudyCardSet = {
+        ...studyCardSet,
+        cards: formattedCards,
+      };
+
+      // Save the study card set
+      const setId = await saveStudyCardSet(
+        finalStudyCardSet.cards,
+        {
+          title: setName,
+          notebookId: notebookId || null,
+          pageId: pageId || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
         clerkUserId
       );
+
+      // Clean up state
+      setShowNotebookModal(false);
+      setSelectedPages({});
+      setSetName("");
+      setFilesToUpload([]);
+      setFiles([]);
+      setMessages([]);
 
       // Reload card sets
       await loadCardsetsWrapper();
@@ -209,6 +265,8 @@ export default function StudyCards({
     } catch (error) {
       console.error("Error generating cards:", error);
       toast.error("Failed to generate study cards");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
