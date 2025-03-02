@@ -229,9 +229,9 @@ export default function CreateCardModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Select Notes
               </label>
-              <div className="flex flex-col gap-2 items-center justify-center h-72 overflow-y-auto ">
+              <div className="flex flex-col gap-2 items-center justify-start h-72 w-full overflow-y-auto ">
                 {renderNotebookList()}
-                </div>
+              </div>
             </div>
           </div>
 

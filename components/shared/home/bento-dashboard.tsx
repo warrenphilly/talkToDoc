@@ -508,7 +508,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     }
 
     return (
-      <div className="space-y-2 p-2">
+      <div className="space-y-2 p-2 w-full">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
