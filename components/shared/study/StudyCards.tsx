@@ -150,6 +150,12 @@ export default function StudyCards({
     }
   }, [showNotebookModal, user]);
 
+  useEffect(() => {
+    if (selectedSet) {
+      setShowNotebookModal(false);
+    }
+  }, [selectedSet]);
+
   const handlePageSelect = (
     notebookId: string,
     pageId: string,
@@ -211,24 +217,74 @@ export default function StudyCards({
         user.id
       );
 
-      // Clear form state first
-      setSetName("");
-      setNumCards(10);
-      setFilesToUpload([]);
-      setFiles([]);
-      setSelectedPages({});
-      setShowNotebookModal(false);
+      if (
+        generatedCards &&
+        generatedCards.cards &&
+        Array.isArray(generatedCards.cards)
+      ) {
+        const newStudySet: StudyCardSet = {
+          id: generatedCards.id || crypto.randomUUID(),
+          title: generatedCards.title || setName,
+          cards: generatedCards.cards.map((card: any) => ({
+            title: card.title || "",
+            content: card.content || "",
+          })),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          userId: user.id,
+          metadata: {
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            name: setName,
+            cardCount: generatedCards.cards.length,
+            sourceNotebooks: [],
+          },
+          notebookId: notebookId || null,
+          pageId: pageId || null,
+        };
 
-      // Then update the card sets and selected set
-      if (generatedCards) {
-        await loadCardsetsWrapper();
-        // Use setTimeout to prevent React state update conflicts
-        setTimeout(() => {
-          setSelectedSet(generatedCards);
-        }, 0);
+        // First close the modal and reset form state
+        setShowNotebookModal(false);
+        setShowCardModal(false);
+        setSetName("");
+        setNumCards(10);
+        setFilesToUpload([]);
+        setFiles([]);
+        setSelectedPages({});
+        setMessages([]);
+
+        try {
+          // Update database first
+          await loadCardsetsWrapper();
+
+          // Update local state with the new set
+          setCardSets((prevSets) => {
+            const newSets = [...prevSets];
+            const existingIndex = newSets.findIndex(
+              (set) => set.id === newStudySet.id
+            );
+            if (existingIndex >= 0) {
+              newSets[existingIndex] = newStudySet;
+            } else {
+              newSets.unshift(newStudySet); // Add new set to the beginning
+            }
+            return newSets;
+          });
+
+          // Select the newly created set
+          setSelectedSet(newStudySet);
+
+          // Show success message
+          toast.success("Study cards generated successfully!");
+        } catch (error) {
+          console.error("Error updating card sets:", error);
+          toast.error(
+            "Cards generated but failed to update list. Please refresh."
+          );
+        }
+      } else {
+        toast.error("Failed to generate valid study cards");
       }
-
-      toast.success("Study cards generated successfully!");
     } catch (error) {
       console.error("Error generating cards:", error);
       toast.error(
@@ -236,6 +292,9 @@ export default function StudyCards({
       );
     } finally {
       setIsGenerating(false);
+      // Ensure modal is closed even if there's an error
+      setShowNotebookModal(false);
+      setShowCardModal(false);
     }
   };
 
@@ -457,7 +516,10 @@ export default function StudyCards({
           filesToUpload={filesToUpload}
           setIsGenerating={setIsGenerating}
           setSelectedPages={setSelectedPages}
-          onSetCreated={(newSet) => setSelectedSet(newSet)}
+          onSetCreated={(newSet) => {
+            setSelectedSet(newSet);
+            setShowNotebookModal(false);
+          }}
         />
 
         {!selectedSet ? (

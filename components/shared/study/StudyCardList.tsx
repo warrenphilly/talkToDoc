@@ -4,9 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { db } from "@/firebase";
 import { StudyCardSet } from "@/types/studyCards";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { Plus, PlusCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 interface StudyCardListProps {
@@ -26,6 +31,42 @@ export function StudyCardList({
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState("");
   const [newCardContent, setNewCardContent] = useState("");
+  const [localStudySet, setLocalStudySet] = useState(studySet);
+
+  // Listen to real-time updates from Firestore
+  useEffect(() => {
+    if (!studySet.id) return;
+
+    const studyCardRef = doc(db, "studyCards", studySet.id);
+    const unsubscribe = onSnapshot(
+      studyCardRef,
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          const updatedSet = {
+            ...studySet,
+            ...data,
+            cards: data.cards || [],
+            updatedAt:
+              data.updatedAt?.toDate?.().toISOString() ||
+              new Date().toISOString(),
+          };
+          setLocalStudySet(updatedSet);
+          onUpdate(updatedSet);
+        }
+      },
+      (error) => {
+        console.error("Error listening to study set updates:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [studySet.id]);
+
+  // Update local state when studySet prop changes
+  useEffect(() => {
+    setLocalStudySet(studySet);
+  }, [studySet]);
 
   const toggleListAnswer = (index: number) => {
     setShowListAnswer((prev) => ({
@@ -45,23 +86,20 @@ export function StudyCardList({
       };
 
       const updatedCards = [
-        ...studySet.cards.map((card) => ({
+        ...localStudySet.cards.map((card) => ({
           title: card.title,
           content: card.content,
         })),
         newCard,
       ];
 
+      // Update Firestore
       await updateDoc(studyCardRef, {
         cards: updatedCards,
         updatedAt: serverTimestamp(),
       });
 
-      onUpdate({
-        ...studySet,
-        cards: updatedCards,
-      });
-
+      // Reset form and close modal
       setNewCardTitle("");
       setNewCardContent("");
       setShowAddModal(false);
@@ -78,7 +116,7 @@ export function StudyCardList({
       <Card className="max-w-4xl mx-auto shadow-none border-none h-fit bg-white">
         <CardHeader className="flex flex-row  justify-between items-center">
           <CardTitle className="text-2xl font-bold text-slate-600">
-            All Study Cards
+            All Study Cards ({localStudySet.cards.length})
           </CardTitle>
           <Button
             onClick={() => setShowAddModal(true)}
@@ -90,9 +128,9 @@ export function StudyCardList({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {studySet.cards.map((card, index) => (
+            {localStudySet.cards.map((card, index) => (
               <div
-                key={index}
+                key={`${localStudySet.id}-card-${index}-${card.title}`}
                 className={`bg-white border rounded-xl p-4 hover:bg-slate-50 transition-colors ${
                   activeCardIndex === index
                     ? "border-[#94b347] border-2"
@@ -118,8 +156,6 @@ export function StudyCardList({
               </div>
             ))}
           </div>
-
-          <div className="flex justify-center mt-6"></div>
         </CardContent>
       </Card>
 
