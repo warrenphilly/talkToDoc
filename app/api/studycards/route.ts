@@ -123,93 +123,12 @@ function cleanJsonResponse(content: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const authInfo = await auth();
-    const userId = authInfo.userId;
+    const body = await req.json();
+    const { selectedPages, setName, numCards, uploadedDocs } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!setName) {
+      throw new Error("No set name provided");
     }
-
-    // Check content type to determine how to parse the request
-    const contentType = req.headers.get("content-type") || "";
-    let requestData;
-
-    if (contentType.includes("application/json")) {
-      // Handle JSON request
-      requestData = await req.json();
-      console.log("Received JSON request");
-    } else if (contentType.includes("multipart/form-data")) {
-      // Handle form data request
-      const formData = await req.formData();
-      const messageData = formData.get("message");
-
-      if (!messageData) {
-        return NextResponse.json(
-          { error: "No message data provided" },
-          { status: 400 }
-        );
-      }
-
-      try {
-        requestData =
-          typeof messageData === "string"
-            ? JSON.parse(messageData)
-            : JSON.parse(messageData.toString());
-      } catch (error) {
-        console.error("JSON parsing error:", error);
-        console.error("Attempted to parse:", messageData);
-        return NextResponse.json(
-          {
-            error: "Invalid JSON in message data",
-            details:
-              error instanceof Error ? error.message : "Unknown parsing error",
-            receivedData: messageData,
-          },
-          { status: 400 }
-        );
-      }
-    } else {
-      return NextResponse.json(
-        {
-          error:
-            "Unsupported content type. Use application/json or multipart/form-data",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Extract data from the request
-    const setName = requestData.setName || requestData.metadata?.name;
-    const numCards = requestData.numCards || requestData.numberOfCards;
-    const selectedPages = requestData.selectedPages || {};
-    const uploadedDocs = requestData.uploadedDocs || [];
-
-    // Validate required fields
-    if (!setName || typeof numCards !== "number") {
-      return NextResponse.json(
-        { error: "Missing required fields: name and numberOfCards/numCards" },
-        { status: 400 }
-      );
-    }
-
-    // Validate that either selectedPages or uploadedDocs is provided
-    if (
-      (!selectedPages || Object.keys(selectedPages).length === 0) &&
-      (!uploadedDocs || uploadedDocs.length === 0)
-    ) {
-      return NextResponse.json(
-        { error: "Either selectedPages or uploadedDocs must be provided" },
-        { status: 400 }
-      );
-    }
-
-    // Debug log the request
-    console.log("Processed request:", {
-      setName,
-      numCards,
-      selectedPagesCount: Object.keys(selectedPages).length,
-      uploadedDocsCount: uploadedDocs.length,
-    });
 
     // Initialize content collection
     let allContent = "";
@@ -220,158 +139,98 @@ export async function POST(req: NextRequest) {
 
       for (const doc of uploadedDocs) {
         try {
-          // Extract the path from the full URL if it exists
-          const path = doc.path || doc.url;
-          if (!path) {
-            console.warn("Document missing path:", doc);
-            continue;
+          if (doc.content) {
+            allContent += `\n\nDocument: ${doc.name}\n${cleanMarkdownContent(
+              doc.content
+            )}`;
           }
-
-          // Handle both full URLs and direct paths
-          let cleanPath;
-          if (path.startsWith("http")) {
-            const url = new URL(path);
-            cleanPath = decodeURIComponent(
-              url.pathname.split("/o/")[1]?.split("?")[0] || path
-            );
-          } else {
-            cleanPath = path.replace(/^gs:\/\/[^\/]+\//, "");
-          }
-
-          console.log("Processing uploaded file:", cleanPath);
-
-          const bucket = adminStorage.bucket();
-          const file = bucket.file(cleanPath);
-
-          const [exists] = await file.exists();
-          if (!exists) {
-            console.error("File does not exist:", cleanPath);
-            continue;
-          }
-
-          const [content] = await file.download();
-          const contentStr = content.toString();
-          allContent += `## ${doc.name}\n\n${cleanMarkdownContent(
-            contentStr
-          )}\n\n`;
         } catch (error) {
-          console.error(`Error fetching uploaded file:`, error);
+          console.error(`Error processing document ${doc.name}:`, error);
         }
       }
     }
 
-    // 2. Process selected pages and their associated documents
+    // 2. Process selected notebook pages
     if (selectedPages && Object.keys(selectedPages).length > 0) {
-      // Handle both array format and object format
-      if (Array.isArray(selectedPages)) {
-        // Handle array format (from JSON request)
-        for (const notebook of selectedPages) {
-          const notebookId = notebook.notebookId;
-          const notebookTitle = notebook.notebookTitle;
+      console.log("Processing selected pages:", selectedPages);
 
-          // Process each page in the notebook
-          for (const page of notebook.pages) {
-            allContent += `## ${page.pageTitle || "Untitled Page"}\n\n`;
-            if (page.content) {
-              allContent += `${cleanMarkdownContent(page.content)}\n\n`;
-            }
-          }
+      for (const notebookId of Object.keys(selectedPages)) {
+        const pageIds = selectedPages[notebookId];
+        console.log(`Fetching notebook ${notebookId} with pages:`, pageIds);
+
+        const notebookRef = adminDb.collection("notebooks").doc(notebookId);
+        const notebookSnap = await notebookRef.get();
+
+        if (!notebookSnap.exists) {
+          console.warn(`Notebook ${notebookId} not found, skipping`);
+          continue;
         }
-      } else {
-        // Handle object format (from form data)
-        // Iterate through each notebook
-        for (const notebookId of Object.keys(selectedPages)) {
-          const pageIds = selectedPages[notebookId];
 
-          // Get the notebook document
-          console.log("Fetching notebook:", notebookId);
-          const notebookRef = adminDb.collection("notebooks").doc(notebookId);
-          const notebookSnap = await notebookRef.get();
+        const notebookData = notebookSnap.data();
+        if (!notebookData) {
+          console.warn(`Notebook ${notebookId} data is empty, skipping`);
+          continue;
+        }
 
-          if (!notebookSnap.exists) {
-            console.warn(`Notebook ${notebookId} not found, skipping`);
+        // Process each selected page in the notebook
+        for (const pageId of pageIds) {
+          const page = notebookData.pages?.find((p: any) => p.id === pageId);
+          if (!page) {
+            console.warn(
+              `Page ${pageId} not found in notebook ${notebookId}, skipping`
+            );
             continue;
           }
 
-          const notebookData = notebookSnap.data();
-          if (!notebookData) {
-            console.warn(`Notebook ${notebookId} data is empty, skipping`);
-            continue;
+          console.log(`Found page ${pageId}:`, {
+            title: page.title,
+            contentLength: page.content?.length || 0,
+          });
+
+          // Add page title and content
+          allContent += `\n\n## ${page.title}\n\n`;
+          if (page.content) {
+            allContent += `${cleanMarkdownContent(page.content)}\n\n`;
           }
 
-          // Process each selected page in the notebook
-          for (const pageId of pageIds) {
-            const page = notebookData.pages?.find((p: any) => p.id === pageId);
-            if (!page) {
-              console.warn(
-                `Page ${pageId} not found in notebook ${notebookId}, skipping`
-              );
-              continue;
-            }
+          // Process markdown references if they exist
+          if (page.markdownRefs?.length > 0) {
+            for (const ref of page.markdownRefs) {
+              try {
+                const bucket = adminStorage.bucket();
+                const file = bucket.file(ref.path);
+                const [exists] = await file.exists();
+                if (!exists) continue;
 
-            // Add page title and content
-            allContent += `## ${page.title}\n\n`;
-            if (page.content) {
-              allContent += `${page.content}\n\n`;
-            }
-
-            // Process markdown references
-            if (page.markdownRefs && page.markdownRefs.length > 0) {
-              console.log(
-                `Processing ${page.markdownRefs.length} markdown refs for page ${page.title}`
-              );
-              for (const markdownRef of page.markdownRefs) {
-                try {
-                  const cleanPath = markdownRef.path.replace(
-                    /^gs:\/\/[^\/]+\//,
-                    ""
-                  );
-                  const bucket = adminStorage.bucket();
-                  const file = bucket.file(cleanPath);
-
-                  const [exists] = await file.exists();
-                  if (!exists) continue;
-
-                  const [content] = await file.download();
-                  const contentStr = content.toString();
-                  allContent += cleanMarkdownContent(contentStr) + "\n\n";
-                } catch (error) {
-                  console.error(
-                    `Error fetching markdown file ${markdownRef.path}:`,
-                    error
-                  );
-                }
+                const [content] = await file.download();
+                allContent += cleanMarkdownContent(content.toString()) + "\n\n";
+              } catch (error) {
+                console.error(
+                  `Error fetching markdown file ${ref.path}:`,
+                  error
+                );
               }
             }
+          }
 
-            // Process study documents
-            if (page.studyDocs && page.studyDocs.length > 0) {
-              console.log(
-                `Processing ${page.studyDocs.length} study docs for page ${page.title}`
-              );
-              for (const studyDoc of page.studyDocs) {
-                try {
-                  const cleanPath = studyDoc.path.replace(
-                    /^gs:\/\/[^\/]+\//,
-                    ""
-                  );
-                  const bucket = adminStorage.bucket();
-                  const file = bucket.file(cleanPath);
+          // Process study documents
+          if (page.studyDocs?.length > 0) {
+            for (const studyDoc of page.studyDocs) {
+              try {
+                const bucket = adminStorage.bucket();
+                const file = bucket.file(studyDoc.path);
+                const [exists] = await file.exists();
+                if (!exists) continue;
 
-                  const [exists] = await file.exists();
-                  if (!exists) continue;
-
-                  const [content] = await file.download();
-                  const contentStr = content.toString();
-                  allContent += `## ${studyDoc.name}\n\n${cleanMarkdownContent(
-                    contentStr
-                  )}\n\n`;
-                } catch (error) {
-                  console.error(
-                    `Error fetching study doc ${studyDoc.path}:`,
-                    error
-                  );
-                }
+                const [content] = await file.download();
+                allContent += `## ${studyDoc.name}\n\n${cleanMarkdownContent(
+                  content.toString()
+                )}\n\n`;
+              } catch (error) {
+                console.error(
+                  `Error fetching study doc ${studyDoc.path}:`,
+                  error
+                );
               }
             }
           }
@@ -388,16 +247,43 @@ export async function POST(req: NextRequest) {
 
     console.log("Collected content length:", allContent.length);
 
-    // Limit content length if necessary
-    const maxContentLength = 4000;
-    if (allContent.length > maxContentLength) {
-      allContent = allContent.slice(0, maxContentLength);
-      console.log("Content truncated to", maxContentLength, "characters");
+    // Generate cards using OpenAI
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information:
+            ${allContent}
+            Format your response as a valid JSON object with this structure:
+            {
+              "cards": [
+                {
+                  "title": "Question or key concept",
+                  "content": "Clear, concise explanation"
+                }
+              ]
+            }
+            Important: Respond ONLY with the JSON object, no additional text.`,
+          },
+        ],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const response = await makeOpenAIRequest(allContent, numCards);
+    const result = await response.json();
     const cleanedResponse = cleanJsonResponse(
-      response.choices[0].message.content
+      result.choices[0].message.content
     );
     const parsedResponse = JSON.parse(cleanedResponse);
 

@@ -23,6 +23,7 @@ import {
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { toast } from "react-hot-toast";
+import { uploadLargeFile } from "../fileUpload";
 
 export const toggleAnswer = (
   showAnswer: Record<string, boolean>,
@@ -278,63 +279,23 @@ export const handleGenerateCards = async (
       throw new Error("Please enter a name for the study set");
     }
 
-    if (filesToUpload.length === 0 && Object.keys(selectedPages).length === 0) {
-      throw new Error("Please either upload files or select notebook pages");
-    }
-
     setIsGenerating(true);
 
-    // Get the first selected notebook and page if they exist
-    const firstNotebookId = Object.keys(selectedPages)[0] || "";
-    const firstPageId = firstNotebookId
-      ? selectedPages[firstNotebookId]?.[0]
-      : "";
-
-    let uploadedDocs = [];
-    let notebookContent = [];
-
-    // Process selected pages first
-    for (const [notebookId, pageIds] of Object.entries(selectedPages)) {
-      const notebook = notebooks.find((n) => n.id === notebookId);
-      if (!notebook) continue;
-
-      const notebookPages = [];
-      for (const pageId of pageIds) {
-        const page = notebook.pages.find((p) => p.id === pageId);
-        if (!page) continue;
-
-        // Get the page content from Firestore
-        const pageRef = doc(db, "notebooks", notebookId, "pages", pageId);
-        const pageSnap = await getDoc(pageRef);
-        const pageData = pageSnap.data();
-
-        if (pageData && pageData.content) {
-          notebookPages.push({
-            pageId,
-            pageTitle: page.title,
-            content: pageData.content,
-          });
-        }
-      }
-
-      if (notebookPages.length > 0) {
-        notebookContent.push({
-          notebookId,
-          notebookTitle: notebook.title,
-          pages: notebookPages,
-        });
-      }
-    }
-
-    // Process uploaded files - using the /api/convert endpoint instead of convert-from-storage
-    if (filesToUpload.length > 0) {
-      for (const file of filesToUpload) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/convert", {
+    // Process uploaded files
+    const processedFiles = [];
+    for (const file of filesToUpload) {
+      try {
+        const downloadURL = await uploadLargeFile(file);
+        const response = await fetch("/api/convert-from-storage", {
           method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileUrl: downloadURL,
+            fileName: file.name,
+            fileType: file.type,
+          }),
         });
 
         if (!response.ok) {
@@ -342,84 +303,67 @@ export const handleGenerateCards = async (
         }
 
         const data = await response.json();
-        if (data.text) {
-          const timestamp = Date.now();
-          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-          const path = `studycards/${timestamp}_${sanitizedFileName}`;
-
-          const storageRef = ref(storage, path);
-          await uploadString(storageRef, data.text, "raw", {
-            contentType: "text/markdown",
-          });
-
-          const url = await getDownloadURL(storageRef);
-          uploadedDocs.push({
-            path,
-            url,
-            name: file.name,
-            content: data.text,
-            timestamp: new Date().toISOString(),
-          });
-        }
+        processedFiles.push({
+          name: file.name,
+          path: downloadURL,
+          content: data.text,
+        });
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        throw error;
       }
     }
 
-    const metadata: StudySetMetadata = {
-      name: setName,
-      createdAt: new Date().toISOString(),
-      sourceNotebooks: notebookContent.map((notebook) => ({
-        notebookId: notebook.notebookId,
-        notebookTitle: notebook.notebookTitle,
-        pages: notebook.pages.map((page) => ({
-          pageId: page.pageId,
-          pageTitle: page.pageTitle,
-        })),
-      })),
-      cardCount: numCards,
-      userId: userId,
-    };
-
-    // Use JSON format for the API request
-    const requestData = {
+    // Create the request body - following the study guide pattern
+    const requestBody = {
+      selectedPages, // Pass the raw selectedPages object
       setName,
       numCards,
-      selectedPages: notebookContent,
-      uploadedDocs: uploadedDocs.length > 0 ? uploadedDocs : undefined,
-      userId,
+      uploadedDocs: processedFiles,
     };
 
-    console.log("Sending request with data:", {
-      hasUploadedDocs: uploadedDocs.length > 0,
-      hasNotebookContent: notebookContent.length > 0,
-      numberOfCards: numCards,
-    });
+    console.log("Sending request to generate cards:", requestBody);
 
-    // Make sure to explicitly set the Content-Type header to application/json
+    // Make the API request
     const response = await fetch("/api/studycards", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestData),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.details || errorData.error || "Failed to generate cards"
-      );
+      const errorData = await response.json();
+      console.error("API Error Response:", errorData);
+      throw new Error(errorData.error || "Failed to generate cards");
     }
 
-    const data = await response.json();
+    const result = await response.json();
+    console.log("Received study cards result:", result);
 
-    // Format cards if needed
-    const formattedCards = data.cards.map((card: any) => ({
-      title: card.title || card.front || "",
-      content: card.content || card.back || "",
-    }));
+    if (!result.cards) {
+      throw new Error("No cards received from study cards generation");
+    }
 
-    await saveStudyCardSet(formattedCards, metadata, userId);
+    // Save to Firestore
+    await saveStudyCardSet(
+      result.cards,
+      {
+        name: setName,
+        createdAt: new Date().toISOString(),
+        cardCount: numCards,
+        userId: userId,
+        sourceNotebooks: Object.keys(selectedPages).map((notebookId) => ({
+          notebookId,
+          notebookTitle:
+            notebooks.find((n) => n.id === notebookId)?.title || "Untitled",
+        })),
+      },
+      userId
+    );
 
+    // Clear form and close modal
     setShowNotebookModal(false);
     setSelectedPages({});
     setSetName("");
@@ -427,9 +371,9 @@ export const handleGenerateCards = async (
     setFiles([]);
     setMessages([]);
 
-    return formattedCards;
+    return result.cards;
   } catch (error) {
-    console.error("Error generating study cards:", error);
+    console.error("Error in handleGenerateCards:", error);
     throw error;
   } finally {
     setIsGenerating(false);
