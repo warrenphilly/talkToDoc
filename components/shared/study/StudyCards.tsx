@@ -44,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
+
 import {
   handleClear,
   handleDeleteSet,
@@ -60,6 +61,7 @@ import {
   toggleNotebookExpansion,
 } from "@/lib/utils/studyCardsUtil";
 import { useUser } from "@clerk/nextjs";
+import { Timestamp } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import CreateCardModal from "./CreateCardModal";
 import { StudyCardCarousel } from "./StudyCardCarousel";
@@ -127,6 +129,7 @@ export default function StudyCards({
   const [filesToUpload, setFilesToUpload] = useState<File[]>([]);
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editingListTitle, setEditingListTitle] = useState("");
+  const [showCardModal, setShowCardModal] = useState(false);
   const { user } = useUser();
   const clerkUserId = user?.id || "";
 
@@ -169,102 +172,68 @@ export default function StudyCards({
 
   const handleGenerateCardsWrapper = async () => {
     try {
+      if (!user?.id) {
+        toast.error("Please sign in to generate study cards");
+        return;
+      }
+
       if (!setName.trim()) {
-        toast.error("Please enter a set name");
+        toast.error("Please enter a name for the study card set");
         return;
       }
 
       setIsGenerating(true);
 
-      // Get the selected pages data
-      const selectedPagesData = await getSelectedPagesData(
-        selectedPages,
-        notebooks
-      );
-
-      // Create a study card set object
-      const studyCardSet: Partial<StudyCardSet> = {
-        title: setName,
-        cards: [],
-        metadata: {
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          name: setName,
-          cardCount: 0,
-          sourceNotebooks: [],
-        },
-        userId: clerkUserId,
-        notebookId: null,
-        pageId: null,
-      };
-
-      // Use a different API request format that matches what the original function was doing
-      const response = await fetch("/api/studycards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          setName,
-          numCards,
-          selectedPages: selectedPagesData,
-          files: filesToUpload,
-          userId: clerkUserId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate cards");
-      }
-
-      const data = await response.json();
-      const formattedCards = data.cards.map((card: any) => ({
-        title: card.title || card.front || "",
-        content: card.content || card.back || "",
+      const adaptedNotebooks = notebooks.map((notebook) => ({
+        ...notebook,
+        createdAt:
+          typeof notebook.createdAt === "object" && notebook.createdAt !== null
+            ? notebook.createdAt instanceof Timestamp
+              ? notebook.createdAt.toDate()
+              : (notebook.createdAt as Date)
+            : new Date(notebook.createdAt as any),
       }));
 
-      const finalStudyCardSet = {
-        ...studyCardSet,
-        cards: formattedCards,
-      };
-
-      // Save the study card set
-      const setId = await saveStudyCardSet(
-        finalStudyCardSet.cards,
-        {
-          title: setName,
-          notebookId: notebookId || null,
-          pageId: pageId || null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        clerkUserId
+      const generatedCards = await handleGenerateCards(
+        setName,
+        numCards,
+        selectedPages,
+        filesToUpload,
+        adaptedNotebooks,
+        isGenerating,
+        setIsGenerating,
+        setShowCardModal,
+        setSelectedPages,
+        setSetName,
+        setFilesToUpload,
+        setFiles,
+        setMessages,
+        user.id
       );
 
-      // Clean up state
-      setShowNotebookModal(false);
-      setSelectedPages({});
+      // Clear form state first
       setSetName("");
+      setNumCards(10);
       setFilesToUpload([]);
       setFiles([]);
-      setMessages([]);
+      setSelectedPages({});
+      setShowNotebookModal(false);
 
-      // Reload card sets
-      await loadCardsetsWrapper();
-
-      // Find the newly created set from the cardSets state
-      const newSet = cardSets.find(
-        (set: StudyCardSet) => set.title === setName
-      );
-
-      if (newSet) {
-        setSelectedSet(newSet);
+      // Then update the card sets and selected set
+      if (generatedCards) {
+        await loadCardsetsWrapper();
+        // Use setTimeout to prevent React state update conflicts
+        setTimeout(() => {
+          setSelectedSet(generatedCards);
+        }, 0);
       }
 
       toast.success("Study cards generated successfully!");
     } catch (error) {
       console.error("Error generating cards:", error);
-      toast.error("Failed to generate study cards");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     } finally {
       setIsGenerating(false);
     }

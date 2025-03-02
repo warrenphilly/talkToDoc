@@ -1578,7 +1578,7 @@ export const getStudyCardsByClerkId = async (
       // Match the structure of how we save study cards
       const cardData = {
         id: doc.id,
-        title: data.title || "Untitled Set",
+        title: data.metadata.name || "Untitled Set",
         cards: data.cards || [],
         createdAt: convertTimestamp(data.createdAt),
         updatedAt: convertTimestamp(data.updatedAt),
