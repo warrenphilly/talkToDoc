@@ -28,7 +28,14 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { MutableRefObject, useEffect, useRef, useState } from "react";
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { Message } from "@/lib/types";
 
@@ -45,6 +52,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 
+import { useCollectionData } from "@/hooks/useCollectionData";
 import {
   handleClear,
   handleDeleteSet,
@@ -102,7 +110,8 @@ export default function StudyCards({
   notebookId,
   pageId,
 }: StudyMaterialTabsProps) {
-  const [cardSets, setCardSets] = useState<StudyCardSet[]>([]);
+  const { data: cardSets, loading: loadingCardSets } =
+    useCollectionData<StudyCardSet>("studyCards");
   const [selectedSet, setSelectedSet] = useState<StudyCardSet | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [numCards, setNumCards] = useState(5);
@@ -137,12 +146,13 @@ export default function StudyCards({
     setFilesToUpload([...filesToUpload, ...files]);
   }, [files]);
 
-  // Create a memoized version of loadCardSets with the correct signature
-  const loadCardsetsWrapper = loadCardSets(pageId, setCardSets, clerkUserId);
+  // Update the loadCardsetsWrapper function to only handle additional filtering if needed
+  const loadCardsetsWrapper = useCallback(async () => {
+    if (!user?.id) return;
 
-  useEffect(() => {
-    loadCardsetsWrapper();
-  }, [pageId]);
+    // Any additional filtering logic can go here
+    // The main data loading is now handled by the useCollectionData hook
+  }, [user?.id]);
 
   useEffect(() => {
     if (showNotebookModal && user) {
@@ -184,7 +194,7 @@ export default function StudyCards({
       }
 
       if (!setName.trim()) {
-        toast.error("Please enter a name for the study card set");
+        toast.error("Please enter a name for the study set");
         return;
       }
 
@@ -208,7 +218,7 @@ export default function StudyCards({
         adaptedNotebooks,
         isGenerating,
         setIsGenerating,
-        setShowCardModal,
+        setShowNotebookModal,
         setSelectedPages,
         setSetName,
         setFilesToUpload,
@@ -243,38 +253,21 @@ export default function StudyCards({
           pageId: pageId || null,
         };
 
-        // First close the modal and reset form state
-        setShowNotebookModal(false);
-        setShowCardModal(false);
-        setSetName("");
-        setNumCards(10);
-        setFilesToUpload([]);
-        setFiles([]);
-        setSelectedPages({});
-        setMessages([]);
-
         try {
-          // Update database first
-          await loadCardsetsWrapper();
+          // Reset form state after successful creation
+          setShowNotebookModal(false);
+          setShowCardModal(false);
+          setSetName("");
+          setNumCards(10);
+          setFilesToUpload([]);
+          setFiles([]);
+          setSelectedPages({});
+          setMessages([]);
 
-          // Update local state with the new set
-          setCardSets((prevSets) => {
-            const newSets = [...prevSets];
-            const existingIndex = newSets.findIndex(
-              (set) => set.id === newStudySet.id
-            );
-            if (existingIndex >= 0) {
-              newSets[existingIndex] = newStudySet;
-            } else {
-              newSets.unshift(newStudySet); // Add new set to the beginning
-            }
-            return newSets;
-          });
-
-          // Select the newly created set
+          // The new study set will be automatically added to cardSets via the useCollectionData hook
+          // We just need to select it
           setSelectedSet(newStudySet);
 
-          // Show success message
           toast.success("Study cards generated successfully!");
         } catch (error) {
           console.error("Error updating card sets:", error);
@@ -292,7 +285,6 @@ export default function StudyCards({
       );
     } finally {
       setIsGenerating(false);
-      // Ensure modal is closed even if there's an error
       setShowNotebookModal(false);
       setShowCardModal(false);
     }
@@ -468,6 +460,124 @@ export default function StudyCards({
     );
   };
 
+  const handleSetCreated = (newStudySet: StudyCardSet) => {
+    console.log("New study set created:", newStudySet);
+
+    // With useCollectionData, we don't need to manually update cardSets
+    // Just select the new set to display it
+    setSelectedSet(newStudySet);
+
+    // Log for debugging
+    console.log("Selected set updated:", newStudySet.id);
+  };
+
+  // Update the renderCardSets function to use the data from the hook
+  const renderCardSets = useMemo(() => {
+    if (loadingCardSets) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+          {[...Array(3)].map((_, i) => (
+            <Card
+              key={i}
+              className="bg-white border-none shadow-none rounded-none"
+            >
+              <CardContent className="py-2 border-t border-slate-200 my-0">
+                <div className="flex flex-col gap-2 animate-pulse">
+                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full max-w-lg mx-auto gap-4  overflow-y-auto ">
+        {cardSets.map((studyCard) => (
+          <div
+            key={studyCard.id}
+            className="flex flex-row justify-between items-center mx-auto bg-red-500"
+          >
+            <Card className="  bg-white border-none   transition-colors w-full shadow-none  rounded-none ">
+              <CardContent
+                className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer"
+                onClick={() => setSelectedSet(studyCard)}
+              >
+                <div className="flex flex-col items-start justify-between w-full">
+                  <div className="items-center flex flex-row justify-between w-full">
+                    <div className="flex flex-row items-center">
+                      <h3 className="font-medium text-slate-700 ">
+                        {studyCard.metadata.name}
+                      </h3>
+                      <p className="text-sm text-slate-500 mx-5">
+                        Cards: {studyCard.cards.length}
+                      </p>
+                    </div>
+                    <div className="flex flex-row justify-end items-center gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete your Study Card Set and remove
+                              your data from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
+                            >
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetDeletion(studyCard.id);
+                              }}
+                              className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-slate-500">
+                    {" "}
+                    created on{" "}
+                    {new Date(studyCard.metadata.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+
+        {cardSets.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No study card sets found. Create one to get started!
+          </div>
+        )}
+      </div>
+    );
+  }, [cardSets, loadingCardSets]);
+
   return (
     <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 md:p-4 items-center justify-center">
       {!selectedSet && (
@@ -493,119 +603,36 @@ export default function StudyCards({
       )}
 
       <CardContent className="w-full flex flex-col items-center justify-center h-full overflow-y-auto">
-        <CreateCardModal
-          showNotebookModal={showNotebookModal}
-          setShowNotebookModal={setShowNotebookModal}
-          setName={setName}
-          setSetName={setSetName}
-          numCards={numCards}
-          setNumCards={setNumCards}
-          messages={messages}
-          files={files}
-          showUpload={showUpload}
-          fileInputRef={fileInputRef}
-          handleFileUpload={handleFileUpload}
-          handleSendMessage={handleSendMessage}
-          handleClear={handleClearWrapper}
-          setShowUpload={setShowUpload}
-          setFiles={setFiles}
-          renderNotebookList={renderNotebookList}
-          handleGenerateCards={handleGenerateCardsWrapper}
-          isGenerating={isGenerating}
-          selectedPages={selectedPages}
-          filesToUpload={filesToUpload}
-          setIsGenerating={setIsGenerating}
-          setSelectedPages={setSelectedPages}
-          onSetCreated={(newSet) => {
-            setSelectedSet(newSet);
-            setShowNotebookModal(false);
-          }}
-        />
+        {showNotebookModal && (
+          <CreateCardModal
+            showNotebookModal={showNotebookModal}
+            setShowNotebookModal={setShowNotebookModal}
+            setName={setName}
+            setSetName={setSetName}
+            numCards={numCards}
+            setNumCards={setNumCards}
+            messages={messages}
+            files={files}
+            showUpload={showUpload}
+            fileInputRef={fileInputRef}
+            handleFileUpload={handleFileUpload}
+            handleSendMessage={handleSendMessage}
+            handleClear={handleClearWrapper}
+            setShowUpload={setShowUpload}
+            setFiles={setFiles}
+            renderNotebookList={renderNotebookList}
+            handleGenerateCards={handleGenerateCardsWrapper}
+            isGenerating={isGenerating}
+            selectedPages={selectedPages}
+            setSelectedPages={setSelectedPages}
+            filesToUpload={filesToUpload}
+            setIsGenerating={setIsGenerating}
+            onSetCreated={handleSetCreated}
+          />
+        )}
 
         {!selectedSet ? (
-          // Show list of card sets
-          <div className="w-full max-w-2xl mx-auto overflow-y-auto h-full">
-            {cardSets.map((set) => (
-              <div
-                key={set.id}
-                className="flex flex-row justify-between items-center"
-              >
-                <Card className="  bg-white border-none   transition-colors w-full shadow-none  rounded-none ">
-                  <CardContent
-                    className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer"
-                    onClick={() => setSelectedSet(set)}
-                  >
-                    <div className="flex flex-col items-start justify-between w-full">
-                      <div className="items-center flex flex-row justify-between w-full">
-                        <div className="flex flex-row items-center">
-                          <h3 className="font-medium text-slate-700 ">
-                            {set.title}
-                          </h3>
-                          <p className="text-sm text-slate-500 mx-5">
-                            Cards: {set.cards.length}
-                          </p>
-                        </div>
-                        <div className="flex flex-row justify-end items-center gap-2">
-                          <AlertDialog>
-                            <AlertDialogTrigger
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
-                              className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-white">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Are you absolutely sure?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will
-                                  permanently delete your Study Card Set and
-                                  remove your data from our servers.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
-                                >
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSetDeletion(set.id);
-                                  }}
-                                  className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-slate-500">
-                        {" "}
-                        created {new Date(
-                          set.createdAt
-                        ).toLocaleDateString()}{" "}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))}
-
-            {cardSets.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No study card sets found. Create one to get started!
-              </div>
-            )}
-          </div>
+          renderCardSets
         ) : (
           // Show selected set's cards
           <div className="w-full h-full overflow-y-auto">

@@ -142,18 +142,20 @@ export default function CreateCardModal({
 
       if (result.success && result.studySet) {
         console.log("Successfully created study set:", result.studySet);
-        // Clear the form
+
+        // First call the callback with the newly created set
+        if (onSetCreated) {
+          console.log("Calling onSetCreated with:", result.studySet);
+          onSetCreated(result.studySet);
+        }
+
+        // Then clear the form and close the modal
         setSetName("");
         setFiles([]);
         if (setSelectedPages) {
           setSelectedPages({});
         }
         setShowNotebookModal(false);
-
-        // Set the newly created set as selected
-        if (onSetCreated) {
-          onSetCreated(result.studySet);
-        }
 
         toast.success("Study cards generated and saved successfully!");
       } else {
@@ -172,7 +174,7 @@ export default function CreateCardModal({
     <>
       {showNotebookModal && (
         <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-          <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] py-12  w-full  max-w-3xl ">
+          <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] py-12  w-full  max-w-3xl  ">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
                 Create Study Cards
