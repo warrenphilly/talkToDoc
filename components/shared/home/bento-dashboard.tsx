@@ -82,6 +82,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCollectionData } from "@/hooks/useCollectionData";
 import { saveStudyCardSet } from "@/lib/firebase/firestore";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
+import { Notebook as NotebookType } from "@/types/notebooks";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { BookOpen } from "lucide-react";
 
@@ -414,12 +415,10 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setIsGenerating(true);
 
       // Convert Firestore notebooks to the expected type format
-      const adaptedNotebooks = notebooks.map((notebook) => ({
+      const adaptedNotebooks: NotebookType[] = notebooks.map((notebook) => ({
         ...notebook,
-        createdAt:
-          typeof notebook.createdAt === "object" && notebook.createdAt !== null
-            ? (notebook.createdAt as Timestamp).toDate()
-            : new Date(notebook.createdAt as any),
+        // Ensure createdAt is a string as required by the Notebook type
+        createdAt: String(notebook.createdAt),
       }));
 
       // Generate the cards using the existing utility function
@@ -437,8 +436,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         (files: File[]) => setFilesToUpload(files), // Wrap the setter
         (files: File[]) => setFiles(files), // Wrap the setter
         (messages: any[]) => setMessages(messages), // Wrap the setter
-        user.id,
-      
+        user.id
       );
 
       // Clear form and close modal
@@ -965,13 +963,17 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="flex gap-4 text-sm text-slate-500  w-[100px]">
+                                    <div className="flex flex-col text-sm text-slate-500  w-[200px]">
                                       <p>Questions: {quiz.totalQuestions}</p>
 
-                                      {quiz.isComplete && (
+                                      {quiz.isComplete ? (
                                         <p>
                                           Score: {quiz.score}/
                                           {quiz.totalQuestions}
+                                        </p>
+                                      ) : (
+                                        <p className="text-green-500">
+                                          active
                                         </p>
                                       )}
                                     </div>

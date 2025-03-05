@@ -27,7 +27,8 @@ export interface Page {
 export interface Notebook {
   id: string;
   title: string;
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
   userId: string;
   pages: Page[];
 }
