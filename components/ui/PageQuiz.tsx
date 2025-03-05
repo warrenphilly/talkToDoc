@@ -314,10 +314,23 @@ const PageQuiz: React.FC<QuizProps> = ({
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const isAnswered = userAnswer !== undefined;
-    const isCorrectAnswer =
-      question.type === "shortAnswer"
-        ? !incorrectAnswers.includes(question.id)
-        : userAnswer === question.correctAnswer;
+
+    // Fix for true/false questions
+    let isCorrectAnswer = false;
+    if (question.type === "shortAnswer") {
+      isCorrectAnswer = !incorrectAnswers.includes(question.id);
+    } else if (question.type === "trueFalse") {
+      // For true/false, convert both to boolean for comparison
+      const userAnswerBool = userAnswer?.toLowerCase() === "true";
+      const correctAnswerBool =
+        typeof question.correctAnswer === "string"
+          ? question.correctAnswer.toLowerCase() === "true"
+          : !!question.correctAnswer;
+      isCorrectAnswer = userAnswerBool === correctAnswerBool;
+    } else {
+      // For multiple choice
+      isCorrectAnswer = userAnswer === question.correctAnswer;
+    }
 
     return (
       <div
@@ -664,11 +677,11 @@ const PageQuiz: React.FC<QuizProps> = ({
           {showSummary && (
             <div className="mb-6 p-4 bg-white rounded-lg w-full">
               <div className="space-y-2">
-                {questionsWithIds.map((question) => (
+                {questionsWithIds.map((question, index) => (
                   <div key={`question-${question.id}`}>
                     <QuestionSummary
                       question={question}
-                      userAnswer={userAnswers[question.id]}
+                      userAnswer={userAnswers[index]}
                     />
                   </div>
                 ))}

@@ -29,7 +29,7 @@ Question: ${question}
 Correct Answer: ${correctAnswer}
 User's Answer: ${userAnswer}
 
-Evaluate the answer's accuracy and provide constructive feedback. Be lenient and consider partial credit:
+Evaluate the answer's accuracy and provide the complete correct answer and constructive feedback. Be lenient and consider partial credit:
 - Award "isCorrect: true" if the answer captures the main concepts and is at least 70% accurate
 - Consider key concepts, core ideas, and overall understanding
 - Minor missing details or slight inaccuracies should not result in a completely incorrect assessment
