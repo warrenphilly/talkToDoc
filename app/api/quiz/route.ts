@@ -272,14 +272,28 @@ Return ONLY valid JSON with no additional text.`,
       userId: message.userId,
       quiz: {
         title: message.quizName,
-        questions: parsedQuiz.questions.map((q: any, index: number) => ({
-          id: index + 1,
-          question: q.question || "",
-          type: q.type || "multipleChoice",
-          options: q.options || [],
-          correctAnswer: q.correctAnswer || "",
-          explanation: q.explanation || "",
-        })),
+        questions: parsedQuiz.questions.map((q: any, index: number) => {
+          // Format the question properly based on its type
+          const formattedQuestion = {
+            id: index + 1,
+            question: q.question || "",
+            type: q.type || "multipleChoice",
+            options: q.options || [],
+            correctAnswer: q.correctAnswer,
+            explanation: q.explanation || "",
+          };
+
+          // Ensure true/false answers are properly formatted
+          if (formattedQuestion.type === "trueFalse") {
+            // Convert to boolean if it's a string, or ensure it's a boolean
+            if (typeof formattedQuestion.correctAnswer === "string") {
+              formattedQuestion.correctAnswer =
+                formattedQuestion.correctAnswer.toLowerCase() === "true";
+            }
+          }
+
+          return formattedQuestion;
+        }),
       },
       sourceNotebooks: message.selectedPages,
       uploadedDocs: message.uploadedDocs,

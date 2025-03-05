@@ -146,10 +146,15 @@ const PageQuiz: React.FC<QuizProps> = ({
         const answerLetter = String.fromCharCode(65 + answerIndex);
         isCorrect = answerLetter === currentQuestion.correctAnswer;
       } else if (currentQuestion.type === "trueFalse") {
-        // For true/false questions, compare strings after converting to lowercase
-        isCorrect =
-          String(answer).toLowerCase() ===
-          String(currentQuestion.correctAnswer).toLowerCase();
+        // For true/false questions, compare the actual boolean values
+        // Convert string "True"/"False" to boolean true/false for comparison
+        const userAnswerBool = answer.toLowerCase() === "true";
+        const correctAnswerBool =
+          typeof currentQuestion.correctAnswer === "string"
+            ? currentQuestion.correctAnswer.toLowerCase() === "true"
+            : !!currentQuestion.correctAnswer;
+
+        isCorrect = userAnswerBool === correctAnswerBool;
       }
 
       setIsCorrect(isCorrect);
