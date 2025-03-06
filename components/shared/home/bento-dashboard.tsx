@@ -151,7 +151,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const { data: studyGuides, loading: loadingStudyGuides } =
     useCollectionData<StudyGuide>("studyGuides");
 
-  const { data: quizzes, loading: loadingQuizzes } =
+  const { data: quizzes, loading: loadingQuizzes, mutate: mutateQuizzes } =
     useCollectionData<QuizState>("quizzes");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -227,6 +227,21 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   ) => {
     e.preventDefault();
     setShowDeleteNotebookAlert(notebookId);
+  };
+  const handleDeleteQuiz2 = async (quizId: string) => {
+    try {
+      const quizRef = doc(db, "quizzes", quizId);
+      
+      await deleteDoc(quizRef);
+      
+      const updatedQuizzes = quizzes.filter(quiz => quiz.id !== quizId);
+      mutateQuizzes(updatedQuizzes);
+      
+      toast.success("Quiz deleted successfully");
+    } catch (error) {
+      console.error("Error deleting quiz:", error);
+      toast.error("Failed to delete quiz");
+    }
   };
 
   const handleDeleteStudyCard = async (e: React.MouseEvent, cardId: string) => {
@@ -963,7 +978,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                     </p>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="flex flex-col text-sm text-slate-500  w-[200px]">
+                                    <div className="flex flex-col text-sm text-slate-500 w-[100px]">
                                       <p>Questions: {quiz.totalQuestions}</p>
 
                                       {quiz.isComplete ? (
@@ -1245,17 +1260,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <AlertDialogAction
               onClick={async (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 try {
                   const quizId = showDeleteQuizAlert;
                   if (!quizId) return;
 
-                  await deleteQuiz(quizId);
-                  toast.success("Quiz deleted successfully");
+                  await handleDeleteQuiz2(quizId);
+                  setShowDeleteQuizAlert(null);
                 } catch (error) {
                   console.error("Error deleting quiz:", error);
                   toast.error("Failed to delete quiz");
-                } finally {
-                  setShowDeleteQuizAlert(null);
                 }
               }}
               className="bg-white text-red-600 rounded-full border border-red-500 hover:bg-red-100 hover:text-red-500 transition-colors"

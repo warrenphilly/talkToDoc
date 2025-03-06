@@ -55,11 +55,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import RecentQuizzes from "@/components/ui/RecentQuizzes";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+
 import { db } from "@/firebase";
 import {
   getAllNotebooks,
