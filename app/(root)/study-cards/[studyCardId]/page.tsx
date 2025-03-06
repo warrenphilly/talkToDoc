@@ -305,11 +305,11 @@ export default function StudyCardPage() {
     }
 
     return (
-      <div className="space-y-2 p-2 ">
+      <div className="space-y-2 p-2 bg-blue-500 w-full">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
-            className="border rounded-xl  p-1  bg-white border-slate-400"
+            className="border rounded-xl  p-1  bg-red-500 border-slate-400"
           >
             <div className="flex items-center justify-between p-3 bg-white text-slate-600">
               <div className="flex items-center gap-2 ">

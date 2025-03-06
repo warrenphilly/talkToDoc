@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { db } from "@/firebase";
 import { uploadLargeFile } from "@/lib/fileUpload";
-import { saveQuiz } from "@/lib/firebase/firestore";
+
 import { QuizState } from "@/types/quiz";
 import { addDoc, collection, Timestamp } from "firebase/firestore";
 import { Loader2, RefreshCw } from "lucide-react";
