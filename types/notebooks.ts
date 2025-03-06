@@ -27,8 +27,20 @@ export interface Page {
 export interface Notebook {
   id: string;
   title: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
   pages: Page[];
+  createdAt: string;
+  updatedAt?: string;
+  userId: string;
 }
+
+export interface ClerkUser {
+  id: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  imageUrl?: string;
+  createdAt: Date;
+  metadata?: Record<string, any>;
+}
+

@@ -24,6 +24,12 @@ import {
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { toast } from "react-hot-toast";
 import { uploadLargeFile } from "../fileUpload";
+import { Timestamp } from "firebase/firestore";
+
+interface ExtendedNotebook extends Omit<Notebook, 'createdAt' | 'updatedAt'> {
+  createdAt: Timestamp | { seconds: number; nanoseconds: number } | string | number;
+  updatedAt?: Timestamp | { seconds: number; nanoseconds: number } | string | number;
+}
 
 export const toggleAnswer = (
   showAnswer: Record<string, boolean>,
@@ -71,7 +77,7 @@ export const toggleNotebookExpansion = (
 
 export const isNotebookFullySelected = (
   notebookId: string,
-  pages: Page[],
+  pages: any[],
   selectedPages: { [notebookId: string]: string[] }
 ) => {
   return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
@@ -141,9 +147,9 @@ export const handleClear = (
 };
 
 export const loadAllNotebooks = async (
-  setIsLoadingNotebooks: (isLoading: boolean) => void,
-  setNotebooks: (notebooks: Notebook[]) => void,
-  user: UserResource | null | undefined
+  setIsLoadingNotebooks: (loading: boolean) => void,
+  setNotebooks: (notebooks: ExtendedNotebook[]) => void,
+  user: any
 ) => {
   try {
     setIsLoadingNotebooks(true);
@@ -186,7 +192,7 @@ export const loadAllNotebooks = async (
       matchCount: querySnapshot.docs.length,
     });
 
-    const fetchedNotebooks: Notebook[] = querySnapshot.docs.map((doc) => {
+    const fetchedNotebooks: ExtendedNotebook[] = querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -237,10 +243,10 @@ export const handlePageSelection = (
 export const handleSelectAllPages = (
   notebookId: string,
   isSelected: boolean,
-  notebooks: Notebook[],
-  selectedPages: { [notebookId: string]: string[] }
+  notebooks: ExtendedNotebook[],
+  prev: { [notebookId: string]: string[] }
 ) => {
-  const updatedPages = { ...selectedPages };
+  const updatedPages = { ...prev };
   const notebook = notebooks.find((n) => n.id === notebookId);
 
   if (notebook) {
@@ -259,7 +265,7 @@ export const handleGenerateCards = async (
   numCards: number,
   selectedPages: { [notebookId: string]: string[] },
   filesToUpload: File[],
-  notebooks: Notebook[],
+  notebooks: ExtendedNotebook[],
   isGenerating: boolean,
   setIsGenerating: (isGenerating: boolean) => void,
   setShowNotebookModal: (show: boolean) => void,

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { Notebook, Page } from "@/types/notebooks";
+import { Notebook as ImportedNotebook, Page } from "@/types/notebooks";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
 
 import {
@@ -80,9 +80,14 @@ interface StudyMaterialTabsProps {
   pageId: string;
 }
 
+interface ExtendedNotebook extends Omit<ImportedNotebook, 'createdAt' | 'updatedAt'> {
+  createdAt: Timestamp | { seconds: number; nanoseconds: number } | string | number;
+  updatedAt?: Timestamp | { seconds: number; nanoseconds: number } | string | number;
+}
+
 const getSelectedPagesData = async (
   selectedPages: { [notebookId: string]: string[] },
-  notebooks: Notebook[]
+  notebooks: ExtendedNotebook[] // Update the type here
 ) => {
   const selectedPagesData = [];
 
@@ -120,7 +125,7 @@ export default function StudyCards({
   const [selectedPages, setSelectedPages] = useState<{
     [notebookId: string]: string[];
   }>({});
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [notebooks, setNotebooks] = useState<ExtendedNotebook[]>([]);
   const [isLoadingNotebooks, setIsLoadingNotebooks] = useState(false);
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(
     new Set()
@@ -200,22 +205,38 @@ export default function StudyCards({
 
       setIsGenerating(true);
 
-      const adaptedNotebooks = notebooks.map((notebook) => ({
-        ...notebook,
-        createdAt:
-          typeof notebook.createdAt === "object" && notebook.createdAt !== null
-            ? notebook.createdAt instanceof Timestamp
-              ? notebook.createdAt.toDate()
-              : (notebook.createdAt as Date)
-            : new Date(notebook.createdAt as any),
-      }));
+      // First convert to intermediate type with proper Date objects
+      const adaptedNotebooks = notebooks.map((notebook: ExtendedNotebook) => {
+        const createdAtDate = (() => {
+          const createdAt = notebook.createdAt;
+          if (typeof createdAt === 'object' && createdAt !== null) {
+            if ('toDate' in createdAt && typeof createdAt.toDate === 'function') {
+              return createdAt.toDate();
+            }
+            if ('seconds' in createdAt && 'nanoseconds' in createdAt) {
+              return new Date(createdAt.seconds * 1000);
+            }
+          }
+          return new Date(createdAt as string | number);
+        })();
+
+        return {
+          ...notebook,
+          createdAt: createdAtDate.toISOString(), // Convert to ISO string
+          updatedAt: notebook.updatedAt ? new Date().toISOString() : undefined,
+          userId: notebook.userId || user?.id || ''
+        };
+      });
+
+      // Then cast to the expected type
+      const typedNotebooks = adaptedNotebooks as unknown as ImportedNotebook[];
 
       const generatedCards = await handleGenerateCards(
         setName,
         numCards,
         selectedPages,
         filesToUpload,
-        adaptedNotebooks,
+        typedNotebooks,
         isGenerating,
         setIsGenerating,
         setShowNotebookModal,
