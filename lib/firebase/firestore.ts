@@ -1438,41 +1438,73 @@ export const updateStudyGuideTitle = async (
   }
 };
 
-export const saveQuiz = async (
-  quiz: Omit<QuizState, "id"> & {
-    startedAt: { seconds: number; nanoseconds: number };
-    lastUpdatedAt: { seconds: number; nanoseconds: number };
-    createdAt: { seconds: number; nanoseconds: number };
-  },
-  metadata: {
-    selectedPages: { [notebookId: string]: string[] };
-    questionTypes: string[];
-  }
-) => {
-  "use server";
-
+export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedAt' | 'lastUpdatedAt' | 'createdAt'> & {
+  startedAt: SerializedTimestamp;
+  lastUpdatedAt: SerializedTimestamp;
+  createdAt: SerializedTimestamp;
+}> => {
   try {
-    // Convert the serialized timestamps back to Firestore Timestamps
-    const quizWithTimestamps = {
-      ...quiz,
-      startedAt: new Timestamp(
-        quiz.startedAt.seconds,
-        quiz.startedAt.nanoseconds
-      ),
-      lastUpdatedAt: new Timestamp(
-        quiz.lastUpdatedAt.seconds,
-        quiz.lastUpdatedAt.nanoseconds
-      ),
-      createdAt: new Timestamp(
-        quiz.createdAt.seconds,
-        quiz.createdAt.nanoseconds
-      ),
+    const quizRef = doc(db, "quizzes", quizId);
+    const quizDoc = await getDoc(quizRef);
+
+    if (!quizDoc.exists()) {
+      throw new Error("Quiz not found");
+    }
+
+    const quizData = quizDoc.data();
+    
+    // Convert Timestamps to plain objects
+    const convertTimestamp = (timestamp: Timestamp | any): SerializedTimestamp => ({
+      seconds: timestamp.seconds,
+      nanoseconds: timestamp.nanoseconds
+    });
+
+    const convertedQuiz = {
+      ...quizData,
+      id: quizDoc.id,
+      startedAt: convertTimestamp(quizData.startedAt),
+      lastUpdatedAt: convertTimestamp(quizData.lastUpdatedAt),
+      createdAt: convertTimestamp(quizData.createdAt),
+      quizData: {
+        questions: quizData.quizData.questions,
+        title: quizData.title
+      },
+      userAnswers: quizData.userAnswers || {},
+      evaluationResults: quizData.evaluationResults || {},
+      incorrectAnswers: quizData.incorrectAnswers || [],
+      score: quizData.score || 0,
+      currentQuestionIndex: quizData.currentQuestionIndex || 0,
+      isComplete: quizData.isComplete || false,
+      totalQuestions: quizData.totalQuestions || quizData.quizData.questions.length,
+      title: quizData.title,
+      userId: quizData.userId,
+      notebookId: quizData.notebookId || "",
+      pageId: quizData.pageId || ""
     };
 
-    const docRef = await addDoc(collection(db, "quizzes"), quizWithTimestamps);
-    return docRef.id;
+    return convertedQuiz;
   } catch (error) {
-    console.error("Error saving quiz:", error);
+    console.error("Error fetching quiz:", error);
+    throw error;
+  }
+};
+
+export const createQuiz = async (quizData: Omit<QuizState, 'id'>): Promise<QuizState> => {
+  try {
+    const quizRef = doc(collection(db, "quizzes")); // Let Firestore generate the ID
+    
+    const newQuiz = {
+      ...quizData,
+      id: quizRef.id, // Use Firestore's generated ID
+      createdAt: serverTimestamp(),
+      startedAt: serverTimestamp(),
+      lastUpdatedAt: serverTimestamp(),
+    };
+
+    await setDoc(quizRef, newQuiz);
+    return newQuiz as QuizState;
+  } catch (error) {
+    console.error("Error creating quiz:", error);
     throw error;
   }
 };
@@ -1599,65 +1631,6 @@ export const getStudyCardsByClerkId = async (
 
 export const deleteStudyGuide = async (studyGuideId: string): Promise<void> => {
   await deleteDoc(doc(db, "studyGuides", studyGuideId));
-};
-
-export const getQuiz = async (
-  quizId: string,
-  userId: string
-): Promise<QuizState> => {
-  try {
-    // Check if db is initialized
-    if (!db) {
-      console.error("Firestore db instance is not initialized");
-      throw new Error("Database not initialized");
-    }
-
-    // Validate quiz ID and user ID
-    if (!quizId ) {
-      console.error("Quiz ID and User ID are required");
-      throw new Error("Quiz ID and User ID are required");
-    }
-
-    const quizzesRef = collection(db, "quizzes");
-    const q = query(quizzesRef, where("id", "==", quizId));
-
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      console.log("Quiz document not found in Firestore");
-      throw new Error("Quiz not found");
-    }
-
-    const quizDoc = querySnapshot.docs[0];
-    const data = quizDoc.data();
-
-    // Create a properly typed QuizState object with serialized timestamps
-    const quizState: QuizState = {
-      id: quizDoc.id,
-      notebookId: data.notebookId || "",
-      pageId: data.pageId || "",
-      quizData: data.quizData || {},
-      currentQuestionIndex: data.currentQuestionIndex || 0,
-      startedAt: data.startedAt?.toDate?.()?.toISOString() || null,
-      lastUpdatedAt: data.lastUpdatedAt?.toDate?.()?.toISOString() || null,
-      createdAt:
-        data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      userAnswers: data.userAnswers || [],
-      evaluationResults: data.evaluationResults || [],
-      score: data.score || 0,
-      isComplete: data.isComplete || false,
-      incorrectAnswers: data.incorrectAnswers || [],
-      totalQuestions: data.totalQuestions || 0,
-      userId: data.userId || userId,
-      title: data.title || "",
-    };
-
-    // Final safety check to ensure everything is serializable
-    return JSON.parse(JSON.stringify(quizState));
-  } catch (error) {
-    console.error("Error in getQuiz:", error);
-    throw error;
-  }
 };
 
 export const updateStudyCardSetTitle = async (

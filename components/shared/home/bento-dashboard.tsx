@@ -364,8 +364,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       const data = await response.json();
 
+      // Create a new quiz document in Firestore
+      const quizCollectionRef = collection(db, "quizzes");
+      const newQuizRef = doc(quizCollectionRef); // Let Firestore generate the ID
+
       const newQuiz: QuizState = {
-        id: `quiz_${crypto.randomUUID()}`,
+        id: newQuizRef.id, // Use Firestore's generated ID
         notebookId: firstNotebookId,
         pageId: firstPageId,
         quizData: data.quiz,
@@ -383,8 +387,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         title: quizName,
       };
 
-      const quizRef = doc(db, "quizzes", newQuiz.id);
-      await setDoc(quizRef, {
+      // Save the quiz using the Firestore-generated ID
+      await setDoc(newQuizRef, {
         ...newQuiz,
         startedAt: serverTimestamp(),
         lastUpdatedAt: serverTimestamp(),
@@ -397,7 +401,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setShowQuizForm(false);
 
       toast.success("Quiz generated successfully!");
-      router.push(`/quizzes/${newQuiz.id}`);
+      router.push(`/quizzes/${newQuizRef.id}`);
     } catch (error: any) {
       console.error("Error generating quiz:", error);
       toast.error(error.message || "Failed to generate quiz");
@@ -512,6 +516,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
   };
   const renderNotebookList = () => {
+    
     if (!notebooks || notebooks.length === 0) {
       return (
         <div className="text-center p-4 text-gray-500">
@@ -618,7 +623,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setStudyGuideFiles(Array.from(event.target.files));
     }
   };
-
+  console.log("selectedPages", quizzes);
   const handleGenerateGuide = async () => {
     try {
       if (!guideName.trim()) {
