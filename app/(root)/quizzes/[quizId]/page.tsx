@@ -111,7 +111,7 @@ export default function QuizPage() {
         try {
           setLoading(true);
           setError(null);
-          const quizData = await getQuiz(params.quizId as string, user?.id || "");
+          const quizData = await getQuiz(params.quizId as string) as QuizState;
           if (!quizData) {
             throw new Error("Quiz not found");
           }

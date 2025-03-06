@@ -19,7 +19,7 @@ import CreateCardModal from "@/components/shared/study/CreateCardModal";
 import { Notebook } from "@/types/notebooks";
 import { StudyCardSet } from "@/types/studyCards";
 import { User } from "@/types/users";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
   ArrowLeft,
@@ -41,6 +41,7 @@ import {
 } from "react";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
+import { generateCards } from "@/lib/utils/studyCardsUtil";
 
 // Add CreateCardModal component
 interface CreateCardModalProps {
@@ -71,125 +72,7 @@ interface CreateCardModalProps {
   setIsGenerating: (isGenerating: boolean) => void;
 }
 
-// function CreateCardModal({
-//   showNotebookModal,
-//   setShowNotebookModal,
-//   setName,
-//   setSetName,
-//   numCards,
-//   setNumCards,
-//   messages,
-//   files,
-//   showUpload,
-//   fileInputRef,
-//   handleFileUpload,
-//   handleSendMessage,
-//   handleClear,
-//   setShowUpload,
-//   setFiles,
-//   renderNotebookList,
-//   handleGenerateCards,
-//   isGenerating,
-//   selectedPages,
-//   filesToUpload,
-// }: CreateCardModalProps) {
-//   return (
-//     <>
-//       {showNotebookModal && (
-//         <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
-//           <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] py-16  w-full  max-w-xl">
-//             <div className="flex flex-col gap-2 items-center justify-center">
-//               <h2 className="text-xl font-bold mb-4 text-[#94b347]">
-//                 Create Study Cards
-//               </h2>
-//             </div>
 
-//             <div className="space-y-4 mb-6">
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Card Set Name
-//                 </label>
-//                 <Input
-//                   type="text"
-//                   value={setName}
-//                   onChange={(e) => setSetName(e.target.value)}
-//                   placeholder="Enter a name for this study set"
-//                   className="w-full border rounded-md p-2 border-slate-600 text-slate-600"
-//                 />
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Number of Cards
-//                 </label>
-//                 <select
-//                   value={numCards}
-//                   onChange={(e) => setNumCards(Number(e.target.value))}
-//                   className="w-full border rounded-md p-2 border-slate-600 text-slate-600"
-//                 >
-//                   {[3, 5, 10, 15, 20, 25, 30].map((num) => (
-//                     <option key={num} value={num}>
-//                       {num} cards
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               <div className="pt-6">
-//                 <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg">
-//                   <h3>Select notes or upload files to study</h3>
-//                 </div>
-//                 <FormUpload
-//                   messages={messages}
-//                   files={files}
-//                   showUpload={showUpload}
-//                   fileInputRef={fileInputRef}
-//                   handleFileUpload={(event) =>
-//                     handleFileUpload(event, setFiles)
-//                   }
-//                   handleSendMessage={handleSendMessage}
-//                   handleClear={handleClear}
-//                   setShowUpload={setShowUpload}
-//                 />
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Select Notes
-//                 </label>
-//                 <div className="flex flex-col gap-2 items-center justify-center h-72 overflow-y-auto  pt-16">
-//                   {renderNotebookList()}
-//                   </div>
-//               </div>
-//             </div>
-
-//             <div className="flex justify-between gap-2 mt-4 w-full">
-//               <Button
-//                 variant="outline"
-//                 className="rounded-full bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500"
-//                 onClick={() => {
-//                   setShowNotebookModal(false);
-//                   setSetName("");
-//                 }}
-//               >
-//                 Cancel
-//               </Button>
-//               <Button
-//                 onClick={handleGenerateCards}
-//                 className="rounded-full bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
-//                 disabled={
-//                   isGenerating ||
-//                   !setName.trim() ||
-//                   (filesToUpload.length === 0 &&
-//                     Object.keys(selectedPages).length === 0)
-//                 }
-//               >
-//                 {isGenerating ? "Generating..." : "Generate Cards"}
-//               </Button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </>
-//   );
-// }
 
 export default function StudyCardPage() {
   const params = useParams();
@@ -197,6 +80,9 @@ export default function StudyCardPage() {
   const [studySet, setStudySet] = useState<StudyCardSet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useUser();
+  const [showCardModal, setShowCardModal] = useState(false);
+  
 
   // Add states for CreateCardModal
   const [showNotebookModal, setShowNotebookModal] = useState(false);
@@ -288,146 +174,47 @@ export default function StudyCardPage() {
     setFiles([]);
   };
 
-  const handleGenerateCardsClick = async () => {
+  const handleGenerateCards = async () => {
     try {
-      if (!setName.trim()) {
-        toast.error("Please enter a name for the study set");
+      if (!user?.id) {
+        toast.error("Please sign in to generate study cards");
         return;
       }
 
-      // Check if we have either uploaded files or selected pages
-      const hasSelectedPages = Object.values(selectedPages).some(
-        (pages) => pages.length > 0
-      );
-      if (filesToUpload.length === 0 && !hasSelectedPages) {
-        toast.error("Please either upload files or select notebook pages");
+      if (!setName.trim()) {
+        toast.error("Please enter a name for the study card set");
         return;
       }
 
       setIsGenerating(true);
 
-      // Get the current user ID
-      if (!firestoreUser?.id) {
-        throw new Error("User not authenticated");
-      }
+      const adaptedNotebooks = notebooks.map((notebook) => ({
+        ...notebook,
+        createdAt: notebook.createdAt.toString(),
+      })) as Notebook[];
 
-      // Get the first selected notebook and page for storage path
-      const firstNotebookId = Object.keys(selectedPages).find(
-        (notebookId) => selectedPages[notebookId]?.length > 0
-      );
-      const firstPageId = firstNotebookId
-        ? selectedPages[firstNotebookId][0]
-        : null;
-
-      // Generate random IDs if using only uploaded files
-      const pageIdToUse = firstPageId || `page_${uuidv4()}`;
-      const notebookIdToUse = firstNotebookId || `notebook_${uuidv4()}`;
-
-      // Handle file uploads if any
-      let uploadedDocsMetadata = [];
-      if (filesToUpload.length > 0) {
-        for (const file of filesToUpload) {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          const response = await fetch("/api/convert", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to convert file: ${file.name}`);
-          }
-
-          const data = await response.json();
-          if (data.text) {
-            const timestamp = new Date().getTime();
-            const path = `studydocs/${notebookIdToUse}/${pageIdToUse}_${timestamp}.md`;
-            const storageRef = ref(storage, path);
-            await uploadString(storageRef, data.text, "raw", {
-              contentType: "text/markdown",
-            });
-
-            const url = await getDownloadURL(storageRef);
-            uploadedDocsMetadata.push({
-              path,
-              url,
-              name: file.name,
-              timestamp: timestamp.toString(),
-            });
-          }
-        }
-      }
-
-      // Prepare metadata for the API
-      const sourceNotebooks = await Promise.all(
-        Object.entries(selectedPages).map(async ([notebookId, pageIds]) => {
-          const notebook = notebooks.find((n) => n.id === notebookId);
-          if (!notebook) return null;
-
-          return {
-            notebookId,
-            notebookTitle: notebook.title,
-            pages: pageIds.map((pageId) => {
-              const page = notebook.pages.find((p) => p.id === pageId);
-              return {
-                pageId,
-                pageTitle: page?.title || "Unknown Page",
-              };
-            }),
-          };
-        })
-      );
-
-      const metadata = {
-        name: setName,
-        createdAt: new Date(),
-        sourceNotebooks: sourceNotebooks.filter((n) => n !== null),
-        cardCount: numCards,
-        userId: firestoreUser.id,
-      };
-
-      // Call the API to generate cards
-      const formData = new FormData();
-      const messageData = {
-        selectedPages: hasSelectedPages ? selectedPages : undefined,
-        numberOfCards: numCards,
-        metadata,
-        uploadedDocs:
-          uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
-      };
-
-      formData.append("message", JSON.stringify(messageData));
-
-      const response = await fetch("/api/studycards", {
-        method: "POST",
-        body: formData,
+      const generatedCards = await generateCards({
+        setName,
+        numCards,
+        selectedPages,
+        filesToUpload,
+        notebooks: adaptedNotebooks,
+        userId: user.id
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to generate cards");
-      }
-
-      const data = await response.json();
-
-      // Save the study card set with user ID
-      await saveStudyCardSet(data.cards, metadata, firestoreUser.id);
-
-      // Reset form state
-      setShowNotebookModal(false);
+      // Clear form and close modal
       setSetName("");
+      setNumCards(10);
       setFilesToUpload([]);
-      setFiles([]);
       setSelectedPages({});
-
-      // Refresh the study set list
-      await loadStudySet();
+      setShowCardModal(false);
 
       toast.success("Study cards generated successfully!");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error generating cards:", error);
-      toast.error(error.message || "Failed to generate cards");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate cards"
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -673,7 +460,7 @@ export default function StudyCardPage() {
           setShowUpload={setShowUpload}
           setFiles={setFiles}
           renderNotebookList={renderNotebookList}
-          handleGenerateCards={handleGenerateCardsClick}
+          handleGenerateCards={handleGenerateCards}
           isGenerating={isGenerating}
           selectedPages={selectedPages}
           filesToUpload={filesToUpload}

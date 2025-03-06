@@ -31,6 +31,15 @@ interface ExtendedNotebook extends Omit<Notebook, 'createdAt' | 'updatedAt'> {
   updatedAt?: Timestamp | { seconds: number; nanoseconds: number } | string | number;
 }
 
+interface GenerateCardsParams {
+  setName: string;
+  numCards: number;
+  selectedPages: { [notebookId: string]: string[] };
+  filesToUpload: File[];
+  notebooks: Notebook[];
+  userId: string;
+}
+
 export const toggleAnswer = (
   showAnswer: Record<string, boolean>,
   cardIndex: number
@@ -384,4 +393,15 @@ export const handleGenerateCards = async (
   } finally {
     setIsGenerating(false);
   }
+};
+
+export const generateCards = async ({
+  setName,
+  numCards,
+  selectedPages,
+  filesToUpload,
+  notebooks,
+  userId
+}: GenerateCardsParams) => {
+  // ... implementation ...
 };
