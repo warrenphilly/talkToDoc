@@ -6,15 +6,18 @@ import { StudyGuide } from "@/types/studyGuide";
 import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 import { StudyGuidePage as StudyGuidePageComponent } from "@/components/shared/study/StudyGuidePage";
 import { useEffect, useState } from "react";
 
 export default function StudyGuidePage() {
   const params = useParams();
+  const router = useRouter();
   const [studyGuide, setStudyGuide] = useState<StudyGuide | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const fetchStudyGuide = async () => {
@@ -37,8 +40,7 @@ export default function StudyGuidePage() {
               id: studyGuideSnap.id,
               title: data.title,
               content: data.content,
-          
-    
+
               createdAt: createdAtDate, // Now properly typed as Date
               userId: data.userId || "",
             });
@@ -86,17 +88,34 @@ export default function StudyGuidePage() {
       }
 
       await deleteDoc(doc(db, "studyGuides", guideId));
-      // Redirect to home page or study guides list
-      window.location.href = "/";
+      // Replace window.location.href with router.push
+      router.push("/");
     } catch (error) {
       console.error("Error deleting study guide:", error);
       alert("Failed to delete study guide");
     }
   };
 
+  const handleGenerateGuide = async () => {
+    try {
+      setIsGenerating(true);
+      // ... your existing guide creation logic ...
+
+      // After successful creation
+      toast.success("Study guide generated successfully!");
+      router.push("/"); // Redirect to home page
+    } catch (error) {
+      console.error("Error generating guide:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to generate guide"
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="w-full  mx-auto p-4 h-full max-h-[calc(100vh-100px)] overflow-y-none">
-      
       <StudyGuidePageComponent
         guide={studyGuide}
         onDelete={handleDelete}

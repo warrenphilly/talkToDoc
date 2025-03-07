@@ -7,6 +7,7 @@ import { Message } from "@/lib/types";
 import { StudyGuide, StudyGuideSection } from "@/types/studyGuide";
 import { useUser } from "@clerk/nextjs";
 import { BookOpen, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { RefObject, useMemo } from "react";
 import { toast } from "react-hot-toast";
 
@@ -53,15 +54,17 @@ export default function StudyGuideModal({
   setIsGenerating,
   onGuideCreated,
 }: StudyGuideModalProps) {
+  const router = useRouter();
   const { user } = useUser();
 
   // Calculate if the button should be disabled
   const isGenerateDisabled = useMemo(() => {
     const hasNoTitle = !guideName.trim();
     const hasNoFiles = filesToUpload.length === 0;
-    const hasNoSelectedPages = Object.keys(selectedPages).length === 0 || 
-      Object.values(selectedPages).every(pages => pages.length === 0);
-    
+    const hasNoSelectedPages =
+      Object.keys(selectedPages).length === 0 ||
+      Object.values(selectedPages).every((pages) => pages.length === 0);
+
     return hasNoTitle || (hasNoFiles && hasNoSelectedPages) || isGenerating;
   }, [guideName, filesToUpload, selectedPages, isGenerating]);
 
@@ -76,7 +79,7 @@ export default function StudyGuideModal({
       for (const file of filesToUpload) {
         try {
           const downloadURL = await uploadLargeFile(file);
-          
+
           const response = await fetch("/api/convert-from-storage", {
             method: "POST",
             headers: {
@@ -97,7 +100,7 @@ export default function StudyGuideModal({
           processedFiles.push({
             name: file.name,
             path: downloadURL,
-            content: data.text
+            content: data.text,
           });
         } catch (error) {
           console.error(`Error processing file ${file.name}:`, error);
@@ -109,55 +112,58 @@ export default function StudyGuideModal({
       const requestBody = {
         selectedPages,
         guideName,
-        uploadedDocs: processedFiles
+        uploadedDocs: processedFiles,
       };
 
-      console.log('Sending request to generate study guide:', requestBody);
+      console.log("Sending request to generate study guide:", requestBody);
 
       const response = await fetch("/api/studyguide", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Study Guide API Error Response:', errorData);
+        console.error("Study Guide API Error Response:", errorData);
         throw new Error(errorData.details || "Failed to generate study guide");
       }
 
       const result = await response.json();
-      console.log('Received study guide result:', result);
+      console.log("Received study guide result:", result);
 
       if (!result.content) {
         throw new Error("No content received from study guide generation");
       }
-      
+
       // Create a properly formatted study guide object
       const newStudyGuide: StudyGuide = {
         id: `guide_${crypto.randomUUID()}`,
         title: guideName,
         content: result.content,
         createdAt: new Date(),
-        userId: user?.id || ""
+        userId: user?.id || "",
       };
 
       // Save to Firestore
       if (user?.id) {
         try {
           await saveGeneratedStudyGuide(newStudyGuide as StudyGuide, user.id);
-          console.log('Successfully saved study guide to database');
-          toast.success('Study guide created successfully!');
-          
+          console.log("Successfully saved study guide to database");
+          toast.success("Study guide created successfully!");
+
           // Call the callback with the new guide
           if (onGuideCreated) {
             onGuideCreated(newStudyGuide);
           }
+
+          // Add this line to redirect
+          router.push("/");
         } catch (error) {
-          console.error('Error saving study guide to database:', error);
-          toast.error('Failed to save study guide to database');
+          console.error("Error saving study guide to database:", error);
+          toast.error("Failed to save study guide to database");
           throw error;
         }
       } else {
@@ -165,10 +171,13 @@ export default function StudyGuideModal({
       }
 
       onClose();
-
     } catch (error) {
       console.error("Error in handleGenerateGuide:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to generate study guide");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate study guide"
+      );
       throw error;
     } finally {
       setIsGenerating(false);
@@ -210,9 +219,9 @@ export default function StudyGuideModal({
           />
           <div className="max-h-72 overflow-y-auto ">
             {renderNotebookSelection()}
-            </div>
+          </div>
         </div>
-        
+
         <div className="flex justify-between mt-5">
           <Button
             variant="outline"
@@ -225,9 +234,11 @@ export default function StudyGuideModal({
             onClick={handleGenerateGuide}
             disabled={isGenerateDisabled}
             className={`rounded-full bg-white border border-slate-400 text-slate-600 
-              ${!isGenerateDisabled 
-                ? 'hover:bg-white hover:border-[#94b347] hover:text-[#94b347]' 
-                : 'opacity-50 cursor-not-allowed'}`}
+              ${
+                !isGenerateDisabled
+                  ? "hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
           >
             {isGenerating ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -239,7 +250,6 @@ export default function StudyGuideModal({
         </div>
 
         {/* Add error message when button is disabled */}
-
       </div>
     </div>
   );
