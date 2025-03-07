@@ -1,5 +1,6 @@
 "use client";
 
+import CreateCardModal from "@/components/shared/study/CreateCardModal";
 import FormUpload from "@/components/shared/study/formUpload";
 import { StudyCardCarousel } from "@/components/shared/study/StudyCardCarousel";
 import { StudyCardList } from "@/components/shared/study/StudyCardList";
@@ -15,7 +16,7 @@ import {
   saveStudyCardSet,
 } from "@/lib/firebase/firestore";
 import { Message } from "@/lib/types";
-import CreateCardModal from "@/components/shared/study/CreateCardModal";
+import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 import { Notebook } from "@/types/notebooks";
 import { StudyCardSet } from "@/types/studyCards";
 import { User } from "@/types/users";
@@ -31,7 +32,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   MutableRefObject,
   RefObject,
@@ -41,7 +42,6 @@ import {
 } from "react";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
-import { generateCards } from "@/lib/utils/studyCardsUtil";
 
 // Add CreateCardModal component
 interface CreateCardModalProps {
@@ -72,8 +72,6 @@ interface CreateCardModalProps {
   setIsGenerating: (isGenerating: boolean) => void;
 }
 
-
-
 export default function StudyCardPage() {
   const params = useParams();
   const studyCardId = params?.studyCardId as string;
@@ -82,7 +80,6 @@ export default function StudyCardPage() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
   const [showCardModal, setShowCardModal] = useState(false);
-  
 
   // Add states for CreateCardModal
   const [showNotebookModal, setShowNotebookModal] = useState(false);
@@ -107,6 +104,7 @@ export default function StudyCardPage() {
   const { userId } = useAuth();
   const [firestoreUser, setFirestoreUser] = useState<User | null>(null);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     loadStudySet();
@@ -169,9 +167,17 @@ export default function StudyCardPage() {
     console.log("Sending message");
   };
 
-  const handleClear = () => {
-    setMessages([]);
-    setFiles([]);
+  const handleClear = (fileIndex?: number) => {
+    if (typeof fileIndex === "number") {
+      // Remove specific file
+      setFiles(files.filter((_, index) => index !== fileIndex));
+      setFilesToUpload(filesToUpload.filter((_, index) => index !== fileIndex));
+    } else {
+      // Clear all files (original behavior)
+      setMessages([]);
+      setFiles([]);
+      setFilesToUpload([]);
+    }
   };
 
   const handleGenerateCards = async () => {
@@ -188,19 +194,30 @@ export default function StudyCardPage() {
 
       setIsGenerating(true);
 
-      const adaptedNotebooks = notebooks.map((notebook) => ({
+      // Convert Firestore notebooks to the expected type format
+      const adaptedNotebooks: Notebook[] = notebooks.map((notebook) => ({
         ...notebook,
-        createdAt: notebook.createdAt.toString(),
-      })) as Notebook[];
+        // Ensure createdAt is a string as required by the Notebook type
+        createdAt: String(notebook.createdAt),
+      }));
 
-      const generatedCards = await generateCards({
+      // Generate the cards using the existing utility function
+      const generatedCards = await generateCards(
         setName,
         numCards,
         selectedPages,
         filesToUpload,
-        notebooks: adaptedNotebooks,
-        userId: user.id
-      });
+        adaptedNotebooks, // Use the adapted notebooks
+        isGenerating, // Pass the boolean value
+        (isGenerating: boolean) => setIsGenerating(isGenerating), // Wrap the setter
+        (show: boolean) => setShowCardModal(show), // Convert to expected function signature
+        (pages: { [notebookId: string]: string[] }) => setSelectedPages(pages), // Fix the type
+        (name: string) => setSetName(name), // Wrap the setter
+        (files: File[]) => setFilesToUpload(files), // Wrap the setter
+        (files: File[]) => setFiles(files), // Wrap the setter
+        (messages: any[]) => setMessages(messages), // Wrap the setter
+        user.id
+      );
 
       // Clear form and close modal
       setSetName("");
@@ -210,6 +227,7 @@ export default function StudyCardPage() {
       setShowCardModal(false);
 
       toast.success("Study cards generated successfully!");
+      router.push("/");
     } catch (error) {
       console.error("Error generating cards:", error);
       toast.error(
@@ -305,11 +323,11 @@ export default function StudyCardPage() {
     }
 
     return (
-      <div className="space-y-2 p-2 bg-blue-500 w-full">
+      <div className="space-y-2  w-full">
         {notebooks.map((notebook) => (
           <div
             key={notebook.id}
-            className="border rounded-xl  p-1  bg-red-500 border-slate-400"
+            className="border rounded-xl  p-1   border-slate-400"
           >
             <div className="flex items-center justify-between p-3 bg-white text-slate-600">
               <div className="flex items-center gap-2 ">

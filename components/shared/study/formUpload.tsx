@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { storage } from "@/firebase";
+import { uploadLargeFile } from "@/lib/fileUpload";
 import { Message } from "@/lib/types";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { FileText, Trash2, Upload } from "lucide-react";
 import React, { useState } from "react";
-import { storage } from "@/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { uploadLargeFile } from "@/lib/fileUpload";
 
 interface FormUploadProps {
   files: File[];
@@ -36,7 +36,7 @@ export default function FormUpload({
     try {
       // Upload file to Firebase Storage using chunked upload
       const downloadURL = await uploadLargeFile(file);
-      
+
       // Convert file using the convert-from-storage endpoint
       const response = await fetch("/api/convert-from-storage", {
         method: "POST",
@@ -58,11 +58,19 @@ export default function FormUpload({
 
       const data = await response.json();
       return data.text;
-
     } catch (error) {
       console.error("Error processing file:", error);
       throw error;
     }
+  };
+
+  const handleRemoveFile = () => {
+    // Reset the file input value
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    // Call the original handleClear
+    handleClear();
   };
 
   return (
@@ -71,13 +79,13 @@ export default function FormUpload({
         <CardContent className="p-4 bg-white shadow-none border-none">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2  w-full justify-center">
                 <Button
                   onClick={() => fileInputRef.current?.click()}
                   className="bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Files
+                  Upload File
                 </Button>
                 <input
                   type="file"
@@ -88,7 +96,7 @@ export default function FormUpload({
                   multiple
                 />
               </div>
-              {files.length > 0 && (
+              {/* {files.length > 0 && (
                 <Button
                   onClick={handleClear}
                   variant="outline"
@@ -97,7 +105,7 @@ export default function FormUpload({
                   <Trash2 className="h-4 w-4 mr-2" />
                   Clear All
                 </Button>
-              )}
+              )} */}
             </div>
             {files.length > 0 && (
               <div className="mt-4 space-y-2">
@@ -108,8 +116,18 @@ export default function FormUpload({
                   >
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-slate-600" />
-                      <span className="text-sm text-slate-600">{file.name}</span>
+                      <span className="text-sm text-slate-600">
+                        {file.name}
+                      </span>
                     </div>
+                    <Button
+                      onClick={handleRemoveFile}
+                      variant="outline"
+                      className="bg-white border border-red-400 text-red-400 hover:bg-red-100 hover:border-red-400 hover:text-red-500 rounded-full"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      remove
+                    </Button>
                   </div>
                 ))}
                 {progress > 0 && (

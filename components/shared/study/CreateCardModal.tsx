@@ -214,7 +214,7 @@ export default function CreateCardModal({
 
                 <div className="pt-6">
                   <div className="font-semibold text-gray-500 w-full flex items-center justify-center text-lg">
-                    <h3>Select notes or upload files to study</h3>
+                    <h3>Select notes or upload a file to study</h3>
                   </div>
                   <FormUpload
                     messages={messages}
@@ -258,7 +258,14 @@ export default function CreateCardModal({
                       Object.keys(selectedPages).length === 0)
                   }
                 >
-                  {isGenerating ? "Generating..." : "Generate Cards"}
+                  {isGenerating ? (
+                 <>
+                 <RefreshCw className="h-4 w-4 animate-spin" />
+                 Generating...
+               </>
+                  ) : (
+                    "Generate Cards"
+                  )}
                 </Button>
               </div>
             </div>

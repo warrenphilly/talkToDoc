@@ -623,7 +623,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setStudyGuideFiles(Array.from(event.target.files));
     }
   };
-  console.log("selectedPages", quizzes);
+ 
   const handleGenerateGuide = async () => {
     try {
       if (!guideName.trim()) {
@@ -739,7 +739,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   };
 
   useEffect(() => {
-    console.log("Study cards state:", studyCards);
+   
     setIsLoading(false);
   }, [studyCards]);
 
