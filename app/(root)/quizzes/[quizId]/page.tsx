@@ -111,7 +111,9 @@ export default function QuizPage() {
         try {
           setLoading(true);
           setError(null);
-          const quizData = await getQuiz(params.quizId as string) as QuizState;
+          const quizData = (await getQuiz(
+            params.quizId as string
+          )) as QuizState;
           if (!quizData) {
             throw new Error("Quiz not found");
           }
@@ -254,7 +256,7 @@ export default function QuizPage() {
 
       toast.success("Quiz generated successfully!");
 
-      router.push(`/quizzes/${newQuiz.id}`);
+      router.push("/");
     } catch (error: any) {
       console.error("Error generating quiz:", error);
       toast.error(error.message || "Failed to generate quiz");
@@ -520,6 +522,7 @@ export default function QuizPage() {
           selectedPages={selectedPages}
           user={user}
           setSelectedPages={setSelectedPages}
+          onQuizCreated={handleGenerateQuiz}
         />
       )}
 

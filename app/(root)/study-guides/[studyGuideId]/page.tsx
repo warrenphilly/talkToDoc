@@ -88,7 +88,6 @@ export default function StudyGuidePage() {
       }
 
       await deleteDoc(doc(db, "studyGuides", guideId));
-      // Replace window.location.href with router.push
       router.push("/");
     } catch (error) {
       console.error("Error deleting study guide:", error);
@@ -96,26 +95,8 @@ export default function StudyGuidePage() {
     }
   };
 
-  const handleGenerateGuide = async () => {
-    try {
-      setIsGenerating(true);
-      // ... your existing guide creation logic ...
-
-      // After successful creation
-      toast.success("Study guide generated successfully!");
-      router.push("/"); // Redirect to home page
-    } catch (error) {
-      console.error("Error generating guide:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to generate guide"
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   return (
-    <div className="w-full  mx-auto p-4 h-full max-h-[calc(100vh-100px)] overflow-y-none">
+    <div className="w-full mx-auto p-4 h-full max-h-[calc(100vh-100px)] overflow-y-none">
       <StudyGuidePageComponent
         guide={studyGuide}
         onDelete={handleDelete}

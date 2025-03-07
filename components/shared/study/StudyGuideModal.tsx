@@ -158,16 +158,11 @@ export default function StudyGuideModal({
           if (onGuideCreated) {
             onGuideCreated(newStudyGuide);
           }
-
-          // Add this line to redirect
-          router.push("/");
         } catch (error) {
           console.error("Error saving study guide to database:", error);
           toast.error("Failed to save study guide to database");
           throw error;
         }
-      } else {
-        throw new Error("No user ID available");
       }
 
       onClose();
