@@ -254,6 +254,8 @@ export const sendMessage = async (
                     data.total,
                     "sections"
                   );
+                  // Explicitly set processing to false when done
+                  setIsProcessing(false);
                 }
               } catch (error) {
                 console.error(

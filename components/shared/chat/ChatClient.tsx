@@ -246,11 +246,10 @@ const ChatClient = ({
         notebookId,
         tabId
       );
-
-      // No need for an additional database save here as it's handled incrementally
     } catch (error) {
       console.error("Error processing files:", error);
     } finally {
+      // Ensure loading states are reset even if there's an error
       setIsDatabaseUpdating(false);
       setIsProcessing(false);
     }
@@ -581,19 +580,29 @@ const ChatClient = ({
               {isProcessing && (
                 <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
                   <div className="flex items-center justify-center gap-2 mt-2">
-                    Generating note sections
-                    <CircularProgress
-                      size={16}
-                      sx={{
-                        color: "#94b347",
-                      }}
+                    
+                    <LoadingSection
+                      totalSections={totalSections}
+                      currentSections={currentSections}
                     />
+                
                   </div>
                 </div>
               )}
 
               {/* Messages Container */}
               <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
+               
+                {/* this paragraph editor should always put the section at the beginning */}
+                <ParagraphEditor
+                  onSave={(data) => handleParagraphSave(data, 0, 0)}
+                  messageIndex={0}
+                />
+
+                {/* <ParagraphEditor
+                  onSave={(data) => handleParagraphSave(data, 0, 0)}
+                  messageIndex={0}
+                /> */}
                 {messages.map((msg, index) => {
                   if (msg.user === "AI") {
                     return (
@@ -893,15 +902,6 @@ const ChatClient = ({
           />
         </DialogContent>
       </Dialog>
-
-      {isProcessing && (
-        <div className="mb-4">
-          <LoadingSection
-            totalSections={totalSections}
-            currentSections={currentSections}
-          />
-        </div>
-      )}
     </div>
   );
 };

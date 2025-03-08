@@ -747,7 +747,8 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     if (loadingStudyCards) {
       return (
         <div className="text-center py-4">
-          <CircularProgress size={24} sx={{ color: "#94b347" }} />
+          <RefreshCw className="text-[#94b347] animate-spin" />
+
         </div>
       );
     }
@@ -815,7 +816,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <div className="text-slate-400 text-lg sm:text-xl font-semibold">
               Loading your notebooks...
             </div>
-            <CircularProgress sx={{ color: "#94b347" }} />
+            <RefreshCw className="text-[#94b347] animate-spin" />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
@@ -865,7 +866,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <div className="text-slate-400 text-lg sm:text-xl font-semibold">
               Loading your Study Material
             </div>
-            <CircularProgress sx={{ color: "#94b347" }} />
+            <RefreshCw className="text-[#94b347] animate-spin" />
           </div>
         ) : (
           <>
