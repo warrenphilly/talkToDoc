@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,40 +12,50 @@ import {
 } from "@/lib/firebase/firestore"; // Changed from createStudyGuide
 import { Message } from "@/lib/types";
 import { Notebook } from "@/types/notebooks"; // Add this import
+import { StudyGuide } from "@/types/studyGuide"; // Make sure to export the interface from StudyGuide.tsx
 import { User } from "@/types/users";
 import { useAuth, useUser } from "@clerk/nextjs";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import {
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Edit2,
+  Pencil,
   Plus,
   RefreshCw,
-  X,
-  Trash2,
-  Edit2,
   Save,
-  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast"; // Add this import
 import { v4 as uuidv4 } from "uuid"; // Add this for generating pageId
-import { StudyGuide } from "@/types/studyGuide"; // Make sure to export the interface from StudyGuide.tsx
 import StudyGuideModal from "./StudyGuideModal";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
-import { getDoc } from "firebase/firestore";
 
 interface StudyGuidePageProps {
   guide: StudyGuide;
   onDelete: (id: string) => Promise<void>;
   onUpdateTitle: (id: string, newTitle: string) => Promise<void>;
+  onGenerateGuide: (
+    guideName: string,
+    filesToUpload: File[],
+    selectedPages: { [key: string]: string[] }
+  ) => Promise<any>;
+  navigateHome?: () => void;
 }
 
-export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePageProps) {
+export function StudyGuidePage({
+  guide,
+  onDelete,
+  onUpdateTitle,
+  onGenerateGuide,
+  navigateHome,
+}: StudyGuidePageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(guide.title);
   const [showModal, setShowModal] = useState(false);
@@ -111,122 +123,28 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
 
   const handleGenerateGuide = async () => {
     try {
-      if (!guideName.trim()) {
-        toast.error("Please enter a name for the study guide");
-        return;
-      }
-
-      // Check if we have either uploaded files or selected pages
-      const hasSelectedPages = Object.values(selectedPages).some(pages => pages.length > 0);
-      if (filesToUpload.length === 0 && !hasSelectedPages) {
-        toast.error("Please either upload files or select notebook pages");
-        return;
-      }
-
       setIsGenerating(true);
-
-      // Get the first selected notebook and page for storage path
-      const firstNotebookId = Object.keys(selectedPages).find(
-        notebookId => selectedPages[notebookId]?.length > 0
+      const success = await onGenerateGuide(
+        guideName,
+        filesToUpload,
+        selectedPages
       );
-      const firstPageId = firstNotebookId ? selectedPages[firstNotebookId][0] : null;
 
-      // Generate random IDs if using only uploaded files
-      const pageIdToUse = firstPageId || `page_${uuidv4()}`;
-      const notebookIdToUse = firstNotebookId || `notebook_${uuidv4()}`;
+      if (success) {
+        // Reset form and close modal
+        setGuideName("");
+        setFiles([]);
+        setFilesToUpload([]);
+        setSelectedPages({});
+        setShowModal(false);
 
-      // Handle file uploads
-      let uploadedDocsMetadata = [];
-      if (filesToUpload.length > 0) {
-        for (const file of filesToUpload) {
-          const formData = new FormData();
-          formData.append("file", file);
-
-          const response = await fetch("/api/convert", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to convert file: ${file.name}`);
-          }
-
-          const data = await response.json();
-          if (data.text) {
-            const timestamp = new Date().getTime();
-            const path = `studydocs/${notebookIdToUse}/${pageIdToUse}_${timestamp}.md`;
-            const storageRef = ref(storage, path);
-            await uploadString(storageRef, data.text, "raw", {
-              contentType: "text/markdown",
-            });
-
-            const url = await getDownloadURL(storageRef);
-            uploadedDocsMetadata.push({
-              path,
-              url,
-              name: file.name,
-              timestamp: timestamp.toString(),
-            });
-          }
+        // Use the callback from the parent
+        if (navigateHome) {
+          navigateHome();
         }
       }
-
-      // Prepare the form data for study guide generation
-      const formData = new FormData();
-      const messageData = {
-        selectedPages: hasSelectedPages ? selectedPages : undefined,
-        guideName,
-        uploadedDocs: uploadedDocsMetadata.length > 0 ? uploadedDocsMetadata : undefined,
-      };
-
-      formData.append("message", JSON.stringify(messageData));
-
-      // Call the study guide API endpoint
-      const response = await fetch("/api/studyguide", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || "Failed to generate study guide");
-      }
-
-      const data = await response.json();
-
-      // Create a new study guide object with a new ID
-      const newStudyGuideId = `guide_${uuidv4()}`;
-      const newStudyGuide: StudyGuide = {
-        id: newStudyGuideId,
-        title: guideName,
-        content: data.content,
-  
-        createdAt: new Date(),
-        userId: user?.id || "",
-      };
-
-      // Save to Firestore
-      const studyGuideRef = doc(db, "studyGuides", newStudyGuide.id);
-      await setDoc(studyGuideRef, {
-        ...newStudyGuide,
-        createdAt: serverTimestamp(),
-      });
-
-      // Reset form and close modal
-      setGuideName("");
-      setFiles([]);
-      setFilesToUpload([]);
-      setSelectedPages({});
-      setShowModal(false);
-
-      toast.success("Study guide generated successfully!");
-
-      // Navigate to the new study guide's URL
-      router.push(`/study-guides/${newStudyGuideId}`);
-      
-    } catch (error: any) {
-      console.error("Error generating study guide:", error);
-      toast.error(error.message || "Failed to generate study guide");
+    } catch (error) {
+      console.error("Error in handleGenerateGuide:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -300,7 +218,7 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
           const fetchedNotebooks = await getNotebooksByFirestoreUserId(
             firestoreUser.id
           );
-        
+
           setNotebooks(fetchedNotebooks);
         } catch (error) {
           console.error("Error fetching notebooks:", error);
@@ -334,8 +252,8 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
               id: studyGuideSnap.id,
               title: data.title,
               content: data.content,
-      // Add notebookId with empty string fallback
- 
+              // Add notebookId with empty string fallback
+
               createdAt: createdAtDate,
               userId: data.userId || "",
             });
@@ -352,8 +270,6 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
   }, [params.studyGuideId]);
 
   const renderNotebookList = () => {
-   
-
     if (isLoadingNotebooks) {
       return (
         <div className="flex w-full items-center justify-center p-4">
@@ -474,8 +390,8 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
             <span className="md:hidden">Back</span>
           </Button>
         </Link>
-<div className="flex flex-row gap-4">
-        {/* <Button
+        <div className="flex flex-row gap-4">
+          {/* <Button
           variant="ghost"
           className="gap-2 text-red-500 flex items-center justify-center w-fit border border-red-500 rounded-full"
           onClick={() => onDelete(guide.id)}
@@ -484,16 +400,15 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
           <span className="hidden md:block">Delete Guide</span>
         </Button> */}
 
-        <Button
-          variant="ghost"
-          className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-600 rounded-full"
-          onClick={() => setShowModal(true)}
+          <Button
+            variant="ghost"
+            className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-600 rounded-full"
+            onClick={() => setShowModal(true)}
           >
             <Plus className="h-4 w-4" />
             <span className="hidden md:block">Create New Guide</span>
-   
           </Button>
-          </div>
+        </div>
       </div>
 
       <div className="shadow-none border-none p-4   h-full max-h-[calc(100vh-100px)] overflow-y-auto">
@@ -527,16 +442,18 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
               </div>
             </div>
           ) : (
-            <div
-              className="flex items-center rounded-lg w-fit  justify-center hover:cursor-pointer "
-              
-            >
+            <div className="flex items-center rounded-lg w-fit  justify-center hover:cursor-pointer ">
               <h3 className="text-2xl  text-[#94b347]  rounded-lg cursor-pointer ">
                 Study Guide:{" "}
-                  <span className="text-slate-800 font-bold">{guide.title}</span>
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="hover:bg-white">
-                    <Pencil className="h-4 w-4 text-slate-600 " />
-                  </Button>
+                <span className="text-slate-800 font-bold">{guide.title}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="hover:bg-white"
+                >
+                  <Pencil className="h-4 w-4 text-slate-600 " />
+                </Button>
               </h3>
             </div>
           )}
@@ -611,31 +528,34 @@ export function StudyGuidePage({ guide, onDelete, onUpdateTitle }: StudyGuidePag
         ))}
       </div>
       <div className="container mx-auto p-10 m-10">
-      {showModal && (
-        
+        {showModal && (
           <StudyGuideModal
-          guideName={guideName}
-          setGuideName={setGuideName}
-          files={files}
-          handleFileUpload={handleFileUpload}
-          handleClear={handleClear}
-          fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
-          messages={messages}
-          handleSendMessage={handleSendMessage}
-          showUpload={showUpload}
-          setShowUpload={setShowUpload}
-          renderNotebookSelection={renderNotebookList}
-          onClose={() => setShowModal(false)}
-          handleGenerateGuide={handleGenerateGuide}
-          isGenerating={isGenerating}
-          filesToUpload={filesToUpload}
-          selectedPages={selectedPages}
-          setIsGenerating={setIsGenerating}
-        />
-      
-        
-      )}
-        </div>
+            guideName={guideName}
+            setGuideName={setGuideName}
+            files={files}
+            handleFileUpload={handleFileUpload}
+            handleClear={handleClear}
+            fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+            messages={messages}
+            handleSendMessage={handleSendMessage}
+            showUpload={showUpload}
+            setShowUpload={setShowUpload}
+            renderNotebookSelection={renderNotebookList}
+            onClose={() => {
+              // setShowModal(false);
+              // if (navigateHome) {
+              //   navigateHome();
+              // }
+              router.push("/");
+            }}
+            handleGenerateGuide={handleGenerateGuide}
+            isGenerating={isGenerating}
+            filesToUpload={filesToUpload}
+            selectedPages={selectedPages}
+            setIsGenerating={setIsGenerating}
+          />
+        )}
+      </div>
     </Card>
   );
 }
