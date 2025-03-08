@@ -1,4 +1,5 @@
 import { storage } from "@/firebase";
+import { saveNote } from "@/lib/firebase/firestore";
 import { Message, Section, Sentence } from "@/lib/types";
 import { clsx, type ClassValue } from "clsx";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
@@ -30,6 +31,15 @@ export const sendMessage = async (
 
   let allText = "";
   let messages: Message[] = [];
+
+  // Create a temporary message to show streaming content
+  const tempAiMessage: Message = {
+    user: "AI",
+    text: [],
+  };
+
+  // Add the temporary message to the UI immediately
+  setMessages((prevMessages) => [...prevMessages, tempAiMessage]);
 
   try {
     // Process files first
@@ -145,7 +155,10 @@ export const sendMessage = async (
           const responseData = await initResponse.json();
           console.log("Markdown saved successfully:", responseData);
 
-          // Process with chat API
+          // Process with chat API using streaming
+          const sections: Section[] = [];
+
+          // Use streaming mode
           const chatResponse = await fetch("/api/chat", {
             method: "POST",
             headers: {
@@ -156,6 +169,7 @@ export const sendMessage = async (
               markdownPath: responseData.path,
               notebookId,
               pageId,
+              stream: true,
             }),
           });
 
@@ -165,20 +179,108 @@ export const sendMessage = async (
             throw new Error("Failed to process with chat API");
           }
 
-          const chatData = await chatResponse.json();
-          console.log("Chat API response received");
+          // Process the streaming response
+          const reader = chatResponse.body?.getReader();
+          const decoder = new TextDecoder();
 
-          if (chatData.replies) {
-            const aiMessage: Message = {
-              user: "AI",
-              text: chatData.replies,
-            };
-            messages.push(aiMessage);
-            setMessages((prevMessages) => [...prevMessages, aiMessage]);
-          } else {
-            console.error("No replies in chat response:", chatData);
-            throw new Error("No replies received from chat API");
+          if (!reader) {
+            throw new Error("Failed to get reader from response");
           }
+
+          let done = false;
+          let buffer = "";
+
+          while (!done) {
+            const { value, done: doneReading } = await reader.read();
+            done = doneReading;
+
+            if (done) break;
+
+            // Decode the chunk and add it to our buffer
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete lines in the buffer
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || ""; // Keep the last incomplete line in the buffer
+
+            for (const line of lines) {
+              if (line.trim() === "") continue;
+
+              try {
+                const data = JSON.parse(line);
+
+                if (data.type === "section" && data.data) {
+                  // Add the new section to our array
+                  sections.push(data.data);
+
+                  // Update the temporary message with the new section
+                  setMessages((prevMessages) => {
+                    const updatedMessages = [...prevMessages];
+                    const lastMessage =
+                      updatedMessages[updatedMessages.length - 1];
+
+                    if (lastMessage && lastMessage.user === "AI") {
+                      // Update the text with all sections received so far
+                      lastMessage.text = sections;
+                    }
+
+                    return updatedMessages;
+                  });
+
+                  // Update the total sections count
+                  setTotalSections(data.total);
+
+                  // Save to database incrementally
+                  const aiMessage: Message = {
+                    user: "AI",
+                    text: sections,
+                  };
+
+                  // Save the current state to the database
+                  try {
+                    await saveNote(notebookId, pageId, [
+                      ...messages,
+                      aiMessage,
+                    ]);
+                  } catch (saveError) {
+                    console.error(
+                      "Error saving incremental update:",
+                      saveError
+                    );
+                  }
+                } else if (data.type === "done") {
+                  console.log(
+                    "Streaming completed, received",
+                    data.total,
+                    "sections"
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  "Error parsing streaming response:",
+                  error,
+                  "Line:",
+                  line
+                );
+              }
+            }
+          }
+
+          // Create the final AI message with all sections
+          const aiMessage: Message = {
+            user: "AI",
+            text: sections,
+          };
+
+          messages.push(aiMessage);
+
+          // Final update to the messages state
+          setMessages((prevMessages) => {
+            const updatedMessages = [...prevMessages];
+            // Replace the temporary message with the final one
+            updatedMessages[updatedMessages.length - 1] = aiMessage;
+            return updatedMessages;
+          });
         } catch (error) {
           console.error("Error in markdown/chat processing:", error);
           throw error;
@@ -268,21 +370,23 @@ export const sectionClick = (
 // Add this utility function to serialize Firestore timestamps
 export function serializeData(data: any): any {
   if (!data) return data;
-  
+
   if (data.seconds !== undefined && data.nanoseconds !== undefined) {
-    return new Date(data.seconds * 1000 + data.nanoseconds / 1000000).toISOString();
+    return new Date(
+      data.seconds * 1000 + data.nanoseconds / 1000000
+    ).toISOString();
   }
-  
+
   if (Array.isArray(data)) {
-    return data.map(item => serializeData(item));
+    return data.map((item) => serializeData(item));
   }
-  
-  if (typeof data === 'object') {
+
+  if (typeof data === "object") {
     return Object.keys(data).reduce((acc, key) => {
       acc[key] = serializeData(data[key]);
       return acc;
     }, {} as any);
   }
-  
+
   return data;
 }

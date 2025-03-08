@@ -2,6 +2,7 @@
 import ParagraphEditor from "@/components/ParagraphEditor";
 import SeparatorWithAddButton from "@/components/SeparatorWithAddButton";
 import ExpandableContainer from "@/components/expandable-container";
+import LoadingSection from "@/components/shared/chat/loading-section";
 import QuizPanel from "@/components/shared/global/QuizPanel";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,6 +106,7 @@ const ChatClient = ({
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [totalSections, setTotalSections] = useState(0);
+  const [currentSections, setCurrentSections] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
@@ -194,13 +196,47 @@ const ChatClient = ({
     }
   };
 
+  const handleSetMessages = (
+    messagesOrUpdater: Message[] | ((prev: Message[]) => Message[])
+  ) => {
+    if (typeof messagesOrUpdater === "function") {
+      setMessages((prev) => {
+        const newMessages = messagesOrUpdater(prev);
+        // Check if the last message is from AI and has sections
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (
+          lastMessage &&
+          lastMessage.user === "AI" &&
+          Array.isArray(lastMessage.text)
+        ) {
+          setCurrentSections(lastMessage.text.length);
+        }
+        return newMessages;
+      });
+    } else {
+      setMessages(messagesOrUpdater);
+      // Check if the last message is from AI and has sections
+      const lastMessage = messagesOrUpdater[messagesOrUpdater.length - 1];
+      if (
+        lastMessage &&
+        lastMessage.user === "AI" &&
+        Array.isArray(lastMessage.text)
+      ) {
+        setCurrentSections(lastMessage.text.length);
+      }
+    }
+  };
+
   const handleSendMessage = async () => {
     setIsDatabaseUpdating(true);
+    setIsProcessing(true);
+    setCurrentSections(0);
     try {
+      // The sendMessage function now handles incremental database updates
       await sendMessage(
         input,
         files,
-        setMessages,
+        handleSetMessages,
         setInput,
         setFiles,
         setShowUpload,
@@ -211,12 +247,12 @@ const ChatClient = ({
         tabId
       );
 
-      // Save to database
-      await saveNote(notebookId, tabId, messages);
+      // No need for an additional database save here as it's handled incrementally
     } catch (error) {
       console.error("Error processing files:", error);
     } finally {
       setIsDatabaseUpdating(false);
+      setIsProcessing(false);
     }
   };
 
@@ -423,7 +459,7 @@ const ChatClient = ({
   return (
     <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
       {/* Show loading overlay when processing or updating database */}
-  
+
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center md:pl-8 ">
@@ -544,7 +580,6 @@ const ChatClient = ({
               {/* Add Progress Indicator */}
               {isProcessing && (
                 <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-                  
                   <div className="flex items-center justify-center gap-2 mt-2">
                     Generating note sections
                     <CircularProgress
@@ -553,7 +588,6 @@ const ChatClient = ({
                         color: "#94b347",
                       }}
                     />
-                  
                   </div>
                 </div>
               )}
@@ -638,7 +672,6 @@ const ChatClient = ({
                   }
                   return null;
                 })}
-             
               </div>
             </ResizablePanel>
 
@@ -860,6 +893,15 @@ const ChatClient = ({
           />
         </DialogContent>
       </Dialog>
+
+      {isProcessing && (
+        <div className="mb-4">
+          <LoadingSection
+            totalSections={totalSections}
+            currentSections={currentSections}
+          />
+        </div>
+      )}
     </div>
   );
 };
