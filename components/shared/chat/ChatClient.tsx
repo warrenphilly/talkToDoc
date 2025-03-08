@@ -580,29 +580,58 @@ const ChatClient = ({
               {isProcessing && (
                 <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
                   <div className="flex items-center justify-center gap-2 mt-2">
-                    
                     <LoadingSection
                       totalSections={totalSections}
                       currentSections={currentSections}
                     />
-                
                   </div>
                 </div>
               )}
 
               {/* Messages Container */}
               <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
-               
-                {/* this paragraph editor should always put the section at the beginning */}
+                {/* This ParagraphEditor should append content at the beginning of the document */}
                 <ParagraphEditor
-                  onSave={(data) => handleParagraphSave(data, 0, 0)}
+                  onSave={(data) => {
+                    // Create a new message if there are no messages yet
+                    if (messages.length === 0) {
+                      setMessages([
+                        {
+                          user: "AI",
+                          text: data.text,
+                        },
+                      ]);
+                    } else {
+                      // Get the first message
+                      const firstMessage = messages[0];
+                      // If the first message is from AI and has text array, prepend to it
+                      if (
+                        firstMessage.user === "AI" &&
+                        Array.isArray(firstMessage.text)
+                      ) {
+                        const updatedMessages = [...messages];
+                        // Add the new paragraph at the beginning of the text array
+                        updatedMessages[0] = {
+                          ...firstMessage,
+                          text: [...data.text, ...firstMessage.text],
+                        };
+                        setMessages(updatedMessages);
+                      } else {
+                        // If first message isn't from AI or doesn't have text array,
+                        // create a new message and make it the first one
+                        setMessages([
+                          {
+                            user: "AI",
+                            text: data.text,
+                          },
+                          ...messages,
+                        ]);
+                      }
+                    }
+                  }}
                   messageIndex={0}
                 />
 
-                {/* <ParagraphEditor
-                  onSave={(data) => handleParagraphSave(data, 0, 0)}
-                  messageIndex={0}
-                /> */}
                 {messages.map((msg, index) => {
                   if (msg.user === "AI") {
                     return (
