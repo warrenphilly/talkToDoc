@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const messageStr = formData.get("message") as string;
+    const language = (formData.get("language") as string) || "English"; // Get language with fallback
+
     if (!messageStr) {
       throw new Error("No message provided");
     }
@@ -131,6 +133,8 @@ export async function POST(req: NextRequest) {
     // Split content into chunks if needed
     const chunks = splitIntoChunks(allContent, 8000);
 
+    // Update system message to include language preference
+ 
     // Log the OpenAI request
     const openaiRequestBody = {
       model: "gpt-4o-mini",
@@ -216,7 +220,6 @@ Return ONLY valid JSON with no additional text.`,
       temperature: 0.8,
       response_format: { type: "json_object" },
     };
-
     console.log("OpenAI request:", openaiRequestBody);
 
     const openaiResponse = await fetch(

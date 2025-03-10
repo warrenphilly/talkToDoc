@@ -35,8 +35,11 @@ export default function RootLayout({
           <SignedIn>
             <SidebarProvider defaultOpen={true}>
               <div className="flex h-screen w-full">
-                
-                <SidebarTrigger className="absolute top-4 left-4 z-50" />
+                <div className="flex flex-row absolute top-4 left-4 z-50 items-center justify-center gap-2">
+                  <SidebarTrigger className="" />
+                  <p>Gammanotes</p>
+                </div>
+
                 <SidebarNav />
                 <main className="flex-1 relative">
                   {children}

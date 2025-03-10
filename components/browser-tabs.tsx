@@ -38,7 +38,7 @@ import {
 import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { List, Pencil, Plus, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft,  List, Pencil, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
@@ -46,7 +46,7 @@ import { TitleEditor } from "./shared/chat/title-editor";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
-
+import Link from "next/link";
 interface Tab {
   id: string;
   title: string;
@@ -306,7 +306,20 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         className
       )}
     >
-      <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-row items-center justify-start w-fit">
+      <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-col items-start justify-start w-fit">
+      <Link href="/" className="p-0 flex flex-row items-center justify-start">
+          <Button
+            variant="ghost"
+            className="gap-2 hover:bg-slate-100 rounded-full text-slate-500 p-2 m-0"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <p className="text-sm">back to dashboard</p>
+           
+          </Button>
+        </Link>
+     
+
+
         {isEditing ? (
           <div className="flex items-center gap-2">
             <Input
@@ -345,7 +358,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pl-4">
             <p className="text-xl font-semibold text-slate-500">
               Title:{" "}
               <span className="font-medium text-[#94b347]">

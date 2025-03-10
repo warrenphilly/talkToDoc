@@ -1,3 +1,5 @@
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
@@ -33,6 +35,15 @@ class StreamingTextResponse extends Response {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const firestoreUser = await getUserByClerkId(userId);
+  const language = firestoreUser?.language || "English";
+
   try {
     const data = await req.json();
     const message = data.message;
@@ -42,6 +53,7 @@ export async function POST(req: NextRequest) {
 
     console.log("Processing message length:", message.length);
     console.log("Stream mode:", streamMode);
+    console.log("Language:", language);
 
     // Define the expected structure for the response
     const functions = [
@@ -79,6 +91,9 @@ export async function POST(req: NextRequest) {
       },
     ];
 
+    // Update system message to include language preference
+    const systemMessage = `You are an Expert Document Analyzer. Analyze the following content and break it down into clear sections with at least 7 related sentences per section. Focus on the main points and key information. Generate one section at a time. Respond in ${language}.`;
+
     // Split long text into chunks
     const MAX_CHUNK_LENGTH = 4000;
     const textChunks: string[] = [];
@@ -105,7 +120,7 @@ export async function POST(req: NextRequest) {
             const messages = [
               {
                 role: "system" as const,
-                content: `You are an Expert Document Analyzer. Analyze the following content and break it down into clear sections with at least 7 related sentences per section. Focus on the main points and key information. Generate one section at a time.`,
+                content: systemMessage,
               },
               {
                 role: "user" as const,
@@ -226,7 +241,7 @@ export async function POST(req: NextRequest) {
         const messages = [
           {
             role: "system" as const,
-            content: `You are an Expert Document Analyzer. Analyze the following content and break it down into clear sections with at least 7 related sentences per section. Focus on the main points and key information.`,
+            content: systemMessage,
           },
           {
             role: "user" as const,

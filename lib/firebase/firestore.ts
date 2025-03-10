@@ -86,6 +86,7 @@ export interface FirestoreUser {
   notebooks: string[]; // Array of notebook IDs
   metadata?: Record<string, any>;
   creditBalance: number;
+  language?: string;
 }
 
 interface SideChat {
@@ -646,6 +647,7 @@ export const createFirestoreUser = async (clerkUser: {
   username?: string;
   imageUrl?: string;
   metadata?: Record<string, any>;
+  language?: string;
 }) => {
   try {
     // Generate a unique Firestore user ID
@@ -663,8 +665,13 @@ export const createFirestoreUser = async (clerkUser: {
       createdAt: new Date(),
       updatedAt: new Date(),
       notebooks: [], // Initialize empty notebooks array
-      metadata: clerkUser.metadata || {},
-      creditBalance: 5000,
+      metadata: {
+        ...(clerkUser.metadata || {}),
+        accountStatus: "Free", // Default account status
+        isPro: false, // Default pro status
+      },
+      creditBalance: 5000, // Default credit balance
+      language: clerkUser.language || "English", // Default language
     };
 
     await setDoc(userRef, {
@@ -1438,11 +1445,15 @@ export const updateStudyGuideTitle = async (
   }
 };
 
-export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedAt' | 'lastUpdatedAt' | 'createdAt'> & {
-  startedAt: SerializedTimestamp;
-  lastUpdatedAt: SerializedTimestamp;
-  createdAt: SerializedTimestamp;
-}> => {
+export const getQuiz = async (
+  quizId: string
+): Promise<
+  Omit<QuizState, "startedAt" | "lastUpdatedAt" | "createdAt"> & {
+    startedAt: SerializedTimestamp;
+    lastUpdatedAt: SerializedTimestamp;
+    createdAt: SerializedTimestamp;
+  }
+> => {
   try {
     const quizRef = doc(db, "quizzes", quizId);
     const quizDoc = await getDoc(quizRef);
@@ -1452,11 +1463,13 @@ export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedA
     }
 
     const quizData = quizDoc.data();
-    
+
     // Convert Timestamps to plain objects
-    const convertTimestamp = (timestamp: Timestamp | any): SerializedTimestamp => ({
+    const convertTimestamp = (
+      timestamp: Timestamp | any
+    ): SerializedTimestamp => ({
       seconds: timestamp.seconds,
-      nanoseconds: timestamp.nanoseconds
+      nanoseconds: timestamp.nanoseconds,
     });
 
     const convertedQuiz = {
@@ -1467,7 +1480,7 @@ export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedA
       createdAt: convertTimestamp(quizData.createdAt),
       quizData: {
         questions: quizData.quizData.questions,
-        title: quizData.title
+        title: quizData.title,
       },
       userAnswers: quizData.userAnswers || {},
       evaluationResults: quizData.evaluationResults || {},
@@ -1475,11 +1488,12 @@ export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedA
       score: quizData.score || 0,
       currentQuestionIndex: quizData.currentQuestionIndex || 0,
       isComplete: quizData.isComplete || false,
-      totalQuestions: quizData.totalQuestions || quizData.quizData.questions.length,
+      totalQuestions:
+        quizData.totalQuestions || quizData.quizData.questions.length,
       title: quizData.title,
       userId: quizData.userId,
       notebookId: quizData.notebookId || "",
-      pageId: quizData.pageId || ""
+      pageId: quizData.pageId || "",
     };
 
     return convertedQuiz;
@@ -1489,10 +1503,12 @@ export const getQuiz = async (quizId: string): Promise<Omit<QuizState, 'startedA
   }
 };
 
-export const createQuiz = async (quizData: Omit<QuizState, 'id'>): Promise<QuizState> => {
+export const createQuiz = async (
+  quizData: Omit<QuizState, "id">
+): Promise<QuizState> => {
   try {
     const quizRef = doc(collection(db, "quizzes")); // Let Firestore generate the ID
-    
+
     const newQuiz = {
       ...quizData,
       id: quizRef.id, // Use Firestore's generated ID
@@ -1784,6 +1800,96 @@ export const updateNotebookTitle = async (
     });
   } catch (error) {
     console.error("Error updating notebook title:", error);
+    throw error;
+  }
+};
+
+// Add this new interface for user settings updates
+export interface UserSettingsUpdate {
+  language?: string;
+  creditBalance?: number;
+  accountStatus?: "Free" | "Pro";
+}
+
+// Add this new function to update user settings
+export const updateUserSettings = async (
+  userId: string,
+  settings: UserSettingsUpdate
+): Promise<boolean> => {
+  try {
+    // First get the user to make sure they exist
+    const userRef = doc(db, "users", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      console.error(`User with ID ${userId} not found`);
+      return false;
+    }
+
+    // Create an update object with only the fields that are provided
+    const updateData: Record<string, any> = {
+      updatedAt: serverTimestamp(),
+    };
+
+    // Only add fields that are provided in the settings object
+    if (settings.language !== undefined) {
+      updateData.language = settings.language;
+    }
+
+    if (settings.creditBalance !== undefined) {
+      updateData.creditBalance = settings.creditBalance;
+    }
+
+    if (settings.accountStatus !== undefined) {
+      // Store account status in metadata for compatibility
+      updateData["metadata.accountStatus"] = settings.accountStatus;
+      updateData["metadata.isPro"] = settings.accountStatus === "Pro";
+    }
+
+    // Update the user document
+    await updateDoc(userRef, updateData);
+    return true;
+  } catch (error) {
+    console.error("Error updating user settings:", error);
+    throw error;
+  }
+};
+
+// Add a function to update just the language preference
+export const updateUserLanguage = async (
+  userId: string,
+  language: string
+): Promise<boolean> => {
+  try {
+    return await updateUserSettings(userId, { language });
+  } catch (error) {
+    console.error("Error updating user language:", error);
+    throw error;
+  }
+};
+
+// Add a function to update credit balance
+export const updateUserCreditBalance = async (
+  userId: string,
+  creditBalance: number
+): Promise<boolean> => {
+  try {
+    return await updateUserSettings(userId, { creditBalance });
+  } catch (error) {
+    console.error("Error updating user credit balance:", error);
+    throw error;
+  }
+};
+
+// Add a function to update account status
+export const updateUserAccountStatus = async (
+  userId: string,
+  accountStatus: "Free" | "Pro"
+): Promise<boolean> => {
+  try {
+    return await updateUserSettings(userId, { accountStatus });
+  } catch (error) {
+    console.error("Error updating user account status:", error);
     throw error;
   }
 };

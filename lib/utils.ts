@@ -12,6 +12,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const sendMessage = async (
+  language: string,
   input: string,
   files: File[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -115,12 +116,19 @@ export const sendMessage = async (
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response
+            .json()
+            .catch(() => ({ details: `HTTP error ${response.status}` }));
           console.error("Conversion service error:", errorData);
-          throw new Error(errorData.details || "Failed to convert file");
+          throw new Error(
+            errorData.details ||
+              `Failed to convert file: ${response.statusText}`
+          );
         }
 
-        const data = await response.json();
+        const data = await response.json().catch(() => {
+          throw new Error("Failed to parse conversion response");
+        });
 
         if (!data.text) {
           console.error("No text content in conversion response:", data);
@@ -147,12 +155,19 @@ export const sendMessage = async (
           });
 
           if (!initResponse.ok) {
-            const errorData = await initResponse.json();
+            const errorData = await initResponse
+              .json()
+              .catch(() => ({ details: `HTTP error ${initResponse.status}` }));
             console.error("Markdown save error:", errorData);
-            throw new Error("Failed to save markdown content");
+            throw new Error(
+              errorData.details || "Failed to save markdown content"
+            );
           }
 
-          const responseData = await initResponse.json();
+          const responseData = await initResponse.json().catch(() => {
+            throw new Error("Failed to parse markdown save response");
+          });
+
           console.log("Markdown saved successfully:", responseData);
 
           // Process with chat API using streaming
@@ -170,13 +185,18 @@ export const sendMessage = async (
               notebookId,
               pageId,
               stream: true,
+              language: language,
             }),
           });
 
           if (!chatResponse.ok) {
-            const errorData = await chatResponse.json();
+            const errorData = await chatResponse
+              .json()
+              .catch(() => ({ details: `HTTP error ${chatResponse.status}` }));
             console.error("Chat API error:", errorData);
-            throw new Error("Failed to process with chat API");
+            throw new Error(
+              errorData.details || "Failed to process with chat API"
+            );
           }
 
           // Process the streaming response
@@ -247,6 +267,7 @@ export const sendMessage = async (
                       "Error saving incremental update:",
                       saveError
                     );
+                    // Continue processing even if an incremental save fails
                   }
                 } else if (data.type === "done") {
                   console.log(
@@ -264,6 +285,7 @@ export const sendMessage = async (
                   "Line:",
                   line
                 );
+                // Continue processing other lines even if one fails
               }
             }
           }
@@ -307,9 +329,65 @@ export const sendMessage = async (
           ],
         };
         messages.push(errorMessage);
-        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+        setMessages((prevMessages) => {
+          // Remove the temporary message if it's the last one
+          const filteredMessages = prevMessages.filter(
+            (msg, idx) =>
+              !(
+                idx === prevMessages.length - 1 &&
+                msg.user === "AI" &&
+                Array.isArray(msg.text) &&
+                msg.text.length === 0
+              )
+          );
+          return [...filteredMessages, errorMessage];
+        });
+
+        // Don't throw here - we want to continue processing other files if possible
       }
     }
+
+    // If we have text input but no files were processed successfully
+    if (input.trim() && messages.length === 0) {
+      // Process the text input directly
+      // This would need implementation similar to file processing but for direct text
+      console.log("Processing text input directly");
+      // Implementation for text-only processing would go here
+    }
+
+    // If we reach here with no messages, it means all file processing failed
+    if (messages.length === 0) {
+      const errorMessage: Message = {
+        user: "AI",
+        text: [
+          {
+            title: "Processing Complete",
+            sentences: [
+              {
+                id: 1,
+                text: "Your files have been processed, but no content could be extracted. Please try again or use a different file format.",
+              },
+            ],
+          },
+        ],
+      };
+
+      setMessages((prevMessages) => {
+        // Remove the temporary message if it's the last one
+        const filteredMessages = prevMessages.filter(
+          (msg, idx) =>
+            !(
+              idx === prevMessages.length - 1 &&
+              msg.user === "AI" &&
+              Array.isArray(msg.text) &&
+              msg.text.length === 0
+            )
+        );
+        return [...filteredMessages, errorMessage];
+      });
+    }
+
+    return messages;
   } catch (error) {
     console.error("Error in sendMessage:", error);
     const errorMessage: Message = {
@@ -327,8 +405,22 @@ export const sendMessage = async (
         },
       ],
     };
-    messages.push(errorMessage);
-    setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+    setMessages((prevMessages) => {
+      // Remove the temporary message if it's the last one
+      const filteredMessages = prevMessages.filter(
+        (msg, idx) =>
+          !(
+            idx === prevMessages.length - 1 &&
+            msg.user === "AI" &&
+            Array.isArray(msg.text) &&
+            msg.text.length === 0
+          )
+      );
+      return [...filteredMessages, errorMessage];
+    });
+
+    return [errorMessage]; // Return the error message so the caller knows something happened
   } finally {
     setProgress(0);
     setIsProcessing(false);

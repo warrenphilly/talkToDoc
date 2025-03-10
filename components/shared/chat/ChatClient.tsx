@@ -69,6 +69,7 @@ import {
   sendMessage,
   sentenceClick,
 } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
 import { CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import StudyCards from "../study/StudyCards";
@@ -96,6 +97,7 @@ const ChatClient = ({
   );
 
   const [showUpload, setShowUpload] = useState(false);
+  const [language, setLanguage] = useState("English");
   const [files, setFiles] = useState<File[]>([]);
   const [primeSentence, setPrimeSentence] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
@@ -125,6 +127,8 @@ const ChatClient = ({
 
   // Add new state for tracking database update status
   const [isDatabaseUpdating, setIsDatabaseUpdating] = useState(false);
+
+  const { user } = useUser();
 
   const handleFileUpload = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -234,6 +238,7 @@ const ChatClient = ({
     try {
       // The sendMessage function now handles incremental database updates
       await sendMessage(
+        language,
         input,
         files,
         handleSetMessages,
@@ -248,6 +253,34 @@ const ChatClient = ({
       );
     } catch (error) {
       console.error("Error processing files:", error);
+      // Add a user-friendly error message
+      handleSetMessages((prevMessages) => [
+        ...prevMessages.filter(
+          (msg) =>
+            !(
+              msg.user === "AI" &&
+              Array.isArray(msg.text) &&
+              msg.text.length === 0
+            )
+        ),
+        {
+          user: "AI",
+          text: [
+            {
+              title: "Error",
+              sentences: [
+                {
+                  id: 1,
+                  text:
+                    error instanceof Error
+                      ? `Error: ${error.message}`
+                      : "An unexpected error occurred while processing your files. Please try again.",
+                },
+              ],
+            },
+          ],
+        },
+      ]);
     } finally {
       // Ensure loading states are reset even if there's an error
       setIsDatabaseUpdating(false);
