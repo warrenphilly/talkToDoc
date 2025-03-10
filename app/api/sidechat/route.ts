@@ -3,9 +3,21 @@ import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { writeFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+import { auth } from "@clerk/nextjs/server";
+
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const firestoreUser = await getUserByClerkId(userId);
+    const language = firestoreUser?.language || "English";
+
     const formData = await req.formData();
     const userMessage = formData.get("userMessage") as string;
     const systemMessage = formData.get("systemMessage") as string;
@@ -143,7 +155,7 @@ export async function POST(req: NextRequest) {
     const messages = [
       {
         role: "system",
-        content: `You are a helpful Teacher. Your primary focus is to explain and discuss the following specific context:
+        content: `You are a helpful Teacher. Your primary focus is to explain and discuss the following specific context in ${language}:
 
 ${contextSections || "No specific context provided."}
 

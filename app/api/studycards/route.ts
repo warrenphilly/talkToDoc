@@ -3,6 +3,9 @@ import { saveStudyCards } from "@/lib/firebase/firestore";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+
+
 
 interface StudySetMetadata {
   name: string;
@@ -123,6 +126,15 @@ function cleanJsonResponse(content: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const firestoreUser = await getUserByClerkId(userId);
+    const language = firestoreUser?.language || "English";
+
     const body = await req.json();
     const { selectedPages, setName, numCards, uploadedDocs } = body;
 
@@ -259,7 +271,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information:
+            content: `Create ${numCards} study cards from this content. Respond in ${language}. Focus on the most important concepts and key information:
             ${allContent}
             Format your response as a valid JSON object with this structure:
             {

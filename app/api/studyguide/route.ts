@@ -1,6 +1,9 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { NextRequest, NextResponse } from "next/server";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+import { auth } from "@clerk/nextjs/server";
+
 
 interface StudyGuideSection {
   topic: string;
@@ -16,8 +19,17 @@ interface StudyGuideSection {
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { selectedPages, guideName, uploadedDocs } = body;
+
+    const firestoreUser = await getUserByClerkId(userId);
+    const language = firestoreUser?.language || "English";
 
     if (!guideName) {
       throw new Error("No guide name provided");

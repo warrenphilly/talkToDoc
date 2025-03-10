@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const firestoreUser = await getUserByClerkId(userId);
+    const language = firestoreUser?.language || "English";
+
     // Parse the JSON body
     const body = await req.json();
     const {
@@ -29,7 +40,7 @@ Question: ${question}
 Correct Answer: ${correctAnswer}
 User's Answer: ${userAnswer}
 
-Evaluate the answer's accuracy and provide the complete correct answer and constructive feedback. Be lenient and consider partial credit:
+Evaluate the answer's accuracy and provide the complete correct answer and constructive feedback in ${language}. Be lenient and consider partial credit:
 - Award "isCorrect: true" if the answer captures the main concepts and is at least 70% accurate
 - Consider key concepts, core ideas, and overall understanding
 - Minor missing details or slight inaccuracies should not result in a completely incorrect assessment

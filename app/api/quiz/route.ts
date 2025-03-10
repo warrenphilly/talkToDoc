@@ -1,6 +1,8 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
 import { cleanMarkdownContent, splitIntoChunks } from "@/lib/markdownUtils";
 import { NextRequest, NextResponse } from "next/server";
+import { getUserByClerkId } from "@/lib/firebase/firestore";
+import { auth } from "@clerk/nextjs/server";
 
 interface QuizMessage {
   userId: string;
@@ -19,6 +21,15 @@ interface QuizMessage {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const firestoreUser = await getUserByClerkId(userId);
+  const language = firestoreUser?.language || "English";
+
   try {
     const formData = await req.formData();
     const messageStr = formData.get("message") as string;
@@ -141,7 +152,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting. 
+          content: `You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting. Respond in ${language}.
           
 For true/false questions:
 - Aim for a roughly equal distribution of true and false answers
