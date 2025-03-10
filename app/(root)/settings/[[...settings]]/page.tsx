@@ -1,11 +1,14 @@
 "use client";
 
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getUserByClerkId,
   updateUserLanguage,
   updateUserSettings,
 } from "@/lib/firebase/firestore";
 import { UserProfile, useUser } from "@clerk/nextjs";
+import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 // Language options as simple strings
@@ -32,6 +35,7 @@ export default function SettingsPage() {
   const [firestoreUserId, setFirestoreUserId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("account");
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -93,113 +97,177 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
-
-      {/* Custom settings section */}
-      <div className="bg-white rounded-lg shadow-sm mb-8 p-6 border border-slate-200">
-        <h2 className="text-xl font-semibold mb-4">
-          Preferences & Account Info
-        </h2>
-
-        {saveMessage && (
-          <div className="mb-4 p-2 bg-green-50 text-green-700 rounded-md text-sm">
-            {saveMessage}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Language selection */}
-          <div>
-            <label
-              htmlFor="language"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Interface Language
-            </label>
-            <select
-              id="language"
-              value={selectedLanguage}
-              onChange={handleLanguageChange}
-              disabled={isSaving}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary disabled:opacity-70"
-            >
-              {languages.map((language) => (
-                <option key={language} value={language}>
-                  {language}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-sm text-gray-500">
-              Select your preferred language for the application interface
-            </p>
-          </div>
-
-          {/* Account information */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-700">
-                Credit Balance
-              </h3>
-              <div className="mt-1 flex items-center">
-                <span className="text-2xl font-semibold text-gray-900">
-                  {isLoading ? "..." : userCredits}
-                </span>
-                <span className="ml-2 text-sm text-gray-500">credits</span>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-gray-700">
-                Account Status
-              </h3>
-              <div className="mt-1">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    accountStatus === "Pro"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  {isLoading ? "Loading..." : accountStatus}
-                </span>
-              </div>
-            </div>
-          </div>
+      <div className="bg-white rounded-lg  max-w-4xl mx-auto">
+        <div className="flex flex-col items-center">
+          <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
         </div>
-      </div>
 
-      {/* Clerk UserProfile component */}
-      <div className="bg-white rounded-lg shadow-sm max-w-4xl mx-auto">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <RefreshCw className="text-[#94b347] animate-spin" />
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-2xl p-2">
-            <UserProfile
-              path="/settings"
-              routing="path"
-              appearance={{
-                elements: {
-                  rootBox: "w-full max-w-full",
-                  card: "shadow-none border-0 mx-auto",
-                  navbar: "border-b border-gray-200",
-                  pageScrollBox: "max-w-full mx-auto",
-                  formFieldRow: "max-w-xl mx-auto",
-                  formButtonPrimary: "bg-primary hover:bg-primary/90",
-                  formFieldInput: "focus:border-primary focus:ring-primary",
-                  avatarBox: "mx-auto",
-                  profilePage: "max-w-4xl mx-auto px-4",
-                  profileSection: "max-w-3xl mx-auto",
-                },
-              }}
-              fallback={
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <Tabs
+            defaultValue="account"
+            className="w-full"
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 rounded-xl border border-gray-200">
+              <TabsTrigger value="account">Account</TabsTrigger>
+              <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="account" className="w-full">
+              <UserProfile
+                path="/settings"
+                routing="path"
+                appearance={{
+                  elements: {
+                    rootBox: "w-full max-w-full bg-white shadow-none",
+                    card: "shadow-none border-0 mx-auto bg-white",
+                    navbar: "bg-white",
+                    navbarBox: "bg-white",
+
+                    pageScrollBox: "max-w-full mx-auto bg-white shadow-none",
+                    formFieldRow: "max-w-xl mx-auto bg-white",
+                    formButtonPrimary: "bg-primary hover:bg-primary/90",
+                    formFieldInput:
+                      "focus:border-primary focus:ring-primary bg-white",
+                    avatarBox: "mx-auto bg-white",
+                    profilePage: "mx-auto px-4 bg-white shadow-none",
+                    profileSection: "mx-auto bg-white",
+                    card__main: "shadow-none border-0 bg-white",
+                    profileSectionContent: "shadow-none border-0 bg-white",
+                    profileSectionTitle: "shadow-none border-0 bg-white",
+                    profileSectionTitleText: "shadow-none border-0 bg-white",
+                    userPreviewMainIdentifier: "shadow-none border-0 bg-white",
+                    userButtonBox: "shadow-none border-0 bg-white",
+                  },
+                  variables: {
+                    colorBackground: "white",
+                    colorInputBackground: "white",
+                    colorInputText: "black",
+                    colorText: "black",
+                    colorTextSecondary: "#4B5563",
+                    colorPrimary: "#94b347",
+                    colorDanger: "#EF4444",
+                  },
+                  layout: {
+                    showOptionalFields: true,
+                    socialButtonsPlacement: "bottom",
+                    socialButtonsVariant: "iconButton",
+                  },
+                }}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <RefreshCw className="text-[#94b347] animate-spin" />
+                  </div>
+                }
+              />
+            </TabsContent>
+
+            <TabsContent value="preferences" className="w-full">
+              <div className=" flex flex-col p-6 w-full bg-white border border-gray-200 rounded-xl">
+                <h2 className="text-xl font-semibold mb-4">
+                  Preferences & Account Info
+                </h2>
+
+                {saveMessage && (
+                  <div className="mb-4 p-2 bg-green-50 text-green-700 rounded-md text-sm">
+                    {saveMessage}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                  {/* Language selection */}
+                  <div className="bg-white p-4 rounded-lg">
+                    <label
+                      htmlFor="language"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Interface Language
+                    </label>
+                    <select
+                      id="language"
+                      value={selectedLanguage}
+                      onChange={handleLanguageChange}
+                      disabled={isSaving}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary disabled:opacity-70 bg-white"
+                    >
+                      {languages.map((language) => (
+                        <option key={language} value={language}>
+                          {language}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Select your preferred language for the application
+                      interface
+                    </p>
+                  </div>
+
+                  {/* Account information */}
+                  <div className="space-y-4 flex flex-col md:flex-row justify-between p-4 rounded-lg ">
+                    <div className="w-full">
+                      <div className="">
+                        <h3 className="text-sm font-medium text-gray-700">
+                          Credit Balance
+                        </h3>
+                        <div className="mt-1 flex items-center">
+                          <span className="text-2xl font-semibold text-gray-900">
+                            {isLoading ? "..." : userCredits}
+                          </span>
+                          <span className="ml-2 text-sm text-gray-500">
+                            credits
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700">
+                          Account Status
+                        </h3>
+                        <div className="mt-1">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              accountStatus === "Pro"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {isLoading ? "Loading..." : accountStatus}
+                          </span>
+                        </div>
+                      </div>
+                      </div>
+                      <Separator orientation="vertical" className="my-4 bg-gray-200 text-gray-200" />
+                      <div className="w-full flex flex-col items-center justify-start">
+                       <h2>Pricing and Usage</h2>
+                        <ul>
+                          <li>
+                            <span>1000 credits</span> = $1.00
+                             
+                          </li>
+                          <li>
+                            <span>Notebook Generation</span> = 450 credits/request
+                             
+                          </li>
+                          <li>
+                            <span>Quiz Generation</span> = 150 credits/request
+                             
+                          </li>
+                          <li>
+                            <span>Study Guide Generation</span> = 150 credits/request
+                             
+                          </li>
+                        </ul>
+
+                      </div>
+                  </div>
                 </div>
-              }
-            />
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>
