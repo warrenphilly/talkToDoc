@@ -627,7 +627,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                 </p>
               </div>
             )}
-            {selectedAnswer && !isLastQuestion ? (
+            {selectedAnswer && showExplanation && !isLastQuestion ? (
               <div className="w-full flex justify-center mt-6">
                 <Button
                   onClick={nextQuestion}
