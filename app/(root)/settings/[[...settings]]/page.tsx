@@ -11,6 +11,7 @@ import {
 import { UserProfile, useUser } from "@clerk/nextjs";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 // Language options as simple strings
 const languages = [
@@ -227,10 +228,16 @@ export default function SettingsPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="w- flex flex-row justify-end items-center gap-4 ">
-                          <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
-                            Manage Plan
-                          </Button>
+                          <div className="w- flex flex-row justify-end items-center gap-4 ">
+                            {accountStatus === "Pro" ? (
+                              <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                                Manage Plan
+                              </Button>
+                            ) : (
+                              <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                                Upgrade to Pro
+                              </Button>
+                            )}
                         </div>
                       </div>
                       <div className="w-full flex  flex-row justify-between items-center gap-4 ">
@@ -258,9 +265,9 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="flex flex-col w-fit gap-2">
-                        <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                        <Link href="https://buy.stripe.com/test_9AQ16F6AZg041ji288" className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
                             Get Credits
-                          </Button>
+                          </Link>
                           <p className="text-sm text-gray-400">
                             <span>500 credits</span> = $1.50
                           </p>
@@ -288,6 +295,10 @@ export default function SettingsPage() {
                         </li>
                         <li>
                           <span>Study Cards Generation</span> = 150
+                          credits/request
+                          </li>
+                          <li>
+                          <span>Chat</span> = 25
                           credits/request
                         </li>
                         </ul>
