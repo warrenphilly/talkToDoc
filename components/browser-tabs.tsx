@@ -38,7 +38,19 @@ import {
 import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronLeft,  List, Pencil, Plus, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  Circle,
+  CircleX,
+  Eye,
+  List,
+  Pencil,
+  Plus,
+  Trash,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
@@ -46,7 +58,6 @@ import { TitleEditor } from "./shared/chat/title-editor";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
-import Link from "next/link";
 interface Tab {
   id: string;
   title: string;
@@ -307,18 +318,15 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       )}
     >
       <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-col items-start justify-start w-fit">
-      <Link href="/" className="p-0 flex flex-row items-center justify-start">
+        <Link href="/" className="p-0 flex flex-row items-center justify-start">
           <Button
             variant="ghost"
             className="gap-2 hover:bg-slate-100 rounded-full text-slate-500 p-2 m-0"
           >
             <ChevronLeft className="h-4 w-4" />
             <p className="text-sm">back to dashboard</p>
-           
           </Button>
         </Link>
-     
-
 
         {isEditing ? (
           <div className="flex items-center gap-2">
@@ -358,7 +366,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 pl-4">
+          <div className="flex items-center gap-2 md:pl-4 pl-2 ">
             <p className="text-xl font-semibold text-slate-500">
               Title:{" "}
               <span className="font-medium text-[#94b347]">
@@ -402,7 +410,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                   value={activeTabId}
                   onValueChange={(value) => setActiveTabId(value)}
                 >
-                  <SelectTrigger className="w-full max-w-[200px]">
+                  <SelectTrigger className="w-full max-w-[200px] ml-2">
                     <SelectValue placeholder="Select a page" />
                   </SelectTrigger>
                   <SelectContent>
@@ -444,50 +452,60 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               </>
             ))}
         </div>
-        <div className="hidden md:flex items-center w-full">
-          {tabs.map((tab) => (
-            <motion.div
-              key={tab.id}
-              layout
-              className={cn(
-                "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer min-w-[150px] max-w-none",
-                activeTabId === tab.id
-                  ? "text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300 bg-white shadow-x-md"
-                  : "text-muted-foreground bg-slate-100 border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300"
-              )}
-              onClick={() => setActiveTabId(tab.id)}
-            >
-              <TitleEditor
-                initialTitle={tab.title}
-                noteId={tab.id}
-                notebookId={notebookId}
-              />
-              <button
-                className="ml-2 text-muted-foreground hover:text-foreground"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeTab(tab.id);
-                }}
+        <div className="hidden md:flex items-center w-full    ">
+          <div className="flex flex-row items-center scrollbar-hide w-full  max-w-[80vw]">
+            {tabs.map((tab) => (
+              <motion.div
+                key={tab.id}
+                layout
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer min-w-0 flex-shrink truncate",
+                  activeTabId === tab.id
+                    ? "text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300 bg-white shadow-x-md"
+                    : "text-muted-foreground bg-slate-100 border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300"
+                )}
+                onClick={() => setActiveTabId(tab.id)}
               >
-                <X size={14} className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ))}
-          <button
-            className="p-1 ml-2 text-muted-foreground group relative flex items-center"
-            onClick={addTab}
-          >
-            <Plus size={14} className="w-5 h-5" />
-            <span className="absolute left-full ml-2 hidden group-hover:flex transition-opacity whitespace-nowrap text-sm text-slate-400">
-              Add page
-            </span>
-          </button>
-          <button
-            className="p-1 ml-auto mr-2 text-muted-foreground hover:text-foreground"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <List size={14} className="w-5 h-5" />
-          </button>
+                <div className="flex items-center w-full overflow-hidden">
+                  <span className="truncate max-w-[100px]">
+                    <TitleEditor
+                      initialTitle={tab.title}
+                      noteId={tab.id}
+                      notebookId={notebookId}
+                    />
+                  </span>
+                  <button
+                    className="ml-1 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeTab(tab.id);
+                    }}
+                  >
+                    <X size={14} className="w-4 h-4" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+            <button
+              className="p-1 ml-2 text-muted-foreground group relative flex items-center"
+              onClick={addTab}
+            >
+              <Plus size={14} className="w-5 h-5" />
+              <span className="absolute left-full ml-2 hidden group-hover:flex transition-opacity whitespace-nowrap text-sm text-slate-400">
+                Add page
+              </span>
+            </button>
+          </div>
+
+          <div className="flex flex-row items-center gap-2 flex-shrink-0  w-fit min-w-[120px] justify-end ">
+            
+            <button
+              className="p-1 ml-auto mr-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <List size={14} className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
       <AnimatePresence mode="wait">
@@ -510,34 +528,51 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white ">
           <DialogHeader>
-            <DialogTitle>All Pages</DialogTitle>
+            <DialogTitle>
+              <div className="flex justify-start gap-4 items-center ">
+                <p>All Pages</p>
+                <button
+                  className="bg-white border border-slate-600 hover:border-[#94b347] hover:bg-slate-100 text-slate-600 rounded-full  hover:text-[#94b347] px-3 py-1 text-sm flex items-center gap-1 w-fit p-4 justify-center"
+                  onClick={addTab}
+                >
+                  <Plus size={16} />
+                  New Page
+                </button>
+              </div>
+            </DialogTitle>
           </DialogHeader>
           <ScrollArea className="h-[300px] w-full pr-4">
-            <div className="flex justify-end mb-4">
-              <button
-                className="bg-white border border-[#94b347] hover:bg-[#c6d996] text-[#94b347] rounded-full  hover:text-white px-3 py-1 text-sm flex items-center gap-1 w-full p-4 justify-center"
-                onClick={addTab}
-              >
-                <Plus size={16} />
-                New Page
-              </button>
-            </div>
             {allPages.map((page) => (
               <div
                 key={page.id}
-                className="flex items-center justify-between py-2 border-b"
+                className="flex items-center justify-between py-2 border-b "
               >
                 <span>{page.title}</span>
-                <div className="flex gap-2">
+                <div className="flex gap-2  items-center justify-center">
                   <button
-                    className="bg-white border border-slate-300 hover:bg-slate-200 text-slate-500 hover:text-slate-700  rounded-full px-2 py-1 text-sm"
+                    className="bg-white  hover:bg-slate-200 text-slate-500 hover:text-slate-700  rounded-full px-2 py-1 text-sm"
                     onClick={() => handlePageToggle(page.id)}
                   >
-                    {page.isOpen ? "Close" : "Open"}
+                    {page.isOpen ? (
+                      <div className="flex items-center gap-2">
+                        <CircleX size={16} />
+                        <span>Close</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Eye size={16} />
+                        <span>Open</span>
+                      </div>
+                    )}
                   </button>
+                  <Separator
+                    orientation="vertical"
+                    className="h-4 bg-slate-300"
+                  />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="bg-white border border-red-600  text-red-600 rounded-full  hover:bg-red-200 px-2 py-1 text-sm">
+                      <button className="bg-white text-red-600 rounded-full  hover:bg-red-200 px-2 py-1 text-sm w-fit flex items-center gap-2 ">
+                        <Trash size={16} />
                         Delete
                       </button>
                     </AlertDialogTrigger>

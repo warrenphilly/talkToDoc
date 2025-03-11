@@ -113,7 +113,7 @@ export default function SettingsPage() {
             className="w-full"
             onValueChange={setActiveTab}
           >
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 rounded-xl border border-gray-200">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-50 rounded-xl border border-gray-200">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="preferences">Preferences</TabsTrigger>
             </TabsList>
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="w- flex flex-row justify-end items-center gap-4 ">
-                          <Button className="w-32 rounded-full  bg-white border border-gray-300 shadow-none hover:bg-gray-100">
+                          <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
                             Manage Plan
                           </Button>
                         </div>
@@ -258,11 +258,11 @@ export default function SettingsPage() {
                           </div>
                         </div>
                         <div className="flex flex-col w-fit gap-2">
-                          <Button className="w-32 rounded-full bg-white border border-gray-300 shadow-none hover:bg-gray-100">
-                            Buy Credits
+                        <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                            Get Credits
                           </Button>
                           <p className="text-sm text-gray-400">
-                            <span>1000 credits</span> = $1.00
+                            <span>500 credits</span> = $1.50
                           </p>
                         </div>
                       </div>
@@ -272,10 +272,10 @@ export default function SettingsPage() {
                       className="my-4 bg-gray-200 text-gray-200"
                     /> */}
                     <div className="w-full flex flex-col items-start justify-start border border-gray-200 rounded-lg p-4">
-                      <h3 className="text-sm font-medium text-gray-700">
+                      <h3 className="text-md font-semibold text-gray-700 mb-2">
                         Pricing and Usage
                       </h3>
-                      <ul>
+                      <ul className="list-disc list-inside text-sm text-gray-500">
                         <li>
                           <span>Notebook Generation</span> = 450 credits/request
                         </li>
@@ -290,7 +290,8 @@ export default function SettingsPage() {
                           <span>Study Cards Generation</span> = 150
                           credits/request
                         </li>
-                      </ul>
+                        </ul>
+                        <p className="text-md font-semibold mt-2 text-[#94b347]">Pro users gain unlimited access to all features</p>
                     </div>
                   </div>
                 </div>

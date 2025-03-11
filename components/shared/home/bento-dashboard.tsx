@@ -151,8 +151,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const { data: studyGuides, loading: loadingStudyGuides } =
     useCollectionData<StudyGuide>("studyGuides");
 
-  const { data: quizzes, loading: loadingQuizzes, mutate: mutateQuizzes } =
-    useCollectionData<QuizState>("quizzes");
+  const {
+    data: quizzes,
+    loading: loadingQuizzes,
+    mutate: mutateQuizzes,
+  } = useCollectionData<QuizState>("quizzes");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showQuizForm, setShowQuizForm] = useState(false);
@@ -231,12 +234,12 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const handleDeleteQuiz2 = async (quizId: string) => {
     try {
       const quizRef = doc(db, "quizzes", quizId);
-      
+
       await deleteDoc(quizRef);
-      
-      const updatedQuizzes = quizzes.filter(quiz => quiz.id !== quizId);
+
+      const updatedQuizzes = quizzes.filter((quiz) => quiz.id !== quizId);
       mutateQuizzes(updatedQuizzes);
-      
+
       toast.success("Quiz deleted successfully");
     } catch (error) {
       console.error("Error deleting quiz:", error);
@@ -516,7 +519,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
     return pages.every((page) => selectedPages[notebookId]?.includes(page.id));
   };
   const renderNotebookList = () => {
-    
     if (!notebooks || notebooks.length === 0) {
       return (
         <div className="text-center p-4 text-gray-500">
@@ -623,7 +625,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       setStudyGuideFiles(Array.from(event.target.files));
     }
   };
- 
+
   const handleGenerateGuide = async () => {
     try {
       if (!guideName.trim()) {
@@ -739,7 +741,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   };
 
   useEffect(() => {
-   
     setIsLoading(false);
   }, [studyCards]);
 
@@ -748,7 +749,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       return (
         <div className="text-center py-4">
           <RefreshCw className="text-[#94b347] animate-spin" />
-
         </div>
       );
     }
@@ -831,22 +831,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
-                  <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#c6d996] border-none  relative dark:text-black">
+                  <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#b9d27a] dark:bg-[#c6d996] border-none relative">
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
-                      className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 rounded-full transition-colors"
+                      className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"
                     >
-                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white dark:text-black hover:text-red-500" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500 dark:hover:text-red-400" />
                     </button>
 
                     <CardContent className="p-3 sm:p-8 flex flex-col h-full">
-                      <div className="p-2 sm:p-3 rounded-full w-fit bg-[#94b347]">
-                        <NotebookPen className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
+                      <div className="p-2 sm:p-3 rounded-full w-fit bg-[#c6d996] dark:bg-[#c6d996]">
+                        <NotebookPen className="h-5 w-5 sm:h-8 sm:w-8 text-white dark:text-slate-700" />
                       </div>
-                      <h2 className="text-base sm:text-xl font-semibold mt-2 sm:mt-4 text-black dark:text-black">
+                      <h2 className="text-base sm:text-xl font-semibold mt-2 sm:mt-4 text-white dark:">
                         {notebook.title}
                       </h2>
-                      <p className="mt-1 sm:mt-2 flex-grow text-black dark:text-black text-xs sm:text-base">
+                      <p className="mt-1 sm:mt-2 flex-grow text-white text-xs sm:text-base">
                         {formatDate(notebook.createdAt)}
                       </p>
                     </CardContent>
@@ -993,9 +993,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                           {quiz.totalQuestions}
                                         </p>
                                       ) : (
-                                        <p className="text-green-500">
-                                          active
-                                        </p>
+                                        <p className="text-green-500">active</p>
                                       )}
                                     </div>
                                     <button
