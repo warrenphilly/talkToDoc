@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -207,62 +208,90 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Account information */}
-                  <div className="space-y-4 flex flex-col md:flex-row justify-between p-4 rounded-lg ">
-                    <div className="w-full">
-                      <div className="">
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Credit Balance
-                        </h3>
-                        <div className="mt-1 flex items-center">
-                          <span className="text-2xl font-semibold text-gray-900">
-                            {isLoading ? "..." : userCredits}
-                          </span>
-                          <span className="ml-2 text-sm text-gray-500">
-                            credits
-                          </span>
+                  <div className="space-y-4 flex flex-col 0 md:flex-row gap-8 justify-between p-4 rounded-lg ">
+                    <div className="w-full   flex flex-col justify-center items-start gap-4 ">
+                      <div className="w-full flex flex-row justify-between items-center gap-4 ">
+                        <div className=" w-fit ">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Account Status
+                          </h3>
+                          <div className="mt-1 w-full flex justify-center items-center">
+                            <span
+                              className={`inline-flex items-center justify-center px-2.5 py-0.5 w-full rounded-full text-md   font-medium ${
+                                accountStatus === "Pro"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-blue-100 text-blue-800"
+                              }`}
+                            >
+                              {isLoading ? "Loading..." : accountStatus}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="w- flex flex-row justify-end items-center gap-4 ">
+                          <Button className="w-32 rounded-full  bg-white border border-gray-300 shadow-none hover:bg-gray-100">
+                            Manage Plan
+                          </Button>
                         </div>
                       </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Account Status
-                        </h3>
-                        <div className="mt-1">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              accountStatus === "Pro"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-blue-100 text-blue-800"
-                            }`}
-                          >
-                            {isLoading ? "Loading..." : accountStatus}
-                          </span>
+                      <div className="w-full flex  flex-row justify-between items-center gap-4 ">
+                        <div className=" w-fit ">
+                          <h3 className="text-sm font-medium text-gray-700">
+                            Credit Balance
+                          </h3>
+                          <div className="mt-1 flex items-center">
+                            {accountStatus === "Pro" ? (
+                              <>
+                                <span className="text-2xl font-semibold text-gray-900">
+                                  {isLoading ? "..." : "unlimited"}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-2xl font-semibold text-gray-900">
+                                  {isLoading ? "..." : userCredits}
+                                </span>
+                                <span className="ml-2 text-sm text-gray-500">
+                                  credits
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      </div>
-                      <Separator orientation="vertical" className="my-4 bg-gray-200 text-gray-200" />
-                      <div className="w-full flex flex-col items-center justify-start">
-                       <h2>Pricing and Usage</h2>
-                        <ul>
-                          <li>
+                        <div className="flex flex-col w-fit gap-2">
+                          <Button className="w-32 rounded-full bg-white border border-gray-300 shadow-none hover:bg-gray-100">
+                            Buy Credits
+                          </Button>
+                          <p className="text-sm text-gray-400">
                             <span>1000 credits</span> = $1.00
-                             
-                          </li>
-                          <li>
-                            <span>Notebook Generation</span> = 450 credits/request
-                             
-                          </li>
-                          <li>
-                            <span>Quiz Generation</span> = 150 credits/request
-                             
-                          </li>
-                          <li>
-                            <span>Study Guide Generation</span> = 150 credits/request
-                             
-                          </li>
-                        </ul>
-
+                          </p>
+                        </div>
                       </div>
+                    </div>
+                    {/* <Separator
+                      orientation="vertical"
+                      className="my-4 bg-gray-200 text-gray-200"
+                    /> */}
+                    <div className="w-full flex flex-col items-start justify-start border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-sm font-medium text-gray-700">
+                        Pricing and Usage
+                      </h3>
+                      <ul>
+                        <li>
+                          <span>Notebook Generation</span> = 450 credits/request
+                        </li>
+                        <li>
+                          <span>Quiz Generation</span> = 250 credits/request
+                        </li>
+                        <li>
+                          <span>Study Guide Generation</span> = 150
+                          credits/request
+                        </li>
+                        <li>
+                          <span>Study Cards Generation</span> = 150
+                          credits/request
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
