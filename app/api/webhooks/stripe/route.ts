@@ -1,15 +1,20 @@
 import { getUserById, updateUserCreditBalance } from "@/lib/firebase/firestore";
 import { stripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-
-// Initialize Stripe with your secret key
-
 
 // This is your Stripe webhook secret for testing your endpoint locally.
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req: NextRequest) {
+  // Check if Stripe is properly initialized
+  if (!stripe) {
+    console.error("Stripe client not initialized");
+    return NextResponse.json(
+      { error: "Payment service unavailable" },
+      { status: 500 }
+    );
+  }
+
   const payload = await req.text();
   const sig = req.headers.get("stripe-signature") as string;
 
@@ -27,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   // Handle the event
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
+    const session = event.data.object;
 
     // Make sure this is a credit purchase
     if (session.metadata?.type === "credit_purchase") {
@@ -38,7 +43,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function fulfillCreditPurchase(session: Stripe.Checkout.Session) {
+async function fulfillCreditPurchase(session: any) {
   try {
     const userId = session.metadata?.userId;
     const credits = parseInt(session.metadata?.credits || "0", 10);

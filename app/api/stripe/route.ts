@@ -2,12 +2,18 @@ import { getUserByClerkId } from "@/lib/firebase/firestore";
 import { stripe } from "@/lib/stripe";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-
-// Initialize Stripe with your secret key
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if Stripe is properly initialized
+    if (!stripe) {
+      console.error("Stripe client not initialized");
+      return NextResponse.json(
+        { error: "Payment service unavailable" },
+        { status: 500 }
+      );
+    }
+
     const user = await currentUser();
     if (!user) {
       return NextResponse.json(
