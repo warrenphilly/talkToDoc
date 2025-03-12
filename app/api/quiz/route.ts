@@ -1,8 +1,11 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
+import {
+  getUserByClerkId,
+  updateUserCreditBalance,
+} from "@/lib/firebase/firestore";
 import { cleanMarkdownContent, splitIntoChunks } from "@/lib/markdownUtils";
-import { NextRequest, NextResponse } from "next/server";
-import { getUserByClerkId } from "@/lib/firebase/firestore";
 import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 
 interface QuizMessage {
   userId: string;
@@ -20,6 +23,24 @@ interface QuizMessage {
   quizName: string;
 }
 
+// Add this interface to define the quiz data structure
+interface QuizData {
+  userId: string;
+  quiz: {
+    title: string;
+    questions: any[];
+  };
+  sourceNotebooks: { [notebookId: string]: string[] };
+  uploadedDocs: Array<{
+    path?: string;
+    text?: string;
+    name: string;
+  }>;
+  createdAt: string;
+  name: string;
+  remainingCredits?: number; // Make this optional
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
 
@@ -27,7 +48,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Get user from Firestore to check credit balance
   const firestoreUser = await getUserByClerkId(userId);
+
+  if (!firestoreUser) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // Check if user is Pro or has enough credits
+  const isPro = firestoreUser.metadata?.isPro || false;
+  const creditBalance = firestoreUser.creditBalance || 0;
+  const requiredCredits = 250; // Credits needed for quiz generation
+
+  if (!isPro && creditBalance < requiredCredits) {
+    return NextResponse.json(
+      {
+        error: "Insufficient credits",
+        creditBalance,
+        requiredCredits,
+      },
+      { status: 403 }
+    );
+  }
+
   const language = firestoreUser?.language || "English";
 
   try {
@@ -145,7 +188,7 @@ export async function POST(req: NextRequest) {
     const chunks = splitIntoChunks(allContent, 8000);
 
     // Update system message to include language preference
- 
+
     // Log the OpenAI request
     const openaiRequestBody = {
       model: "gpt-4o-mini",
@@ -282,7 +325,7 @@ Return ONLY valid JSON with no additional text.`,
     }
 
     // Create the quiz data with proper structure
-    const quizData = {
+    const quizData: QuizData = {
       userId: message.userId,
       quiz: {
         title: message.quizName,
@@ -314,6 +357,30 @@ Return ONLY valid JSON with no additional text.`,
       createdAt: new Date().toISOString(),
       name: message.quizName,
     };
+
+    // After successful quiz generation, deduct credits if not Pro
+    if (!isPro) {
+      const newCreditBalance = creditBalance - requiredCredits;
+
+      // Update the user's credit balance in Firestore
+      const updateResult = await updateUserCreditBalance(
+        firestoreUser.id,
+        newCreditBalance
+      );
+
+      if (!updateResult) {
+        console.error(
+          `Failed to update credit balance for user ${firestoreUser.id}`
+        );
+      } else {
+        console.log(
+          `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+        );
+      }
+
+      // Add credit balance to the response
+      quizData.remainingCredits = newCreditBalance;
+    }
 
     console.log("Final quiz data:", quizData);
 

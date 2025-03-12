@@ -1,4 +1,7 @@
-import { getUserByClerkId } from "@/lib/firebase/firestore";
+import {
+  getUserByClerkId,
+  updateUserCreditBalance,
+} from "@/lib/firebase/firestore";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -42,6 +45,27 @@ export async function POST(req: NextRequest) {
   }
 
   const firestoreUser = await getUserByClerkId(userId);
+
+  if (!firestoreUser) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // Check if user is Pro or has enough credits
+  const isPro = firestoreUser.metadata?.isPro || false;
+  const creditBalance = firestoreUser.creditBalance || 0;
+  const requiredCredits = 450; // Credits needed for chat
+
+  if (!isPro && creditBalance < requiredCredits) {
+    return NextResponse.json(
+      {
+        error: "Insufficient credits",
+        creditBalance,
+        requiredCredits,
+      },
+      { status: 403 }
+    );
+  }
+
   const language = firestoreUser?.language || "English";
 
   try {
@@ -231,6 +255,27 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // After successful processing, deduct credits if not Pro
+      if (!isPro) {
+        const newCreditBalance = creditBalance - requiredCredits;
+
+        // Update the user's credit balance in Firestore
+        const updateResult = await updateUserCreditBalance(
+          firestoreUser.id,
+          newCreditBalance
+        );
+
+        if (!updateResult) {
+          console.error(
+            `Failed to update credit balance for user ${firestoreUser.id}`
+          );
+        } else {
+          console.log(
+            `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+          );
+        }
+      }
+
       return new StreamingTextResponse(stream.readable);
     } else {
       // Non-streaming mode (original implementation)
@@ -285,6 +330,28 @@ export async function POST(req: NextRequest) {
         throw new Error("No sections were generated from the content");
       }
 
+      // After successful processing, deduct credits if not Pro
+      if (!isPro) {
+        const newCreditBalance = creditBalance - requiredCredits;
+
+        // Update the user's credit balance in Firestore
+        const updateResult = await updateUserCreditBalance(
+          firestoreUser.id,
+          newCreditBalance
+        );
+
+        if (!updateResult) {
+          console.error(
+            `Failed to update credit balance for user ${firestoreUser.id}`
+          );
+        } else {
+          console.log(
+            `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+          );
+        }
+      }
+
+      // Original return for non-credit scenarios
       return NextResponse.json({
         replies: allSections,
       });

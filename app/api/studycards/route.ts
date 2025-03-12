@@ -1,11 +1,12 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
-import { saveStudyCards } from "@/lib/firebase/firestore";
+import {
+  getUserByClerkId,
+  saveStudyCards,
+  updateUserCreditBalance,
+} from "@/lib/firebase/firestore";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByClerkId } from "@/lib/firebase/firestore";
-
-
 
 interface StudySetMetadata {
   name: string;
@@ -133,6 +134,27 @@ export async function POST(req: NextRequest) {
     }
 
     const firestoreUser = await getUserByClerkId(userId);
+
+    if (!firestoreUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user is Pro or has enough credits
+    const isPro = firestoreUser.metadata?.isPro || false;
+    const creditBalance = firestoreUser.creditBalance || 0;
+    const requiredCredits = 150; // Credits needed for study cards
+
+    if (!isPro && creditBalance < requiredCredits) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          creditBalance,
+          requiredCredits,
+        },
+        { status: 403 }
+      );
+    }
+
     const language = firestoreUser?.language || "English";
 
     const body = await req.json();
@@ -299,6 +321,36 @@ export async function POST(req: NextRequest) {
     );
     const parsedResponse = JSON.parse(cleanedResponse);
 
+    // After successful OpenAI response and before returning to client,
+    // deduct credits if not Pro
+    if (!isPro) {
+      const newCreditBalance = creditBalance - requiredCredits;
+
+      // Update the user's credit balance in Firestore
+      const updateResult = await updateUserCreditBalance(
+        firestoreUser.id,
+        newCreditBalance
+      );
+
+      if (!updateResult) {
+        console.error(
+          `Failed to update credit balance for user ${firestoreUser.id}`
+        );
+      } else {
+        console.log(
+          `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+        );
+      }
+
+      // Add credit balance to the response
+      return NextResponse.json({
+        cards: parsedResponse.cards,
+        success: true,
+        remainingCredits: newCreditBalance,
+      });
+    }
+
+    // Original return for Pro users
     return NextResponse.json({
       cards: parsedResponse.cards,
       success: true,

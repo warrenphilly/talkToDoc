@@ -1,9 +1,11 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
+import {
+  getUserByClerkId,
+  updateUserCreditBalance,
+} from "@/lib/firebase/firestore";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
-import { NextRequest, NextResponse } from "next/server";
-import { getUserByClerkId } from "@/lib/firebase/firestore";
 import { auth } from "@clerk/nextjs/server";
-
+import { NextRequest, NextResponse } from "next/server";
 
 interface StudyGuideSection {
   topic: string;
@@ -25,11 +27,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const firestoreUser = await getUserByClerkId(userId);
+
+    if (!firestoreUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user is Pro or has enough credits
+    const isPro = firestoreUser.metadata?.isPro || false;
+    const creditBalance = firestoreUser.creditBalance || 0;
+    const requiredCredits = 150; // Credits needed for study guide
+
+    if (!isPro && creditBalance < requiredCredits) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          creditBalance,
+          requiredCredits,
+        },
+        { status: 403 }
+      );
+    }
+
+    const language = firestoreUser?.language || "English";
+
     const body = await req.json();
     const { selectedPages, guideName, uploadedDocs } = body;
-
-    const firestoreUser = await getUserByClerkId(userId);
-    const language = firestoreUser?.language || "English";
 
     if (!guideName) {
       throw new Error("No guide name provided");
@@ -41,11 +64,13 @@ export async function POST(req: NextRequest) {
     // 1. Process uploaded docs if they exist
     if (uploadedDocs && uploadedDocs.length > 0) {
       console.log(`Processing ${uploadedDocs.length} uploaded documents`);
-      
+
       for (const doc of uploadedDocs) {
         try {
           if (doc.content) {
-            allContent += `\n\nDocument: ${doc.name}\n${cleanMarkdownContent(doc.content)}`;
+            allContent += `\n\nDocument: ${doc.name}\n${cleanMarkdownContent(
+              doc.content
+            )}`;
           }
         } catch (error) {
           console.error(`Error processing document ${doc.name}:`, error);
@@ -83,7 +108,10 @@ export async function POST(req: NextRequest) {
                 const [content] = await file.download();
                 allContent += `\n${cleanMarkdownContent(content.toString())}`;
               } catch (error) {
-                console.error(`Error processing markdown ref ${ref.path}:`, error);
+                console.error(
+                  `Error processing markdown ref ${ref.path}:`,
+                  error
+                );
               }
             }
           }
@@ -121,12 +149,12 @@ The response should follow this format:
       ]
     }
   ]
-}`
+}`,
           },
           {
             role: "user",
-            content: `Create a study guide titled "${guideName}" from the following content:\n\n${allContent}`
-          }
+            content: `Create a study guide titled "${guideName}" from the following content:\n\n${allContent}`,
+          },
         ],
         temperature: 0.7,
         max_tokens: 4000,
@@ -138,10 +166,13 @@ The response should follow this format:
     }
 
     const data = await response.json();
-    
+
     // Clean the response content to remove any markdown formatting
-    const cleanContent = data.choices[0].message.content.replace(/```json\n|\n```/g, '');
-    
+    const cleanContent = data.choices[0].message.content.replace(
+      /```json\n|\n```/g,
+      ""
+    );
+
     let studyGuideContent;
     try {
       studyGuideContent = JSON.parse(cleanContent);
@@ -152,23 +183,54 @@ The response should follow this format:
     }
 
     // Add show property to each section
-    const formattedSections = studyGuideContent.sections.map((section: any) => ({
-      ...section,
-      show: false
-    }));
+    const formattedSections = studyGuideContent.sections.map(
+      (section: any) => ({
+        ...section,
+        show: false,
+      })
+    );
 
+    // After successful OpenAI response and before returning to client,
+    // deduct credits if not Pro
+    if (!isPro) {
+      const newCreditBalance = creditBalance - requiredCredits;
+
+      // Update the user's credit balance in Firestore
+      const updateResult = await updateUserCreditBalance(
+        firestoreUser.id,
+        newCreditBalance
+      );
+
+      if (!updateResult) {
+        console.error(
+          `Failed to update credit balance for user ${firestoreUser.id}`
+        );
+      } else {
+        console.log(
+          `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+        );
+      }
+
+      // Add credit balance to the response
+      return NextResponse.json({
+        content: formattedSections,
+        remainingCredits: newCreditBalance,
+      });
+    }
+
+    // Original return for Pro users
     return NextResponse.json({
-      content: formattedSections
+      content: formattedSections,
     });
-
   } catch (error) {
     console.error("Study guide generation error:", error);
     return NextResponse.json(
       {
         error: "Failed to generate study guide",
-        details: error instanceof Error ? error.message : "Unknown error occurred",
+        details:
+          error instanceof Error ? error.message : "Unknown error occurred",
       },
       { status: 500 }
     );
   }
-} 
+}

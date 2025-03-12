@@ -1,11 +1,13 @@
 import { adminDb, adminStorage } from "@/lib/firebase/firebaseAdmin";
+import {
+  getUserByClerkId,
+  updateUserCreditBalance,
+} from "@/lib/firebase/firestore";
 import { cleanMarkdownContent } from "@/lib/markdownUtils";
+import { auth } from "@clerk/nextjs/server";
 import { writeFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
-import { getUserByClerkId } from "@/lib/firebase/firestore";
-import { auth } from "@clerk/nextjs/server";
-
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +18,27 @@ export async function POST(req: NextRequest) {
     }
 
     const firestoreUser = await getUserByClerkId(userId);
+
+    if (!firestoreUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user is Pro or has enough credits
+    const isPro = firestoreUser.metadata?.isPro || false;
+    const creditBalance = firestoreUser.creditBalance || 0;
+    const requiredCredits = 25; // Credits needed for side chat
+
+    if (!isPro && creditBalance < requiredCredits) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          creditBalance,
+          requiredCredits,
+        },
+        { status: 403 }
+      );
+    }
+
     const language = firestoreUser?.language || "English";
 
     const formData = await req.formData();
@@ -229,8 +252,40 @@ Remember to:
 
     // Add metadata about context usage to the response
     const aiResponse = data.choices[0].message.content;
-    const usedExternalContext = aiResponse.toLowerCase().includes("from the broader document");
+    const usedExternalContext = aiResponse
+      .toLowerCase()
+      .includes("from the broader document");
 
+    // After successful OpenAI response and before returning to client,
+    // deduct credits if not Pro
+    if (!isPro) {
+      const newCreditBalance = creditBalance - requiredCredits;
+
+      // Update the user's credit balance in Firestore
+      const updateResult = await updateUserCreditBalance(
+        firestoreUser.id,
+        newCreditBalance
+      );
+
+      if (!updateResult) {
+        console.error(
+          `Failed to update credit balance for user ${firestoreUser.id}`
+        );
+      } else {
+        console.log(
+          `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
+        );
+      }
+
+      // Add credit balance to the response
+      return NextResponse.json({
+        reply: aiResponse,
+        usedExternalContext,
+        remainingCredits: newCreditBalance,
+      });
+    }
+
+    // Original return for Pro users
     return NextResponse.json({
       reply: aiResponse,
       usedExternalContext,
@@ -239,7 +294,8 @@ Remember to:
     console.error("Error processing request:", error);
     return NextResponse.json(
       {
-        reply: "An error occurred while processing your request. Please try again.",
+        reply:
+          "An error occurred while processing your request. Please try again.",
       },
       { status: 500 }
     );
