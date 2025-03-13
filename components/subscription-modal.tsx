@@ -363,386 +363,355 @@ export default function SubscriptionModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10">
-        <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg bg-white p-6 shadow-lg mx-4">
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
-            aria-label="Close modal"
-            disabled={isLoading}
-          >
-            <X size={20} />
-          </button>
-
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isManagingSubscription ? "Manage Your Plan" : "Choose Your Plan"}
-            </h2>
-            <p className="text-sm text-gray-500 mt-2">
-              {isManagingSubscription
-                ? `You're currently on the ${
-                    currentPlan === "pro-monthly" ? "Pro Monthly" : "Pro Yearly"
-                  } plan`
-                : "Select the plan that works best for your needs"}
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-              {successMessage}
-            </div>
-          )}
-
-          {/* Add a banner for canceled subscriptions */}
-          {isManagingSubscription && isCanceled && (
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg">
-              <div className="flex items-start">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2 mt-0.5 text-amber-600"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <div>
-                  <h4 className="font-medium text-amber-800">
-                    Subscription Canceled
-                  </h4>
-                  <p className="text-sm mt-1">
-                    Your subscription has been canceled but will remain active
-                    until the end of your current billing period. You can
-                    reactivate your subscription to continue your benefits
-                    beyond that date.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isManagingSubscription ? (
-            <div className="flex flex-col items-center justify-center p-6 mb-6">
-              {/* Current Plan Details */}
-              <div className="w-full max-w-2xl">
-                <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
-                  <h3 className="text-xl font-semibold mb-4 text-center">
-                    Your Current Plan
-                  </h3>
-                  <div className="text-center mb-4">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {currentPlan === "pro-monthly"
-                        ? "Pro Monthly"
-                        : "Pro Yearly"}
-                    </span>
-                    <span className="block text-gray-500 mt-1">
-                      {currentPlan === "pro-monthly"
-                        ? `$${subscriptionPlans
-                            .find((p) => p.id === "pro-monthly")
-                            ?.price.toFixed(2)}/month`
-                        : `$${subscriptionPlans
-                            .find((p) => p.id === "pro-yearly")
-                            ?.price.toFixed(2)}/year`}
-                    </span>
-                    {isCanceled && (
-                      <span className="inline-block mt-2 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
-                        Ends at billing period
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-100 rounded-md p-4 mb-6">
-                    <h4 className="font-medium text-blue-800 mb-2">
-                      Your Benefits
-                    </h4>
-                    <ul className="space-y-2">
-                      {subscriptionPlans
-                        .find((p) => p.id === currentPlan)
-                        ?.features.map((feature, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start text-blue-700"
-                          >
-                            <Check
-                              size={16}
-                              className="mr-2 mt-0.5 text-blue-600"
-                            />
-                            <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Plan Management Options */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium mb-3">
-                    Subscription Options
-                  </h3>
-
-                  {/* Reactivate Subscription Option (only show if canceled) */}
-                  {isCanceled && (
-                    <div className="border border-green-200 rounded-lg p-4 hover:border-green-300 transition-colors bg-green-50">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            Reactivate Subscription
-                          </h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Continue your subscription beyond the current
-                            billing period
-                          </p>
-                        </div>
-                        <Button
-                          onClick={handleReactivateSubscription}
-                          className="rounded-full bg-green-600 text-white hover:bg-green-700"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <span className="flex items-center">
-                              <svg
-                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="currentColor"
-                                  strokeWidth="4"
-                                ></circle>
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                              </svg>
-                              Processing...
-                            </span>
-                          ) : (
-                            "Reactivate"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Switch Plan Option */}
-                  {alternativePlan && (
-                    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-medium text-gray-900">
-                            {alternativePlan.name}
-                          </h4>
-                          <p className="text-sm text-gray-500 mt-1">
-                            {currentPlan === "pro-monthly"
-                              ? "Save money with annual billing"
-                              : "Switch to monthly billing for more flexibility"}
-                          </p>
-
-                          {currentPlan === "pro-monthly" && (
-                            <p className="text-xs text-[#94b347] font-medium mt-1">
-                              {getSavingsText(alternativePlan)}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          onClick={() => {
-                            setTargetPlan(alternativePlan);
-                            setIsPlanChangeModalOpen(true);
-                          }}
-                          className="rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                          disabled={isLoading}
-                        >
-                          Switch to {alternativePlan.name}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cancel Subscription Option */}
-                  <div
-                    className={`border rounded-lg p-4 transition-colors ${
-                      isCanceled
-                        ? "border-gray-200 bg-gray-50"
-                        : "border-gray-200 hover:border-red-200"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4
-                          className={`font-medium ${
-                            isCanceled ? "text-gray-500" : "text-gray-900"
-                          }`}
-                        >
-                          Cancel Subscription
-                        </h4>
-                        <p
-                          className={`text-sm mt-1 ${
-                            isCanceled ? "text-gray-400" : "text-gray-500"
-                          }`}
-                        >
-                          {isCanceled
-                            ? "Your subscription is already canceled"
-                            : "You'll keep access until the end of your current billing period"}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={() => setIsCancelModalOpen(true)}
-                        className={`rounded-full ${
-                          isCanceled
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-red-100 text-red-600 hover:bg-red-200 border border-red-200"
-                        }`}
-                        disabled={isLoading || isCanceled}
-                      >
-                        Cancel Plan
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {subscriptionPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`relative rounded-xl border p-6 transition-all ${
-                    selectedPlan?.id === plan.id
-                      ? "border-[#94b347] ring-1 ring-[#94b347]"
-                      : "border-gray-200 hover:border-gray-300"
-                  } ${plan.popular ? "md:scale-105" : ""}`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-0 right-0 mx-auto w-fit rounded-full bg-[#94b347] px-3 py-1 text-xs font-medium text-white">
-                      Most Popular
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {plan.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{plan.description}</p>
-                  </div>
-
-                  <div className="mb-6">
-                    <div>
-                      <span className="text-3xl font-bold text-gray-900">
-                        {plan.id === "pay-as-you-go"
-                          ? "Free"
-                          : `$${plan.price.toFixed(2)}`}
-                      </span>
-                      <span className="text-sm text-gray-500 ml-1">
-                        {plan.id === "pay-as-you-go"
-                          ? "to start"
-                          : plan.id === "pro-monthly"
-                          ? "/month"
-                          : "/year"}
-                      </span>
-                    </div>
-
-                    {getSavingsText(plan) && (
-                      <div className="mt-1 text-xs text-[#94b347] font-medium">
-                        {getSavingsText(plan)}
-                      </div>
-                    )}
-                  </div>
-
-                  <ul className="mb-6 space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <Check
-                          size={16}
-                          className="mr-2 mt-0.5 text-[#94b347]"
-                        />
-                        <span className="text-sm text-gray-600">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`w-full rounded-full ${
-                      selectedPlan?.id === plan.id
-                        ? "bg-[#94b347] text-white hover:bg-[#94b347]/90"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                    }`}
-                    disabled={isLoading}
-                  >
-                    {plan.id === currentPlan
-                      ? "Current Plan"
-                      : selectedPlan?.id === plan.id
-                      ? "Selected"
-                      : "Select Plan"}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-8 flex items-center justify-end">
-            <Button
+        <div className="relative w-full max-w-4xl max-h-[90vh] rounded-xl bg-white shadow-lg mx-4 flex flex-col">
+          {/* Header - Fixed at top */}
+          <div className="sticky top-0 bg-white p-6 pb-2 border-b border-gray-100 z-10">
+            <button
               onClick={onClose}
-              variant="outline"
-              className="mr-2 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+              aria-label="Close modal"
               disabled={isLoading}
             >
-              {isManagingSubscription ? "Close" : "Cancel"}
-            </Button>
+              <X size={20} />
+            </button>
 
-            {!isManagingSubscription && (
-              <Button
-                onClick={handleSelect}
-                disabled={
-                  !selectedPlan || selectedPlan.id === currentPlan || isLoading
-                }
-                className="rounded-full bg-[#94b347] text-white hover:bg-[#94b347]/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <span className="flex items-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : selectedPlan?.id === currentPlan ? (
-                  "Current Plan"
-                ) : (
-                  "Upgrade Plan"
-                )}
-              </Button>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {isManagingSubscription
+                  ? "Manage Your Plan"
+                  : "Choose Your Plan"}
+              </h2>
+              <p className="text-sm text-gray-500 mt-2">
+                {isManagingSubscription
+                  ? `You're currently on the ${
+                      currentPlan === "pro-monthly"
+                        ? "Pro Monthly"
+                        : "Pro Yearly"
+                    } plan`
+                  : "Select the plan that works best for your needs"}
+              </p>
+            </div>
+          </div>
+
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto p-6 pt-2">
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                {error}
+              </div>
             )}
+
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+                {successMessage}
+              </div>
+            )}
+
+            {/* Add a banner for canceled subscriptions */}
+            {isManagingSubscription && isCanceled && (
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg">
+                <div className="flex items-start">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2 mt-0.5 text-amber-600 flex-shrink-0"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <h4 className="font-medium text-amber-800">
+                      Subscription Canceled
+                    </h4>
+                    <p className="text-sm mt-1">
+                      Your subscription has been canceled but will remain active
+                      until the end of your current billing period. You can
+                      reactivate your subscription to continue your benefits
+                      beyond that date.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isManagingSubscription ? (
+              <div className="flex flex-col items-center">
+                {/* Current Plan Details */}
+                <div className="w-full max-w-2xl">
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                    <h3 className="text-lg font-semibold mb-3 text-center">
+                      Your Current Plan
+                    </h3>
+                    <div className="text-center mb-4">
+                      <span className="text-xl font-bold text-gray-900">
+                        {currentPlan === "pro-monthly"
+                          ? "Pro Monthly"
+                          : "Pro Yearly"}
+                      </span>
+                      <span className="block text-gray-500 mt-1">
+                        {currentPlan === "pro-monthly"
+                          ? `$${subscriptionPlans
+                              .find((p) => p.id === "pro-monthly")
+                              ?.price.toFixed(2)}/month`
+                          : `$${subscriptionPlans
+                              .find((p) => p.id === "pro-yearly")
+                              ?.price.toFixed(2)}/year`}
+                      </span>
+                      {isCanceled && (
+                        <span className="inline-block mt-2 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                          Ends at billing period
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4">
+                      <h4 className="font-medium text-blue-800 mb-2 text-sm">
+                        Your Benefits
+                      </h4>
+                      <ul className="space-y-1">
+                        {subscriptionPlans
+                          .find((p) => p.id === currentPlan)
+                          ?.features.map((feature, index) => (
+                            <li
+                              key={index}
+                              className="flex items-start text-blue-700"
+                            >
+                              <Check
+                                size={14}
+                                className="mr-2 mt-0.5 text-blue-600 flex-shrink-0"
+                              />
+                              <span className="text-xs">{feature}</span>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Plan Management Options */}
+                  <div className="space-y-3">
+                    <h3 className="text-md font-medium mb-2">
+                      Subscription Options
+                    </h3>
+
+                    {/* Reactivate Subscription Option (only show if canceled) */}
+                    {isCanceled && (
+                      <div className="border border-green-200 rounded-lg p-3 hover:border-green-300 transition-colors bg-green-50">
+                        <div className="flex justify-between items-center flex-wrap gap-2">
+                          <div className="flex-1 min-w-[200px]">
+                            <h4 className="font-medium text-gray-900 text-sm">
+                              Reactivate Subscription
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Continue your subscription beyond the current
+                              billing period
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleReactivateSubscription}
+                            className="rounded-full bg-green-600 text-white hover:bg-green-700 text-sm px-3 py-1 h-auto"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? "Processing..." : "Reactivate"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Switch Plan Option */}
+                    {alternativePlan && (
+                      <div className="border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors">
+                        <div className="flex justify-between items-center flex-wrap gap-2">
+                          <div className="flex-1 min-w-[200px]">
+                            <h4 className="font-medium text-gray-900 text-sm">
+                              {alternativePlan.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {currentPlan === "pro-monthly"
+                                ? "Save money with annual billing"
+                                : "Switch to monthly billing for more flexibility"}
+                            </p>
+
+                            {currentPlan === "pro-monthly" && (
+                              <p className="text-xs text-[#94b347] font-medium mt-1">
+                                {getSavingsText(alternativePlan)}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            onClick={() => {
+                              setTargetPlan(alternativePlan);
+                              setIsPlanChangeModalOpen(true);
+                            }}
+                            className="rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 text-sm px-3 py-1 h-auto"
+                            disabled={isLoading}
+                          >
+                            Switch to {alternativePlan.name.replace("Pro ", "")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cancel Subscription Option */}
+                    <div
+                      className={`border rounded-lg p-3 transition-colors ${
+                        isCanceled
+                          ? "border-gray-200 bg-gray-50"
+                          : "border-gray-200 hover:border-red-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <div className="flex-1 min-w-[200px]">
+                          <h4
+                            className={`font-medium text-sm ${
+                              isCanceled ? "text-gray-500" : "text-gray-900"
+                            }`}
+                          >
+                            Cancel Subscription
+                          </h4>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isCanceled ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {isCanceled
+                              ? "Your subscription is already canceled"
+                              : "You'll keep access until the end of your current billing period"}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setIsCancelModalOpen(true)}
+                          className={`rounded-full text-sm px-3 py-1 h-auto ${
+                            isCanceled
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-red-100 text-red-600 hover:bg-red-200 border border-red-200"
+                          }`}
+                          disabled={isLoading || isCanceled}
+                        >
+                          Cancel Plan
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {subscriptionPlans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-xl border p-4 transition-all ${
+                      selectedPlan?.id === plan.id
+                        ? "border-[#94b347] ring-1 ring-[#94b347]"
+                        : "border-gray-200 hover:border-gray-300"
+                    } ${plan.popular ? "md:scale-105" : ""}`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-2 left-0 right-0 mx-auto w-fit rounded-full bg-[#94b347] px-2 py-0.5 text-xs font-medium text-white">
+                        Most Popular
+                      </div>
+                    )}
+
+                    <div className="mb-3">
+                      <h3 className="text-md font-semibold text-gray-900">
+                        {plan.name}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {plan.description}
+                      </p>
+                    </div>
+
+                    <div className="mb-4">
+                      <div>
+                        <span className="text-2xl font-bold text-gray-900">
+                          {plan.id === "pay-as-you-go"
+                            ? "Free"
+                            : `$${plan.price.toFixed(2)}`}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-1">
+                          {plan.id === "pay-as-you-go"
+                            ? "to start"
+                            : plan.id === "pro-monthly"
+                            ? "/month"
+                            : "/year"}
+                        </span>
+                      </div>
+
+                      {getSavingsText(plan) && (
+                        <div className="mt-1 text-xs text-[#94b347] font-medium">
+                          {getSavingsText(plan)}
+                        </div>
+                      )}
+                    </div>
+
+                    <ul className="mb-4 space-y-1">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <Check
+                            size={14}
+                            className="mr-1.5 mt-0.5 text-[#94b347] flex-shrink-0"
+                          />
+                          <span className="text-xs text-gray-600">
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      onClick={() => setSelectedPlan(plan)}
+                      className={`w-full rounded-full text-sm py-1.5 ${
+                        selectedPlan?.id === plan.id
+                          ? "bg-[#94b347] text-white hover:bg-[#94b347]/90"
+                          : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                      }`}
+                      disabled={isLoading}
+                    >
+                      {plan.id === currentPlan
+                        ? "Current Plan"
+                        : selectedPlan?.id === plan.id
+                        ? "Selected"
+                        : "Select Plan"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer - Fixed at bottom */}
+          <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 z-10">
+            <div className="flex items-center justify-end">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="mr-2 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347] text-sm py-1.5"
+                disabled={isLoading}
+              >
+                {isManagingSubscription ? "Close" : "Cancel"}
+              </Button>
+
+              {!isManagingSubscription && (
+                <Button
+                  onClick={handleSelect}
+                  disabled={
+                    !selectedPlan ||
+                    selectedPlan.id === currentPlan ||
+                    isLoading
+                  }
+                  className="rounded-full bg-[#94b347] text-white hover:bg-[#94b347]/90 disabled:cursor-not-allowed disabled:opacity-50 text-sm py-1.5"
+                >
+                  {isLoading
+                    ? "Processing..."
+                    : selectedPlan?.id === currentPlan
+                    ? "Current Plan"
+                    : "Upgrade Plan"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -396,16 +396,21 @@ export default function SettingsPage() {
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col w-fit gap-2">
-                          <Button
-                            onClick={() => setIsPricingModalOpen(true)}
-                            className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
-                          >
-                            Get Credits
-                          </Button>
-                          <p className="text-sm text-gray-400">
+                          <div className="flex flex-col w-fit gap-2">
+                            {accountStatus !== "Pro" && (
+                              <>
+                              <Button
+                                onClick={() => setIsPricingModalOpen(true)}
+                                className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+                              >
+                                Get Credits
+                                </Button>
+                                <p className="text-sm text-gray-400">
                             <span>500 credits</span> = $1.50
                           </p>
+                                </>
+                            )}
+                         
                         </div>
                       </div>
                     </div>
