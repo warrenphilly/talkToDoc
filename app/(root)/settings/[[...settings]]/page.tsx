@@ -97,12 +97,32 @@ export default function SettingsPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const success = urlParams.get("success");
       const canceled = urlParams.get("canceled");
+      const isSubscription = urlParams.get("subscription");
+      const isReactivation = urlParams.get("reactivation");
+      const isPlanChange = urlParams.get("plan_change");
 
       if (success === "true") {
         setCheckoutStatus("success");
-        setSaveMessage(
-          "Payment successful! Your credits have been added to your account."
-        );
+
+        // Different success messages based on transaction type
+        if (isSubscription === "true") {
+          setSaveMessage(
+            "Subscription successful! You now have unlimited access to all premium features."
+          );
+        } else if (isReactivation === "true") {
+          setSaveMessage(
+            "Your subscription has been reactivated. You will continue to have unlimited access to all premium features."
+          );
+        } else if (isPlanChange === "true") {
+          setSaveMessage(
+            "Your subscription plan has been updated successfully."
+          );
+        } else {
+          // Default message for credit purchases
+          setSaveMessage(
+            "Payment successful! Your credits have been added to your account."
+          );
+        }
 
         // Set the active tab to preferences when payment is successful
         setActiveTab("preferences");
@@ -118,9 +138,22 @@ export default function SettingsPage() {
         );
       } else if (canceled === "true") {
         setCheckoutStatus("canceled");
-        setSaveMessage(
-          "Payment was canceled. No credits were added to your account."
-        );
+
+        // Different cancellation messages based on transaction type
+        if (isSubscription === "true") {
+          setSaveMessage(
+            "Subscription process was canceled. No changes were made to your account."
+          );
+        } else if (isPlanChange === "true") {
+          setSaveMessage(
+            "Plan change was canceled. Your current subscription remains unchanged."
+          );
+        } else {
+          // Default message for credit purchases
+          setSaveMessage(
+            "Payment was canceled. No credits were added to your account."
+          );
+        }
 
         // Clear URL parameters
         window.history.replaceState(
@@ -396,21 +429,20 @@ export default function SettingsPage() {
                             )}
                           </div>
                         </div>
-                          <div className="flex flex-col w-fit gap-2">
-                            {accountStatus !== "Pro" && (
-                              <>
+                        <div className="flex flex-col w-fit gap-2">
+                          {accountStatus !== "Pro" && (
+                            <>
                               <Button
                                 onClick={() => setIsPricingModalOpen(true)}
                                 className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
                               >
                                 Get Credits
-                                </Button>
-                                <p className="text-sm text-gray-400">
-                            <span>500 credits</span> = $1.50
-                          </p>
-                                </>
-                            )}
-                         
+                              </Button>
+                              <p className="text-sm text-gray-400">
+                                <span>500 credits</span> = $1.50
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

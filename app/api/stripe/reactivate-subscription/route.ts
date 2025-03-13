@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Subscription reactivated successfully",
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&reactivation=true`,
     });
   } catch (error) {
     console.error("Error reactivating subscription:", error);

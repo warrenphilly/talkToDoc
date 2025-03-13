@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
             quantity: 1,
           },
         ],
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&subscription=true&session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&plan_change=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`,
         metadata: {
           userId: firestoreUser.id,
@@ -96,12 +96,17 @@ export async function POST(req: NextRequest) {
           type: "subscription_change",
           oldPlanId: firestoreUser.metadata.planId,
           newPlanId: newPlanId,
+          oldSubscriptionId: subscriptionId,
         },
-        subscription_data: {
-          // This will cancel the old subscription when the new one is created
-          transfer_data: {
-            destination: subscription.id,
-          },
+      });
+
+      // After creating the session, schedule the old subscription for cancellation
+      // when the new one is created
+      await stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+        metadata: {
+          replacedBy: "pending_checkout",
+          checkoutSessionId: session.id,
         },
       });
 
@@ -137,6 +142,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Subscription updated successfully",
+        redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&plan_change=true`,
       });
     }
   } catch (error) {

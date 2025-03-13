@@ -362,10 +362,10 @@ export default function SubscriptionModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10">
-        <div className="relative w-full max-w-4xl max-h-[90vh] rounded-xl bg-white shadow-lg mx-4 flex flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10 bg-red-">
+        <div className="relative w-full max-w-4xl min-h-[70vh] max-h-[90vh] rounded-xl bg-white shadow-lg mx-4 flex flex-col">
           {/* Header - Fixed at top */}
-          <div className="sticky top-0 bg-white p-6 pb-2 border-b border-gray-100 z-10">
+          <div className="sticky top-0 bg-red p-6 pb-2 border-b border-gray-100 z-10">
             <button
               onClick={onClose}
               className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
@@ -527,7 +527,11 @@ export default function SubscriptionModal({
                         <div className="flex justify-between items-center flex-wrap gap-2">
                           <div className="flex-1 min-w-[200px]">
                             <h4 className="font-medium text-gray-900 text-sm">
-                              {alternativePlan.name}
+                              {alternativePlan.name} - $
+                              {alternativePlan.price.toFixed(2)}
+                              {alternativePlan.id === "pro-yearly"
+                                ? "/year"
+                                : "/month"}
                             </h4>
                             <p className="text-xs text-gray-500 mt-1">
                               {currentPlan === "pro-monthly"
@@ -563,7 +567,7 @@ export default function SubscriptionModal({
                           : "border-gray-200 hover:border-red-200"
                       }`}
                     >
-                      <div className="flex justify-between items-center flex-wrap gap-2">
+                      <div className="flex justify-between items-center flex-wrap gap-2 ">
                         <div className="flex-1 min-w-[200px]">
                           <h4
                             className={`font-medium text-sm ${
@@ -683,7 +687,7 @@ export default function SubscriptionModal({
           </div>
 
           {/* Footer - Fixed at bottom */}
-          <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 z-10">
+          <div className="sticky bottom-0 bg-white p-4 border-t rounded-b-xl border-gray-100 z-10">
             <div className="flex items-center justify-end">
               <Button
                 onClick={onClose}
@@ -874,7 +878,7 @@ function PlanChangeModal({
           </div>
         </div>
 
-        <div className="flex items-center justify-end space-x-4">
+        <div className="flex items-center justify-between space-x-4 ">
           <Button
             onClick={onClose}
             variant="outline"

@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
       await fulfillCreditPurchase(session);
     } else if (session.metadata?.type === "subscription") {
       await handleSubscription(session);
+    } else if (session.metadata?.type === "subscription_change") {
+      await handleSubscriptionChange(session);
     }
   }
 
@@ -178,6 +180,61 @@ async function handleSubscription(session: any) {
     );
   } catch (error) {
     console.error("Error handling subscription:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+}
+
+// Add this new function to handle subscription changes
+async function handleSubscriptionChange(session: any) {
+  try {
+    console.log("Processing subscription change from webhook:", {
+      metadata: session.metadata,
+      sessionId: session.id,
+    });
+
+    const userId = session.metadata?.userId;
+    const clerkId = session.metadata?.clerkId;
+    const newPlanId = session.metadata?.newPlanId;
+    const oldSubscriptionId = session.metadata?.oldSubscriptionId;
+
+    if (!userId || !clerkId || !newPlanId) {
+      console.error("Invalid metadata in session:", session.metadata);
+      return;
+    }
+
+    // Get the user
+    let user = await getUserById(userId);
+    if (!user) {
+      console.error("User not found:", { userId, clerkId });
+      return;
+    }
+
+    // Get the new subscription ID from the session
+    const newSubscriptionId = session.subscription;
+
+    if (!newSubscriptionId) {
+      console.error("No subscription ID found in session:", session);
+      return;
+    }
+
+    // Update the user's metadata in Firestore
+    await updateUserSubscription(userId, {
+      isPro: true,
+      subscriptionId: newSubscriptionId,
+      planId: newPlanId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log(
+      `Successfully updated subscription for user ${userId} from ${oldSubscriptionId} to ${newSubscriptionId} (${newPlanId})`
+    );
+  } catch (error) {
+    console.error("Error handling subscription change:", error);
     if (error instanceof Error) {
       console.error("Error details:", {
         message: error.message,
