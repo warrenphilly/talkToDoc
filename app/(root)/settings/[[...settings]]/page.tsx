@@ -49,6 +49,7 @@ export default function SettingsPage() {
   >(null);
   const [shouldRefreshAfterPayment, setShouldRefreshAfterPayment] =
     useState(false);
+  const [firestoreUser, setFirestoreUser] = useState<any>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -59,6 +60,7 @@ export default function SettingsPage() {
           console.log("Firestore user data:", firestoreUser);
           if (firestoreUser) {
             setFirestoreUserId(firestoreUser.id);
+            setFirestoreUser(firestoreUser);
             setUserCredits(
               firestoreUser.creditBalance !== undefined &&
                 firestoreUser.creditBalance !== null
@@ -354,7 +356,10 @@ export default function SettingsPage() {
                         </div>
                         <div className="w- flex flex-row justify-end items-center gap-4 ">
                           {accountStatus === "Pro" ? (
-                            <Button className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]">
+                            <Button
+                              onClick={() => setIsSubscriptionModalOpen(true)}
+                              className="w-32 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+                            >
                               Manage Plan
                             </Button>
                           ) : (
@@ -453,7 +458,12 @@ export default function SettingsPage() {
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
         onSelect={handleSubscriptionChange}
-        currentPlan={accountStatus === "Pro" ? "pro monthly" : "pay-as-you-go"}
+        currentPlan={
+          accountStatus === "Pro"
+            ? firestoreUser?.metadata?.planId || "pro-monthly"
+            : "pay-as-you-go"
+        }
+        subscriptionId={firestoreUser?.metadata?.subscriptionId || null}
       />
     </div>
   );

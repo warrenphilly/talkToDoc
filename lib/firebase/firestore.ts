@@ -1997,7 +1997,7 @@ export const forceUpdateUserCreditBalance = async (
   }
 };
 
-// Add this function to update user subscription status
+// Update the updateUserSubscription function to handle cancellation
 export async function updateUserSubscription(
   userId: string,
   subscriptionData: {
@@ -2005,18 +2005,34 @@ export async function updateUserSubscription(
     subscriptionId: string;
     planId: string;
     updatedAt: string;
+    canceledAt?: string;
+    cancelAtPeriodEnd?: boolean;
   }
 ) {
   try {
     const userRef = doc(db, "users", userId);
 
-    // Update the user document with subscription data
-    await updateDoc(userRef, {
+    // Create the update object
+    const updateData: any = {
       "metadata.isPro": subscriptionData.isPro,
       "metadata.subscriptionId": subscriptionData.subscriptionId,
       "metadata.planId": subscriptionData.planId,
       "metadata.subscriptionUpdatedAt": subscriptionData.updatedAt,
-    });
+    };
+
+    // Add cancellation data if provided
+    if (subscriptionData.canceledAt) {
+      updateData["metadata.subscriptionCanceledAt"] =
+        subscriptionData.canceledAt;
+    }
+
+    if (subscriptionData.cancelAtPeriodEnd !== undefined) {
+      updateData["metadata.subscriptionCancelAtPeriodEnd"] =
+        subscriptionData.cancelAtPeriodEnd;
+    }
+
+    // Update the user document with subscription data
+    await updateDoc(userRef, updateData);
 
     return true;
   } catch (error) {
