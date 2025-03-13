@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CancelSubscriptionModal from "./cancel-subscription-modal";
 
 // Export the SubscriptionPlan interface
@@ -81,10 +81,111 @@ export default function SubscriptionModal({
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  if (!isOpen) return null;
+  // Add state for plan switching
+  const [isChangingPlan, setIsChangingPlan] = useState(false);
+  const [targetPlan, setTargetPlan] = useState<SubscriptionPlan | null>(null);
+  const [isPlanChangeModalOpen, setIsPlanChangeModalOpen] = useState(false);
 
+  // Add a state to track if the subscription is canceled but still active
+  const [isCanceled, setIsCanceled] = useState(false);
+
+  // Define isPro before using it in useEffect
   const isPro = currentPlan !== "pay-as-you-go";
   const isManagingSubscription = isPro && subscriptionId;
+
+  // Update the useEffect to check if the subscription is canceled
+  useEffect(() => {
+    // Check if the subscription is canceled but still active
+    const checkSubscriptionStatus = async () => {
+      if (subscriptionId) {
+        try {
+          const response = await fetch(
+            `/api/stripe/subscription-status?id=${subscriptionId}`
+          );
+          const data = await response.json();
+
+          if (response.ok && data.subscription) {
+            setIsCanceled(data.subscription.cancel_at_period_end);
+          }
+        } catch (error) {
+          console.error("Error checking subscription status:", error);
+        }
+      }
+    };
+
+    if (isOpen && isPro && subscriptionId) {
+      checkSubscriptionStatus();
+    }
+  }, [isOpen, isPro, subscriptionId]);
+
+  if (!isOpen) return null;
+
+  // Determine the alternative plan for the current subscription
+  const getAlternativePlan = () => {
+    if (currentPlan === "pro-monthly") {
+      return subscriptionPlans.find((plan) => plan.id === "pro-yearly");
+    } else if (currentPlan === "pro-yearly") {
+      return subscriptionPlans.find((plan) => plan.id === "pro-monthly");
+    }
+    return null;
+  };
+
+  const alternativePlan = getAlternativePlan();
+
+  // Handle plan change confirmation
+  const handlePlanChangeConfirm = async () => {
+    if (!targetPlan) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      console.log(`Changing from ${currentPlan} to ${targetPlan.id}`);
+
+      const response = await fetch("/api/stripe/change-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subscriptionId,
+          newPlanId: targetPlan.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to change subscription plan");
+      }
+
+      // If we need to redirect to checkout for proration/upgrade
+      if (data.url) {
+        router.push(data.url);
+        return;
+      }
+
+      setSuccessMessage(
+        `Your subscription has been changed to ${targetPlan.name}. The changes will take effect at your next billing cycle.`
+      );
+
+      // Refresh the page after a short delay
+      setTimeout(() => {
+        router.refresh();
+        onClose();
+      }, 3000);
+    } catch (err) {
+      console.error("Error changing subscription plan:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while changing your subscription plan"
+      );
+    } finally {
+      setIsLoading(false);
+      setIsPlanChangeModalOpen(false);
+    }
+  };
 
   const handleSelect = async () => {
     if (selectedPlan) {
@@ -184,6 +285,53 @@ export default function SubscriptionModal({
     }
   };
 
+  // Add a function to handle subscription reactivation
+  const handleReactivateSubscription = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!subscriptionId) {
+        throw new Error("No subscription ID found");
+      }
+
+      const response = await fetch("/api/stripe/reactivate-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subscriptionId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reactivate subscription");
+      }
+
+      setSuccessMessage(
+        "Your subscription has been reactivated. You will continue to have access to premium features."
+      );
+      setIsCanceled(false);
+
+      // Refresh the page after a short delay to update the UI
+      setTimeout(() => {
+        router.refresh();
+      }, 3000);
+    } catch (err) {
+      console.error("Error reactivating subscription:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while reactivating your subscription"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getDisplayPrice = (plan: SubscriptionPlan) => {
     if (plan.id === "pay-as-you-go") {
       return "Free";
@@ -215,7 +363,7 @@ export default function SubscriptionModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10">
-        <div className="relative w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg mx-4">
+        <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg bg-white p-6 shadow-lg mx-4">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
@@ -231,7 +379,9 @@ export default function SubscriptionModal({
             </h2>
             <p className="text-sm text-gray-500 mt-2">
               {isManagingSubscription
-                ? "You're currently on the Pro plan"
+                ? `You're currently on the ${
+                    currentPlan === "pro-monthly" ? "Pro Monthly" : "Pro Yearly"
+                  } plan`
                 : "Select the plan that works best for your needs"}
             </p>
           </div>
@@ -248,23 +398,222 @@ export default function SubscriptionModal({
             </div>
           )}
 
+          {/* Add a banner for canceled subscriptions */}
+          {isManagingSubscription && isCanceled && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg">
+              <div className="flex items-start">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-2 mt-0.5 text-amber-600"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div>
+                  <h4 className="font-medium text-amber-800">
+                    Subscription Canceled
+                  </h4>
+                  <p className="text-sm mt-1">
+                    Your subscription has been canceled but will remain active
+                    until the end of your current billing period. You can
+                    reactivate your subscription to continue your benefits
+                    beyond that date.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isManagingSubscription ? (
             <div className="flex flex-col items-center justify-center p-6 mb-6">
-              <h3 className="text-xl font-semibold mb-4">Your Current Plan</h3>
-              <div className="text-lg mb-2">
-                {currentPlan === "pro-monthly" ? "Pro Monthly" : "Pro Yearly"}
-              </div>
-              <p className="text-gray-500 mb-6">
-                You have access to all premium features
-              </p>
+              {/* Current Plan Details */}
+              <div className="w-full max-w-2xl">
+                <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
+                  <h3 className="text-xl font-semibold mb-4 text-center">
+                    Your Current Plan
+                  </h3>
+                  <div className="text-center mb-4">
+                    <span className="text-2xl font-bold text-gray-900">
+                      {currentPlan === "pro-monthly"
+                        ? "Pro Monthly"
+                        : "Pro Yearly"}
+                    </span>
+                    <span className="block text-gray-500 mt-1">
+                      {currentPlan === "pro-monthly"
+                        ? `$${subscriptionPlans
+                            .find((p) => p.id === "pro-monthly")
+                            ?.price.toFixed(2)}/month`
+                        : `$${subscriptionPlans
+                            .find((p) => p.id === "pro-yearly")
+                            ?.price.toFixed(2)}/year`}
+                    </span>
+                    {isCanceled && (
+                      <span className="inline-block mt-2 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
+                        Ends at billing period
+                      </span>
+                    )}
+                  </div>
 
-              <Button
-                onClick={() => setIsCancelModalOpen(true)}
-                className="rounded-full bg-red-100 text-red-600 hover:bg-red-200 border border-red-200"
-                disabled={isLoading}
-              >
-                Cancel Subscription
-              </Button>
+                  <div className="bg-blue-50 border border-blue-100 rounded-md p-4 mb-6">
+                    <h4 className="font-medium text-blue-800 mb-2">
+                      Your Benefits
+                    </h4>
+                    <ul className="space-y-2">
+                      {subscriptionPlans
+                        .find((p) => p.id === currentPlan)
+                        ?.features.map((feature, index) => (
+                          <li
+                            key={index}
+                            className="flex items-start text-blue-700"
+                          >
+                            <Check
+                              size={16}
+                              className="mr-2 mt-0.5 text-blue-600"
+                            />
+                            <span className="text-sm">{feature}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Plan Management Options */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium mb-3">
+                    Subscription Options
+                  </h3>
+
+                  {/* Reactivate Subscription Option (only show if canceled) */}
+                  {isCanceled && (
+                    <div className="border border-green-200 rounded-lg p-4 hover:border-green-300 transition-colors bg-green-50">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            Reactivate Subscription
+                          </h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Continue your subscription beyond the current
+                            billing period
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleReactivateSubscription}
+                          className="rounded-full bg-green-600 text-white hover:bg-green-700"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <span className="flex items-center">
+                              <svg
+                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              Processing...
+                            </span>
+                          ) : (
+                            "Reactivate"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Switch Plan Option */}
+                  {alternativePlan && (
+                    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {alternativePlan.name}
+                          </h4>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {currentPlan === "pro-monthly"
+                              ? "Save money with annual billing"
+                              : "Switch to monthly billing for more flexibility"}
+                          </p>
+
+                          {currentPlan === "pro-monthly" && (
+                            <p className="text-xs text-[#94b347] font-medium mt-1">
+                              {getSavingsText(alternativePlan)}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            setTargetPlan(alternativePlan);
+                            setIsPlanChangeModalOpen(true);
+                          }}
+                          className="rounded-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                          disabled={isLoading}
+                        >
+                          Switch to {alternativePlan.name}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cancel Subscription Option */}
+                  <div
+                    className={`border rounded-lg p-4 transition-colors ${
+                      isCanceled
+                        ? "border-gray-200 bg-gray-50"
+                        : "border-gray-200 hover:border-red-200"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4
+                          className={`font-medium ${
+                            isCanceled ? "text-gray-500" : "text-gray-900"
+                          }`}
+                        >
+                          Cancel Subscription
+                        </h4>
+                        <p
+                          className={`text-sm mt-1 ${
+                            isCanceled ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
+                          {isCanceled
+                            ? "Your subscription is already canceled"
+                            : "You'll keep access until the end of your current billing period"}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => setIsCancelModalOpen(true)}
+                        className={`rounded-full ${
+                          isCanceled
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : "bg-red-100 text-red-600 hover:bg-red-200 border border-red-200"
+                        }`}
+                        disabled={isLoading || isCanceled}
+                      >
+                        Cancel Plan
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -398,11 +747,208 @@ export default function SubscriptionModal({
         </div>
       </div>
 
+      {/* Cancel Subscription Confirmation Modal */}
       <CancelSubscriptionModal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         onConfirm={handleCancelSubscription}
       />
+
+      {/* Plan Change Confirmation Modal */}
+      <PlanChangeModal
+        isOpen={isPlanChangeModalOpen}
+        onClose={() => setIsPlanChangeModalOpen(false)}
+        onConfirm={handlePlanChangeConfirm}
+        currentPlan={currentPlan}
+        targetPlan={targetPlan}
+      />
     </>
+  );
+}
+
+// Add this new component for plan change confirmation
+interface PlanChangeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+  currentPlan: string;
+  targetPlan: SubscriptionPlan | null;
+}
+
+function PlanChangeModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  currentPlan,
+  targetPlan,
+}: PlanChangeModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!isOpen || !targetPlan) return null;
+
+  const isUpgrading =
+    currentPlan === "pro-monthly" && targetPlan.id === "pro-yearly";
+  const isDowngrading =
+    currentPlan === "pro-yearly" && targetPlan.id === "pro-monthly";
+
+  const handleConfirm = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await onConfirm();
+    } catch (err) {
+      console.error("Error changing plan:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while changing your subscription plan"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg mx-4">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+          aria-label="Close modal"
+          disabled={isLoading}
+        >
+          <X size={20} />
+        </button>
+
+        <div className="mb-6 text-center">
+          <h2 className="text-xl font-bold text-gray-900">
+            Change Subscription Plan
+          </h2>
+          <p className="text-sm text-gray-500 mt-2">
+            {isUpgrading
+              ? "You're about to upgrade to our annual plan"
+              : "You're about to change your subscription plan"}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-6">
+          <div className="flex justify-between items-center p-3 border-b border-gray-200">
+            <span className="font-medium">Current Plan:</span>
+            <span>
+              {currentPlan === "pro-monthly" ? "Pro Monthly" : "Pro Yearly"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center p-3 border-b border-gray-200">
+            <span className="font-medium">New Plan:</span>
+            <span>{targetPlan.name}</span>
+          </div>
+
+          <div className="mt-4 p-4 bg-gray-50 rounded-md">
+            {isUpgrading ? (
+              <>
+                <h4 className="font-medium text-gray-900 mb-2">
+                  Upgrading to Annual Plan
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-green-600" />
+                    <span>You'll be charged the annual rate immediately</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-green-600" />
+                    <span>Save money compared to monthly billing</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-green-600" />
+                    <span>Your new billing cycle will start today</span>
+                  </li>
+                </ul>
+              </>
+            ) : isDowngrading ? (
+              <>
+                <h4 className="font-medium text-gray-900 mb-2">
+                  Switching to Monthly Plan
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-blue-600" />
+                    <span>
+                      Your plan will change at the end of your current billing
+                      period
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-blue-600" />
+                    <span>You'll keep all benefits until then</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check size={16} className="mr-2 mt-0.5 text-blue-600" />
+                    <span>
+                      After that, you'll be billed at the monthly rate
+                    </span>
+                  </li>
+                </ul>
+              </>
+            ) : (
+              <p className="text-sm text-gray-600">
+                Your subscription plan will be updated. The changes will take
+                effect according to Stripe's billing policies.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end space-x-4">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            className="rounded-full bg-[#94b347] text-white hover:bg-[#94b347]/90 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              "Confirm Change"
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
