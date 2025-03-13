@@ -50,7 +50,7 @@ export function CreateNotebookModal({ isOpen, onClose }: CreateNotebookModalProp
             onChange={(e) => setTitle(e.target.value)}
             className='w-full'
           />
-          <Button onClick={handleCreate} disabled={title === ""} className='rounded-full w-full border border-[#94b347] bg-slate-100 text-white hover:bg-slate-100 hover:text-[#94b347] '  >
+          <Button onClick={handleCreate} disabled={title === ""} className='rounded-full w-full border border-[#94b347] bg-slate-100 text-[#94b347] hover:bg-slate-100 hover:text-[#94b347] '  >
             Create Notebook
           </Button>
         </div>

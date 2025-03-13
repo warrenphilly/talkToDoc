@@ -1,4 +1,10 @@
-import { getUserById, updateUserCreditBalance } from "@/lib/firebase/firestore";
+import {
+  forceUpdateUserCreditBalance,
+  getUserByClerkId,
+  getUserById,
+  updateUserCreditBalance,
+  updateUserSubscription,
+} from "@/lib/firebase/firestore";
 import { stripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -29,14 +35,19 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  console.log("tip the mast", event);
 
   // Handle the event
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
-    // Make sure this is a credit purchase
+    console.log("Checkout session completed:", session);
+
+    // Handle different types of checkout sessions
     if (session.metadata?.type === "credit_purchase") {
       await fulfillCreditPurchase(session);
+    } else if (session.metadata?.type === "subscription") {
+      await handleSubscription(session);
     }
   }
 
@@ -45,33 +56,134 @@ export async function POST(req: NextRequest) {
 
 async function fulfillCreditPurchase(session: any) {
   try {
+    console.log("Processing credit purchase from webhook:", {
+      metadata: session.metadata,
+      sessionId: session.id,
+    });
+
     const userId = session.metadata?.userId;
+    const clerkId = session.metadata?.clerkId; // Also check for clerkId
     const credits = parseInt(session.metadata?.credits || "0", 10);
 
-    if (!userId || isNaN(credits)) {
+    if ((!userId && !clerkId) || isNaN(credits)) {
       console.error("Invalid metadata in session:", session.metadata);
       return;
     }
 
-    // Get current user data
-    const user = await getUserById(userId);
+    // Try to get user by Firestore userId first
+    let user = userId ? await getUserById(userId) : null;
+
+    // If not found and we have clerkId, try to get by clerkId
+    if (!user && clerkId) {
+      console.log(`User not found by userId, trying clerkId: ${clerkId}`);
+      user = await getUserByClerkId(clerkId);
+    }
+
     if (!user) {
-      console.error("User not found:", userId);
+      console.error("User not found with either ID:", { userId, clerkId });
       return;
     }
+
+    console.log("Found user:", {
+      id: user.id,
+      clerkId: user.clerkId,
+      currentCredits: user.creditBalance,
+    });
 
     // Calculate new credit balance
     const currentCredits = user.creditBalance || 0;
     const newCreditBalance = currentCredits + credits;
 
-    // Update the user's credit balance
-    await updateUserCreditBalance(userId, newCreditBalance);
-
     console.log(
-      `Successfully updated credit balance for user ${userId}: ${currentCredits} -> ${newCreditBalance}`
+      `Updating credit balance: ${currentCredits} + ${credits} = ${newCreditBalance}`
     );
+
+    // Try the force update function
+    const updateResult = await forceUpdateUserCreditBalance(
+      user.id, // Use the user.id from the found user
+      newCreditBalance
+    );
+
+    if (updateResult) {
+      console.log(
+        `Successfully updated credit balance for user ${user.id}: ${currentCredits} -> ${newCreditBalance}`
+      );
+    } else {
+      console.error(`Failed to update credit balance for user ${user.id}`);
+
+      // Fallback to the regular update function
+      const fallbackResult = await updateUserCreditBalance(
+        user.id, // Use the user.id from the found user
+        newCreditBalance
+      );
+      console.log(`Fallback update result: ${fallbackResult}`);
+
+      // Verify the update worked
+      const updatedUser = await getUserById(user.id);
+      console.log("User after update attempt:", {
+        id: updatedUser?.id,
+        creditBalance: updatedUser?.creditBalance,
+      });
+    }
   } catch (error) {
     console.error("Error fulfilling credit purchase:", error);
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+  }
+}
+
+// Add this new function to handle subscriptions
+async function handleSubscription(session: any) {
+  try {
+    console.log("Processing subscription from webhook:", {
+      metadata: session.metadata,
+      sessionId: session.id,
+    });
+
+    const userId = session.metadata?.userId;
+    const clerkId = session.metadata?.clerkId;
+    const planId = session.metadata?.planId;
+
+    if (!userId || !clerkId || !planId) {
+      console.error("Invalid metadata in session:", session.metadata);
+      return;
+    }
+
+    // Get the user
+    let user = await getUserById(userId);
+    if (!user) {
+      console.error("User not found:", { userId, clerkId });
+      return;
+    }
+
+    // Update user metadata to reflect Pro status
+    const isPro = planId !== "pay-as-you-go";
+
+    // Update the user's metadata in Firestore
+    // You'll need to implement this function in your firestore.ts file
+    await updateUserSubscription(userId, {
+      isPro,
+      subscriptionId: session.subscription,
+      planId,
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log(
+      `Successfully updated subscription for user ${userId} to ${planId}`
+    );
+  } catch (error) {
+    console.error("Error handling subscription:", error);
+    if (error instanceof Error) {
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
   }
 }
 

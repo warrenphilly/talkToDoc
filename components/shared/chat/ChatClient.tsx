@@ -711,6 +711,7 @@ const ChatClient = ({
                                   }
                                   messageIndex={index}
                                 />
+                                
                               )}
                             </React.Fragment>
                           ))
@@ -736,14 +737,17 @@ const ChatClient = ({
                             onEdit={() => handleMessageEdit(null, index, 0)}
                             onDelete={() => handleMessageDelete(index, 0)}
                             onSave={(data) => handleMessageEdit(data, index, 0)}
-                          />
+                            />
+                            
                         )}
                       </div>
                     );
                   }
                   return null;
                 })}
+         
               </div>
+           
             </ResizablePanel>
 
             {!(

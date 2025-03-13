@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 // Export the SubscriptionPlan interface
@@ -68,16 +69,61 @@ export default function SubscriptionModal({
   onSelect,
   currentPlan = "pay-as-you-go",
 }: SubscriptionModalProps) {
+  const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
     subscriptionPlans.find((plan) => plan.id === currentPlan) || null
   );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSelect = () => {
+  const handleSelect = async () => {
     if (selectedPlan) {
-      onSelect(selectedPlan);
-      onClose();
+      if (selectedPlan.id === "pay-as-you-go") {
+        // For pay-as-you-go, just use the existing onSelect callback
+        onSelect(selectedPlan);
+        onClose();
+        return;
+      }
+
+      // For subscription plans, create a Stripe checkout session
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await fetch("/api/stripe/subscription", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            planId: selectedPlan.id,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create subscription");
+        }
+
+        // Redirect to Stripe Checkout
+        if (data.url) {
+          router.push(data.url);
+        } else {
+          throw new Error("No checkout URL returned");
+        }
+      } catch (err) {
+        console.error("Subscription error:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An error occurred while processing your subscription"
+        );
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -116,6 +162,7 @@ export default function SubscriptionModal({
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
           aria-label="Close modal"
+          disabled={isLoading}
         >
           <X size={20} />
         </button>
@@ -126,6 +173,12 @@ export default function SubscriptionModal({
             Select the plan that works best for your needs
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {subscriptionPlans.map((plan) => (
@@ -189,6 +242,7 @@ export default function SubscriptionModal({
                     ? "bg-[#94b347] text-white hover:bg-[#94b347]/90"
                     : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                 }`}
+                disabled={isLoading}
               >
                 {plan.id === currentPlan
                   ? "Current Plan"
@@ -205,15 +259,46 @@ export default function SubscriptionModal({
             onClick={onClose}
             variant="outline"
             className="mr-2 rounded-full text-slate-600 bg-white border border-gray-400 shadow-none hover:bg-white hover:border-[#94b347] hover:text-[#94b347]"
+            disabled={isLoading}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSelect}
-            disabled={!selectedPlan || selectedPlan.id === currentPlan}
+            disabled={
+              !selectedPlan || selectedPlan.id === currentPlan || isLoading
+            }
             className="rounded-full bg-[#94b347] text-white hover:bg-[#94b347]/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {selectedPlan?.id === currentPlan ? "Current Plan" : "Upgrade Plan"}
+            {isLoading ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </span>
+            ) : selectedPlan?.id === currentPlan ? (
+              "Current Plan"
+            ) : (
+              "Upgrade Plan"
+            )}
           </Button>
         </div>
       </div>

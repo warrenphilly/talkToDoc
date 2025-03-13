@@ -1868,16 +1868,73 @@ export const updateUserLanguage = async (
   }
 };
 
-// Add a function to update credit balance
+// Add this improved version of the function
 export const updateUserCreditBalance = async (
   userId: string,
   creditBalance: number
 ): Promise<boolean> => {
   try {
-    return await updateUserSettings(userId, { creditBalance });
+    console.log(
+      `[updateUserCreditBalance] Starting update for user ${userId} to ${creditBalance}`
+    );
+
+    if (!userId) {
+      console.error("[updateUserCreditBalance] Invalid userId provided");
+      return false;
+    }
+
+    if (typeof creditBalance !== "number" || isNaN(creditBalance)) {
+      console.error(
+        `[updateUserCreditBalance] Invalid credit balance: ${creditBalance}`
+      );
+      return false;
+    }
+
+    // Get a reference to the user document
+    const userRef = doc(db, "users", userId);
+
+    // Check if the user exists
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      console.error(
+        `[updateUserCreditBalance] User with ID ${userId} not found`
+      );
+      return false;
+    }
+
+    console.log(
+      `[updateUserCreditBalance] User found, current data:`,
+      userSnap.data()
+    );
+
+    // Update the credit balance
+    await updateDoc(userRef, {
+      creditBalance: creditBalance,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Verify the update
+    const updatedSnap = await getDoc(userRef);
+    const updatedData = updatedSnap.data();
+
+    console.log(
+      `[updateUserCreditBalance] Update completed, new data:`,
+      updatedData
+    );
+
+    if (updatedData?.creditBalance !== creditBalance) {
+      console.warn(
+        `[updateUserCreditBalance] Credit balance mismatch after update: expected ${creditBalance}, got ${updatedData?.creditBalance}`
+      );
+    }
+
+    return true;
   } catch (error) {
-    console.error("Error updating user credit balance:", error);
-    throw error;
+    console.error(
+      `[updateUserCreditBalance] Error updating credit balance for user ${userId}:`,
+      error
+    );
+    return false;
   }
 };
 
@@ -1893,3 +1950,77 @@ export const updateUserAccountStatus = async (
     throw error;
   }
 };
+
+// Add this function to explicitly convert and update the credit balance
+export const forceUpdateUserCreditBalance = async (
+  userId: string,
+  newCredits: number
+): Promise<boolean> => {
+  try {
+    console.log(
+      `[forceUpdateUserCreditBalance] Updating user ${userId} with ${newCredits} credits`
+    );
+
+    // Ensure we have a valid number
+    const creditBalance = Number(newCredits);
+    if (isNaN(creditBalance)) {
+      console.error(
+        `[forceUpdateUserCreditBalance] Invalid credit amount: ${newCredits}`
+      );
+      return false;
+    }
+
+    // Get a reference to the user document
+    const userRef = doc(db, "users", userId);
+
+    // Force update with transaction to ensure atomicity
+    await runTransaction(db, async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists()) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      transaction.update(userRef, {
+        creditBalance: creditBalance,
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    console.log(
+      `[forceUpdateUserCreditBalance] Successfully updated credit balance to ${creditBalance}`
+    );
+    return true;
+  } catch (error) {
+    console.error(`[forceUpdateUserCreditBalance] Error:`, error);
+    return false;
+  }
+};
+
+// Add this function to update user subscription status
+export async function updateUserSubscription(
+  userId: string,
+  subscriptionData: {
+    isPro: boolean;
+    subscriptionId: string;
+    planId: string;
+    updatedAt: string;
+  }
+) {
+  try {
+    const userRef = doc(db, "users", userId);
+
+    // Update the user document with subscription data
+    await updateDoc(userRef, {
+      "metadata.isPro": subscriptionData.isPro,
+      "metadata.subscriptionId": subscriptionData.subscriptionId,
+      "metadata.planId": subscriptionData.planId,
+      "metadata.subscriptionUpdatedAt": subscriptionData.updatedAt,
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Error updating user subscription:", error);
+    return false;
+  }
+}

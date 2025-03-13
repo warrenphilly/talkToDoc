@@ -64,7 +64,7 @@ export default function PricingModal({
       setError(null);
 
       // Create a checkout session via the API
-      const response = await fetch("/api/stripe", {
+      const response = await fetch("/api/stripe/payments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
