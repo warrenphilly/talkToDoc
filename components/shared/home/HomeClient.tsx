@@ -47,7 +47,7 @@ const HomeClient = () => {
 
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-white w-full overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[90vh] bg-red-500 w-full overflow-none">
       <div className="flex flex-col h-full bg-white w-full p-2 md:p-4">
         
 

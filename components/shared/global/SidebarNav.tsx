@@ -159,13 +159,13 @@ export function SidebarNav() {
 
   return (
     <Sidebar>
-      <SidebarContent className="bg-white text-slate-400 py-4 pl-2 w-full">
-        <SidebarGroup className="bg-white h-full rounded-2xl flex flex-col justify-between w-full">
-          <SidebarGroupContent className="flex flex-col justify-center h-full w-full items-center">
-            <SidebarMenu className="h-full max-h-[calc(100vh-140px)] bg-white border border-slate-300 rounded-2xl flex flex-col gap-0 w-full">
-              <div className="text-slate-800 bg-white   w-full rounded-2xl  font-semibold flex flex-col  justify-between">
-                <div className="flex flex-col items-center justify-center  gap-2 p-4">
-                  <div className="flex flex-row items-center justify-center  gap-2 text-xl">
+      <SidebarContent className=" text-slate-400 bg-white  md:py-4 md:pl-2 w-full">
+        <SidebarGroup className="bg-white md:border border-slate-300 md:mt-6 h-full rounded-2xl flex flex-col justify-between w-full">
+          <SidebarGroupContent className="flex flex-col justify-center  h-full w-full items-center">
+            <SidebarMenu className="h-full max-h-[calc(100vh-140px)] flex flex-col gap-0 w-full overflow-hidden">
+              <div className="text-slate-800 max-h-[calc(100vh-140px)] w-full rounded-2xl font-semibold flex flex-col justify-between">
+                <div className="flex flex-col items-center justify-center gap-2 p-4">
+                  <div className="flex flex-row items-center justify-center gap-2 text-xl">
                     <UserButton /> <p>{user?.username}</p>
                   </div>
 
@@ -196,7 +196,7 @@ export function SidebarNav() {
                   <CircularProgress size={20} sx={{ color: "#94b347" }} />
                 </div>
               ) : (
-                <>
+                <div className="flex flex-col w-full overflow-y-auto">
                   {/* Regular menu items */}
                   {items.map((item) => (
                     <SidebarMenuItem key={item.title}>
@@ -244,7 +244,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
                       {isLoading ? (
                         <div
                           className={`flex flex-col  items-center justify-center h-5 w-full   gap-2 ${
@@ -319,7 +319,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
                       {isLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <CircularProgress
@@ -390,7 +390,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
                       {isLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <CircularProgress
@@ -437,7 +437,6 @@ export function SidebarNav() {
                   </Collapsible>
 
                   {/* Quizzes Section */}
-
                   <Collapsible
                     open={quizzesOpen}
                     onOpenChange={setQuizzesOpen}
@@ -451,8 +450,7 @@ export function SidebarNav() {
                       }`}
                     >
                       <MessageCircleQuestion
-                        className={`h-4  text-[#94b347]
-                  `}
+                        className={`h-4  text-[#94b347]`}
                       />
                       <span>Quizzes</span>
                       <ChevronDown
@@ -461,7 +459,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
                       {quizzes.map((quiz) => (
                         <SidebarMenuItem
                           key={quiz.id}
@@ -497,7 +495,7 @@ export function SidebarNav() {
                       ))}
                     </CollapsibleContent>
                   </Collapsible>
-                </>
+                </div>
               )}
             </SidebarMenu>
           </SidebarGroupContent>
