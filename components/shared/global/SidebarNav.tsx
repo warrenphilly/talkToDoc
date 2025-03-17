@@ -159,10 +159,10 @@ export function SidebarNav() {
 
   return (
     <Sidebar>
-      <SidebarContent className=" text-slate-400 bg-white  md:py-8 md:pl-2 w-full">
+      <SidebarContent className=" text-slate-400 bg-white  p-0 md:py-8 md:pl-2 w-full overflow-hidden">
         <SidebarGroup className=" p-0 md:border border-slate-300 md:mt-6 h-full rounded-2xl flex flex-col justify-between w-full">
           <SidebarGroupContent className="flex flex-col justify-center  h-full w-full items-center">
-            <SidebarMenu className="h-full max-h-[calc(100vh-140px)] flex flex-col gap-0 w-full overflow-hidden">
+            <SidebarMenu className="h-full rounded-2xl bg-white flex flex-col gap-0 w-full overflow-hidden">
               <div className="text-slate-800 max-h-[calc(100vh-140px)] w-full rounded-2xl font-semibold flex flex-col justify-between">
                 <div className="flex flex-col items-center justify-center gap-2 p-4">
                   <div className="flex flex-row items-center justify-center gap-2 text-xl">
@@ -244,7 +244,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
+                    <CollapsibleContent className="max-h-[30vh] overflow-none">
                       {isLoading ? (
                         <div
                           className={`flex flex-col  items-center justify-center h-5 w-full   gap-2 ${
@@ -319,7 +319,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
+                    <CollapsibleContent className="max-h-[30vh] overflow-none">
                       {isLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <CircularProgress
@@ -376,7 +376,7 @@ export function SidebarNav() {
                     className="w-full h-fit justify-center bg-white rounded-xl"
                   >
                     <CollapsibleTrigger
-                      className={`flex items-center gap-2 border-b border-slate-200 py-2 w-full bg-none px-4 ${
+                      className={`flex items-center gap-2 border-b min-h-12 border-slate-200 py-2 w-full bg-none px-4 ${
                         pathname.includes("/study-guides")
                           ? "bg-[#e7f2ca] text-slate-800"
                           : "hover:bg-slate-300"
@@ -390,7 +390,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
+                    <CollapsibleContent className="max-h-[30vh] overflow-none">
                       {isLoading ? (
                         <div className="flex items-center justify-center p-4">
                           <CircularProgress
@@ -440,7 +440,7 @@ export function SidebarNav() {
                   <Collapsible
                     open={quizzesOpen}
                     onOpenChange={setQuizzesOpen}
-                    className="w-full h-fit justify-center bg-white rounded-xl"
+                    className="w-full h-fit  justify-center bg-white rounded-xl"
                   >
                     <CollapsibleTrigger
                       className={`flex items-center gap-2 border-b border-slate-200 py-2 w-full bg-none px-4 ${
@@ -459,7 +459,7 @@ export function SidebarNav() {
                         }`}
                       />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="max-h-[30vh] overflow-y-auto">
+                    <CollapsibleContent className="max-h-[30vh] overflow-none">
                       {quizzes.map((quiz) => (
                         <SidebarMenuItem
                           key={quiz.id}
