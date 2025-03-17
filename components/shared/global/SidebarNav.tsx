@@ -159,8 +159,8 @@ export function SidebarNav() {
 
   return (
     <Sidebar>
-      <SidebarContent className=" text-slate-400 bg-white  md:py-4 md:pl-2 w-full">
-        <SidebarGroup className="bg-white md:border border-slate-300 md:mt-6 h-full rounded-2xl flex flex-col justify-between w-full">
+      <SidebarContent className=" text-slate-400 bg-white  md:py-8 md:pl-2 w-full">
+        <SidebarGroup className=" p-0 md:border border-slate-300 md:mt-6 h-full rounded-2xl flex flex-col justify-between w-full">
           <SidebarGroupContent className="flex flex-col justify-center  h-full w-full items-center">
             <SidebarMenu className="h-full max-h-[calc(100vh-140px)] flex flex-col gap-0 w-full overflow-hidden">
               <div className="text-slate-800 max-h-[calc(100vh-140px)] w-full rounded-2xl font-semibold flex flex-col justify-between">

@@ -10,6 +10,7 @@ import {
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SidebarHeader } from "@/components/shared/global/sidebar-header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,15 +50,10 @@ export default function RootLayout({
             </div>  */}
             {/* <SidebarTrigger className="" /> */}
             <SidebarProvider defaultOpen={true}>
-              <div className="fixed top-4 left-4 z-50 flex flex-row items-center gap-2 bg-red-500">
-                <SidebarTrigger />
-                <div>
-                  <p>Gammanotes</p>
-                </div>
-              </div>
+              <SidebarHeader />
 
-              <div className="flex min-h-screen">
-                <div className="bg-white">
+              <div className="flex h-full max-h-[90vh] w-full ">
+                <div className="h-full max-h-[90vh] bg-red-500">
                   <SidebarNav />
                 </div>
                 <main className="flex-1">{children}</main>
