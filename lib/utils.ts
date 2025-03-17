@@ -15,7 +15,9 @@ export const sendMessage = async (
   language: string,
   input: string,
   files: File[],
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  setMessages: (
+    messagesOrUpdater: Message[] | ((prev: Message[]) => Message[])
+  ) => void,
   setInput: (input: string) => void,
   setFiles: (files: File[]) => void,
   setShowUpload: (show: boolean) => void,
@@ -23,7 +25,14 @@ export const sendMessage = async (
   setTotalSections: (total: number) => void,
   setIsProcessing: (isProcessing: boolean) => void,
   notebookId: string,
-  pageId: string
+  pageId: string,
+  fileMetadata: Array<{
+    name: string;
+    size: number;
+    type: string;
+    uploadedAt: number;
+    id: string;
+  }> = []
 ) => {
   if (!input.trim() && files.length === 0) {
     console.warn("No input text or files provided");
@@ -37,6 +46,8 @@ export const sendMessage = async (
   const tempAiMessage: Message = {
     user: "AI",
     text: [],
+    files: files.map((file) => file.name),
+    fileMetadata: fileMetadata,
   };
 
   // Add the temporary message to the UI immediately
@@ -254,6 +265,8 @@ export const sendMessage = async (
                   const aiMessage: Message = {
                     user: "AI",
                     text: sections,
+                    files: files.map((file) => file.name),
+                    fileMetadata: fileMetadata,
                   };
 
                   // Save the current state to the database
@@ -294,6 +307,8 @@ export const sendMessage = async (
           const aiMessage: Message = {
             user: "AI",
             text: sections,
+            files: files.map((file) => file.name),
+            fileMetadata: fileMetadata,
           };
 
           messages.push(aiMessage);
@@ -327,6 +342,8 @@ export const sendMessage = async (
               ],
             },
           ],
+          files: [],
+          fileMetadata: [],
         };
         messages.push(errorMessage);
         setMessages((prevMessages) => {
@@ -370,6 +387,8 @@ export const sendMessage = async (
             ],
           },
         ],
+        files: [],
+        fileMetadata: [],
       };
 
       setMessages((prevMessages) => {
@@ -404,6 +423,8 @@ export const sendMessage = async (
           ],
         },
       ],
+      files: [],
+      fileMetadata: [],
     };
 
     setMessages((prevMessages) => {

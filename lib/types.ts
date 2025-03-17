@@ -20,9 +20,12 @@ export interface Message {
   user: string;
   text: string | Section[];
   files?: string[];
-  fileDetails?: Array<{
-    id: string;
+  fileMetadata?: Array<{
     name: string;
+    size: number;
+    type: string;
+    uploadedAt: number;
+    id: string;
   }>;
 }
 

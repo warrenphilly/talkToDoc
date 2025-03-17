@@ -236,6 +236,15 @@ const ChatClient = ({
     setIsProcessing(true);
     setCurrentSections(0);
     try {
+      // Create file metadata to store in the notebook
+      const fileMetadata = files.map((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: Date.now(),
+        id: crypto.randomUUID(),
+      }));
+
       // The sendMessage function now handles incremental database updates
       await sendMessage(
         language,
@@ -249,7 +258,8 @@ const ChatClient = ({
         setTotalSections,
         setIsProcessing,
         notebookId,
-        tabId
+        tabId,
+        fileMetadata // Pass the file metadata to be saved
       );
     } catch (error) {
       console.error("Error processing files:", error);
@@ -279,6 +289,8 @@ const ChatClient = ({
               ],
             },
           ],
+          files: [], // Empty files array
+          fileMetadata: [], // Empty file metadata
         },
       ]);
     } finally {
@@ -711,7 +723,6 @@ const ChatClient = ({
                                   }
                                   messageIndex={index}
                                 />
-                                
                               )}
                             </React.Fragment>
                           ))
@@ -737,17 +748,14 @@ const ChatClient = ({
                             onEdit={() => handleMessageEdit(null, index, 0)}
                             onDelete={() => handleMessageDelete(index, 0)}
                             onSave={(data) => handleMessageEdit(data, index, 0)}
-                            />
-                            
+                          />
                         )}
                       </div>
                     );
                   }
                   return null;
                 })}
-         
               </div>
-           
             </ResizablePanel>
 
             {!(

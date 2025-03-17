@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Message } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
+import { motion } from "framer-motion";
 import { ImageIcon, LucideFileText, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
@@ -21,6 +22,14 @@ interface UploadAreaProps {
   isDatabaseUpdating: boolean;
 }
 
+interface FileMetadata {
+  id: string;
+  name: string;
+  size?: number;
+  type?: string;
+  uploadedAt?: number;
+}
+
 const UploadArea = ({
   messages,
   files,
@@ -37,15 +46,13 @@ const UploadArea = ({
   isDatabaseUpdating,
 }: UploadAreaProps) => {
   const [previouslyUploadedFiles, setPreviouslyUploadedFiles] = useState<
-    Array<{ id: string; name: string }>
+    FileMetadata[]
   >([]);
   const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
   const [processingFiles, setProcessingFiles] = useState<boolean>(false);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
   const [hasProcessedFiles, setHasProcessedFiles] = useState(false);
 
   // Update filesToProcess when files prop changes
-
   useEffect(() => {
     setHasProcessedFiles(false);
   }, [files]);
@@ -56,36 +63,48 @@ const UploadArea = ({
     }
   }, [files, processingFiles, hasProcessedFiles]);
 
-  useEffect(() => {
-    console.log("filesToProcess labratory", filesToProcess);
-  }, [filesToProcess]);
-
   // Extract previously uploaded files from messages
   useEffect(() => {
-    const allUploadedFiles = messages
-      .filter((msg) => msg.files && msg.files.length > 0)
-      .flatMap((msg) => {
-        if (msg.fileDetails) {
-          return msg.fileDetails;
-        }
-        return (msg.files || []).map((id) => ({ id, name: "Unknown File" }));
-      });
+    const allUploadedFiles: FileMetadata[] = [];
+
+    messages.forEach((msg) => {
+      // If we have detailed file metadata, use it
+      if (msg.fileMetadata && msg.fileMetadata.length > 0) {
+        allUploadedFiles.push(...msg.fileMetadata);
+      }
+      // Otherwise fall back to just the file names
+      else if (msg.files && msg.files.length > 0) {
+        msg.files.forEach((fileName) => {
+          // Check if this file is already in our list to avoid duplicates
+          if (!allUploadedFiles.some((f) => f.name === fileName)) {
+            allUploadedFiles.push({
+              id: crypto.randomUUID(),
+              name: fileName,
+            });
+          }
+        });
+      }
+    });
+
+    // Sort by uploadedAt if available, newest first
+    allUploadedFiles.sort((a, b) => {
+      if (a.uploadedAt && b.uploadedAt) {
+        return b.uploadedAt - a.uploadedAt;
+      }
+      return 0;
+    });
+
     setPreviouslyUploadedFiles(allUploadedFiles);
   }, [messages]);
 
   const handleGenerateNotes = async () => {
     setIsProcessing(true);
+    setProcessingFiles(true);
 
     try {
-      const fileDetails = filesToProcess.map((file) => ({
-        id: crypto.randomUUID(),
-        name: file.name,
-      }));
-
-      setPreviouslyUploadedFiles((prev) => [...prev, ...fileDetails]);
+      // File details will now be handled in the ChatClient component
       setFilesToProcess([]);
       setHasProcessedFiles(true);
-
       setShowUpload(false);
       await handleSendMessage();
     } finally {
@@ -99,17 +118,36 @@ const UploadArea = ({
     );
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <div className="flex  md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-white">
+    <div className="flex md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-white">
       {showUpload && (
-        <div className="flex flex-col gap-2  items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px] md:border border-slate-400 h-full md:h-fit p-6">
+        <motion.div
+          className="flex flex-col gap-2 items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px] md:border border-slate-400 h-full md:h-fit p-6"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
           {isProcessing && (
             <div className="w-full space-y-2">
               <div className="w-full bg-slate-200 rounded-full h-2">
-                <div
-                  className="bg-[#94b347] h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(progress / totalSections) * 100}%` }}
-                />
+               
               </div>
               <p className="text-sm text-slate-500 text-center">
                 Processing section {progress} of {totalSections}
@@ -132,34 +170,36 @@ const UploadArea = ({
                 accept=".pdf,.doc,.docx,.pptx,.png,.jpg,.jpeg,.csv"
                 disabled={processingFiles}
               />
-              {filesToProcess.length === 0 && (
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg data-[state=active]:bg-white data-[state=active]:text-slate-600 data-[state=active]:border-slate-400"
-                  disabled={processingFiles}
-                >
-                  <UploadOutlined />
-                  Upload Files ({filesToProcess.length})
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 bg-white text-slate-600 border border-slate-400 shadow-lg data-[state=active]:bg-white data-[state=active]:text-slate-600 data-[state=active]:border-slate-400"
+                disabled={processingFiles}
+              >
+                <UploadOutlined />
+                Upload Files
+              </Button>
             </div>
 
             {/* New Files List */}
-            <div className="flex flex-col  gap-2 w-full">
+            <div className="flex flex-col gap-2 w-full">
               {filesToProcess.length > 0 && (
-                <div className="   space-y-3 w-full flex flex-col gap-2 items-center justify-center">
+                <motion.div
+                  className="space-y-3 w-full flex flex-col gap-2 items-center justify-center"
+                  variants={containerVariants}
+                >
                   <p className="text-sm text-slate-600 font-semibold">
-                    File to Process
+                    Files to Process
                   </p>
                   <div className="space-y-2 w-full max-w-md">
                     {filesToProcess.map((file, index) => {
                       const isImage = file.type.startsWith("image/");
 
                       return (
-                        <div
+                        <motion.div
                           key={index}
                           className="flex items-center justify-between bg-slate-100 p-2 rounded-lg"
+                          variants={itemVariants}
                         >
                           <div className="flex items-center gap-3">
                             {isImage ? (
@@ -200,20 +240,23 @@ const UploadArea = ({
                           >
                             <Trash2 className="w-4 h-4 text-slate-500 hover:text-red-500" />
                           </button>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* Previously Uploaded Files List */}
               {previouslyUploadedFiles.length > 0 && (
-                <div className=" rounded-lg p-4 space-y-3">
+                <motion.div
+                  className="rounded-lg p-4 space-y-3 w-full"
+                  variants={containerVariants}
+                >
                   <p className="text-sm text-slate-600 font-semibold">
                     Previously Uploaded Files
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                     {previouslyUploadedFiles.map((file, index) => {
                       const fileExtension = file.name
                         .split(".")
@@ -227,50 +270,68 @@ const UploadArea = ({
                         "webp",
                       ].includes(fileExtension || "");
 
+                      // Format the upload date if available
+                      const uploadDate = file.uploadedAt
+                        ? new Date(file.uploadedAt).toLocaleDateString()
+                        : null;
+
                       return (
-                        <div
-                          key={index}
-                          className="bg-white flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-400"
+                        <motion.div
+                          key={file.id}
+                          className="bg-white flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                          variants={itemVariants}
                         >
-                          <div className="flex items-center gap-2 sm:gap-3 bg-white w-full">
+                          <div className="flex items-center gap-3 bg-white w-full">
                             {isImage ? (
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center bg-slate-100 rounded flex-shrink-0">
-                                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
+                              <div className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded flex-shrink-0">
+                                <ImageIcon className="w-5 h-5 text-slate-400" />
                               </div>
                             ) : (
-                              <LucideFileText className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 flex-shrink-0" />
+                              <LucideFileText className="w-5 h-5 text-slate-600 flex-shrink-0" />
                             )}
-                            <div className="min-w-0 flex-1 ">
-                              <p className="text-xs sm:text-sm font-medium text-slate-700 truncate">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-700 truncate">
                                 {file.name}
                               </p>
+                              {(file.size || uploadDate) && (
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                  {file.size && (
+                                    <span>
+                                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                                    </span>
+                                  )}
+                                  {uploadDate && <span>• {uploadDate}</span>}
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
             {/* Generate Button - only shown when there are new files */}
-            <div className="flex flex-col gap-2 w-full h-full max-h-[300px]  items-center justify-start pt-6 ">
-              <Button
-                className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
-                onClick={handleGenerateNotes}
-                disabled={
-                  processingFiles ||
-                  filesToProcess.length === 0 ||
-                  isDatabaseUpdating
-                }
-              >
-                {processingFiles || isDatabaseUpdating
-                  ? "Processing..."
-                  : "Generate Notes from New Files"}
-              </Button>
-            </div>
+            {filesToProcess.length > 0 && (
+              <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6">
+                <Button
+                  className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
+                  onClick={handleGenerateNotes}
+                  disabled={
+                    processingFiles ||
+                    filesToProcess.length === 0 ||
+                    isDatabaseUpdating
+                  }
+                >
+                  {processingFiles || isDatabaseUpdating
+                    ? "Processing..."
+                    : "Generate Notes from New Files"}
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
