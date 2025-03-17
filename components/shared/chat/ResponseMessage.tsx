@@ -89,10 +89,10 @@ export const ResponseMessage = ({
 
   return (
     <div className="md:p-2 rounded mb-2">
-      <div className="p-2 md:p-4 rounded-2xl transition-colors bg-gray-50 shadow-lg">
-        <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-3">
+      <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
+        <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
           <h3
-            className="text-base md:text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer break-words"
+            className="text-lg md:text-xl font-bold text-[#94b347] hover:text-[#7a9639] cursor-pointer break-words"
             onClick={() => handleSectionClick(section)}
           >
             {section.title}
@@ -106,7 +106,7 @@ export const ResponseMessage = ({
             >
               <Edit2 className="h-4 w-4" />
             </Button>
-            <AlertDialog >
+            <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
                   variant="ghost"
@@ -139,21 +139,167 @@ export const ResponseMessage = ({
             </AlertDialog>
           </div>
         </div>
-        <div className="space-y-2">
-          {section.sentences.map((sentence, sentenceIdx) => (
-            <Button
-              key={sentenceIdx}
-              asChild
-              onClick={() => handleSentenceClick(sentence)}
-              className="bg-slate-50 hover:border hover:bg-slate-100 rounded cursor-pointer transition-colors shadow-none p-0 h-fit w-fit"
-            >
-              <div className="px-1 py-1 rounded cursor-pointer transition-colors">
-                <p className="text-gray-800 text-xs md:text-sm text-left whitespace-normal break-words">
-                  {sentence.text}
-                </p>
-              </div>
-            </Button>
-          ))}
+        <div className="space-y-4">
+          {/* Group consecutive paragraphs for better readability */}
+          {(() => {
+            let currentListType: string | null = null;
+            let listItems: React.ReactElement[] = [];
+            let result: React.ReactElement[] = [];
+            let key = 0;
+            let isSummarySection = false;
+
+            section.sentences.forEach((sentence, sentenceIdx) => {
+              const format = sentence.format || "paragraph";
+
+              // Check if we're entering a summary section
+              if (
+                format === "heading" &&
+                (sentence.text.toLowerCase().includes("summary") ||
+                  sentence.text.toLowerCase().includes("key points"))
+              ) {
+                isSummarySection = true;
+              }
+
+              // Handle list grouping
+              if (format === "bullet" || format === "numbered") {
+                // If we're starting a new list or changing list types
+                if (currentListType !== format) {
+                  // Flush any existing list
+                  if (listItems.length > 0) {
+                    result.push(
+                      <div key={`list-${key++}`} className="my-3">
+                        {currentListType === "bullet" ? (
+                          <ul className="list-disc pl-6 space-y-2">
+                            {listItems}
+                          </ul>
+                        ) : (
+                          <ol className="list-decimal pl-6 space-y-2">
+                            {listItems}
+                          </ol>
+                        )}
+                      </div>
+                    );
+                    listItems = [];
+                  }
+                  currentListType = format;
+                }
+
+                // Add to current list with enhanced styling
+                listItems.push(
+                  <li
+                    key={`item-${sentenceIdx}`}
+                    className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words leading-relaxed ${
+                      isSummarySection ? "font-medium" : ""
+                    }`}
+                    onClick={() => handleSentenceClick(sentence)}
+                  >
+                    {sentence.text}
+                  </li>
+                );
+              } else {
+                // If we're ending a list, flush it
+                if (listItems.length > 0) {
+                  result.push(
+                    <div key={`list-${key++}`} className="my-3">
+                      {currentListType === "bullet" ? (
+                        <ul className="list-disc pl-6 space-y-2">
+                          {listItems}
+                        </ul>
+                      ) : (
+                        <ol className="list-decimal pl-6 space-y-2">
+                          {listItems}
+                        </ol>
+                      )}
+                    </div>
+                  );
+                  listItems = [];
+                  currentListType = null;
+                }
+
+                // Handle non-list content with enhanced styling
+                let content;
+                switch (format) {
+                  case "formula":
+                    content = (
+                      <div
+                        className="px-4 py-3 bg-gray-50 font-mono text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200"
+                        onClick={() => handleSentenceClick(sentence)}
+                      >
+                        {sentence.text}
+                      </div>
+                    );
+                    break;
+                  case "italic":
+                    content = (
+                      <p
+                        className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed"
+                        onClick={() => handleSentenceClick(sentence)}
+                      >
+                        {sentence.text}
+                      </p>
+                    );
+                    break;
+                  case "bold":
+                    content = (
+                      <p
+                        className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed"
+                        onClick={() => handleSentenceClick(sentence)}
+                      >
+                        {sentence.text}
+                      </p>
+                    );
+                    break;
+                  case "heading":
+                    content = (
+                      <h4
+                        className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
+                          isSummarySection ? "text-[#94b347]" : ""
+                        }`}
+                        onClick={() => handleSentenceClick(sentence)}
+                      >
+                        {sentence.text}
+                      </h4>
+                    );
+                    break;
+                  default: // paragraph
+                    content = (
+                      <p
+                        className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                          isSummarySection ? "text-gray-700" : ""
+                        }`}
+                        onClick={() => handleSentenceClick(sentence)}
+                      >
+                        {sentence.text}
+                      </p>
+                    );
+                }
+
+                result.push(
+                  <div
+                    key={`content-${sentenceIdx}`}
+                    className="hover:bg-gray-50 rounded-md transition-colors px-1"
+                  >
+                    {content}
+                  </div>
+                );
+              }
+            });
+
+            // Flush any remaining list items
+            if (listItems.length > 0) {
+              result.push(
+                <div key={`list-${key++}`} className="my-3">
+                  {currentListType === "bullet" ? (
+                    <ul className="list-disc pl-6 space-y-2">{listItems}</ul>
+                  ) : (
+                    <ol className="list-decimal pl-6 space-y-2">{listItems}</ol>
+                  )}
+                </div>
+              );
+            }
+
+            return result;
+          })()}
         </div>
       </div>
     </div>

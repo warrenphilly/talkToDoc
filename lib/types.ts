@@ -1,21 +1,29 @@
 export interface Sentence {
-   id: number;
-   text: string;
+  id: number;
+  text: string;
+  format?:
+    | "paragraph"
+    | "bullet"
+    | "numbered"
+    | "formula"
+    | "italic"
+    | "bold"
+    | "heading";
 }
 
 export interface Section {
-   title: string;
-   sentences: Sentence[];
+  title: string;
+  sentences: Sentence[];
 }
-  
+
 export interface Message {
-   user: string;
-   text: string | Section[];
-   files?: string[];
-   fileDetails?: Array<{
-     id: string;
-     name: string;
-   }>;
+  user: string;
+  text: string | Section[];
+  files?: string[];
+  fileDetails?: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 export interface ParagraphData {
