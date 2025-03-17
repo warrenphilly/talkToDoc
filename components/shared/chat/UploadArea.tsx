@@ -144,14 +144,7 @@ const UploadArea = ({
           animate="visible"
           variants={containerVariants}
         >
-          {isProcessing && (
-            <div className="w-full space-y-2">
-             
-              <p className="text-sm text-slate-500 text-center">
-                Processing section {progress} of {totalSections}
-              </p>
-            </div>
-          )}
+   
           <label className="block text-lg font-medium text-gray-700 mb-1">
             Upload your files
           </label>
