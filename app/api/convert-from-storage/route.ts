@@ -172,7 +172,7 @@ async function processFile(
   }
 
   // For other file types, use chunked processing
-  const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+  const CHUNK_SIZE = 750 * 1024; // ~750KB chunks instead of 1MB
   let textContent = "";
 
   for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {

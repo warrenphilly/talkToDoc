@@ -30,6 +30,25 @@ interface ResponseProps {
   index: number;
 }
 
+// Add this helper function to parse and format text with Markdown-style bold
+const formatTextWithMarkdown = (text: string) => {
+  // Replace **text** with bold spans
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  if (parts.length === 1) {
+    return text; // No markdown formatting found
+  }
+
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      // Extract the text between ** and render it as bold
+      const boldText = part.slice(2, -2);
+      return <strong key={i}>{boldText}</strong>;
+    }
+    return part;
+  });
+};
+
 export const ResponseMessage = ({
   msg,
   handleSectionClick,
@@ -184,7 +203,7 @@ export const ResponseMessage = ({
                   currentListType = format;
                 }
 
-                // Add to current list with enhanced styling
+                // Add to current list with enhanced styling and markdown support
                 listItems.push(
                   <li
                     key={`item-${sentenceIdx}`}
@@ -193,7 +212,7 @@ export const ResponseMessage = ({
                     }`}
                     onClick={() => handleSentenceClick(sentence)}
                   >
-                    {sentence.text}
+                    {formatTextWithMarkdown(sentence.text)}
                   </li>
                 );
               } else {
@@ -225,7 +244,7 @@ export const ResponseMessage = ({
                         className="px-4 py-3 bg-gray-50 font-mono text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200"
                         onClick={() => handleSentenceClick(sentence)}
                       >
-                        {sentence.text}
+                        {formatTextWithMarkdown(sentence.text)}
                       </div>
                     );
                     break;
@@ -235,7 +254,7 @@ export const ResponseMessage = ({
                         className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed"
                         onClick={() => handleSentenceClick(sentence)}
                       >
-                        {sentence.text}
+                        {formatTextWithMarkdown(sentence.text)}
                       </p>
                     );
                     break;
@@ -245,7 +264,7 @@ export const ResponseMessage = ({
                         className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed"
                         onClick={() => handleSentenceClick(sentence)}
                       >
-                        {sentence.text}
+                        {formatTextWithMarkdown(sentence.text)}
                       </p>
                     );
                     break;
@@ -257,7 +276,7 @@ export const ResponseMessage = ({
                         }`}
                         onClick={() => handleSentenceClick(sentence)}
                       >
-                        {sentence.text}
+                        {formatTextWithMarkdown(sentence.text)}
                       </h4>
                     );
                     break;
@@ -269,7 +288,7 @@ export const ResponseMessage = ({
                         }`}
                         onClick={() => handleSentenceClick(sentence)}
                       >
-                        {sentence.text}
+                        {formatTextWithMarkdown(sentence.text)}
                       </p>
                     );
                 }

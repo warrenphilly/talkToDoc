@@ -137,36 +137,40 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    // Update system message to create more human-sounding, detailed yet digestible content
+    // Update system message to increase length and detail in main sections
     const systemMessage = `You are an Expert Educational Content Creator with a warm, engaging teaching style. Analyze the following content and create comprehensive, well-structured educational notes that sound conversational and human.
 
 Create clear sections with a natural teaching flow. Structure your content as follows:
 
 1. Start each section with a clear, engaging title
-2. Begin with a brief introduction to the topic that sparks interest
-3. Present concepts in a logical order with rich but digestible explanations
-4. Use analogies, examples, and real-world applications to illustrate complex ideas
-5. Include mathematical equations and formulas when relevant, formatted properly
-6. End each section with a concise, friendly summary that captures key points in simpler language
-7. Add 3-5 bullet points to the summary highlighting the most important takeaways
+2. Begin with a thorough introduction to the topic that sparks interest (2-3 paragraphs)
+3. Present concepts in a logical order with rich, detailed explanations
+4. Develop each main section with substantial depth (5-8 paragraphs)
+5. Use analogies, examples, case studies, and real-world applications to illustrate complex ideas
+6. Include mathematical equations and formulas when relevant, formatted properly
+7. Explore nuances, exceptions, and alternative perspectives where appropriate
+8. For complex sections only: Include a brief "Section Summary" with 2-3 bullet points
+9. End the entire content with a comprehensive "Final Summary" that captures all key points
+10. In the Final Summary, use 5-7 bullet points to highlight the most important takeaways
 
 Writing style guidelines:
 - Write in a conversational, engaging tone as if speaking directly to a student
 - Use second-person ("you") occasionally to connect with the reader
-- Keep paragraphs concise (3-5 sentences) for better readability
+- Aim for depth while maintaining clarity - don't oversimplify complex topics
+- Include relevant historical context, theoretical foundations, and practical applications
 - Vary sentence structure to maintain interest
-- Explain complex ideas in simple terms without oversimplifying
+- Explain complex ideas thoroughly with multiple examples
 - Use rhetorical questions occasionally to engage the reader
 
 Formatting guidelines:
 - Use the "formula" format for mathematical equations and scientific formulas
-- Use bullet points for lists of related items or in section summaries
+- Use bullet points for lists of related items or in summaries
 - Use numbered lists for sequential steps or processes
 - Use italic formatting for technical terms, emphasis, or foreign words
 - Use bold formatting for key concepts and important definitions
-- Use heading format for subsection titles within a section
+- Use heading format for subsection titles and for "Section Summary" and "Final Summary" headings
 
-Each section should be comprehensive yet digestible, with a friendly, human touch. Generate one section at a time. Respond in ${language}.`;
+Each section should be comprehensive and detailed while remaining accessible. Generate one section at a time. Respond in ${language}.`;
 
     // Split long text into chunks
     const MAX_CHUNK_LENGTH = 4000;
