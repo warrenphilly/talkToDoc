@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Message, ParagraphData, Section, Sentence } from "@/lib/types";
+import { motion } from "framer-motion";
 import { Edit2, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface ResponseProps {
   msg: Message;
@@ -60,23 +61,73 @@ export const ResponseMessage = ({
   index,
 }: ResponseProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Add effect to trigger animation after component mounts
+  useEffect(() => {
+    // Small delay to ensure the animation is noticeable
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleEditClick = () => {
     setIsEditing(true);
     onEdit(); // Call the parent's onEdit handler
   };
 
+  // Animation variants for framer-motion
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  // Content animation variants (staggered children)
+  const contentAnimation = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemAnimation = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.4 },
+    },
+  };
+
   if (typeof msg.text === "string") {
     return (
-      <div className="md:p-2 rounded mb-2">
+      <motion.div
+        className="md:p-2 rounded mb-2"
+        initial="hidden"
+        animate={isVisible ? "visible" : "hidden"}
+        variants={fadeIn}
+      >
         <div className="text-sm">
-          <div className="bg-white  p-2 md:p-4 rounded-2xl transition-colors">
+          <div className="bg-white p-2 md:p-4 rounded-2xl transition-colors">
             <p className="text-gray-800 whitespace-normal break-words">
               {msg.text}
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -107,16 +158,22 @@ export const ResponseMessage = ({
   }
 
   return (
-    <div className="md:p-2 rounded mb-2">
+    <motion.div
+      className="md:p-2 rounded mb-2"
+      initial="hidden"
+      animate={isVisible ? "visible" : "hidden"}
+      variants={fadeIn}
+    >
       <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
-          <h3
+          <motion.h3
             className="text-lg md:text-xl font-bold text-[#94b347] hover:text-[#7a9639] cursor-pointer break-words"
             onClick={() => handleSectionClick(section)}
+            variants={itemAnimation}
           >
             {section.title}
-          </h3>
-          <div className="flex gap-6">
+          </motion.h3>
+          <motion.div className="flex gap-6" variants={itemAnimation}>
             <Button
               onClick={handleEditClick}
               variant="ghost"
@@ -135,7 +192,7 @@ export const ResponseMessage = ({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="bg-white p-6 max-w-sm rounded-lg  ">
+              <AlertDialogContent className="bg-white p-6 max-w-sm rounded-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Section</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -143,7 +200,7 @@ export const ResponseMessage = ({
                     cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="flex flex-row gap-2 justify-between items-center ">
+                <AlertDialogFooter className="flex flex-row gap-2 justify-between items-center">
                   <AlertDialogCancel className="bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-full">
                     Cancel
                   </AlertDialogCancel>
@@ -156,9 +213,9 @@ export const ResponseMessage = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+          </motion.div>
         </div>
-        <div className="space-y-4">
+        <motion.div className="space-y-4" variants={contentAnimation}>
           {/* Group consecutive paragraphs for better readability */}
           {(() => {
             let currentListType: string | null = null;
@@ -186,7 +243,11 @@ export const ResponseMessage = ({
                   // Flush any existing list
                   if (listItems.length > 0) {
                     result.push(
-                      <div key={`list-${key++}`} className="my-3">
+                      <motion.div
+                        key={`list-${key++}`}
+                        className="my-3"
+                        variants={itemAnimation}
+                      >
                         {currentListType === "bullet" ? (
                           <ul className="list-disc pl-6 space-y-2">
                             {listItems}
@@ -196,7 +257,7 @@ export const ResponseMessage = ({
                             {listItems}
                           </ol>
                         )}
-                      </div>
+                      </motion.div>
                     );
                     listItems = [];
                   }
@@ -205,21 +266,26 @@ export const ResponseMessage = ({
 
                 // Add to current list with enhanced styling and markdown support
                 listItems.push(
-                  <li
+                  <motion.li
                     key={`item-${sentenceIdx}`}
                     className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words leading-relaxed ${
                       isSummarySection ? "font-medium" : ""
                     }`}
                     onClick={() => handleSentenceClick(sentence)}
+                    variants={itemAnimation}
                   >
                     {formatTextWithMarkdown(sentence.text)}
-                  </li>
+                  </motion.li>
                 );
               } else {
                 // If we're ending a list, flush it
                 if (listItems.length > 0) {
                   result.push(
-                    <div key={`list-${key++}`} className="my-3">
+                    <motion.div
+                      key={`list-${key++}`}
+                      className="my-3"
+                      variants={itemAnimation}
+                    >
                       {currentListType === "bullet" ? (
                         <ul className="list-disc pl-6 space-y-2">
                           {listItems}
@@ -229,7 +295,7 @@ export const ResponseMessage = ({
                           {listItems}
                         </ol>
                       )}
-                    </div>
+                    </motion.div>
                   );
                   listItems = [];
                   currentListType = null;
@@ -294,12 +360,13 @@ export const ResponseMessage = ({
                 }
 
                 result.push(
-                  <div
+                  <motion.div
                     key={`content-${sentenceIdx}`}
                     className="hover:bg-gray-50 rounded-md transition-colors px-1"
+                    variants={itemAnimation}
                   >
                     {content}
-                  </div>
+                  </motion.div>
                 );
               }
             });
@@ -307,21 +374,25 @@ export const ResponseMessage = ({
             // Flush any remaining list items
             if (listItems.length > 0) {
               result.push(
-                <div key={`list-${key++}`} className="my-3">
+                <motion.div
+                  key={`list-${key++}`}
+                  className="my-3"
+                  variants={itemAnimation}
+                >
                   {currentListType === "bullet" ? (
                     <ul className="list-disc pl-6 space-y-2">{listItems}</ul>
                   ) : (
                     <ol className="list-decimal pl-6 space-y-2">{listItems}</ol>
                   )}
-                </div>
+                </motion.div>
               );
             }
 
             return result;
           })()}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

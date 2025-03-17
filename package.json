@@ -44,7 +44,7 @@
     "dotenv": "^16.4.7",
     "firebase": "^11.1.0",
     "firebase-admin": "^12.2.0",
-    "framer-motion": "^11.17.0",
+    "framer-motion": "^11.18.2",
     "genkit": "^0.9.12",
     "jszip": "^3.10.1",
     "langchain": "^0.3.15",
