@@ -222,8 +222,10 @@ export function SidebarNav() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                    <div className=" flex flex-col gap-2">
 
-                  {/* Notebooks Section */}
+                    {/* Notebooks Section */}
+                    <div className="h-12">
                   <Collapsible
                     open={notebooksOpen}
                     onOpenChange={setNotebooksOpen}
@@ -297,8 +299,10 @@ export function SidebarNav() {
                       )}
                     </CollapsibleContent>
                   </Collapsible>
-
-                  {/* Study Cards Section */}
+                  </div>
+                  
+                    {/* Study Cards Section */}
+                    <div className="h-12">
                   <Collapsible
                     open={studyCardsOpen}
                     onOpenChange={setStudyCardsOpen}
@@ -367,13 +371,15 @@ export function SidebarNav() {
                         ))
                       )}
                     </CollapsibleContent>
-                  </Collapsible>
+                      </Collapsible>
+                      </div>
 
                   {/* Study Guides Section */}
+                  <div className="h-12">
                   <Collapsible
                     open={studyGuidesOpen}
                     onOpenChange={setStudyGuidesOpen}
-                    className="w-full h-fit justify-center bg-white rounded-xl"
+                    className="w-full h-fit justify-center bg-white rounded-xl  min-h-12"
                   >
                     <CollapsibleTrigger
                       className={`flex items-center gap-2 border-b min-h-12 border-slate-200 py-2 w-full bg-none px-4 ${
@@ -435,8 +441,10 @@ export function SidebarNav() {
                       )}
                     </CollapsibleContent>
                   </Collapsible>
+                  </div>
 
-                  {/* Quizzes Section */}
+                    {/* Quizzes Section */}
+                      <div className="h-12">
                   <Collapsible
                     open={quizzesOpen}
                     onOpenChange={setQuizzesOpen}
@@ -494,7 +502,9 @@ export function SidebarNav() {
                         </SidebarMenuItem>
                       ))}
                     </CollapsibleContent>
-                  </Collapsible>
+                      </Collapsible>
+                      </div>
+                      </div>
                 </div>
               )}
             </SidebarMenu>

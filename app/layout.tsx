@@ -1,3 +1,6 @@
+
+import { SidebarHeader } from "@/components/shared/global/sidebar-header";
+import { CustomSidebar } from "@/components/shared/global/custom-sidebar";
 import { SidebarNav } from "@/components/shared/global/SidebarNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -10,7 +13,6 @@ import {
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SidebarHeader } from "@/components/shared/global/sidebar-header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,23 +44,12 @@ export default function RootLayout({
           suppressHydrationWarning={true}
         >
           <SignedIn>
-            {/* <div className="flex flex-row md:ml-6 bg-red-500 w-full absolute top-0 pt-6 left-4 z-50 items-center justify-start md:justify-center gap-2">
-              {/* <SidebarTrigger className="" /> */}
-            {/* <div className=" flex w-full justify-center items-center ">
-                <p className="  md:ml-8">Gammanotes</p>
-              </div>
-            </div>  */}
-            {/* <SidebarTrigger className="" /> */}
-            <SidebarProvider defaultOpen={true}>
-              <SidebarHeader />
-
-              <div className="flex h-full max-h-[90vh] w-full ">
-                <div className="h-full max-h-[90vh] bg-red-500">
-                  <SidebarNav />
-                </div>
-                <main className="flex-1">{children}</main>
-              </div>
-            </SidebarProvider>
+            <div className="flex min-h-screen overflow-hidden">
+              <CustomSidebar />
+              <main className="flex-1 ml-0 md:ml-64 p-4 transition-all duration-300 h-screen overflow-none">
+                {children}
+              </main>
+            </div>
           </SignedIn>
           <SignedOut>
             <main className="flex-1">{children}</main>
