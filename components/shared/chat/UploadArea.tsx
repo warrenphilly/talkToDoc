@@ -146,9 +146,7 @@ const UploadArea = ({
         >
           {isProcessing && (
             <div className="w-full space-y-2">
-              <div className="w-full bg-slate-200 rounded-full h-2">
-               
-              </div>
+             
               <p className="text-sm text-slate-500 text-center">
                 Processing section {progress} of {totalSections}
               </p>
