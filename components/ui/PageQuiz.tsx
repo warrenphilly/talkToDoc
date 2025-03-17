@@ -145,6 +145,11 @@ const PageQuiz: React.FC<QuizProps> = ({
         // Convert index to letter (0 = 'A', 1 = 'B', etc.)
         const answerLetter = String.fromCharCode(65 + answerIndex);
         isCorrect = answerLetter === currentQuestion.correctAnswer;
+
+        console.log("Answer index:", answerIndex);
+        console.log("Answer letter:", answerLetter);
+        console.log("Correct answer letter:", currentQuestion.correctAnswer);
+        console.log("Is correct:", isCorrect);
       } else if (currentQuestion.type === "trueFalse") {
         // For true/false questions, compare the actual boolean values
         // Convert string "True"/"False" to boolean true/false for comparison
@@ -315,7 +320,7 @@ const PageQuiz: React.FC<QuizProps> = ({
     const [isOpen, setIsOpen] = useState(false);
     const isAnswered = userAnswer !== undefined;
 
-    // Fix for true/false questions
+    // Fix for multiple choice and true/false questions
     let isCorrectAnswer = false;
     if (question.type === "shortAnswer") {
       isCorrectAnswer = !incorrectAnswers.includes(question.id);
@@ -327,8 +332,17 @@ const PageQuiz: React.FC<QuizProps> = ({
           ? question.correctAnswer.toLowerCase() === "true"
           : !!question.correctAnswer;
       isCorrectAnswer = userAnswerBool === correctAnswerBool;
+    } else if (question.type === "multipleChoice" && question.options) {
+      // For multiple choice, we need to convert the user's text answer to a letter
+      // and then compare with the correct answer letter
+      const answerIndex = question.options.indexOf(userAnswer || "");
+      if (answerIndex !== -1) {
+        // Convert index to letter (0 = 'A', 1 = 'B', etc.)
+        const answerLetter = String.fromCharCode(65 + answerIndex);
+        isCorrectAnswer = answerLetter === question.correctAnswer;
+      }
     } else {
-      // For multiple choice
+      // Fallback for any other case
       isCorrectAnswer = userAnswer === question.correctAnswer;
     }
 
@@ -380,7 +394,18 @@ const PageQuiz: React.FC<QuizProps> = ({
                     Correct answer:{" "}
                   </span>
                   <span className="text-green-600">
-                    {question.correctAnswer}
+                    {question.type === "multipleChoice" && question.options
+                      ? // For multiple choice, show the text of the correct answer option
+                        (() => {
+                          // Convert letter (A, B, C, D) to index (0, 1, 2, 3)
+                          const correctIndex =
+                            question.correctAnswer.charCodeAt(0) - 65;
+                          return (
+                            question.options[correctIndex] ||
+                            question.correctAnswer
+                          );
+                        })()
+                      : question.correctAnswer}
                   </span>
                 </div>
                 {question.type === "shortAnswer" &&
