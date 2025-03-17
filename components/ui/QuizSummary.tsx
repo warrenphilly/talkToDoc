@@ -22,7 +22,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg  p-6">
+    <div className=" rounded-lg  p-6">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -46,10 +46,10 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
             return (
               <div
                 key={`summary-question-${index}-${quiz.id}`}
-                className={`p-4 rounded-lg border ${
+                className={`p-4 rounded-lg border-none ${
                   isCorrect
-                    ? "border-green-200 bg-green-50"
-                    : "border-red-200 bg-red-50"
+                    ? " bg-green-50 shadow-lg"
+                    : " bg-red-50 shadow-lg"
                 }`}
               >
                 <div className="flex items-start gap-3">

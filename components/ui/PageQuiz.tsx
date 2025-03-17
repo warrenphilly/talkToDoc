@@ -448,7 +448,7 @@ const PageQuiz: React.FC<QuizProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-start w-full">
-      <div className="bg-white w-full border border-slate-400 rounded-xl p-4 md:p-8">
+      <div className="bg-white w-full  rounded-xl p-4 md:p-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
