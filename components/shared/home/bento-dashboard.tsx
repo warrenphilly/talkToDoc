@@ -758,7 +758,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         {studyCards.map((studyCard) => (
           <Link key={studyCard.id} href={`/study-cards/${studyCard.id}`}>
             <Card className="transition-transform shadow-none bg-white border-none relative">
-              <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+              <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
                 <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
                   <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
                 </div>
@@ -831,7 +831,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
             <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-6">
               {notebooks.map((notebook) => (
                 <Link key={notebook.id} href={`/notes/${notebook.id}`}>
-                  <Card className="h-full transition-transform hover:scale-105 shadow-none bg-[#b9d27a] dark:bg-[#c6d996] border-none relative">
+                  <Card className="h-full transition-transform hover:scale-105 bg-[#b9d27a] dark:bg-[#c6d996] border-none relative shadow-lg">
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
                       className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"
@@ -859,7 +859,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       )}
 
       <div className="w-full mt-6 sm:mt-8">
-        <div className="h-px w-full bg-slate-300"></div>
+     
 
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
@@ -878,79 +878,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 Study cards, study guides, and quizzes. All in one place.
               </p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-8 w-full">
-              <section className="rounded-lg h-fit">
-                <AccordionDemo
-                  sections={[
-                    {
-                      id: "study-cards",
-                      title: "Study Cards",
-                      loading: loadingStudyCards,
-                      button: {
-                        label: "New Study Cards",
-                        onClick: () => setShowCardModal(true),
-                      },
-                      content: renderStudyCards,
-                    },
-                  ]}
-                />
-              </section>
-              <section className="rounded-lg h-fit">
-                <AccordionDemo
-                  sections={[
-                    {
-                      id: "study-guides",
-                      title: "Study Guides",
-                      loading: loadingStudyGuides,
-                      button: {
-                        label: "New Study Guide",
-                        onClick: () => setShowStudyGuideModal(true),
-                      },
-                      content: (
-                        <div className="">
-                          {studyGuides.map((guide) => (
-                            <div key={guide.id}>
-                              <Link
-                                key={guide.id}
-                                href={`/study-guides/${guide.id}`}
-                                className="transition-transform hover:scale-[1.02]"
-                              >
-                                <Card className="shadow-none bg-white border-none relative">
-                                  <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
-                                    <div className="p-2 rounded-full w-fit bg-white">
-                                      <ScrollText className="h-6 w-6 text-[#94b347]" />
-                                    </div>
-                                    <div className="flex flex-col   w-full px-4">
-                                      <h3 className="font-medium text-slate-700 line-clamp-1">
-                                        {guide.title}
-                                      </h3>
-
-                                      <div className="flex gap-4 text-sm text-slate-500">
-                                        <p>{formatDate(guide.createdAt)}</p>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        onClick={(e) =>
-                                          handleDeleteStudyGuide(e, guide.id)
-                                        }
-                                        className="p-2 hover:bg-red-100 rounded-full transition-colors"
-                                      >
-                                        <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
-                                      </button>
-                                      <ChevronRight className="h-5 w-5 text-slate-400" />
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              </Link>
-                            </div>
-                          ))}
-                        </div>
-                      ),
-                    },
-                  ]}
-                />
-              </section>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-8 w-full">
               <section className="rounded-lg h-fit">
                 <AccordionDemo
                   sections={[
@@ -971,7 +899,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                               className="transition-transform hover:scale-[1.02]"
                             >
                               <Card className="shadow-none bg-white border-none relative">
-                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-300">
+                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
                                   <div className="p-2 rounded-full w-fit bg-white">
                                     <MessageCircleQuestion className="h-6 w-6 text-[#94b347]" />
                                   </div>
@@ -1016,6 +944,79 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   ]}
                 />
               </section>
+              <section className="rounded-lg h-fit">
+                <AccordionDemo
+                  sections={[
+                    {
+                      id: "study-cards",
+                      title: "Card Sets",
+                      loading: loadingStudyCards,
+                      button: {
+                        label: "New Study Cards",
+                        onClick: () => setShowCardModal(true),
+                      },
+                      content: renderStudyCards,
+                    },
+                  ]}
+                />
+              </section>
+              <section className="rounded-lg h-fit">
+                <AccordionDemo
+                  sections={[
+                    {
+                      id: "study-guides",
+                      title: " Guides",
+                      loading: loadingStudyGuides,
+                      button: {
+                        label: "New Study Guide",
+                        onClick: () => setShowStudyGuideModal(true),
+                      },
+                      content: (
+                        <div className="">
+                          {studyGuides.map((guide) => (
+                            <div key={guide.id}>
+                              <Link
+                                key={guide.id}
+                                href={`/study-guides/${guide.id}`}
+                                className="transition-transform hover:scale-[1.02]"
+                              >
+                                <Card className="shadow-none bg-white border-none relative">
+                                  <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
+                                    <div className="p-2 rounded-full w-fit bg-white">
+                                      <ScrollText className="h-6 w-6 text-[#94b347]" />
+                                    </div>
+                                    <div className="flex flex-col   w-full px-4">
+                                      <h3 className="font-medium text-slate-700 line-clamp-1">
+                                        {guide.title}
+                                      </h3>
+
+                                      <div className="flex gap-4 text-sm text-slate-500">
+                                        <p>{formatDate(guide.createdAt)}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) =>
+                                          handleDeleteStudyGuide(e, guide.id)
+                                        }
+                                        className="p-2 hover:bg-red-100 rounded-full transition-colors"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                                      </button>
+                                      <ChevronRight className="h-5 w-5 text-slate-400" />
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              </section>
+            
             </div>
           </>
         )}

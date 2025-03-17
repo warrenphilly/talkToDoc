@@ -32,12 +32,12 @@ export function AccordionDemo({ sections }: AccordionDemoProps) {
       type="multiple" 
       value={openItems} 
       onValueChange={setOpenItems} 
-      className="w-full"
+      className="w-full rounded-xl shadow-lg"
       defaultValue={sections.map(section => section.id)}
     >
       {sections.map((section) => (
-        <AccordionItem key={section.id} value={section.id}>
-          <AccordionTrigger className="flex justify-between">
+        <AccordionItem key={section.id} value={section.id} className="border-none">
+          <AccordionTrigger className="flex justify-between border-none px-4">
             <div className="flex items-center justify-between w-full">
               {section.button && (
                 <CirclePlus 
