@@ -36,6 +36,7 @@ export const TitleEditor: React.FC<TitleEditorProps> = ({
 
   return (
     <div className="flex gap-2 items-center w-full relative">
+      
       <Input
         value={title}
         onChange={(e) => setTitle(e.target.value)}

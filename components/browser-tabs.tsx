@@ -317,7 +317,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         className
       )}
     >
-      <div className="p-2 rounded-lg relative top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-col items-start justify-start w-fit">
+      <div className="p-2 rounded-lg relative  top-[-10px] md:top-[-10px] gap-2 left-0 h-fit flex flex-col items-start justify-start w-fit">
         <Link href="/" className="p-0 flex flex-row items-center justify-start">
           <Button
             variant="ghost"
@@ -384,7 +384,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </div>
         )}
       </div>
-      <div className="flex  items-center z-50 h-fit w-full rounded-t-lg scrollbar-hide">
+      <div className="flex p-2 bg-slate-50   items-center z-10 h-fit w-full rounded-lg scrollbar-hide">
         <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2  ">
           {activeTab &&
             (activeTab.isEditing ? (
@@ -452,39 +452,43 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               </>
             ))}
         </div>
-        <div className="hidden md:flex items-center w-full    ">
-          <div className="flex flex-row items-center scrollbar-hide w-full  max-w-[80vw]">
-            {tabs.map((tab) => (
-              <motion.div
-                key={tab.id}
-                layout
-                className={cn(
-                  "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-t-lg cursor-pointer min-w-0 flex-shrink truncate",
-                  activeTabId === tab.id
-                    ? "text-foreground border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300 bg-white shadow-x-md"
-                    : "text-muted-foreground bg-slate-100 border-t border-b border-b-white border-r border-r-slate-300 border-l border-l-slate-300"
+        <div className="hidden md:flex items-center w-full">
+          <div className="flex flex-row items-center scrollbar-hide w-full max-w-[80vw]">
+            {tabs.map((tab, index) => (
+              <React.Fragment key={tab.id}>
+                {index > 0 && (
+                  <div className="h-5 w-px bg-slate-300 mx-1 flex-shrink-0" />
                 )}
-                onClick={() => setActiveTabId(tab.id)}
-              >
-                <div className="flex items-center w-full overflow-hidden">
-                  <span className="truncate max-w-[100px]">
-                    <TitleEditor
-                      initialTitle={tab.title}
-                      noteId={tab.id}
-                      notebookId={notebookId}
-                    />
-                  </span>
-                  <button
-                    className="ml-1 flex-shrink-0 text-muted-foreground hover:text-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTab(tab.id);
-                    }}
-                  >
-                    <X size={14} className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
+                <motion.div
+                  layout
+                  className={cn(
+                    "flex items-center px-3 py-2 text-sm font-medium relative top-[1px] rounded-lg cursor-pointer min-w-0 flex-shrink truncate shadow-x-lg gap-2",
+                    activeTabId === tab.id
+                      ? "text-foreground bg-white shadow-lg"
+                      : "text-muted-foreground bg-slate-50 mx-1"
+                  )}
+                  onClick={() => setActiveTabId(tab.id)}
+                >
+                  <div className="flex items-center w-full overflow-hidden">
+                    <span className="truncate max-w-[200px]">
+                      <TitleEditor
+                        initialTitle={tab.title}
+                        noteId={tab.id}
+                        notebookId={notebookId}
+                      />
+                    </span>
+                    <button
+                      className="ml-1 flex-shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTab(tab.id);
+                      }}
+                    >
+                      <X size={14} className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              </React.Fragment>
             ))}
             <button
               className="p-1 ml-2 text-muted-foreground group relative flex items-center"
@@ -498,7 +502,6 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </div>
 
           <div className="flex flex-row items-center gap-2 flex-shrink-0  w-fit min-w-[120px] justify-end ">
-            
             <button
               className="p-1 ml-auto mr-2 text-muted-foreground hover:text-foreground"
               onClick={() => setIsModalOpen(true)}
@@ -515,7 +518,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
-          className=" h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden md:border border-slate-300 z-10 "
+          className=" h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden  z-10 "
         >
           <ChatClient
             title={activeTab?.title || ""}

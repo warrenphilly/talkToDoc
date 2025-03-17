@@ -89,7 +89,7 @@ export const ResponseMessage = ({
 
   return (
     <div className="md:p-2 rounded mb-2">
-      <div className="p-2 md:p-4 rounded-2xl transition-colors bg-white ">
+      <div className="p-2 md:p-4 rounded-2xl transition-colors bg-gray-50 shadow-lg">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-3">
           <h3
             className="text-base md:text-lg font-bold text-[#94b347] hover:bg-[slate-600] cursor-pointer break-words"
@@ -125,7 +125,7 @@ export const ResponseMessage = ({
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="flex flex-row gap-2 justify-between items-center ">
-                  <AlertDialogCancel className="bg-white border border-slate-300 hover:bg-slate-100 rounded-full">
+                  <AlertDialogCancel className="bg-slate-50 border border-slate-300 hover:bg-slate-100 rounded-full">
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
@@ -145,7 +145,7 @@ export const ResponseMessage = ({
               key={sentenceIdx}
               asChild
               onClick={() => handleSentenceClick(sentence)}
-              className="bg-white hover:border hover:bg-slate-200 rounded cursor-pointer transition-colors shadow-none p-0 m-2 h-fit w-fit"
+              className="bg-slate-50 hover:border hover:bg-slate-100 rounded cursor-pointer transition-colors shadow-none p-0 h-fit w-fit"
             >
               <div className="px-1 py-1 rounded cursor-pointer transition-colors">
                 <p className="text-gray-800 text-xs md:text-sm text-left whitespace-normal break-words">
