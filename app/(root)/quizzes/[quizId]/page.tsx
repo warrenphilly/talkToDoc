@@ -527,7 +527,7 @@ export default function QuizPage() {
       )}
 
       <div className="flex flex-col items-center justify-start w-full max-w-7xl h-[calc(100vh-8rem)] overflow-y-auto">
-        <div className="flex p-4 flex-col items-start justify-between w-full">
+        <div className="flex  p-4 flex-col items-center justify-center w-full">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             {isEditingTitle ? (
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -555,6 +555,7 @@ export default function QuizPage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 w-full sm:w-auto">
+                <span className="text-slate-500">Quiz:</span>
                 <span className="text-[#94b347] break-all">{currentTitle}</span>
                 <button
                   onClick={() => setIsEditingTitle(true)}

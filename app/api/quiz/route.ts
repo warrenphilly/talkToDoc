@@ -71,12 +71,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const language = firestoreUser?.language || "English";
+  // Get user's language preference
+  const userLanguage = firestoreUser?.language || "English";
 
   try {
     const formData = await req.formData();
     const messageStr = formData.get("message") as string;
-    const language = (formData.get("language") as string) || "English"; // Get language with fallback
+    // Use the user's stored language preference as the primary source
+    // Only fall back to the formData language if needed
+    const language = userLanguage || (formData.get("language") as string) || "English";
 
     if (!messageStr) {
       throw new Error("No message provided");
@@ -188,19 +191,13 @@ export async function POST(req: NextRequest) {
     const chunks = splitIntoChunks(allContent, 8000);
 
     // Update system message to include language preference
-
-    // Log the OpenAI request
-    const openaiRequestBody = {
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting. Respond in ${language}.
+    const systemMessage = `You are a quiz generator. You must return only valid JSON in the specified format, with no additional text or formatting. Respond in ${language} for all aspects of the quiz.
           
 For true/false questions:
 - Aim for a roughly equal distribution of true and false answers
 - Avoid obvious or trivial statements
 - Use clear, unambiguous language
+- Use the language of the content to create the questions
 
 For multiple choice questions:
 - Randomize which option (A, B, C, or D) is correct
@@ -208,18 +205,27 @@ For multiple choice questions:
 - Avoid patterns in correct answer placement
 - Ensure options are mutually exclusive
 - Keep option lengths relatively consistent
-
+- Use the language of the content to create the questions
 For short answer questions:
 - Create clear, specific questions with concise expected answers
 - Avoid questions that could have multiple valid interpretations
+- Use the language of the content to create the questions
 
-Return ONLY valid JSON with no additional text.`,
+Return ONLY valid JSON with no additional text.`;
+
+    // Log the OpenAI request
+    const openaiRequestBody = {
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: systemMessage,
         },
         {
           role: "user",
           content: `Generate a quiz with ${
             message.numberOfQuestions
-          } questions based on the following content.
+          } questions based on the following content in ${language}.
           Return ONLY a JSON object with the following structure:
           {
             "questions": [

@@ -765,13 +765,10 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 }}
               >
                 <CardContent className="flex justify-between items-center p-4">
-                  <div>
-                    <h3 className="font-medium text-slate-800">{quiz.title}</h3>
-                    <p className="text-sm text-gray-500">
-                      Questions: {quiz.totalQuestions}
-                    </p>
-                  </div>
+                  <div className="flex flex-col gap-2  w-full">
+                    <div className="w-full flex flex-row items-center justify-between ">
 
+                    <h3 className="font-medium text-slate-800">Quiz: <span className="text-[#94b347] font-bold">{quiz.title}</span></h3>
                   <AlertDialog>
                     <AlertDialogTrigger
                       onClick={(e) => {
@@ -811,6 +808,42 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                    </div>
+                    
+                    <div className="flex items-center justify-between gap-3 mt-1  w-full">
+                      <p className="text-sm text-gray-500">
+                        Questions: {quiz.totalQuestions}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {(() => {
+                          try {
+                            // Check for serialized timestamp with valid seconds
+                            if (typeof quiz.createdAt === 'object' && 
+                                quiz.createdAt !== null && 
+                                'seconds' in quiz.createdAt &&
+                                quiz.createdAt.seconds !== undefined) {
+                              return new Date(quiz.createdAt.seconds * 1000).toLocaleDateString();
+                            }
+                            
+                            // Fallback to current date
+                            return new Date().toLocaleDateString();
+                          } catch (error) {
+                            console.error("Error formatting quiz date:", error);
+                            return "Date unavailable";
+                          }
+                        })()}
+                      </p>
+                      {quiz.isComplete ? (
+                        <p className="text-sm text-gray-500">
+                          Score: {quiz.score}/{quiz.totalQuestions}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-green-500">active</p>
+                      )}
+                      
+                    </div>
+                  </div>
+
                 </CardContent>
               </Card>
             </div>
@@ -849,7 +882,7 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz Display */}
       {selectedQuiz && quizData && !showQuizForm && (
-        <div className="space-y-2 sm:space-y-4">
+        <div className="">
           <Button
             onClick={handleBackToList}
             variant="ghost"
@@ -858,35 +891,38 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             <ArrowLeft className="w-4 h-4 mr-1" />
             Back to List
           </Button>
-          <div className="flex flex-col justify-between items-start my-2">
-            <div className="flex items-center gap-2">
+          <div className="flex  bg-white p-4 flex-col items-center justify-center w-full">
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
               {isEditingTitle ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <input
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                    className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] w-full sm:w-auto"
                     autoFocus
                   />
-                  <button
-                    onClick={handleSaveTitle}
-                    className="p-1 hover:bg-green-100 rounded-full"
-                  >
-                    <Check className="h-4 w-4 text-green-600" />
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    className="p-1 hover:bg-red-100 rounded-full"
-                  >
-                    <X className="h-4 w-4 text-red-600" />
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSaveTitle}
+                      className="p-1 hover:bg-green-100 rounded-full"
+                    >
+                      <Check className="h-4 w-4 text-green-600" />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="p-1 hover:bg-red-100 rounded-full"
+                    >
+                      <X className="h-4 w-4 text-red-600" />
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-base sm:text-lg font-semibold text-[#94b347] break-words">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-slate-500">Quiz:</span>
+                  <span className="text-[#94b347] break-all">
                     {currentTitle}
-                  </p>
+                  </span>
                   <button
                     onClick={() => setIsEditingTitle(true)}
                     className="p-1 hover:bg-slate-100 rounded-full"
@@ -895,19 +931,48 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                   </button>
                 </div>
               )}
-            </div>
-            <div className="flex flex-row justify-center items-center text-sm sm:text-base">
-              <p>Questions: {selectedQuiz.totalQuestions}</p>
-            </div>
+            </h1>
+            <p className="text-sm text-slate-500 mt-2">
+              Created:{" "}
+              {(() => {
+                // Debug the timestamp structure
+                console.log("startedAt value:", selectedQuiz.startedAt);
+                
+                try {
+                  // Check for serialized timestamp with valid seconds
+                  if (typeof selectedQuiz.startedAt === 'object' && 
+                      selectedQuiz.startedAt !== null && 
+                      'seconds' in selectedQuiz.startedAt &&
+                      selectedQuiz.startedAt.seconds !== undefined) {
+                    return new Date(selectedQuiz.startedAt.seconds * 1000).toLocaleDateString();
+                  }
+                  
+                  // If timestamp data is missing but we have quiz creation date, use that
+                  if (selectedQuiz.createdAt) {
+                    if (typeof selectedQuiz.createdAt === 'object' && 
+                        selectedQuiz.createdAt !== null && 
+                        'seconds' in selectedQuiz.createdAt &&
+                        selectedQuiz.createdAt.seconds !== undefined) {
+                      return new Date(selectedQuiz.createdAt.seconds * 1000).toLocaleDateString();
+                    }
+                  }
+                  
+                  // Create a current date as fallback if everything else fails
+                  return new Date().toLocaleDateString();
+                } catch (error) {
+                  console.error("Error formatting date:", error, selectedQuiz.startedAt);
+                  return new Date().toLocaleDateString(); // Fallback to current date
+                }
+              })()}
+            </p>
           </div>
-
           <PageQuiz
             data={quizData}
             notebookId={notebookId || ""}
             pageId={pageId || ""}
             initialState={getQuizState(selectedQuiz)}
+            
           />
-      
         </div>
       )}
     </div>

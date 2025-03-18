@@ -291,7 +291,7 @@ export function CustomSidebar() {
       {/* Mobile toggle button */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 md:hidden bg-white p-2 rounded-full shadow-md"
+        className="fixed top-4 left-4 z-20 md:hidden bg-white p-2 rounded-full shadow-md"
       >
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>

@@ -117,9 +117,9 @@ export function StudyCardCarousel({
   return (
     <Card className="max-w-4xl mx-auto my-0 py-0 shadow-none border-none h-fit bg-white mb-8">
       <CardHeader className="flex flex-row py-0 my-0 items-center justify-between h-fit">
-        <div className="flex flex-col w-full items-center justify-center">
-          <div className="flex flex-row items-center justify-between w-full">
-            <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2">
+        <div className="flex flex-col w-full items-center justify-center ">
+          <div className="flex flex-row items-center justify-center w-full ">
+            <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2 ">
              
               {isEditing ? (
                  <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export function StudyCardCarousel({
             </CardTitle>
           </div>
 
-          <div className="flex w-full flex-row items-center justify-start gap-2 my-4 ">
+          <div className="flex w-full flex-row items-center justify-center gap-2 my-4  ">
             <p className="text-md text-slate-500 ">
               Created: {new Date(studySet.createdAt).toLocaleDateString()}
             </p>
@@ -199,9 +199,9 @@ export function StudyCardCarousel({
         {studySet.cards[currentCardIndex] && (
           <div
             onClick={() => toggleAnswer(currentCardIndex)}
-            className="bg-white border border-[#94b347] h-fit  min-h-48 md:min-h-72  w-full p-4 flex flex-col justify-center items-center  rounded-xl cursor-pointer transition-colors"
+            className="bg-white shadow-lg border border-slate-100 h-fit  min-h-48 md:min-h-72  w-full p-4 flex flex-col justify-center items-center  rounded-xl cursor-pointer transition-colors"
           >
-            <h3 className="font-bold text-[#94b347] text-lg md:text-2xl">
+            <h3 className="font-bold text-[#94b347] text-lg md:text-2xl text-center" >
               {studySet.cards[currentCardIndex].title}
             </h3>
             {showAnswer[currentCardIndex] && (

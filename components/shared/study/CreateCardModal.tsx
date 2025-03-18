@@ -173,7 +173,7 @@ export default function CreateCardModal({
   return (
     <>
       {showNotebookModal && (
-        <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-10 w-full">
+        <div className="fixed inset-0 bg-slate-600/30 opacity-100 backdrop-blur-sm flex items-center justify-center z-50 w-full">
           <div className="bg-white p-6 rounded-lg h-full md:max-h-[75vh] py-12  w-full  max-w-3xl  ">
             <div className="flex flex-col gap-2 items-center justify-center">
               <h2 className="text-xl font-bold mb-4 text-[#94b347]">

@@ -133,8 +133,8 @@ export function StudyCardList({
                 key={`${localStudySet.id}-card-${index}-${card.title}`}
                 className={`bg-white border rounded-xl p-4 hover:bg-slate-50 transition-colors ${
                   activeCardIndex === index
-                    ? "border-[#94b347] border-2"
-                    : "border-slate-400"
+                    ? "border-[#94b347] border-1 shadow-lg"
+                    : "border-slate-100 "
                 }`}
               >
                 <h3 className="font-semibold text-[#94b347]">
