@@ -85,6 +85,7 @@ import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
 import QuizForm from "./QuizForm";
 import PageQuiz from "@/components/ui/PageQuiz";
+import { Separator } from "@/components/ui/separator";
 
 // First, let's define our message types
 interface Sentence {
@@ -767,64 +768,77 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 <CardContent className="flex justify-between items-center p-4">
                   <div className="flex flex-col gap-2  w-full">
                     <div className="w-full flex flex-row items-center justify-between ">
+                      <div className=" flex flex-row  items-center gap-6   w-full justify-start">
+                        <h3 className="font-medium text-slate-800">
+                          Quiz:{" "}
+                          <span className="text-[#94b347] font-bold">
+                            {quiz.title}
+                          </span>
+                          
+                        </h3>
+                        <div className="h-4 w-px bg-slate-300 "></div>
+                        <p className="text-sm text-gray-400">
+                          Questions: {quiz.totalQuestions}
+                        </p>
+                      </div>
 
-                    <h3 className="font-medium text-slate-800">Quiz: <span className="text-[#94b347] font-bold">{quiz.title}</span></h3>
-                  <AlertDialog>
-                    <AlertDialogTrigger
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
-                    >
-                      <Trash className="h-4 w-4" />
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-white">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Are you absolutely sure?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete your quiz and remove your data from our
-                          servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel
-                          onClick={(e) => e.stopPropagation()}
-                          className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
-                        >
-                          Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
+                      <AlertDialog>
+                        <AlertDialogTrigger
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteQuiz(quiz.id);
                           }}
-                          className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                          className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
                         >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          <Trash className="h-4 w-4" />
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete your quiz and remove your data
+                              from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
+                            >
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteQuiz(quiz.id);
+                              }}
+                              className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                    
+
                     <div className="flex items-center justify-between gap-3 mt-1  w-full">
-                      <p className="text-sm text-gray-500">
-                        Questions: {quiz.totalQuestions}
-                      </p>
                       <p className="text-sm text-gray-500">
                         {(() => {
                           try {
                             // Check for serialized timestamp with valid seconds
-                            if (typeof quiz.createdAt === 'object' && 
-                                quiz.createdAt !== null && 
-                                'seconds' in quiz.createdAt &&
-                                quiz.createdAt.seconds !== undefined) {
-                              return new Date(quiz.createdAt.seconds * 1000).toLocaleDateString();
+                            if (
+                              typeof quiz.createdAt === "object" &&
+                              quiz.createdAt !== null &&
+                              "seconds" in quiz.createdAt &&
+                              quiz.createdAt.seconds !== undefined
+                            ) {
+                              return new Date(
+                                quiz.createdAt.seconds * 1000
+                              ).toLocaleDateString();
                             }
-                            
+
                             // Fallback to current date
                             return new Date().toLocaleDateString();
                           } catch (error) {
@@ -840,10 +854,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                       ) : (
                         <p className="text-sm text-green-500">active</p>
                       )}
-                      
                     </div>
                   </div>
-
                 </CardContent>
               </Card>
             </div>
@@ -937,30 +949,42 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
               {(() => {
                 // Debug the timestamp structure
                 console.log("startedAt value:", selectedQuiz.startedAt);
-                
+
                 try {
                   // Check for serialized timestamp with valid seconds
-                  if (typeof selectedQuiz.startedAt === 'object' && 
-                      selectedQuiz.startedAt !== null && 
-                      'seconds' in selectedQuiz.startedAt &&
-                      selectedQuiz.startedAt.seconds !== undefined) {
-                    return new Date(selectedQuiz.startedAt.seconds * 1000).toLocaleDateString();
+                  if (
+                    typeof selectedQuiz.startedAt === "object" &&
+                    selectedQuiz.startedAt !== null &&
+                    "seconds" in selectedQuiz.startedAt &&
+                    selectedQuiz.startedAt.seconds !== undefined
+                  ) {
+                    return new Date(
+                      selectedQuiz.startedAt.seconds * 1000
+                    ).toLocaleDateString();
                   }
-                  
+
                   // If timestamp data is missing but we have quiz creation date, use that
                   if (selectedQuiz.createdAt) {
-                    if (typeof selectedQuiz.createdAt === 'object' && 
-                        selectedQuiz.createdAt !== null && 
-                        'seconds' in selectedQuiz.createdAt &&
-                        selectedQuiz.createdAt.seconds !== undefined) {
-                      return new Date(selectedQuiz.createdAt.seconds * 1000).toLocaleDateString();
+                    if (
+                      typeof selectedQuiz.createdAt === "object" &&
+                      selectedQuiz.createdAt !== null &&
+                      "seconds" in selectedQuiz.createdAt &&
+                      selectedQuiz.createdAt.seconds !== undefined
+                    ) {
+                      return new Date(
+                        selectedQuiz.createdAt.seconds * 1000
+                      ).toLocaleDateString();
                     }
                   }
-                  
+
                   // Create a current date as fallback if everything else fails
                   return new Date().toLocaleDateString();
                 } catch (error) {
-                  console.error("Error formatting date:", error, selectedQuiz.startedAt);
+                  console.error(
+                    "Error formatting date:",
+                    error,
+                    selectedQuiz.startedAt
+                  );
                   return new Date().toLocaleDateString(); // Fallback to current date
                 }
               })()}
@@ -971,7 +995,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
             notebookId={notebookId || ""}
             pageId={pageId || ""}
             initialState={getQuizState(selectedQuiz)}
-            
           />
         </div>
       )}
