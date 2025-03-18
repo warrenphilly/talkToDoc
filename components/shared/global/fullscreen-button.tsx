@@ -12,7 +12,7 @@ interface FullscreenButtonProps {
 export function FullscreenButton({
   isFullscreen,
   toggleFullscreen,
-  className = "absolute top-2 right-2 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100 rounded-full"
+  className = "absolute top-2  rounded-full bg-white right-2 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100"
 }: FullscreenButtonProps) {
   return (
     <Button

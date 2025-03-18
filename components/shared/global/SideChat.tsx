@@ -325,7 +325,7 @@ const SideChat = ({
   );
 
   return (
-    <div className="flex flex-col h-full w-full rounded-2xl py-4 max-h-[90vh] bg-white overflow-hidden">
+    <div className="flex flex-col h-full w-full rounded-2xl py-6 max-h-[90vh] bg-white overflow-hidden">
       {/* Header section */}
       <div className="bg-white py-3 px-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
         <Button

@@ -860,15 +860,15 @@ const ChatClient = ({
                     <FullscreenButton
                       isFullscreen={isChatFullscreen}
                       toggleFullscreen={handleChatFullscreen}
-                      className="absolute top-2 right-2 z-50"
+                      className="absolute top-2 right-2 z-50 rounded-full bg-white"
                     />
                     
                     {/* Add resize button */}
-                    <ResizeButton
+                    {/* <ResizeButton
                       isExpanded={isSideChatExpanded}
                       toggleResize={handleSideChatResize}
                       position="topright"
-                    />
+                    /> */}
                     
                     <SideChat
                       notebookId={notebookId}
