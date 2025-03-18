@@ -77,6 +77,7 @@ import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
 import { FullscreenButton } from "@/components/shared/global/fullscreen-button";
+import { ResizeButton } from "@/components/shared/global/resize-button";
 
 interface ChatClientProps {
   title: string;
@@ -127,6 +128,9 @@ const ChatClient = ({
 
   // Add new state for tracking database update status
   const [isDatabaseUpdating, setIsDatabaseUpdating] = useState(false);
+
+  // Add a state for sidechat resize
+  const [isSideChatExpanded, setIsSideChatExpanded] = useState(false);
 
   const { user } = useUser();
 
@@ -537,6 +541,11 @@ const ChatClient = ({
     }
   };
 
+  // Add handler for sidechat resize
+  const handleSideChatResize = () => {
+    setIsSideChatExpanded(!isSideChatExpanded);
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
       {/* Show loading overlay when processing or updating database */}
@@ -808,12 +817,22 @@ const ChatClient = ({
                         ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
                         : "hidden"
                     }`}
-                    defaultSize={isChatFullscreen ? 100 : 50}
+                    defaultSize={isChatFullscreen || isSideChatExpanded ? 100 : 50}
                   >
+                    {/* Fullscreen button */}
                     <FullscreenButton
                       isFullscreen={isChatFullscreen}
                       toggleFullscreen={handleChatFullscreen}
+                      className="absolute top-2 right-2 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100 rounded-full"
                     />
+                    
+                    {/* Add resize button */}
+                    <ResizeButton
+                      isExpanded={isSideChatExpanded}
+                      toggleResize={handleSideChatResize}
+                      position="topright"
+                    />
+                    
                     <SideChat
                       notebookId={notebookId}
                       pageId={tabId}

@@ -893,43 +893,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                       content: (
                         <div className="space-y-4">
                           {quizzes.map((quiz) => (
-                            <Link
-                              key={quiz.id}
-                              href={`/quizzes/${quiz.id}`}
-                              className="transition-transform hover:scale-[1.02]"
-                            >
+                            <Link key={quiz.id} href={`/quizzes/${quiz.id}`} className="transition-transform hover:scale-[1.02]">
                               <Card className="shadow-none bg-white border-none relative">
-                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
+                                <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 transition-all duration-200 border-slate-50">
                                   <div className="p-2 rounded-full w-fit bg-white">
                                     <MessageCircleQuestion className="h-6 w-6 text-[#94b347]" />
                                   </div>
-                                  <div className="flex flex-col  w-full px-4">
-                                    <h3 className="font-medium text-slate-700 line-clamp-1">
-                                      {quiz.quizData?.title || "Untitled Quiz"}
-                                    </h3>
-                                    <p className="text-muted-foreground">
-                                      {formatDate(quiz.startedAt)}
-                                    </p>
+                                  <div className="flex flex-col w-full px-4">
+                                    <h3 className="font-medium text-slate-700 line-clamp-1">{quiz.quizData?.title || "Untitled Quiz"}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <p className="text-sm text-slate-400">{formatDate(quiz.startedAt)}</p>
+                                    
+                                    </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="flex flex-col text-sm text-slate-500 w-[100px]">
-                                      <p>Questions: {quiz.totalQuestions}</p>
-
-                                      {quiz.isComplete ? (
-                                        <p>
-                                          Score: {quiz.score}/
-                                          {quiz.totalQuestions}
-                                        </p>
-                                      ) : (
-                                        <p className="text-green-500">active</p>
-                                      )}
-                                    </div>
-                                    <button
-                                      onClick={(e) =>
-                                        handleDeleteQuiz(e, quiz.id)
-                                      }
-                                      className="p-2 hover:bg-red-100 rounded-full transition-colors"
-                                    >
+                                  {quiz.isComplete ? <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-full"> <span className="font-medium">{quiz.score}/{quiz.totalQuestions}</span></span> : <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Active</span>}
+                                    <button onClick={(e) => handleDeleteQuiz(e, quiz.id)} className="p-2 hover:bg-red-50 rounded-full transition-colors">
                                       <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
                                     </button>
                                     <ChevronRight className="h-5 w-5 text-slate-400" />
@@ -981,11 +960,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                 className="transition-transform hover:scale-[1.02]"
                               >
                                 <Card className="shadow-none bg-white border-none relative">
-                                  <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
+                                  <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 transition-all duration-200 border-slate-50">
                                     <div className="p-2 rounded-full w-fit bg-white">
                                       <ScrollText className="h-6 w-6 text-[#94b347]" />
                                     </div>
-                                    <div className="flex flex-col   w-full px-4">
+                                    <div className="flex flex-col w-full px-4">
                                       <h3 className="font-medium text-slate-700 line-clamp-1">
                                         {guide.title}
                                       </h3>
@@ -999,7 +978,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                                         onClick={(e) =>
                                           handleDeleteStudyGuide(e, guide.id)
                                         }
-                                        className="p-2 hover:bg-red-100 rounded-full transition-colors"
+                                        className="p-2 hover:bg-red-50 rounded-full transition-colors"
                                       >
                                         <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
                                       </button>

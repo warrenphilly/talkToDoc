@@ -515,90 +515,84 @@ export default function StudyCards({
     }
 
     return (
-      <div className="w-full   gap-4  overflow-y-auto ">
-        {cardSets.map((studyCard) => (
+      <div className="w-full mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
+        {cardSets.map((studyCard, index) => (
           <div
             key={studyCard.id}
-            className="flex flex-row justify-between items-center mx-auto bg-white w-full"
+            className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${index === 0 ? 'border-t-0' : ''}`}
+            onClick={() => setSelectedSet(studyCard)}
           >
-            <Card className="   border-none m-0 gap-2 py-2 transition-colors bg-white w-full shadow-none  rounded-none ">
-              <CardContent
-                className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer"
-                onClick={() => setSelectedSet(studyCard)}
-              >
-                <div className="flex flex-col items-start justify-between w-full">
-                  <div className="items-center flex flex-row justify-between w-full">
-                    <div className="flex flex-row items-center gap-4 justify-between">
-                      
-                      <h3 className="font-medium text-slate-700 ">
-                        Card Set:{" "}
-                        <span className="text-[#94b347] font-bold">
-                          {studyCard.metadata.name}
-                        </span>
-                      </h3>
-
-                      <div className="h-4 w-px bg-slate-300 "></div>
-                      <p className="text-sm text-slate-500 ">
-                        Cards: {studyCard.cards.length}
-                      </p>
-                    </div>
-                    <div className="flex flex-row justify-end items-center gap-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="hover:bg-red-100 hover:text-red-500 p-2 rounded-full"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you absolutely sure?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently delete your Study Card Set and remove
-                              your data from our servers.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
-                            >
-                              Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetDeletion(studyCard.id);
-                              }}
-                              className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+            <div className="py-5 px-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-2">
+                <div className="flex flex-col md:flex-row md:items-center md:gap-4">
+                  <h3 className="font-medium text-slate-700 text-lg">
+                    <span className="text-[#94b347] font-semibold">
+                      {studyCard.metadata.name}
+                    </span>
+                  </h3>
+                  <div className="hidden md:flex items-center gap-4">
+                    <div className="h-4 w-px bg-slate-200"></div>
+                    <p className="text-sm text-slate-500">
+                      {studyCard.cards.length} cards
+                    </p>
                   </div>
-
-                  <p className="text-sm text-slate-500">
-                    {" "}
-                    created on{" "}
+                </div>
+                
+                <div className="flex items-center justify-between gap-3 mt-1 md:mt-0">
+                  <p className="text-sm text-slate-400">
                     {new Date(studyCard.metadata.createdAt).toLocaleDateString()}
                   </p>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="p-2 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors ml-2"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-white rounded-lg border-none shadow-lg max-w-md mx-auto">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-center">
+                          Delete Card Set?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center">
+                          This will permanently delete this study card set and all associated data.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex justify-center gap-3 mt-4">
+                        <AlertDialogCancel
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetDeletion(studyCard.id);
+                          }}
+                          className="bg-white rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-colors"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         ))}
 
         {cardSets.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No study card sets found. Create one to get started!
+          <div className="text-center py-16 px-4">
+            <BookOpen className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+            <h3 className="text-slate-700 font-medium mb-2">No study cards yet</h3>
+            <p className="text-slate-500 text-sm max-w-md mx-auto">
+              Create your first study card set to start reviewing.
+            </p>
           </div>
         )}
       </div>

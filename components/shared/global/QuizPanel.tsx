@@ -719,151 +719,150 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto md:p-2 sm:p-4 h-full overflow-y-auto auto-scroll">
+    <div className="w-full max-w-4xl mx-auto p-4 h-full overflow-y-auto">
       {/* Header with Create Quiz button */}
       {!selectedQuiz && (
-        <div className="flex justify-between items-center  md:mb-4 sm:mb-6">
-          <div className="flex flex-col justify-center items-center  w-full gap-2 sm:gap-4 mb-4 md:mb-0">
-            <h2 className="text-xl sm:text-2xl font-bold text-[#94b347] hidden md:block">
-              Quiz Me
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base text-center hidden md:block">
-              Create and review quizzes
-            </p>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-[#94b347] mb-2">
+            Quiz Me
+          </h2>
+          <p className="text-slate-600 text-sm mb-6">
+            Create and review quizzes to test your knowledge
+          </p>
 
-            <Button
-              onClick={() => setShowQuizForm(true)}
-              className="bg-white border border-slate-400 text-slate-800 mb-4 md:mb-0 hover:bg-white rounded-full my-2 sm:my-4 shadow-none hover:border-[#94b347] hover:text-[#94b347] text-sm sm:text-base w-full sm:w-auto"
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Create Quiz
-            </Button>
-          </div>
+          <Button
+            onClick={() => setShowQuizForm(true)}
+            className="bg-white border border-slate-300 text-slate-800 hover:bg-white rounded-full shadow-sm hover:border-[#94b347] hover:text-[#94b347] transition-all duration-200"
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Create Quiz
+          </Button>
         </div>
       )}
 
       {/* Quiz List */}
       {!showQuizForm && !selectedQuiz && (
-        <div className="w-full max-w-lg mx-auto">
-          {quizzes.map((quiz) => (
-            <div key={quiz.id} className="relative">
-              <Card
-                className="cursor-pointer hover:bg-slate-50 bg-white shadow-none rounded-none border-x-0 border-t border-b-0 border-slate-200"
-                onClick={() => {
-                  const serializedQuiz: SerializedQuizState = {
-                    ...quiz,
-                    startedAt: {
-                      seconds: quiz.startedAt.seconds,
-                      nanoseconds: quiz.startedAt.nanoseconds,
-                    },
-                    lastUpdatedAt: {
-                      seconds: quiz.lastUpdatedAt.seconds,
-                      nanoseconds: quiz.lastUpdatedAt.nanoseconds,
-                    },
-                  };
-                  setSelectedQuiz(serializedQuiz);
-                  setQuizData(quiz.quizData);
-                }}
-              >
-                <CardContent className="flex justify-between items-center p-4">
-                  <div className="flex flex-col gap-2  w-full">
-                    <div className="w-full flex flex-row items-center justify-between ">
-                      <div className=" flex flex-row  items-center gap-6   w-full justify-center">
-                        <h3 className="font-medium text-slate-800">
-                          Quiz:{" "}
-                          <span className="text-[#94b347] font-bold">
-                            {quiz.title}
-                          </span>
-                        </h3>
-                        <div className="h-4 w-px bg-slate-300 "></div>
-                        <p className="text-sm text-gray-400">
-                          Questions: {quiz.totalQuestions}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 mt-1  w-full">
-                      <p className="text-sm text-gray-500">
-                        Created on:{" "}
-                        {(() => {
-                          try {
-                            // Check for serialized timestamp with valid seconds
-                            if (
-                              typeof quiz.createdAt === "object" &&
-                              quiz.createdAt !== null &&
-                              "seconds" in quiz.createdAt &&
-                              quiz.createdAt.seconds !== undefined
-                            ) {
-                              return new Date(
-                                quiz.createdAt.seconds * 1000
-                              ).toLocaleDateString();
-                            }
-
-                            // Fallback to current date
-                            return new Date().toLocaleDateString();
-                          } catch (error) {
-                            console.error("Error formatting quiz date:", error);
-                            return "Date unavailable";
-                          }
-                        })()}
-                      </p>
+        <div className="w-full mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
+          {quizzes.map((quiz, index) => (
+            <div 
+              key={quiz.id}
+              className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${index === 0 ? 'border-t-0' : ''}`}
+              onClick={() => {
+                const serializedQuiz: SerializedQuizState = {
+                  ...quiz,
+                  startedAt: {
+                    seconds: quiz.startedAt.seconds,
+                    nanoseconds: quiz.startedAt.nanoseconds,
+                  },
+                  lastUpdatedAt: {
+                    seconds: quiz.lastUpdatedAt.seconds,
+                    nanoseconds: quiz.lastUpdatedAt.nanoseconds,
+                  },
+                };
+                setSelectedQuiz(serializedQuiz);
+                setQuizData(quiz.quizData);
+              }}
+            >
+              <div className="py-5 px-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-2">
+                  <div className="flex flex-col md:flex-row md:items-center md:gap-4">
+                    <h3 className="font-medium text-slate-700 text-lg">
+                      
+                      <span className="text-[#94b347] font-semibold">
+                        {quiz.title}
+                      </span>
+                    </h3>
+                    <div className="hidden md:flex items-center gap-4">
+                      <div className="h-4 w-px bg-slate-200"></div>
                       {quiz.isComplete ? (
-                        <p className="text-sm text-gray-500">
-                          Score: {quiz.score}/{quiz.totalQuestions}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-green-500">active</p>
-                      )}
+                      <span className="text-xs px-2 py-1 bg-slate-100 rounded-full">
+                        Score: <span className="font-medium">{quiz.score}/{quiz.totalQuestions}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                        Active: {quiz.totalQuestions} questions
+                      </span>
+                    )}
 
-                      <AlertDialog>
-                        <AlertDialogTrigger
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="hover:bg-slate-50 hover:text-red-500 p-2 rounded-full flex flex-row items-center gap-2"
-                        >
-                          Delete <Trash className="h-4 w-4" />
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you absolutely sure?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently delete your quiz and remove your data
-                              from our servers.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel
-                              onClick={(e) => e.stopPropagation()}
-                              className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-100 hover:text-red-500"
-                            >
-                              Cancel
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteQuiz(quiz.id);
-                              }}
-                              className="bg-white rounded-full border border-slate-400 text-slate-800 hover:bg-slate-100 hover:text-slate-800 hover:border-slate-800"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                     
                     </div>
+                 
+               
                   </div>
-                </CardContent>
-              </Card>
+                  
+                  <div className="flex items-center justify-between gap-3 mt-1 md:mt-0">
+                  
+                    
+                  <p className="text-sm text-slate-400 mr-1">
+                      {(() => {
+                        try {
+                          if (
+                            typeof quiz.createdAt === "object" &&
+                            quiz.createdAt !== null &&
+                            "seconds" in quiz.createdAt &&
+                            quiz.createdAt.seconds !== undefined
+                          ) {
+                            return new Date(
+                              quiz.createdAt.seconds * 1000
+                            ).toLocaleDateString();
+                          }
+                          return new Date().toLocaleDateString();
+                        } catch (error) {
+                          return "Date unavailable";
+                        }
+                      })()}
+                    </p>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className="p-2 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors ml-2"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-white rounded-lg border-none shadow-lg max-w-md mx-auto">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-center">
+                            Delete Quiz?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="text-center">
+                            This will permanently delete your quiz and all associated data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex justify-center gap-3 mt-4">
+                          <AlertDialogCancel
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white rounded-full border border-red-500 text-red-500 hover:bg-red-50 transition-colors"
+                          >
+                            Cancel
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteQuiz(quiz.id);
+                            }}
+                            className="bg-white rounded-full border border-slate-300 text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-colors"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
 
           {quizzes.length === 0 && (
-            <div className="text-center p-4 text-gray-500 text-sm sm:text-base">
-              No quizzes found. Please create a quiz first.
+            <div className="text-center py-16 px-4">
+              <Trophy className="h-16 w-16 text-slate-200 mx-auto mb-4" />
+              <h3 className="text-slate-700 font-medium mb-2">No quizzes yet</h3>
+              <p className="text-slate-500 text-sm max-w-md mx-auto">
+                Create your first quiz to start testing your knowledge.
+              </p>
             </div>
           )}
         </div>
