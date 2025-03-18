@@ -787,14 +787,14 @@ const ChatClient = ({
                       <ResizablePanel
                         className={`relative ${
                           showChat
-                            ? "translate-x-0 overflow-y-auto bg-slate-300 h-full transition-transform duration-1000 ease-in-out transform rounded-xl md:rounded-2xl w-full"
+                            ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
                             : "hidden"
                         }`}
                         defaultSize={isChatFullscreen ? 100 : 50}
                       >
                         <Button
                           onClick={() => setIsChatFullscreen(!isChatFullscreen)}
-                          className="absolute top-2 right-2 z-70 bg-slate-100 hover:bg-slate-200 p-2"
+                          className="absolute top-3 right-3 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100 rounded-full"
                           size="icon"
                         >
                           {isChatFullscreen ? (
@@ -912,22 +912,22 @@ const ChatClient = ({
             }
           }}
         >
-          <DrawerContent className="h-[80vh] bg-white">
-            <DrawerHeader className="p-4">
-              <DrawerTitle className="text-lg font-bold text-center text-[#94b347] ">
+          <DrawerContent className="h-[85vh] bg-white">
+            <DrawerHeader className="p-4 pb-0 border-b border-gray-100">
+              <DrawerTitle className="text-lg font-semibold text-center text-[#94b347]">
                 {showStudyGuides && "Study Guide"}
                 {showStudyCards && "Study Cards"}
                 {showQuiz && "Quiz"}
                 {showChat && "Talk to Notes"}
               </DrawerTitle>
-              <DrawerDescription className="text-sm text-center text-slate-500">
+              <DrawerDescription className="text-sm text-center text-slate-500 pb-2">
                 {showStudyGuides && "Create and review study guides"}
                 {showStudyCards && "Create and review study cards"}
                 {showQuiz && "Create and review quizzes"}
-                {showChat && ""}
+                {showChat && "Chat with your selected text"}
               </DrawerDescription>
             </DrawerHeader>
-            <div className="h-full overflow-y-auto px-4">
+            <div className="h-full overflow-hidden">
               {showChat && (
                 <SideChat
                   notebookId={notebookId}

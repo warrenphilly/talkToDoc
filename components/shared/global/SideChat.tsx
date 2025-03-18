@@ -6,13 +6,14 @@ import {
   getSideChat,
   saveSideChat,
   updateSideChat,
-  
 } from "@/lib/firebase/firestore";
-import { Image, Upload } from "lucide-react"; // Import icons
+import { Image, Send, Trash2, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import ChatActions from "./ChatActions";
+import { AnimatePresence, motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
+
 // First, let's define our message types
 interface Sentence {
   id: number;
@@ -50,13 +51,6 @@ interface SideChatProps {
   setPrimeSentence: (sentence: string | null) => void;
 }
 
-interface SideChatProps {
-  notebookId: string;
-  pageId: string;
-  primeSentence: string | null;
-  setPrimeSentence: (sentence: string | null) => void;
-}
-
 const SideChat = ({
   primeSentence,
   setPrimeSentence,
@@ -68,9 +62,16 @@ const SideChat = ({
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const [contextSections, setContextSections] = useState<ContextSection[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUser();
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // Add new context section
   const addContextSection = async (text: string) => {
@@ -88,32 +89,23 @@ const SideChat = ({
     // Update local state immediately
     setContextSections(prev => [...prev, newSection]);
 
-     try {
-       if (sideChatId) {
-         await updateSideChat(sideChatId, [...contextSections, newSection], messages);
-       } 
-       //else {
-    //     const newSideChatId = await saveSideChat(
-    //       notebookId,
-    //       pageId,
-    //       [newSection],
-    //       []
-    //     );
-    //     setSideChatId(newSideChatId);
-    //   }
+    try {
+      if (sideChatId) {
+        await updateSideChat(sideChatId, [...contextSections, newSection], messages);
+      }
     } catch (error) {
       // Revert local state if update fails
       setContextSections(prev => prev.filter(section => section.id !== newSection.id));
       console.error("Error adding context section:", error);
-   }
+    }
   };
 
   // Remove context section
-   const removeContextSection = async (sectionId: string) => {
-  //   // Store previous state in case we need to revert
-     const previousSections = [...contextSections];
+  const removeContextSection = async (sectionId: string) => {
+    // Store previous state in case we need to revert
+    const previousSections = [...contextSections];
     
-  //   // Update local state immediately
+    // Update local state immediately
     setContextSections(prev => prev.filter(section => section.id !== sectionId));
 
     try {
@@ -153,16 +145,13 @@ const SideChat = ({
   // Initialize side chat
   useEffect(() => {
     const initializeSideChat = async () => {
-      
       setIsLoading(true);
       try {
         // First check if a sidechat exists for this page
         const existingSideChat = await getSideChat(notebookId, pageId);
       
-
         if (existingSideChat) {
-    
-          setSideChatId(existingSideChat?.id || null  );
+          setSideChatId(existingSideChat?.id || null);
           setMessages(existingSideChat?.messages || []);
           setContextSections(existingSideChat?.contextSections || []);
           
@@ -173,7 +162,6 @@ const SideChat = ({
             setPrimeSentence(mostRecentContext?.text || null);
           }
         }
-      
       } catch (error) {
         console.error("Error initializing side chat:", error);
       } finally {
@@ -189,8 +177,8 @@ const SideChat = ({
   const sendMessage = async (messageText: string = input) => {
     if (!messageText.trim() && files.length === 0) return;
 
+    setIsSending(true);
     try {
-      
       const formData = new FormData();
       formData.append("userMessage", messageText);
       formData.append("notebookId", notebookId);
@@ -235,17 +223,12 @@ const SideChat = ({
 
       try {
         if (sideChatId) {
-        
-
           await updateSideChat(
             sideChatId,
             contextSections,
             finalMessages
           );
-    
         } else {
-          
-
           if (!primeSentence) {
             console.warn(
               "No selected text available, creating with empty string"
@@ -272,6 +255,8 @@ const SideChat = ({
         text: "Sorry, there was an error. Please try again.",
       };
       setMessages([...messages, errorMessage]);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -298,90 +283,182 @@ const SideChat = ({
     }
   };
 
-  // Render context sections with animation
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4, ease: "easeOut" }
+    }
+  };
 
-  return (
-    <div className="flex flex-col  h-full w-full border-3 bg-white rounded-2xl mb-4 max-h-[90vh] p-3 justify-center items-center">
-      {/* Header section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-2 sm:gap-4">
-        <Button
-          className="bg-white hover:bg-red-200 w-full md:w-fit text-sm sm:text-base text-slate-400 border-slate-400 rounded-full border hover:border-red-600 hover:text-red-600"
-          onClick={handleClearChat}
-        >
-          Clear
-        </Button>
-        <div className="flex flex-row items-center justify-center">
-          <h1 className=" hidden md:block text-lg sm:text-xl font-semibold text-[#94b347] truncate">Talk to Notes</h1>
+  // Placeholder loading bubbles
+  const LoadingPlaceholder = () => (
+    <div className="flex flex-col gap-3 p-4 w-full">
+      <div className="flex items-start gap-3 max-w-[80%]">
+        <Skeleton className="w-8 h-8 rounded-full" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-16 w-60" />
         </div>
       </div>
+      <div className="flex items-start gap-3 max-w-[80%] self-end">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-24 ml-auto" />
+          <Skeleton className="h-12 w-48" />
+        </div>
+        <Skeleton className="w-8 h-8 rounded-full" />
+      </div>
+    </div>
+  );
 
+  return (
+    <div className="flex flex-col h-full w-full rounded-2xl mb-4 max-h-[90vh] bg-gray-50 shadow-md overflow-hidden">
+      {/* Header section */}
+      <div className="bg-white py-3 px-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
+        <Button
+          className="bg-white hover:bg-red-50 text-sm text-red-400 border border-red-200 rounded-full hover:text-red-600 hover:border-red-400 flex items-center gap-1.5 px-3 py-1.5 h-auto"
+          onClick={handleClearChat}
+        >
+          <Trash2 size={14} />
+          <span>Clear</span>
+        </Button>
+        <h1 className="text-lg font-semibold text-[#94b347] flex items-center gap-2">
+          Talk to Notes
+        </h1>
+      </div>
+      
+      {/* Chat Actions */}
+      <ChatActions 
+        sendMessage={sendMessage} 
+        contextSections={contextSections} 
+        removeContextSection={removeContextSection}
+      />
+      
       {/* Messages section */}
-      {messages.length > 0 ? (
-        <div className="flex-grow p-2 sm:p-4 overflow-y-auto auto-scroll">
-          {messages.map(
-            (msg, index) =>
-              msg.text &&
-              (msg.user === "User" || msg.user === "AI") && (
-                <div
-                  key={index}
-                  className={`p-2 rounded mb-2 ${
-                    msg.user === "User"
-                      ? "border border-slate-400 shadow-sm rounded-lg text-slate-600"
-                      : "border border-[#94b347] text-base sm:text-lg text-[#94b347] my-4 rounded-lg"
-                  }`}
-                >
-                  {msg.user === "AI" ? (
-                    <div className="text-sm sm:text-md font-semibold">
-                      <strong>Mr. Chudd (AI):</strong> <span>{String(msg.text)}</span>
+      <div className="flex-grow p-2 sm:p-4 overflow-y-auto relative">
+        {isLoading ? (
+          <LoadingPlaceholder />
+        ) : messages.length > 0 ? (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-3"
+          >
+            {messages.map((msg, index) => (
+              <AnimatePresence key={index} mode="wait">
+                {msg.text && (msg.user === "User" || msg.user === "AI") && (
+                  <motion.div
+                    variants={itemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`p-3 rounded-2xl ${
+                      msg.user === "User"
+                        ? "bg-white border border-gray-200 text-slate-700 ml-auto max-w-[80%]"
+                        : "bg-[#94b347]/10 border border-[#94b347]/20 text-gray-800 mr-auto max-w-[80%]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {msg.user === "AI" ? (
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold mb-1 text-[#94b347]">
+                            Mr. Chudd (AI)
+                          </p>
+                          <p className="text-sm leading-relaxed">{String(msg.text)}</p>
+                        </div>
+                      ) : (
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold mb-1 text-slate-600">
+                            {user?.firstName || "You"}
+                          </p>
+                          <p className="text-sm leading-relaxed">{String(msg.text)}</p>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-sm sm:text-md font-semibold">
-                      <strong>{user?.firstName}:</strong> <span>{String(msg.text)}</span>
-                    </div>
-                  )}
-                </div>
-              )
-          )}
-        </div>
-      ) : (
-        <div className="flex-grow w-full h-full flex flex-col items-center justify-center p-2 sm:p-4 overflow-y-auto auto-scroll">
-          <p className="text-gray-400 text-center text-sm sm:text-base max-w-sm">
-            Hey there, my little academic weapon in the making. I'm Mr. Chudd, your AI tutor. Together, we shall pass!
-          </p>
-        </div>
-      )}
-
-      {/* Input section */}
-      <div className="m-2 bottom-0 w-full border border-slate-300 rounded-lg p-2">
-
-
-
-
-
-
-
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            ))}
+            <div ref={messagesEndRef} />
+          </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex flex-col items-center justify-center h-full p-6 text-center"
+          >
+            <div className="bg-[#94b347]/10 p-6 rounded-2xl border border-[#94b347]/20 max-w-sm">
+              <p className="text-gray-600 mb-3">
+                Hey there, my little academic weapon in the making. I'm Mr. Chudd, your AI tutor.
+              </p>
+              <p className="text-[#94b347] font-medium">Select some text to get started!</p>
+            </div>
+          </motion.div>
+        )}
         
-        <ChatActions 
-          sendMessage={sendMessage} 
-          contextSections={contextSections} 
-          removeContextSection={removeContextSection}
-        />
-        <div className="flex bg-white rounded-lg p-2 flex-row items-center gap-2 sm:gap-3 h-fit">
+        {/* Loading indicator for new message */}
+        {isSending && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 bg-[#94b347]/10 border border-[#94b347]/20 rounded-2xl max-w-[80%] mr-auto mt-3"
+          >
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-[#94b347]">Mr. Chudd (AI)</p>
+            </div>
+            <div className="flex items-center gap-1 mt-2 ml-1">
+              <motion.div 
+                className="w-2 h-2 bg-[#94b347] rounded-full"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity, repeatType: "loop" }}
+              />
+              <motion.div 
+                className="w-2 h-2 bg-[#94b347] rounded-full"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity, repeatType: "loop", delay: 0.2 }}
+              />
+              <motion.div 
+                className="w-2 h-2 bg-[#94b347] rounded-full"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1, repeat: Infinity, repeatType: "loop", delay: 0.4 }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
+      
+      {/* Input section */}
+      <div className="bg-white p-3 border-t border-gray-100 sticky bottom-0 z-10">
+        <div className="flex bg-white rounded-lg flex-row items-center gap-2 h-fit">
           <Textarea
-            className="w-full h-fit border shadow-none border-slate-300 rounded-lg bg-slate-50 text-slate-900 flex-grow text-sm sm:text-base"
+            className="w-full border shadow-none border-gray-200 rounded-lg bg-gray-50 text-gray-800 flex-grow text-sm resize-none min-h-[44px] py-2.5 px-3"
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) =>
-              e.key === "Enter" && !e.shiftKey && sendMessage(input)
-            }
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendMessage(input))}
+            rows={1}
           />
           <Button
-            className="bg-[#94b347] text-white text-sm sm:text-base px-2 sm:px-4"
+            className="bg-[#94b347] hover:bg-[#7a9639] text-white px-3 h-[44px] rounded-lg transition-all duration-200 flex items-center justify-center"
             onClick={() => sendMessage(input)}
+            disabled={isSending}
           >
-            Send
+            <Send size={18} className={isSending ? "opacity-70" : ""} />
           </Button>
         </div>
       </div>
