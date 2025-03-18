@@ -136,10 +136,10 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex min-h-[300px] md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-red-500">
+    <div className="flex min-h-[300px] md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit">
       {showUpload && (
         <motion.div
-          className="flex flex-col min-h-[300px] gap-2 items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
+          className="flex flex-col min-h-[300px]  gap-2 items-center justify-start bg-red-500 rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
           initial="hidden"
           animate="visible"
           variants={containerVariants}
@@ -149,7 +149,7 @@ const UploadArea = ({
             Upload your files
           </label>
 
-          <div className="w-fit space-y-4 flex flex-col gap-2 items-start justify-start h-full">
+          <div className="w-fit space-y-4 flex flex-col gap-2 items-start justify-start h-full bg-blue-500 min-h-[300px]">
             {/* Upload Button */}
             <div className="flex items-center gap-2 w-full justify-center ">
               <input
