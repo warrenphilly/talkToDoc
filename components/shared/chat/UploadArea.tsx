@@ -139,7 +139,7 @@ const UploadArea = ({
     <div className="flex min-h-[300px] md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit">
       {showUpload && (
         <motion.div
-          className="flex flex-col min-h-[300px]  gap-2 items-center justify-start bg-red-500 rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
+          className="flex flex-col min-h-[300px]  gap-2 items-center justify-start rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
           initial="hidden"
           animate="visible"
           variants={containerVariants}
@@ -149,7 +149,7 @@ const UploadArea = ({
             Upload your files
           </label>
 
-          <div className="w-fit space-y-4 flex flex-col gap-2 items-start justify-start h-full bg-blue-500 min-h-[300px]">
+          <div className="w-fit space-y-4 flex flex-col gap-2 items-start justify-start h-full max-w-[300px] min-h-[300px]">
             {/* Upload Button */}
             <div className="flex items-center gap-2 w-full justify-center ">
               <input
@@ -237,7 +237,7 @@ const UploadArea = ({
                   </div>
                 </motion.div>
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full line-clamp-2 max-w-[300px] text-center">
                   <p className="text-sm text-slate-600 font-semibold">
                     No files to process. Upload some files to get started.
                   </p>
@@ -275,7 +275,7 @@ const UploadArea = ({
                       return (
                         <motion.div
                           key={file.id}
-                          className="bg-white flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
+                          className="bg-white flex items-center justify-between max-w-[270px] p-3 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors"
                           variants={itemVariants}
                         >
                           <div className="flex items-center gap-3 bg-white w-full">
