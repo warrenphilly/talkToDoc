@@ -136,10 +136,10 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-white">
+    <div className="flex md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-red">
       {showUpload && (
         <motion.div
-          className="flex flex-col gap-2 items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px] md:border border-slate-400 h-full md:h-fit p-6"
+          className="flex flex-col min-h-[300px] gap-2 items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
           initial="hidden"
           animate="visible"
           variants={containerVariants}
@@ -174,7 +174,7 @@ const UploadArea = ({
 
             {/* New Files List */}
             <div className="flex flex-col gap-2 w-full">
-              {filesToProcess.length > 0 && (
+              {filesToProcess.length > 0 ? (
                 <motion.div
                   className="space-y-3 w-full flex flex-col gap-2 items-center justify-center"
                   variants={containerVariants}
@@ -236,6 +236,12 @@ const UploadArea = ({
                     })}
                   </div>
                 </motion.div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-sm text-slate-600 font-semibold">
+                    No files to process. Upload some files to get started.
+                  </p>
+                </div>
               )}
 
               {/* Previously Uploaded Files List */}
@@ -304,7 +310,7 @@ const UploadArea = ({
               )}
             </div>
             {/* Generate Button - only shown when there are new files */}
-            {filesToProcess.length > 0 && (
+         
               <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6">
                 <Button
                   className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
@@ -320,7 +326,7 @@ const UploadArea = ({
                     : "Generate Notes from New Files"}
                 </Button>
               </div>
-            )}
+            
           </div>
         </motion.div>
       )}
