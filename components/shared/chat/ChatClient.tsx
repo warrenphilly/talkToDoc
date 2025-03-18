@@ -472,21 +472,37 @@ const ChatClient = ({
     setDropdownOpen(false);
     setIsDrawerOpen(true);
     if (component === "studyGuide") {
+      // Reset fullscreen when toggling off
+      if (showStudyGuides && isStudyGuidesFullscreen) {
+        setIsStudyGuidesFullscreen(false);
+      }
       setShowStudyGuides(!showStudyGuides);
       setShowStudyCards(false);
       setShowChat(false);
       setShowQuiz(false);
     } else if (component === "studyCards") {
+      // Reset fullscreen when toggling off
+      if (showStudyCards && isStudyCardsFullscreen) {
+        setIsStudyCardsFullscreen(false);
+      }
       setShowStudyCards(!showStudyCards);
       setShowStudyGuides(false);
       setShowChat(false);
       setShowQuiz(false);
     } else if (component === "quiz") {
+      // Reset fullscreen when toggling off
+      if (showQuiz && isQuizFullscreen) {
+        setIsQuizFullscreen(false);
+      }
       setShowQuiz(!showQuiz);
       setShowStudyCards(false);
       setShowStudyGuides(false);
       setShowChat(false);
     } else if (component === "chat") {
+      // Reset fullscreen when toggling off
+      if (showChat && isChatFullscreen) {
+        setIsChatFullscreen(false);
+      }
       setShowChat(!showChat);
       setShowQuiz(false);
       setShowStudyCards(false);
@@ -497,6 +513,11 @@ const ChatClient = ({
   // Add this function to handle drawer close
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);
+    // Reset all fullscreen states when drawer closes
+    setIsChatFullscreen(false);
+    setIsQuizFullscreen(false);
+    setIsStudyCardsFullscreen(false);
+    setIsStudyGuidesFullscreen(false);
     // Reset all component states when drawer closes
     setShowStudyGuides(false);
     setShowStudyCards(false);
