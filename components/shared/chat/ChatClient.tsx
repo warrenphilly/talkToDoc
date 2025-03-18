@@ -471,42 +471,58 @@ const ChatClient = ({
   const handleComponentSelect = (component: string) => {
     setDropdownOpen(false);
     setIsDrawerOpen(true);
+    
+    // First, always reset all fullscreen states when switching components
+    setIsChatFullscreen(false);
+    setIsQuizFullscreen(false);
+    setIsStudyCardsFullscreen(false);
+    setIsStudyGuidesFullscreen(false);
+    
+    // Then handle the specific component logic
     if (component === "studyGuide") {
-      // Reset fullscreen when toggling off
-      if (showStudyGuides && isStudyGuidesFullscreen) {
-        setIsStudyGuidesFullscreen(false);
+      // If we're already showing study guides, toggle it off
+      // Otherwise turn study guides on and turn everything else off
+      if (showStudyGuides) {
+        setShowStudyGuides(false);
+      } else {
+        setShowStudyGuides(true);
+        setShowStudyCards(false);
+        setShowChat(false);
+        setShowQuiz(false);
       }
-      setShowStudyGuides(!showStudyGuides);
-      setShowStudyCards(false);
-      setShowChat(false);
-      setShowQuiz(false);
     } else if (component === "studyCards") {
-      // Reset fullscreen when toggling off
-      if (showStudyCards && isStudyCardsFullscreen) {
-        setIsStudyCardsFullscreen(false);
+      // If we're already showing study cards, toggle it off
+      // Otherwise turn study cards on and turn everything else off
+      if (showStudyCards) {
+        setShowStudyCards(false);
+      } else {
+        setShowStudyCards(true);
+        setShowStudyGuides(false);
+        setShowChat(false);
+        setShowQuiz(false);
       }
-      setShowStudyCards(!showStudyCards);
-      setShowStudyGuides(false);
-      setShowChat(false);
-      setShowQuiz(false);
     } else if (component === "quiz") {
-      // Reset fullscreen when toggling off
-      if (showQuiz && isQuizFullscreen) {
-        setIsQuizFullscreen(false);
+      // If we're already showing quiz, toggle it off
+      // Otherwise turn quiz on and turn everything else off
+      if (showQuiz) {
+        setShowQuiz(false);
+      } else {
+        setShowQuiz(true);
+        setShowStudyCards(false);
+        setShowStudyGuides(false);
+        setShowChat(false);
       }
-      setShowQuiz(!showQuiz);
-      setShowStudyCards(false);
-      setShowStudyGuides(false);
-      setShowChat(false);
     } else if (component === "chat") {
-      // Reset fullscreen when toggling off
-      if (showChat && isChatFullscreen) {
-        setIsChatFullscreen(false);
+      // If we're already showing chat, toggle it off
+      // Otherwise turn chat on and turn everything else off
+      if (showChat) {
+        setShowChat(false);
+      } else {
+        setShowChat(true);
+        setShowQuiz(false);
+        setShowStudyCards(false);
+        setShowStudyGuides(false);
       }
-      setShowChat(!showChat);
-      setShowQuiz(false);
-      setShowStudyCards(false);
-      setShowStudyGuides(false);
     }
   };
 
