@@ -76,6 +76,7 @@ import StudyCards from "../study/StudyCards";
 import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
+import { FullscreenButton } from "@/components/shared/global/fullscreen-button";
 
 interface ChatClientProps {
   title: string;
@@ -111,7 +112,6 @@ const ChatClient = ({
   const [currentSections, setCurrentSections] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isNotebookFullscreen, setIsNotebookFullscreen] = useState(false);
   const [isChatFullscreen, setIsChatFullscreen] = useState(false);
   const [isQuizFullscreen, setIsQuizFullscreen] = useState(false);
 
@@ -500,6 +500,43 @@ const ChatClient = ({
     setShowChat(false);
   };
 
+  // Update the handlers for side panel components to make notebook fullscreen when they toggle off
+  const handleChatFullscreen = () => {
+    setIsChatFullscreen(!isChatFullscreen);
+    if (!isChatFullscreen) {
+      setIsQuizFullscreen(false);
+      setIsStudyCardsFullscreen(false);
+      setIsStudyGuidesFullscreen(false);
+    }
+  };
+
+  const handleQuizFullscreen = () => {
+    setIsQuizFullscreen(!isQuizFullscreen);
+    if (!isQuizFullscreen) {
+      setIsChatFullscreen(false);
+      setIsStudyCardsFullscreen(false);
+      setIsStudyGuidesFullscreen(false);
+    }
+  };
+
+  const handleStudyCardsFullscreen = () => {
+    setIsStudyCardsFullscreen(!isStudyCardsFullscreen);
+    if (!isStudyCardsFullscreen) {
+      setIsChatFullscreen(false);
+      setIsQuizFullscreen(false);
+      setIsStudyGuidesFullscreen(false);
+    }
+  };
+
+  const handleStudyGuidesFullscreen = () => {
+    setIsStudyGuidesFullscreen(!isStudyGuidesFullscreen);
+    if (!isStudyGuidesFullscreen) {
+      setIsChatFullscreen(false);
+      setIsQuizFullscreen(false);
+      setIsStudyCardsFullscreen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
       {/* Show loading overlay when processing or updating database */}
@@ -607,299 +644,247 @@ const ChatClient = ({
             direction={isSmallScreen ? "vertical" : "horizontal"}
             className="w-full"
           >
-            <ResizablePanel
-              className={`relative min-w-0 p-0 m-0 flex items-center justify-center
-                ${isNotebookFullscreen ? "w-full" : "w-full"}
-                ${
-                  isChatFullscreen ||
-                  isQuizFullscreen ||
-                  isStudyCardsFullscreen ||
-                  isStudyGuidesFullscreen
-                    ? "hidden"
-                    : "w-full p-1 md:p-2"
-                } 
-                flex flex-col gap-1 md:gap-2 h-full overflow-hidden md:min-w-[400px]`}
-              defaultSize={isNotebookFullscreen ? 100 : 50}
-            >
-              {/* Add Progress Indicator */}
-              {isProcessing && (
-                <div className="w-full px-4 py-2 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <LoadingSection
-                      totalSections={totalSections}
-                      currentSections={currentSections}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Messages Container */}
-              <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
-                {/* This ParagraphEditor should append content at the beginning of the document */}
-                <ParagraphEditor
-                  onSave={(data) => {
-                    // Create a new message if there are no messages yet
-                    if (messages.length === 0) {
-                      setMessages([
-                        {
-                          user: "AI",
-                          text: data.text,
-                        },
-                      ]);
-                    } else {
-                      // Get the first message
-                      const firstMessage = messages[0];
-                      // If the first message is from AI and has text array, prepend to it
-                      if (
-                        firstMessage.user === "AI" &&
-                        Array.isArray(firstMessage.text)
-                      ) {
-                        const updatedMessages = [...messages];
-                        // Add the new paragraph at the beginning of the text array
-                        updatedMessages[0] = {
-                          ...firstMessage,
-                          text: [...data.text, ...firstMessage.text],
-                        };
-                        setMessages(updatedMessages);
-                      } else {
-                        // If first message isn't from AI or doesn't have text array,
-                        // create a new message and make it the first one
+            {/* Notebook panel - show as full width when no side panel is active */}
+            {!(isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) && (
+              <ResizablePanel
+                className={`relative min-w-0 p-0 m-0 flex items-center justify-center
+                  w-full p-1 md:p-2
+                  flex flex-col gap-1 md:gap-2 h-full overflow-hidden md:min-w-[400px]`}
+                defaultSize={(showChat || showQuiz || showStudyCards || showStudyGuides) ? 50 : 100}
+              >
+                {/* Messages Container */}
+                <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
+                  {/* This ParagraphEditor should append content at the beginning of the document */}
+                  <ParagraphEditor
+                    onSave={(data) => {
+                      // Create a new message if there are no messages yet
+                      if (messages.length === 0) {
                         setMessages([
                           {
                             user: "AI",
                             text: data.text,
                           },
-                          ...messages,
                         ]);
+                      } else {
+                        // Get the first message
+                        const firstMessage = messages[0];
+                        // If the first message is from AI and has text array, prepend to it
+                        if (
+                          firstMessage.user === "AI" &&
+                          Array.isArray(firstMessage.text)
+                        ) {
+                          const updatedMessages = [...messages];
+                          // Add the new paragraph at the beginning of the text array
+                          updatedMessages[0] = {
+                            ...firstMessage,
+                            text: [...data.text, ...firstMessage.text],
+                          };
+                          setMessages(updatedMessages);
+                        } else {
+                          // If first message isn't from AI or doesn't have text array,
+                          // create a new message and make it the first one
+                          setMessages([
+                            {
+                              user: "AI",
+                              text: data.text,
+                            },
+                            ...messages,
+                          ]);
+                        }
                       }
-                    }
-                  }}
-                  messageIndex={0}
-                />
+                    }}
+                    messageIndex={0}
+                  />
 
-                {messages.map((msg, index) => {
-                  if (msg.user === "AI") {
-                    return (
-                      <div key={`message-${index}`}>
-                        {Array.isArray(msg.text) ? (
-                          msg.text.map((section, sectionIndex) => (
-                            <React.Fragment key={`section-${sectionIndex}`}>
-                              <ResponseMessage
-                                msg={{ ...msg, text: [section] }}
-                                index={index}
-                                handleSectionClick={(section) =>
-                                  handleSectionClick(
-                                    section,
-                                    setPrimeSentence,
-                                    setShowChat
-                                  )
-                                }
-                                handleSentenceClick={(sentence) =>
-                                  handleSentenceClick(
-                                    sentence,
-                                    setPrimeSentence,
-                                    setShowChat
-                                  )
-                                }
-                                handleParagraphSave={handleParagraphSave}
-                                onEdit={() =>
-                                  handleMessageEdit(null, index, sectionIndex)
-                                }
-                                onDelete={() =>
-                                  handleMessageDelete(index, sectionIndex)
-                                }
-                                onSave={(data) =>
-                                  handleMessageEdit(data, index, sectionIndex)
-                                }
-                              />
-                              {!isSaving && (
-                                <ParagraphEditor
-                                  onSave={(data) =>
-                                    handleParagraphSave(
-                                      data,
-                                      index,
-                                      sectionIndex
+                  {messages.map((msg, index) => {
+                    if (msg.user === "AI") {
+                      return (
+                        <div key={`message-${index}`}>
+                          {Array.isArray(msg.text) ? (
+                            msg.text.map((section, sectionIndex) => (
+                              <React.Fragment key={`section-${sectionIndex}`}>
+                                <ResponseMessage
+                                  msg={{ ...msg, text: [section] }}
+                                  index={index}
+                                  handleSectionClick={(section) =>
+                                    handleSectionClick(
+                                      section,
+                                      setPrimeSentence,
+                                      setShowChat
                                     )
                                   }
-                                  messageIndex={index}
+                                  handleSentenceClick={(sentence) =>
+                                    handleSentenceClick(
+                                      sentence,
+                                      setPrimeSentence,
+                                      setShowChat
+                                    )
+                                  }
+                                  handleParagraphSave={handleParagraphSave}
+                                  onEdit={() =>
+                                    handleMessageEdit(null, index, sectionIndex)
+                                  }
+                                  onDelete={() =>
+                                    handleMessageDelete(index, sectionIndex)
+                                  }
+                                  onSave={(data) =>
+                                    handleMessageEdit(data, index, sectionIndex)
+                                  }
                                 />
-                              )}
-                            </React.Fragment>
-                          ))
-                        ) : (
-                          <ResponseMessage
-                            msg={msg}
-                            index={index}
-                            handleSectionClick={(section) =>
-                              handleSectionClick(
-                                section,
-                                setPrimeSentence,
-                                setShowChat
-                              )
-                            }
-                            handleSentenceClick={(sentence) =>
-                              handleSentenceClick(
-                                sentence,
-                                setPrimeSentence,
-                                setShowChat
-                              )
-                            }
-                            handleParagraphSave={handleParagraphSave}
-                            onEdit={() => handleMessageEdit(null, index, 0)}
-                            onDelete={() => handleMessageDelete(index, 0)}
-                            onSave={(data) => handleMessageEdit(data, index, 0)}
-                          />
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            </ResizablePanel>
+                                {!isSaving && (
+                                  <ParagraphEditor
+                                    onSave={(data) =>
+                                      handleParagraphSave(
+                                        data,
+                                        index,
+                                        sectionIndex
+                                      )
+                                    }
+                                    messageIndex={index}
+                                  />
+                                )}
+                              </React.Fragment>
+                            ))
+                          ) : (
+                            <ResponseMessage
+                              msg={msg}
+                              index={index}
+                              handleSectionClick={(section) =>
+                                handleSectionClick(
+                                  section,
+                                  setPrimeSentence,
+                                  setShowChat
+                                )
+                              }
+                              handleSentenceClick={(sentence) =>
+                                handleSentenceClick(
+                                  sentence,
+                                  setPrimeSentence,
+                                  setShowChat
+                                )
+                              }
+                              handleParagraphSave={handleParagraphSave}
+                              onEdit={() => handleMessageEdit(null, index, 0)}
+                              onDelete={() => handleMessageDelete(index, 0)}
+                              onSave={(data) => handleMessageEdit(data, index, 0)}
+                            />
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </ResizablePanel>
+            )}
 
-            {!(
-              isNotebookFullscreen ||
-              isChatFullscreen ||
-              isQuizFullscreen ||
-              isStudyCardsFullscreen ||
-              isStudyGuidesFullscreen
-            ) &&
+            {/* Resizable handle - show only when notebook is not in fullscreen and at least one sidebar component is visible */}
+            {!isChatFullscreen && 
+              !(isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) &&
               (showQuiz || showChat || showStudyCards || showStudyGuides) && (
                 <ResizableHandle className="bg-slate-300 m-2 ml-5" />
-              )}
+            )}
 
-            {!isNotebookFullscreen &&
-              !isSmallScreen &&
-              (showChat || showQuiz || showStudyCards || showStudyGuides) && (
-                <>
+            {/* Side panels container - show when any sidebar component is visible or in fullscreen mode */}
+            {(showChat || showQuiz || showStudyCards || showStudyGuides || 
+              isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) && (
+              <ResizablePanel
+                className={`relative ${
+                  (showChat || showQuiz || showStudyCards || showStudyGuides || 
+                   isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen)
+                    ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
+                    : "hidden"
+                }`}
+                defaultSize={
+                  isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen ? 100 : 50
+                }
+              >
+                {/* Chat Panel */}
+                {(showChat || isChatFullscreen) && 
+                 !isQuizFullscreen && !isStudyCardsFullscreen && !isStudyGuidesFullscreen && (
                   <ResizablePanel
                     className={`relative ${
-                      showChat || showQuiz || showStudyCards || showStudyGuides
-                        ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
+                      showChat || isChatFullscreen
+                        ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
                         : "hidden"
                     }`}
-                    defaultSize={
-                      isChatFullscreen || isQuizFullscreen ? 100 : 50
-                    }
+                    defaultSize={isChatFullscreen ? 100 : 50}
                   >
-                    {showChat && (
-                      <ResizablePanel
-                        className={`relative ${
-                          showChat
-                            ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
-                            : "hidden"
-                        }`}
-                        defaultSize={isChatFullscreen ? 100 : 50}
-                      >
-                        <Button
-                          onClick={() => setIsChatFullscreen(!isChatFullscreen)}
-                          className="absolute top-3 right-3 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100 rounded-full"
-                          size="icon"
-                        >
-                          {isChatFullscreen ? (
-                            <Minimize2 size={16} />
-                          ) : (
-                            <Maximize2 size={16} />
-                          )}
-                        </Button>
-                        <SideChat
-                          notebookId={notebookId}
-                          pageId={tabId}
-                          primeSentence={primeSentence}
-                          setPrimeSentence={setPrimeSentence}
-                        />
-                      </ResizablePanel>
-                    )}
-
-                    {showQuiz &&
-                      !isChatFullscreen &&
-                      !isStudyCardsFullscreen &&
-                      !isStudyGuidesFullscreen && (
-                        <ResizablePanel
-                          className={`relative ${
-                            showQuiz
-                              ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                              : "hidden"
-                          }`}
-                          defaultSize={isQuizFullscreen ? 100 : 50}
-                        >
-                          <Button
-                            onClick={() =>
-                              setIsQuizFullscreen(!isQuizFullscreen)
-                            }
-                            className="absolute top-2 right-2 z-10 bg-slate-100 hover:bg-slate-200 p-2"
-                            size="icon"
-                          >
-                            {isQuizFullscreen ? (
-                              <Minimize2 size={16} />
-                            ) : (
-                              <Maximize2 size={16} />
-                            )}
-                          </Button>
-                          <QuizPanel notebookId={notebookId} pageId={tabId} />
-                        </ResizablePanel>
-                      )}
-                    {showStudyCards && (
-                      <ResizablePanel
-                        className={`relative ${
-                          showStudyCards
-                            ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                            : "hidden"
-                        }`}
-                        defaultSize={isStudyCardsFullscreen ? 100 : 50}
-                      >
-                        <Button
-                          onClick={() =>
-                            setIsStudyCardsFullscreen(!isStudyCardsFullscreen)
-                          }
-                          className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
-                          size="icon"
-                        >
-                          {isStudyCardsFullscreen ? (
-                            <Minimize2 size={16} />
-                          ) : (
-                            <Maximize2 size={16} />
-                          )}
-                        </Button>
-                        <div className="h-full overflow-hidden">
-                          <div className="h-full overflow-y-auto px-2">
-                            <StudyCards
-                              notebookId={notebookId}
-                              pageId={tabId}
-                            />
-                          </div>
-                        </div>
-                      </ResizablePanel>
-                    )}
-                    {showStudyGuides && (
-                      <ResizablePanel
-                        className={`relative ${
-                          showStudyGuides
-                            ? "translate-x-0 min-h-[500px] h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px] overflow-y-auto"
-                            : "hidden"
-                        }`}
-                        defaultSize={isStudyGuidesFullscreen ? 100 : 50}
-                      >
-                        <Button
-                          onClick={() =>
-                            setIsStudyGuidesFullscreen(!isStudyGuidesFullscreen)
-                          }
-                          className="absolute top-2 right-2 z-50 bg-slate-100 hover:bg-slate-200 p-2"
-                          size="icon"
-                        >
-                          {isStudyGuidesFullscreen ? (
-                            <Minimize2 size={16} />
-                          ) : (
-                            <Maximize2 size={16} />
-                          )}
-                        </Button>
-                        <StudyGuide notebookId={notebookId} pageId={tabId} />
-                      </ResizablePanel>
-                    )}
+                    <FullscreenButton
+                      isFullscreen={isChatFullscreen}
+                      toggleFullscreen={handleChatFullscreen}
+                    />
+                    <SideChat
+                      notebookId={notebookId}
+                      pageId={tabId}
+                      primeSentence={primeSentence}
+                      setPrimeSentence={setPrimeSentence}
+                    />
                   </ResizablePanel>
-                </>
-              )}
+                )}
+
+                {/* Quiz Panel */}
+                {(showQuiz || isQuizFullscreen) &&
+                 !isChatFullscreen && !isStudyCardsFullscreen && !isStudyGuidesFullscreen && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showQuiz || isQuizFullscreen
+                        ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        : "hidden"
+                    }`}
+                    defaultSize={isQuizFullscreen ? 100 : 50}
+                  >
+                    <FullscreenButton
+                      isFullscreen={isQuizFullscreen}
+                      toggleFullscreen={handleQuizFullscreen}
+                    />
+                    <QuizPanel notebookId={notebookId} pageId={tabId} />
+                  </ResizablePanel>
+                )}
+
+                {/* Study Cards Panel */}
+                {(showStudyCards || isStudyCardsFullscreen) &&
+                 !isChatFullscreen && !isQuizFullscreen && !isStudyGuidesFullscreen && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showStudyCards || isStudyCardsFullscreen
+                        ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        : "hidden"
+                    }`}
+                    defaultSize={isStudyCardsFullscreen ? 100 : 50}
+                  >
+                    <FullscreenButton
+                      isFullscreen={isStudyCardsFullscreen}
+                      toggleFullscreen={handleStudyCardsFullscreen}
+                    />
+                    <div className="h-full overflow-hidden">
+                      <div className="h-full overflow-y-auto px-2">
+                        <StudyCards notebookId={notebookId} pageId={tabId} />
+                      </div>
+                    </div>
+                  </ResizablePanel>
+                )}
+
+                {/* Study Guides Panel */}
+                {(showStudyGuides || isStudyGuidesFullscreen) &&
+                 !isChatFullscreen && !isQuizFullscreen && !isStudyCardsFullscreen && (
+                  <ResizablePanel
+                    className={`relative ${
+                      showStudyGuides || isStudyGuidesFullscreen
+                        ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                        : "hidden"
+                    }`}
+                    defaultSize={isStudyGuidesFullscreen ? 100 : 50}
+                  >
+                    <FullscreenButton
+                      isFullscreen={isStudyGuidesFullscreen}
+                      toggleFullscreen={handleStudyGuidesFullscreen}
+                    />
+                    <StudyGuide notebookId={notebookId} pageId={tabId} />
+                  </ResizablePanel>
+                )}
+              </ResizablePanel>
+            )}
           </ResizablePanelGroup>
         </div>
       </div>
