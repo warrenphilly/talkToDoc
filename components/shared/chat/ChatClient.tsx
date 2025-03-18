@@ -844,7 +844,7 @@ const ChatClient = ({
                     <FullscreenButton
                       isFullscreen={isChatFullscreen}
                       toggleFullscreen={handleChatFullscreen}
-                      className="absolute top-2 right-2 z-10 bg-white hover:bg-gray-50 p-2 shadow-sm border border-gray-100 rounded-full"
+                      className="absolute top-2 right-2 z-50"
                     />
                     
                     {/* Add resize button */}
