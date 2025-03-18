@@ -136,7 +136,7 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-red">
+    <div className="flex min-h-[300px] md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit bg-red-500">
       {showUpload && (
         <motion.div
           className="flex flex-col min-h-[300px] gap-2 items-center justify-start bg-white rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6"
