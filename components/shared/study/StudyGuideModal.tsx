@@ -108,15 +108,30 @@ export default function StudyGuideModal({
         }
       }
 
-      // Create the request body
+      // Create the request body - Add debugging logs
+      console.log("Selected Pages before request:", JSON.stringify(selectedPages, null, 2));
+      
+      // Make sure the selectedPages structure is correct
+      const sanitizedSelectedPages: { [notebookId: string]: string[] } = {};
+      
+      // Process selectedPages to ensure only valid notebook IDs with valid page arrays are included
+      for (const notebookId in selectedPages) {
+        if (selectedPages[notebookId as keyof typeof selectedPages]?.length > 0) {
+          sanitizedSelectedPages[notebookId] = selectedPages[notebookId as keyof typeof selectedPages];
+        }
+      }
+      
+      console.log("Sanitized Selected Pages:", JSON.stringify(sanitizedSelectedPages, null, 2));
+
       const requestBody = {
-        selectedPages,
+        selectedPages: sanitizedSelectedPages,
         guideName,
         uploadedDocs: processedFiles,
       };
 
-      console.log("Sending request to generate study guide:", requestBody);
+      console.log("Sending request to generate study guide:", JSON.stringify(requestBody, null, 2));
 
+      // Use fetch with JSON stringify/parse for better error handling
       const response = await fetch("/api/studyguide", {
         method: "POST",
         headers: {
@@ -125,13 +140,22 @@ export default function StudyGuideModal({
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Study Guide API Error Response:", errorData);
-        throw new Error(errorData.details || "Failed to generate study guide");
+      const responseText = await response.text();
+      console.log("Raw response text:", responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Error parsing response:", parseError);
+        throw new Error("Invalid response format from server");
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        console.error("Study Guide API Error Response:", result);
+        throw new Error(result.details || "Failed to generate study guide");
+      }
+
       console.log("Received study guide result:", result);
 
       if (!result.content) {
@@ -139,7 +163,7 @@ export default function StudyGuideModal({
       }
 
       // Create a properly formatted study guide object
-      const newStudyGuide: StudyGuide = {
+      const newStudyGuide = {
         id: `guide_${crypto.randomUUID()}`,
         title: guideName,
         content: result.content,
@@ -150,7 +174,7 @@ export default function StudyGuideModal({
       // Save to Firestore
       if (user?.id) {
         try {
-          await saveGeneratedStudyGuide(newStudyGuide as StudyGuide, user.id);
+          await saveGeneratedStudyGuide(newStudyGuide, user.id);
           console.log("Successfully saved study guide to database");
           toast.success("Study guide created successfully!");
 

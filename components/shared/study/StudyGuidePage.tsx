@@ -378,184 +378,170 @@ export function StudyGuidePage({
   };
 
   return (
-    <Card className="py-6 bg-white overflow-hidden shadow-none border-none w-full h-full    mt-12">
-      <div className="flex justify-between items-center mb-4 w-full">
-        <Link href="/">
-          <Button
-            variant="ghost"
-            className="gap-2 text-slate-600 flex items-center justify-center w-fit hover:bg-slate-100 rounded-full"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden md:block">Back to Dashboard</span>
-            <span className="md:hidden">Back</span>
-          </Button>
-        </Link>
-        <div className="flex flex-row gap-4">
-          {/* <Button
-          variant="ghost"
-          className="gap-2 text-red-500 flex items-center justify-center w-fit border border-red-500 rounded-full"
-          onClick={() => onDelete(guide.id)}
-        >
-          <Trash2 className="h-4 w-4" />
-          <span className="hidden md:block">Delete Guide</span>
-        </Button> */}
-
-          <Button
-            variant="ghost"
-            className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-600 rounded-full"
-            onClick={() => setShowModal(true)}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden md:block">Create New Guide</span>
-          </Button>
+    <div className="w-full mx-auto">
+      <Card className="bg-white border-none w-full h-full shadow-none max-h-[calc(100vh-100px)] rounded-xl p-6 mt-12 overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 w-full">
+          <Link href="/">
+            <Button
+              variant="ghost"
+              className="gap-2 text-slate-400 flex items-center justify-center w-fit hover:bg-transparent hover:text-slate-600 transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden md:block">Back to Dashboard</span>
+              <span className="md:hidden">Back</span>
+            </Button>
+          </Link>
+          <div className="flex flex-row gap-4">
+            <Button
+              variant="ghost"
+              className="gap-2 text-slate-600 flex items-center justify-center w-fit border border-slate-300 rounded-full hover:bg-slate-50 transition-colors"
+              onClick={() => setShowModal(true)}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden md:block">Create New Guide</span>
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <div className="shadow-none border-none p-4   h-full max-h-[calc(100vh-100px)] overflow-y-auto">
-        <div className="flex flex-row items-center justify-between w-full  px-4    pb-2">
-          {isEditing ? (
-            <div className="flex items-center gap-2 flex-1 mr-4 w-full  ">
-              <Input
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="text-slate-500 max-w-56  flex items-center gap-2 border-none shadow-none text-xl border border-slate-300 rounded-lg px-2  font-bold w-full"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSaveTitle}
-                  className="text-green-600 hover:text-green-700 "
+        <div className="px-4 h-full max-h-[calc(100vh-100px)] ">
+          <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="border border-slate-300 rounded-md px-3 py-2 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                  autoFocus
+                />
+                <button
+                  onClick={handleSave}
+                  className="p-2 hover:bg-green-100 rounded-full transition-colors"
                 >
-                  <Check className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <Check className="h-4 w-4 text-green-600" />
+                </button>
+                <button
                   onClick={handleCancel}
-                  className="text-red-500 hover:text-red-700"
+                  className="p-2 hover:bg-red-100 rounded-full transition-colors"
                 >
-                  <X className="h-4 w-4" />
-                </Button>
+                  <X className="h-4 w-4 text-red-600" />
+                </button>
+              </div>
+            ) : (
+              <div
+                className="flex items-center rounded-lg justify-center hover:cursor-pointer"
+                onClick={() => setIsEditing(true)}
+              >
+                <h3 className="text-2xl text-[#94b347] rounded-lg cursor-pointer">
+                  Study Guide: <span className="text-slate-600 font-bold">{guide.title}</span>
+                </h3>
+                <div className="flex items-center justify-center rounded-lg ml-2 h-8 w-8 hover:bg-slate-100 transition-colors" onClick={() => setIsEditing(true)}>
+                  <Pencil className="h-4 w-4 text-slate-500 hover:text-[#7a943a]" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {guide.content.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="rounded-lg py-6">
+              <div className="text-center mb-6">
+                <h4 className="text-xl font-semibold text-slate-800 mb-2">
+                  {section.topic}
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Created: {guide.createdAt.toLocaleDateString()}
+                </p>
+              </div>
+
+              <div className="grid gap-6 w-full mx-auto">
+                {section.subtopics.map((subtopic, subtopicIndex) => (
+                  <div key={subtopicIndex} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                    <h5 className="text-lg font-semibold text-[#94b347] mb-3">
+                      {subtopic.title}
+                    </h5>
+                    <p className="text-slate-600 mb-4 leading-relaxed">{subtopic.description}</p>
+
+                    {/* Key Points */}
+                    <div className="mb-4 bg-slate-50 p-4 rounded-lg">
+                      <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
+                        <span className="h-1.5 w-1.5 bg-[#94b347] rounded-full mr-2"></span>
+                        Key Points:
+                      </h6>
+                      <ul className="list-disc pl-5 space-y-2">
+                        {subtopic.keyPoints.map((point, index) => (
+                          <li key={index} className="text-slate-600">
+                            {point}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Examples */}
+                    {subtopic.examples && subtopic.examples.length > 0 && (
+                      <div className="mb-4 bg-slate-50 p-4 rounded-lg">
+                        <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
+                          <span className="h-1.5 w-1.5 bg-[#94b347] rounded-full mr-2"></span>
+                          Examples:
+                        </h6>
+                        <ul className="list-disc pl-5 space-y-2">
+                          {subtopic.examples.map((example, index) => (
+                            <li key={index} className="text-slate-600">
+                              {example}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Study Tips */}
+                    {subtopic.studyTips && subtopic.studyTips.length > 0 && (
+                      <div className="bg-[#eef5db] p-4 rounded-lg mt-4 border-l-4 border-[#94b347]">
+                        <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
+                          <span className="h-1.5 w-1.5 bg-[#94b347] rounded-full mr-2"></span>
+                          Study Tips:
+                        </h6>
+                        <ul className="list-disc pl-5 space-y-2">
+                          {subtopic.studyTips.map((tip, index) => (
+                            <li key={index} className="text-slate-600">
+                              {tip}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="flex items-center rounded-lg w-fit  justify-center hover:cursor-pointer ">
-              <h3 className="text-2xl  text-[#94b347]  rounded-lg cursor-pointer ">
-                Study Guide:{" "}
-                <span className="text-slate-800 font-bold">{guide.title}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="hover:bg-white"
-                >
-                  <Pencil className="h-4 w-4 text-slate-600 " />
-                </Button>
-              </h3>
-            </div>
+          ))}
+        </div>
+        
+        <div className="w-full mx-auto p-4 mt-4">
+          {showModal && (
+            <StudyGuideModal
+              guideName={guideName}
+              setGuideName={setGuideName}
+              files={files}
+              handleFileUpload={handleFileUpload}
+              handleClear={handleClear}
+              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
+              messages={messages}
+              handleSendMessage={handleSendMessage}
+              showUpload={showUpload}
+              setShowUpload={setShowUpload}
+              renderNotebookSelection={renderNotebookList}
+              onClose={() => {
+                router.push("/");
+              }}
+              handleGenerateGuide={handleGenerateGuide}
+              isGenerating={isGenerating}
+              filesToUpload={filesToUpload}
+              selectedPages={selectedPages}
+              setIsGenerating={setIsGenerating}
+            />
           )}
         </div>
-
-        {guide.content.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="  rounded-lg pb-4 ">
-            <h4 className="text-lg font-semibold text-slate-800 mb-2 pl-4">
-              Topic: {section.topic}
-            </h4>
-            <p className="text-sm text-gray-500 pl-4 mb-4  ">
-              Created: {guide.createdAt.toLocaleDateString()}
-            </p>
-
-            <div className="space-y-4">
-              {section.subtopics.map((subtopic, subtopicIndex) => (
-                <div key={subtopicIndex} className="bg-white p-4 rounded-lg ">
-                  <h5 className="text-md font-semibold text-[#94b347] mb-2">
-                    {subtopic.title}
-                  </h5>
-                  <p className="text-slate-600 mb-3">{subtopic.description}</p>
-
-                  {/* Key Points */}
-                  <div className="mb-3">
-                    <h6 className="text-sm font-semibold text-slate-700 mb-2">
-                      Key Points:
-                    </h6>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {subtopic.keyPoints.map((point, index) => (
-                        <li key={index} className="text-slate-600">
-                          {point}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Examples */}
-                  {subtopic.examples && subtopic.examples.length > 0 && (
-                    <div className="mb-3">
-                      <h6 className="text-sm font-semibold text-slate-700 mb-2">
-                        Examples:
-                      </h6>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {subtopic.examples.map((example, index) => (
-                          <li key={index} className="text-slate-600">
-                            {example}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Study Tips */}
-                  {subtopic.studyTips && subtopic.studyTips.length > 0 && (
-                    <div className="bg-[#dae9b6] p-3 rounded-lg mt-3">
-                      <h6 className="text-sm font-semibold text-slate-700 mb-2">
-                        Study Tips:
-                      </h6>
-                      <ul className="list-disc pl-5 space-y-1">
-                        {subtopic.studyTips.map((tip, index) => (
-                          <li key={index} className="text-slate-600">
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="container mx-auto p-10 m-10">
-        {showModal && (
-          <StudyGuideModal
-            guideName={guideName}
-            setGuideName={setGuideName}
-            files={files}
-            handleFileUpload={handleFileUpload}
-            handleClear={handleClear}
-            fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
-            messages={messages}
-            handleSendMessage={handleSendMessage}
-            showUpload={showUpload}
-            setShowUpload={setShowUpload}
-            renderNotebookSelection={renderNotebookList}
-            onClose={() => {
-              // setShowModal(false);
-              // if (navigateHome) {
-              //   navigateHome();
-              // }
-              router.push("/");
-            }}
-            handleGenerateGuide={handleGenerateGuide}
-            isGenerating={isGenerating}
-            filesToUpload={filesToUpload}
-            selectedPages={selectedPages}
-            setIsGenerating={setIsGenerating}
-          />
-        )}
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }

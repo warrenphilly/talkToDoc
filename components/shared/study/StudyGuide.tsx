@@ -905,10 +905,13 @@ export default function StudyGuideComponent({
                     onClick={() => setSelectedGuideView(guide)}
                   >
                     <h3 className="font-medium text-slate-700 ">
-                      {guide.title}
+                      Study Guide:{" "}
+                      <span className="text-[#94b347] font-bold">
+                        {guide.title}
+                      </span>
                     </h3>
                     <p className="text-sm text-slate-500">
-                      Created: {new Date(guide.createdAt).toLocaleDateString()}
+                      Created on: {new Date(guide.createdAt).toLocaleDateString()}
                     </p>
                   </div>
 

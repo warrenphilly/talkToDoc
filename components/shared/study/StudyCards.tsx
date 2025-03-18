@@ -496,7 +496,7 @@ export default function StudyCards({
   const renderCardSets = useMemo(() => {
     if (loadingCardSets) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4  w-full">
           {[...Array(3)].map((_, i) => (
             <Card
               key={i}
@@ -515,24 +515,30 @@ export default function StudyCards({
     }
 
     return (
-      <div className="w-full max-w-lg mx-auto gap-4  overflow-y-auto ">
+      <div className="w-full   gap-4  overflow-y-auto ">
         {cardSets.map((studyCard) => (
           <div
             key={studyCard.id}
-            className="flex flex-row justify-between items-center mx-auto bg-red-500"
+            className="flex flex-row justify-between items-center mx-auto bg-white w-full"
           >
-            <Card className="  bg-white border-none   transition-colors w-full shadow-none  rounded-none ">
+            <Card className="   border-none m-0 gap-2 py-2 transition-colors bg-white w-full shadow-none  rounded-none ">
               <CardContent
                 className="py-2 border-t hover:bg-slate-50 border-slate-200 my-0 w-full flex items-center justify-between cursor-pointer"
                 onClick={() => setSelectedSet(studyCard)}
               >
                 <div className="flex flex-col items-start justify-between w-full">
                   <div className="items-center flex flex-row justify-between w-full">
-                    <div className="flex flex-row items-center">
+                    <div className="flex flex-row items-center gap-4 justify-between">
+                      
                       <h3 className="font-medium text-slate-700 ">
-                        {studyCard.metadata.name}
+                        Card Set:{" "}
+                        <span className="text-[#94b347] font-bold">
+                          {studyCard.metadata.name}
+                        </span>
                       </h3>
-                      <p className="text-sm text-slate-500 mx-5">
+
+                      <div className="h-4 w-px bg-slate-300 "></div>
+                      <p className="text-sm text-slate-500 ">
                         Cards: {studyCard.cards.length}
                       </p>
                     </div>
@@ -600,10 +606,10 @@ export default function StudyCards({
   }, [cardSets, loadingCardSets]);
 
   return (
-    <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 md:p-4 items-center justify-center">
+    <Card className="shadow-none border-none w-full bg-white flex flex-col gap-4 m-0 items-center justify-center">
       {!selectedSet && (
         <>
-          <CardHeader className="hidden md:flex flex-col items-center justify-center p-0  md:p-4 ">
+          <CardHeader className="hidden md:flex flex-col items-center justify-center p-0  md:py-4 ">
             <CardTitle className="text-2xl font-bold text-[#94b347] ">
               Study Cards
             </CardTitle>
@@ -623,7 +629,7 @@ export default function StudyCards({
         </>
       )}
 
-      <CardContent className="w-full flex flex-col items-center justify-center h-full overflow-y-auto">
+      <CardContent className="w-full  flex flex-col items-center justify-center h-full overflow-y-auto p-0">
         {showNotebookModal && (
           <CreateCardModal
             showNotebookModal={showNotebookModal}
@@ -657,7 +663,7 @@ export default function StudyCards({
         ) : (
           // Show selected set's cards
           <div className="w-full h-full overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-4  mx-auto">
               <Button
                 onClick={() => setSelectedSet(null)}
                 variant="ghost"

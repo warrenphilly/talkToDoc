@@ -824,7 +824,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     </div>
 
                     <div className="flex items-center justify-between gap-3 mt-1  w-full">
+                      
                       <p className="text-sm text-gray-500">
+                        Created on:{" "}
                         {(() => {
                           try {
                             // Check for serialized timestamp with valid seconds
