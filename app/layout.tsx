@@ -39,11 +39,11 @@ export default function RootLayout({
     >
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased h-[70vh] md:h-screen overflow-hidden flex flex-col`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}
           suppressHydrationWarning={true}
         >
           <SignedIn>
-            <div className="flex h-[70vh] md:h-screen overflow-hidden">
+            <div className="flex h-screen overflow-hidden">
               {/* <CustomSidebar /> */}
               <main className="flex-1 ml-0 md:ml-64  transition-all duration-300 overflow-none">
                 <div className="w-full rounded-lg">
