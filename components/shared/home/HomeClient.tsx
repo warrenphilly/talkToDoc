@@ -48,11 +48,11 @@ const HomeClient = () => {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-red-500 w-full overflow-none">
-      <div className="flex flex-col h-full bg-white w-full p-2 md:p-4">
+      <div className="flex flex-col h-full bg-white w-full  ">
         
 
         <div className="flex flex-col md:flex-row justify-start h-full pb-12">
-          <div className="flex-grow overflow-y-auto p-2 md:p-4  bg-white rounded-2xl m-2 w-full h-full mt-4 md:mt-10 ">
+          <div className="flex-grow overflow-y-auto p-2   bg-white rounded-2xl  w-full h-full mt-4  ">
             <BentoDashboard listType="recent" />
           </div>
         </div>

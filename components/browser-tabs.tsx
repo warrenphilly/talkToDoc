@@ -313,7 +313,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   return (
     <div
       className={cn(
-        "w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center py-4 pb-16 md:pb-0 md:pt-4 ",
+        "w-full h-full mx-auto rounded-lg bg-white flex flex-col items-start justify-center py-4 pb-24 md:pb-0  ",
         className
       )}
     >
