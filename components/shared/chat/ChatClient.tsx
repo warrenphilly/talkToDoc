@@ -964,7 +964,7 @@ const ChatClient = ({
                 {showChat && "Chat with your selected text"}
               </DrawerDescription>
             </DrawerHeader>
-            <div className="h-full overflow-hidden">
+            <div className="h-full overflow-y-auto">
               {showChat && (
                 <SideChat
                   notebookId={notebookId}
