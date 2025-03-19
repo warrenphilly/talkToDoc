@@ -584,7 +584,7 @@ const ChatClient = ({
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
+    <div className="flex flex-col md:flex-row h-[50%] bg-red-500  w-full items-center  rounded-xl">
       {/* Show loading overlay when processing or updating database */}
 
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
