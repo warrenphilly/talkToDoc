@@ -166,6 +166,15 @@ const ChatClient = ({
       // Update UI state
       setPrimeSentence(sectionText);
       setShowChat(true);
+      
+      // For small screens, also open the drawer with chat tab
+      if (isSmallScreen) {
+        setIsDrawerOpen(true);
+        // Make sure other components are hidden
+        setShowStudyGuides(false);
+        setShowStudyCards(false);
+        setShowQuiz(false);
+      }
 
       // First check if a sidechat already exists
       const existingSideChat = await getSideChat(notebookId, tabId);

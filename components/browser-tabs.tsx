@@ -40,8 +40,9 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  Check,
   ChevronLeft,
-  Circle,
+    Circle,
   CircleX,
   Eye,
   List,
@@ -330,17 +331,17 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         </Link>
 
         {isEditing ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center ">
             <Input
               type="text"
               value={editedTitle}
               onChange={(e) => setEditedTitle(e.target.value)}
-              className="w-[200px]"
+              className="w-[100px] md:w-[200px]"
             />
             <Button
               variant="ghost"
               size="sm"
-              className="rounded-full hover:bg-green-100 hover:text-green-600"
+              className="rounded-full bg-white hover:bg-white border-none hover:border-none"
               onClick={async () => {
                 try {
                   await updateNotebookTitle(notebookId, editedTitle);
@@ -352,7 +353,8 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 }
               }}
             >
-              Save
+              <span className="hidden md:block">Save</span>
+              <span className="md:hidden bg-green-100 rounded-full p-2 text-green-600"><Check size={16} /></span>
             </Button>
             <Button
               variant="ghost"
@@ -363,7 +365,8 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 setIsEditing(false);
               }}
             >
-              Cancel
+              <span className="hidden md:block">Cancel</span>
+              <span className="md:hidden bg-red-100 rounded-full p-2 text-red-600"><X size={16} /></span>
             </Button>
           </div>
         ) : (
