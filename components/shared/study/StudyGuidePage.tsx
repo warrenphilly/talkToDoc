@@ -378,9 +378,9 @@ export function StudyGuidePage({
   };
 
   return (
-    <div className="w-full mx-auto">
-      <Card className="bg-white border-none w-full h-full shadow-none max-h-[calc(100vh-100px)] rounded-xl p-6 mt-12 overflow-y-auto">
-        <div className="flex justify-between items-center mb-6 w-full">
+    <div className="w-full mx-auto h-full ">
+      <Card className="bg-white border-none w-full h-screen container wrapper shadow-none  rounded-xl  overflow-y-auto ">
+        <div className="flex justify-between items-center mb-6 w-full ">
           <Link href="/">
             <Button
               variant="ghost"
@@ -403,7 +403,7 @@ export function StudyGuidePage({
           </div>
         </div>
 
-        <div className="px-4 h-full max-h-[calc(100vh-100px)] ">
+        <div className="px-4 h-full ">
           <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -442,8 +442,8 @@ export function StudyGuidePage({
             )}
           </div>
 
-          {guide.content.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="rounded-lg py-6">
+           {guide.content.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="rounded-lg py-6 ">
               <div className="text-center mb-6">
                 <h4 className="text-xl font-semibold text-slate-800 mb-2">
                   {section.topic}
@@ -453,7 +453,7 @@ export function StudyGuidePage({
                 </p>
               </div>
 
-              <div className="grid gap-6 w-full mx-auto">
+              <div className="grid gap-6 w-full mx-auto pb-32 md:pb-24">
                 {section.subtopics.map((subtopic, subtopicIndex) => (
                   <div key={subtopicIndex} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                     <h5 className="text-lg font-semibold text-[#94b347] mb-3">
@@ -461,7 +461,7 @@ export function StudyGuidePage({
                     </h5>
                     <p className="text-slate-600 mb-4 leading-relaxed">{subtopic.description}</p>
 
-                    {/* Key Points */}
+                  
                     <div className="mb-4 bg-slate-50 p-4 rounded-lg">
                       <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
                         <span className="h-1.5 w-1.5 bg-[#94b347] rounded-full mr-2"></span>
@@ -476,7 +476,7 @@ export function StudyGuidePage({
                       </ul>
                     </div>
 
-                    {/* Examples */}
+                   
                     {subtopic.examples && subtopic.examples.length > 0 && (
                       <div className="mb-4 bg-slate-50 p-4 rounded-lg">
                         <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
@@ -493,7 +493,7 @@ export function StudyGuidePage({
                       </div>
                     )}
 
-                    {/* Study Tips */}
+                    
                     {subtopic.studyTips && subtopic.studyTips.length > 0 && (
                       <div className="bg-[#eef5db] p-4 rounded-lg mt-4 border-l-4 border-[#94b347]">
                         <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
@@ -513,7 +513,7 @@ export function StudyGuidePage({
                 ))}
               </div>
             </div>
-          ))}
+          ))} 
         </div>
         
         <div className="w-full mx-auto p-4 mt-4">

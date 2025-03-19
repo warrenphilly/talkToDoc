@@ -235,7 +235,7 @@ export default function StudyGuidePage() {
   }
 
   return (
-    <div className="w-full mx-auto p-4 h-full max-h-[calc(100vh-100px)] overflow-y-none">
+    <div className="w-full mx-auto  h-full bg-white  overflow-hidden">
       <StudyGuidePageComponent
         guide={studyGuide}
         onDelete={handleDelete}

@@ -526,7 +526,7 @@ export default function QuizPage() {
         />
       )}
 
-      <div className="flex flex-col items-center bg-blue-500 justify-start w-full max-w-7xl h-screen overflow-y-auto ">
+      <div className="flex flex-col items-center bg-white justify-start w-full max-w-7xl h-screen overflow-y-auto ">
         <div className="flex  p-4 flex-col items-center justify-center w-full">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap ">
             {isEditingTitle ? (
