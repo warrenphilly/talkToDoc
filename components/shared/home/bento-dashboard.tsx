@@ -790,7 +790,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   }, [studyCards, loadingStudyCards]);
 
   return (
-    <div className="container mx-auto pb-16  mt-2 md:mt-0 px-2 sm:px-6">
+    <div className="container mx-auto pb-24 md:pb-0  mt-2 md:mt-0 px-2 sm:px-6">
       <div className="flex flex-col items-center justify-center h-full w-full">
         <h1 className="text-xl sm:text-3xl font-semibold text-[#94b347] mb-2 sm:mb-4">
           Dashboard
