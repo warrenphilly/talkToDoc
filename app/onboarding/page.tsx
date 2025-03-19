@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getUserByClerkId } from "@/lib/firebase/firestore";
 import LanguageSelector from "@/components/onboarding/language-selector";
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { motion } from "framer-motion";
 
 export default function OnboardingPage() {
@@ -20,7 +20,7 @@ export default function OnboardingPage() {
     const initUser = async () => {
       try {
         // Get current user from Clerk
-        const { userId: clerkId } = auth();
+        const { userId: clerkId } = await auth();
         
         if (!clerkId) {
           router.push("/sign-in");
