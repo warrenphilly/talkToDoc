@@ -449,8 +449,8 @@ const PageQuiz: React.FC<QuizProps> = ({
   };
 
   return (
-    <div className="flex flex-col bg-white items-center justify-start w-full">
-      <div className="bg-white w-full  rounded-xl px-4 md:px-8">
+    <div className="flex flex-col bg-white items-center justify-start w-full h-full ">
+      <div className="bg-white w-full  rounded-xl px-4 md:px-8 ">
 
         
         {showResults ? (

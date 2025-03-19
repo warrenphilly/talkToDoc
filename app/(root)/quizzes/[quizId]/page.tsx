@@ -479,8 +479,8 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start   w-full px-4 sm:px-6 lg:px-8">
-      <div className=" flex flex-row mt-16  justify-between  items-start sm:items-center w-full gap-4 ">
+    <div className="flex flex-col items-center justify-start  h-screen bg-white  w-full   pb-24 md:pb-12">
+      <div className=" flex flex-row bg-white  justify-between  items-start sm:items-center w-full gap-4 ">
         <Link href="/">
           <Button
             variant="ghost"
@@ -526,7 +526,7 @@ export default function QuizPage() {
         />
       )}
 
-      <div className="flex flex-col items-center justify-start w-full max-w-7xl h-[calc(100vh-8rem)] overflow-y-auto">
+      <div className="flex flex-col items-center bg-blue-500 justify-start w-full max-w-7xl h-screen overflow-y-auto">
         <div className="flex  p-4 flex-col items-center justify-center w-full">
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
             {isEditingTitle ? (
@@ -574,7 +574,7 @@ export default function QuizPage() {
           </p>
         </div>
 
-        <div className="w-full">
+        <div className="w-full h-full ">
           <PageQuiz
             data={quiz.quizData}
             notebookId={quiz.notebookId}
