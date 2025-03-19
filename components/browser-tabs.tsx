@@ -385,8 +385,8 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </div>
         )}
       </div>
-      <div className="flex p-2 bg-slate-50   items-center z-10 h-fit w-full rounded-lg scrollbar-hide">
-        <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2  ">
+      <div className="flex p-2 md:p-0 bg-slate-50   items-center z-10 h-fit w-full rounded-lg scrollbar-hide">
+        <div className="md:hidden flex justify-between w-full items-center gap-2 pb-2 md:pb-0 ">
           {activeTab &&
             (activeTab.isEditing ? (
               <div className="flex items-center gap-2 w-full max-w-[200px]">
