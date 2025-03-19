@@ -137,6 +137,7 @@ const ChatActions = ({
               animate="animate"
               whileHover="hover"
               transition={{ delay: 0.1 }}
+              className="rounded-full cursor-pointer"
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
@@ -153,6 +154,7 @@ const ChatActions = ({
               animate="animate"
               whileHover="hover"
               transition={{ delay: 0.2 }}
+               className="rounded-full cursor-pointer"
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
@@ -169,6 +171,7 @@ const ChatActions = ({
               animate="animate"
               whileHover="hover"
               transition={{ delay: 0.3 }}
+              className="rounded-full cursor-pointer"
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
@@ -176,6 +179,40 @@ const ChatActions = ({
                 disabled={contextSections.length === 0}
               >
                 Practice Questions
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              variants={actionButtonVariants}
+              initial="initial"
+              animate="animate"
+              whileHover="hover"
+              transition={{ delay: 0.4 }}
+              className="rounded-full cursor-pointer"
+            >
+              <Button
+                className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
+                onClick={() => sendMessage("Explain this concept in detail")}
+                disabled={contextSections.length === 0}
+              >
+                Explain
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              variants={actionButtonVariants}
+              initial="initial"
+              animate="animate"
+              whileHover="hover"
+              transition={{ delay: 0.5 }}
+              className="rounded-full cursor-pointer"
+            >
+              <Button
+                className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
+                onClick={() => sendMessage("Provide a real-world example of this concept")}
+                disabled={contextSections.length === 0}
+              >
+                Example
               </Button>
             </motion.div>
           </motion.div>

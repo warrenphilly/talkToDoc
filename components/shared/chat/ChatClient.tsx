@@ -152,7 +152,7 @@ const ChatClient = ({
         .map((sentence) => sentence.text)
         .join(" ");
 
-      // Update UI state to show the chat panel
+      // Update UI state
       setPrimeSentence(sectionText);
       setShowChat(true);
       
@@ -164,59 +164,8 @@ const ChatClient = ({
         setShowStudyCards(false);
         setShowQuiz(false);
       }
-
-      // First check if a sidechat already exists
-      const existingSideChat = await getSideChat(notebookId, tabId);
-
-      if (existingSideChat) {
-        // If sidechat exists, check if we already have 3 context sections
-        if (existingSideChat.contextSections && existingSideChat.contextSections.length >= 3) {
-          // If we already have 3 sections, alert the user
-          alert("Maximum of 3 context sections allowed. Please remove one first.");
-          return;
-        }
-        
-        // Check if this section is already in the context to avoid duplicates
-        const isDuplicate = existingSideChat.contextSections.some(
-          section => section.text === sectionText
-        );
-        
-        if (isDuplicate) {
-          // Optionally notify the user that this section is already in context
-          console.log("This section is already in your context.");
-          return;
-        }
-        
-        // If there's room for more and it's not a duplicate, add the new context section
-        const newContextSection: ContextSection = {
-          id: crypto.randomUUID(),
-          text: sectionText,
-          timestamp: Date.now(),
-          isHighlighted: true,
-        };
-
-        const updatedContextSections = [
-          ...existingSideChat.contextSections,
-          newContextSection,
-        ];
-        await updateSideChat(
-          existingSideChat.id,
-          updatedContextSections,
-          existingSideChat.messages
-        );
-      } else {
-        // Only create new sidechat if one doesn't exist
-        const newContextSection: ContextSection = {
-          id: crypto.randomUUID(),
-          text: sectionText,
-          timestamp: Date.now(),
-          isHighlighted: true,
-        };
-
-        await saveSideChat(notebookId, tabId, [newContextSection], []);
-      }
     } catch (error) {
-      console.error("Error updating side chat:", error);
+      console.error("Error handling section click:", error);
     }
   };
 

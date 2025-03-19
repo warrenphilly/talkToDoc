@@ -13,6 +13,8 @@ import { useUser } from "@clerk/nextjs";
 import ChatActions from "./ChatActions";
 import { AnimatePresence, motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast"
+import { AlertCircle } from "lucide-react";
 
 // First, let's define our message types
 interface Sentence {
@@ -67,6 +69,7 @@ const SideChat = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUser();
+  const { toast } = useToast();
 
   // Add state for tracking last refresh
   const [lastRefresh, setLastRefresh] = useState(Date.now());
@@ -114,7 +117,20 @@ const SideChat = ({
   // Add new context section
   const addContextSection = async (text: string) => {
     if (contextSections.length >= 3) {
-      alert("Maximum of 3 context sections allowed. Please remove one first.");
+      toast({
+        variant: "destructive",
+        title: "Maximum Context Reached",
+        description: "You can only add up to 3 context sections. Please remove one first.",
+      });
+      return;
+    }
+
+    const isDuplicate = contextSections.some(section => section.text === text);
+    if (isDuplicate) {
+      toast({
+        title: "Section Already Added",
+        description: "This section is already in your context.",
+      });
       return;
     }
 
@@ -130,11 +146,30 @@ const SideChat = ({
     try {
       if (sideChatId) {
         await updateSideChat(sideChatId, [...contextSections, newSection], messages);
+        
+        toast({
+          title: "Context Added",
+          description: "New context section added successfully.",
+        });
+      } else {
+        const newSideChatId = await saveSideChat(notebookId, pageId, [newSection], []);
+        setSideChatId(newSideChatId);
+        
+        toast({
+          title: "Context Added",
+          description: "First context section added.",
+        });
       }
     } catch (error) {
       // Revert local state if update fails
       setContextSections(prev => prev.filter(section => section.id !== newSection.id));
       console.error("Error adding context section:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add context. Please try again.",
+      });
     }
   };
 
@@ -157,11 +192,22 @@ const SideChat = ({
         if (updatedSections.length === 0) {
           setPrimeSentence(null);
         }
+        
+        toast({
+          title: "Context Removed",
+          description: "Context section removed successfully.",
+        });
       }
     } catch (error) {
       // Revert local state if update fails
       setContextSections(previousSections);
       console.error("Error removing context section:", error);
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to remove context. Please try again.",
+      });
     }
   };
 
@@ -334,7 +380,7 @@ const SideChat = ({
   );
 
   return (
-    <div className="flex flex-col h-full w-full rounded-2xl py-6 max-h-[90vh] bg-white overflow-hidden">
+    <div className="flex flex-col h-full w-full rounded-2xl py-6 max-h-[90vh] bg-white overflow-hidden relative">
       {/* Header section */}
       <div className="bg-white py-3 px-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
@@ -349,7 +395,7 @@ const SideChat = ({
           {/* Add refresh button */}
           <Button
             className="bg-white hover:bg-blue-50 text-sm text-blue-400 border border-blue-200 rounded-full hover:text-blue-600 hover:border-blue-400 h-auto px-2 py-1.5"
-            onClick={handleRefresh}
+            onClick={refreshContextData}
             disabled={isLoading}
           >
             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
@@ -362,19 +408,7 @@ const SideChat = ({
       </div>
       
       {/* Context Section Counter */}
-      <div className="bg-[#94b347]/10 py-2 px-4 border-b border-[#94b347]/20">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-gray-700">Context Sections</span>
-          <span className="bg-[#94b347] text-white text-xs font-bold px-2 py-1 rounded-full">
-            {contextSections.length}/3
-          </span>
-        </div>
-        {contextSections.length === 0 && (
-          <p className="text-xs text-gray-500 mt-1">
-            Click a section title to add context
-          </p>
-        )}
-      </div>
+     
       
       {/* Chat Actions */}
       <ChatActions 
