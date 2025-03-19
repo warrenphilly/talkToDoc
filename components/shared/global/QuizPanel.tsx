@@ -893,15 +893,18 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
       {/* Quiz Display */}
       {selectedQuiz && quizData && !showQuizForm && (
-        <div className="">
+        <div className=" ">
+          <div className="flex items-center justify-center p-3 md:justify-between mb-4  mx-auto">
           <Button
             onClick={handleBackToList}
             variant="ghost"
             className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent text-sm sm:text-base"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
-            Back to List
+            <span className="hidden md:block">Back to List</span>
+            <span className="md:hidden">Back</span>
           </Button>
+          </div>
           <div className="flex  bg-white p-4 flex-col items-center justify-center w-full">
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">
               {isEditingTitle ? (

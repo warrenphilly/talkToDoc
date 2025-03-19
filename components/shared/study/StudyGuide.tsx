@@ -849,7 +849,7 @@ export default function StudyGuideComponent({
               Study Guides
             </CardTitle>
             <CardDescription className="hidden md:block ">Create and review study guides</CardDescription>
-            <div className="flex flex-col justify-center items-center ">
+            <div className="flex flex-col justify-center items-center p-3 ">
               <Button
                 onClick={() => setShowNotebookModal(true)}
                 className="flex items-center gap-2 md:m-5 bg-white border border-slate-400 text-slate-600 hover:bg-white hover:border-[#94b347] hover:text-[#94b347] rounded-full"

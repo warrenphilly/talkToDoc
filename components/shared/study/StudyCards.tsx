@@ -611,7 +611,7 @@ export default function StudyCards({
               Create and review study card sets
             </CardDescription>
           </CardHeader>
-          <div className="flex flex-col items-center justify-center md:gap-4 ">
+          <div className="flex flex-col items-center justify-center md:gap-4 p-3 ">
             <Button
               onClick={() => setShowNotebookModal(true)}
               className="hover:text-[#94b347] hover:bg-white hover:border-[#a5c05f] rounded-2xl text-slate-600 bg-white border border-slate-400 shadow-none"
@@ -657,14 +657,15 @@ export default function StudyCards({
         ) : (
           // Show selected set's cards
           <div className="w-full h-full overflow-y-auto">
-            <div className="flex items-center justify-between mb-4  mx-auto">
+            <div className="flex items-center justify-center p-3 md:justify-between mb-4  mx-auto">
               <Button
                 onClick={() => setSelectedSet(null)}
                 variant="ghost"
                 className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Sets
+                <span className="hidden md:block">Back to Sets</span>
+                <span className="md:hidden">Back</span>
               </Button>
             </div>
             <div className="space-y-2 w-full overflow-y-auto h-full">

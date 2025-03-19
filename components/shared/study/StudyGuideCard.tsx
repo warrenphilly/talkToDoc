@@ -43,20 +43,21 @@ export function StudyGuideCard({
   };
 
   return (
-    <div className="w-full mx-auto">
-      <Card className="bg-white border-none w-full h-full shadow-none rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6 w-full">
+    <div className="w-full ">
+      <Card className="bg-white border-none w-full h-full shadow-none rounded-xl ">
+        <div className="flex  justify-center  md:justify-between items-center m-3 p-3 w-full">
           <Button
             variant="ghost"
             className="gap-2 text-slate-400 flex items-center justify-center w-fit hover:bg-transparent hover:text-slate-600 transition-colors"
             onClick={onBack}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Guide list
+            <span className="hidden md:block">Back to Guide list</span>
+            <span className="md:hidden">Back</span>
           </Button>
         </div>
 
-        <div className="px-4">
+        <div className="">
           <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -107,7 +108,7 @@ export function StudyGuideCard({
                 </p>
               </div>
 
-              <div className="grid gap-6 max-w-3xl mx-auto">
+              <div className="grid gap-6  mx-auto">
                 {section.subtopics.map((subtopic, subtopicIndex) => (
                   <div key={subtopicIndex} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
                     <h5 className="text-lg font-semibold text-[#94b347] mb-3">
