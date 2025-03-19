@@ -46,7 +46,7 @@ export default function RootLayout({
             <div className="flex h-screen overflow-hidden bg-green-500 max-h-[90vh] md:max-h-screen  ">
               {/* <CustomSidebar /> */}
               <main className="flex-1 flex-col ml-0 md:ml-64   transition-all duration-300 overflow-hidden bg-red-500 ">
-                <div className="w-full rounded-lg ">
+                <div className="w-full rounded-lg  items-center justify-center flex text-center text-white text-2xl font-bold">
                   gammanotes
                 </div>
                 {children}

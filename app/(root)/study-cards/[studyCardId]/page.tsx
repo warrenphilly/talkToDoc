@@ -441,7 +441,7 @@ export default function StudyCardPage() {
 
   return (
     <div className="bg-white  ">
-      <div className="flex  justify-between   md:pt-0 px-5">
+      <div className="flex items-center justify-between  py-2 md:pt-0 px-5">
         <Link href="/">
           <Button
             variant="ghost"
