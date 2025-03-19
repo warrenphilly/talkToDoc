@@ -479,7 +479,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-start  h-screen bg-white  w-full   pb-32 md:pb-12">
+    <div className="flex flex-col items-center justify-start  h-screen bg-white  w-full   pb-40 md:pb-12">
       <div className=" flex flex-row bg-white  justify-between  items-start sm:items-center w-full gap-4 ">
         <Link href="/">
           <Button
