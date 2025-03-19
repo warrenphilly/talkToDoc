@@ -1,4 +1,3 @@
-
 import { SidebarHeader } from "@/components/shared/global/sidebar-header";
 import { CustomSidebar } from "@/components/shared/global/custom-sidebar";
 import { SidebarNav } from "@/components/shared/global/SidebarNav";
@@ -40,14 +39,14 @@ export default function RootLayout({
     >
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}
           suppressHydrationWarning={true}
         >
           <SignedIn>
-            <div className="flex max-h-[90vh] overflow-hidden">
+            <div className="flex h-screen overflow-hidden">
               <CustomSidebar />
-              <main className="flex-1 ml-0 md:ml-64 p-4 transition-all duration-300 max-h-[90vh] bg-green-500 overflow-hidden  mx-auto">
-                <div className="max-h-[90vh] bg-blue-500 w-full overflow-hidden rounded-lg">
+              <main className="flex-1 ml-0 md:ml-64 p-4 transition-all duration-300 overflow-none">
+                <div className="w-full rounded-lg">
                   gammanotes
                 </div>
                 {children}
@@ -55,7 +54,7 @@ export default function RootLayout({
             </div>
           </SignedIn>
           <SignedOut>
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 h-screen overflow-none">{children}</main>
           </SignedOut>
         </body>
       </html>
