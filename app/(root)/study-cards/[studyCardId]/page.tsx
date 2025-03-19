@@ -460,7 +460,7 @@ export default function StudyCardPage() {
           <span className="hidden md:block">Create Study Cards</span>
         </Button>
       </div>
-      <div className="p-6 rounded-lg w-full h-[calc(100vh-8rem)] overflow-y-auto bg-white">
+      <div className="p-6 pb-16 md:pb-0 rounded-lg w-full h-[calc(100vh-8rem)] overflow-y-auto bg-white">
         <CreateCardModal
           showNotebookModal={showNotebookModal}
           setShowNotebookModal={setShowNotebookModal}
