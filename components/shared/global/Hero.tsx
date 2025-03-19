@@ -19,19 +19,19 @@ export default function Hero() {
         </Link>
         <nav className="ml-auto flex gap-6">
           <Link
-            className="font-medium text-slate-600 hover:text-emerald-600 transition-colors"
+            className="font-medium text-slate-600 hover:text-[#94b347] transition-colors"
             href="#features"
           >
             Features
           </Link>
           <SignUpButton>
-            <span className="font-medium text-slate-600 hover:text-emerald-600 transition-colors cursor-pointer">
+            <span className="font-medium text-slate-600 hover:text-[#94b347] transition-colors cursor-pointer">
               Sign Up
             </span>
           </SignUpButton>
           
           <SignInButton>
-            <span className="font-medium text-slate-600 hover:text-emerald-600 transition-colors cursor-pointer">
+            <span className="font-medium text-slate-600 hover:text-[#94b347] transition-colors cursor-pointer">
               Login
             </span>
           </SignInButton>

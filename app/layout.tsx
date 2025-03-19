@@ -46,7 +46,10 @@ export default function RootLayout({
           <SignedIn>
             <div className="flex min-h-screen overflow-hidden">
               <CustomSidebar />
-              <main className="flex-1 ml-0 md:ml-64 p-4 transition-all duration-300 h-screen overflow-none">
+              <main className="flex-1 ml-0 md:ml-64 p-4 transition-all duration-300 max-h-[90vh] bg-green-500 overflow-none  mx-auto">
+                <div className="max-h-[90vh] bg-blue-500 w-full overflow-hidden rounded-lg">
+                  gammanotes
+                </div>
                 {children}
               </main>
             </div>
