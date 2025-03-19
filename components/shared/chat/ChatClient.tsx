@@ -141,17 +141,6 @@ const ChatClient = ({
     fileUpload(event, setFiles);
   };
 
-  const handleSentenceClick = (
-    sentence: {
-      id: number;
-      text: string;
-    },
-    setPrimeSentence: (sentence: string) => void,
-    setShowChat: (show: boolean) => void
-  ) => {
-    sentenceClick(sentence, setPrimeSentence, setShowChat);
-  };
-
   const handleSectionClick = async (
     section: Section,
     setPrimeSentence: (sentence: string) => void,
@@ -163,7 +152,7 @@ const ChatClient = ({
         .map((sentence) => sentence.text)
         .join(" ");
 
-      // Update UI state
+      // Update UI state to show the chat panel
       setPrimeSentence(sectionText);
       setShowChat(true);
       
@@ -180,7 +169,25 @@ const ChatClient = ({
       const existingSideChat = await getSideChat(notebookId, tabId);
 
       if (existingSideChat) {
-        // If sidechat exists, just add the new context section to it
+        // If sidechat exists, check if we already have 3 context sections
+        if (existingSideChat.contextSections && existingSideChat.contextSections.length >= 3) {
+          // If we already have 3 sections, alert the user
+          alert("Maximum of 3 context sections allowed. Please remove one first.");
+          return;
+        }
+        
+        // Check if this section is already in the context to avoid duplicates
+        const isDuplicate = existingSideChat.contextSections.some(
+          section => section.text === sectionText
+        );
+        
+        if (isDuplicate) {
+          // Optionally notify the user that this section is already in context
+          console.log("This section is already in your context.");
+          return;
+        }
+        
+        // If there's room for more and it's not a duplicate, add the new context section
         const newContextSection: ContextSection = {
           id: crypto.randomUUID(),
           text: sectionText,
@@ -768,13 +775,6 @@ const ChatClient = ({
                                       setShowChat
                                     )
                                   }
-                                  handleSentenceClick={(sentence) =>
-                                    handleSentenceClick(
-                                      sentence,
-                                      setPrimeSentence,
-                                      setShowChat
-                                    )
-                                  }
                                   handleParagraphSave={handleParagraphSave}
                                   onEdit={() =>
                                     handleMessageEdit(null, index, sectionIndex)
@@ -807,13 +807,6 @@ const ChatClient = ({
                               handleSectionClick={(section) =>
                                 handleSectionClick(
                                   section,
-                                  setPrimeSentence,
-                                  setShowChat
-                                )
-                              }
-                              handleSentenceClick={(sentence) =>
-                                handleSentenceClick(
-                                  sentence,
                                   setPrimeSentence,
                                   setShowChat
                                 )

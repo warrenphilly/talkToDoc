@@ -19,7 +19,6 @@ import React, { useEffect, useState } from "react";
 interface ResponseProps {
   msg: Message;
   handleSectionClick: (section: Section) => void;
-  handleSentenceClick: (sentence: Sentence) => void;
   onEdit: () => void;
   onDelete: () => void;
   onSave: (data: any, index: number) => void;
@@ -53,7 +52,6 @@ const formatTextWithMarkdown = (text: string) => {
 export const ResponseMessage = ({
   msg,
   handleSectionClick,
-  handleSentenceClick,
   onEdit,
   onDelete,
   onSave,
@@ -271,7 +269,6 @@ export const ResponseMessage = ({
                     className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words leading-relaxed ${
                       isSummarySection ? "font-medium" : ""
                     }`}
-                    onClick={() => handleSentenceClick(sentence)}
                     variants={itemAnimation}
                   >
                     {formatTextWithMarkdown(sentence.text)}
@@ -308,7 +305,6 @@ export const ResponseMessage = ({
                     content = (
                       <div
                         className="px-4 py-3 bg-gray-50 font-mono text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200"
-                        onClick={() => handleSentenceClick(sentence)}
                       >
                         {formatTextWithMarkdown(sentence.text)}
                       </div>
@@ -318,7 +314,6 @@ export const ResponseMessage = ({
                     content = (
                       <p
                         className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed"
-                        onClick={() => handleSentenceClick(sentence)}
                       >
                         {formatTextWithMarkdown(sentence.text)}
                       </p>
@@ -328,7 +323,6 @@ export const ResponseMessage = ({
                     content = (
                       <p
                         className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed"
-                        onClick={() => handleSentenceClick(sentence)}
                       >
                         {formatTextWithMarkdown(sentence.text)}
                       </p>
@@ -340,7 +334,6 @@ export const ResponseMessage = ({
                         className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
                           isSummarySection ? "text-[#94b347]" : ""
                         }`}
-                        onClick={() => handleSentenceClick(sentence)}
                       >
                         {formatTextWithMarkdown(sentence.text)}
                       </h4>
@@ -352,7 +345,6 @@ export const ResponseMessage = ({
                         className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
                           isSummarySection ? "text-gray-700" : ""
                         }`}
-                        onClick={() => handleSentenceClick(sentence)}
                       >
                         {formatTextWithMarkdown(sentence.text)}
                       </p>
@@ -362,7 +354,7 @@ export const ResponseMessage = ({
                 result.push(
                   <motion.div
                     key={`content-${sentenceIdx}`}
-                    className="hover:bg-gray-50 rounded-md transition-colors px-1"
+                    className="rounded-md transition-colors px-1"
                     variants={itemAnimation}
                   >
                     {content}

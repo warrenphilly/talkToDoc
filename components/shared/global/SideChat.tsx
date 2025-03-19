@@ -7,7 +7,7 @@ import {
   saveSideChat,
   updateSideChat,
 } from "@/lib/firebase/firestore";
-import { Image, Send, Trash2, X } from "lucide-react";
+import { Image, Send, Trash2, X, RefreshCw } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import ChatActions from "./ChatActions";
@@ -67,6 +67,44 @@ const SideChat = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUser();
+
+  // Add state for tracking last refresh
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  
+  // Function to refresh context data
+  const refreshContextData = async () => {
+    try {
+      setIsLoading(true);
+      const existingSideChat = await getSideChat(notebookId, pageId);
+      
+      if (existingSideChat) {
+        setSideChatId(existingSideChat.id || null);
+        setMessages(existingSideChat.messages || []);
+        setContextSections(existingSideChat.contextSections || []);
+      } else {
+        // Reset to empty state if no sidechat exists
+        setSideChatId(null);
+        setMessages([]);
+        setContextSections([]);
+      }
+    } catch (error) {
+      console.error("Error refreshing context data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add a manual refresh button
+  const handleRefresh = () => {
+    setLastRefresh(Date.now());
+  };
+
+  // Enhanced initialization effect
+  useEffect(() => {
+    if (notebookId && pageId) {
+      refreshContextData();
+    }
+  }, [notebookId, pageId, lastRefresh]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -130,49 +168,20 @@ const SideChat = ({
   // Effect to handle primeSentence changes
   useEffect(() => {
     if (primeSentence) {
-      // Check if the primeSentence already exists in contextSections
-      const sentenceExists = contextSections.some(
-        section => section.text === primeSentence
-      );
-      
-      // Only add if the sentence doesn't already exist
-      if (!sentenceExists) {
-        addContextSection(primeSentence);
-      }
+      // First refresh the context data to get latest state
+      refreshContextData().then(() => {
+        // After refresh, check if the primeSentence already exists
+        const sentenceExists = contextSections.some(
+          section => section.text === primeSentence
+        );
+        
+        // Only add if the sentence doesn't already exist
+        if (!sentenceExists) {
+          addContextSection(primeSentence);
+        }
+      });
     }
   }, [primeSentence]);
-
-  // Initialize side chat
-  useEffect(() => {
-    const initializeSideChat = async () => {
-      setIsLoading(true);
-      try {
-        // First check if a sidechat exists for this page
-        const existingSideChat = await getSideChat(notebookId, pageId);
-      
-        if (existingSideChat) {
-          setSideChatId(existingSideChat?.id || null);
-          setMessages(existingSideChat?.messages || []);
-          setContextSections(existingSideChat?.contextSections || []);
-          
-          // Set primeSentence to the most recent context section if it exists
-          if (existingSideChat?.contextSections?.length && existingSideChat?.contextSections?.length > 0) {
-            const mostRecentContext = existingSideChat?.contextSections
-              .sort((a, b) => b.timestamp - a.timestamp)[0];
-            setPrimeSentence(mostRecentContext?.text || null);
-          }
-        }
-      } catch (error) {
-        console.error("Error initializing side chat:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (notebookId && pageId) {
-      initializeSideChat();
-    }
-  }, [notebookId, pageId]);
 
   const sendMessage = async (messageText: string = input) => {
     if (!messageText.trim() && files.length === 0) return;
@@ -328,16 +337,43 @@ const SideChat = ({
     <div className="flex flex-col h-full w-full rounded-2xl py-6 max-h-[90vh] bg-white overflow-hidden">
       {/* Header section */}
       <div className="bg-white py-3 px-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
-        <Button
-          className="bg-white hover:bg-red-50 text-sm text-red-400 border border-red-200 rounded-full hover:text-red-600 hover:border-red-400 flex items-center gap-1.5 px-3 py-1.5 h-auto"
-          onClick={handleClearChat}
-        >
-          <Trash2 size={14} />
-          <span>Clear</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            className="bg-white hover:bg-red-50 text-sm text-red-400 border border-red-200 rounded-full hover:text-red-600 hover:border-red-400 flex items-center gap-1.5 px-3 py-1.5 h-auto"
+            onClick={handleClearChat}
+          >
+            <Trash2 size={14} />
+            <span>Clear</span>
+          </Button>
+          
+          {/* Add refresh button */}
+          <Button
+            className="bg-white hover:bg-blue-50 text-sm text-blue-400 border border-blue-200 rounded-full hover:text-blue-600 hover:border-blue-400 h-auto px-2 py-1.5"
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+          </Button>
+        </div>
+        
         <h1 className="text-lg font-semibold text-[#94b347] flex items-center gap-2">
           Talk to Notes
         </h1>
+      </div>
+      
+      {/* Context Section Counter */}
+      <div className="bg-[#94b347]/10 py-2 px-4 border-b border-[#94b347]/20">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-gray-700">Context Sections</span>
+          <span className="bg-[#94b347] text-white text-xs font-bold px-2 py-1 rounded-full">
+            {contextSections.length}/3
+          </span>
+        </div>
+        {contextSections.length === 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            Click a section title to add context
+          </p>
+        )}
       </div>
       
       {/* Chat Actions */}

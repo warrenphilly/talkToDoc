@@ -45,35 +45,44 @@ const ChatActions = ({
     <div className="my-3 space-y-3">
       {contextSections.length > 0 ? (
         <div className="space-y-2">
-          {contextSections.map((section, i) => (
-            <motion.div
-              key={section.id}
-              custom={i}
-              initial="hidden"
-              animate="visible"
-              variants={contextVariants}
-              className="relative border border-slate-200 rounded-lg p-3 bg-gradient-to-r from-slate-50 to-white shadow-sm transform transition-all duration-200 ease-in-out hover:shadow-md hover:border-[#94b347]/30"
-            >
-              <p className="pr-8 text-slate-600 text-sm leading-relaxed">"{section.text}"</p>
-              <motion.button
-                whileHover={{ scale: 1.1, color: "#ef4444" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => removeContextSection(section.id)}
-                className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition-colors duration-200 w-6 h-6 flex items-center justify-center rounded-full"
+          <h3 className="text-sm font-medium text-gray-700">
+            Selected Context:
+          </h3>
+          <div className="space-y-2">
+            {contextSections.map((section) => (
+              <div 
+                key={section.id} 
+                className="p-2 bg-[#94b347]/5 border border-[#94b347]/20 rounded-lg flex justify-between items-start"
               >
-                <X size={16} />
-              </motion.button>
-            </motion.div>
-          ))}
+                <p className="text-xs line-clamp-2 flex-grow mr-2 text-gray-700">
+                  {section.text}
+                </p>
+                <button
+                  onClick={() => removeContextSection(section.id)}
+                  className="text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-xs text-gray-500">
+              These sections will be used as context for your chat.
+            </span>
+            <span className="text-xs text-[#94b347]">
+              {3 - contextSections.length} more allowed
+            </span>
+          </div>
         </div>
       ) : (
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-gray-500 text-center text-sm italic my-2"
-        >
-          Click text to add context (max 3)
-        </motion.p>
+        <div className="p-3 border border-dashed border-gray-200 rounded-lg text-center bg-gray-50">
+          <p className="text-sm text-gray-500">No context selected yet.</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Click on section titles to add context for your questions.
+          </p>
+        </div>
       )}
     </div>
   );
@@ -131,10 +140,10 @@ const ChatActions = ({
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
-                onClick={() => sendMessage("Explain this in simple terms")}
+                onClick={() => sendMessage("Explain this in simpler terms")}
                 disabled={contextSections.length === 0}
               >
-                Explain
+                Simplify
               </Button>
             </motion.div>
             
@@ -147,10 +156,10 @@ const ChatActions = ({
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
-                onClick={() => sendMessage("Expand on this")}
+                onClick={() => sendMessage("What are the key points here?")}
                 disabled={contextSections.length === 0}
               >
-                Expand
+                Key Points
               </Button>
             </motion.div>
             
@@ -163,42 +172,10 @@ const ChatActions = ({
             >
               <Button
                 className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
-                onClick={() => sendMessage("Give me a step-by-step example")}
+                onClick={() => sendMessage("Give me practice questions on this")}
                 disabled={contextSections.length === 0}
               >
-                Example
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              variants={actionButtonVariants}
-              initial="initial"
-              animate="animate"
-              whileHover="hover"
-              transition={{ delay: 0.4 }}
-            >
-              <Button
-                className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
-                onClick={() => sendMessage("Reword this in a way that is easier to understand")}
-                disabled={contextSections.length === 0}
-              >
-                Reword
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              variants={actionButtonVariants}
-              initial="initial"
-              animate="animate"
-              whileHover="hover"
-              transition={{ delay: 0.5 }}
-            >
-              <Button
-                className="bg-white border border-slate-200 text-slate-600 hover:bg-white hover:text-[#94b347] hover:border-[#94b347] rounded-full shadow-sm text-xs px-3 py-1"
-                onClick={() => sendMessage("Summarize this in a way that is easier to understand, 100 words or less")}
-                disabled={contextSections.length === 0}
-              >
-                Summarize
+                Practice Questions
               </Button>
             </motion.div>
           </motion.div>
