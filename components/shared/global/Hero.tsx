@@ -1,290 +1,266 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Cpu, Globe, Zap, Code, Check, ChevronRight,ArrowRight, Play, PenTool, Brain, Target, Pointer, CircleCheckBig} from "lucide-react";
+import { Cpu, ArrowRight, Play, PenTool, Brain, Target, CheckCircle, FileText, ZapIcon } from "lucide-react";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
-  CardDescription,
 } from "@/components/ui/card";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
-import { Separator } from "@/components/ui/separator";
+
 export default function Hero() {
   return (
-    <div>
-      <header className="px-4 bg-[#e2e9ce] lg:px-6 h-14 flex items-center text-[#8b976e]">
-        <Link className="flex items-center justify-center" href="#">
-          <Cpu className="h-6 w-6" />
-          <span className="sr-only">GammaNote</span>
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef]">
+      <header className="px-6 lg:px-10 h-16 flex items-center border-b border-gray-100 backdrop-blur-sm bg-white/70 fixed w-full z-50">
+        <Link className="flex items-center gap-2" href="#">
+          <Cpu className="h-6 w-6 text-[#94b347]" />
+          <span className="font-semibold text-slate-800">GammaNotes</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto flex gap-6">
           <Link
-            className="font-medium hover:underline underline-offset-4 text-sm cursor-pointer"
+            className="font-medium text-slate-600 hover:text-emerald-600 transition-colors"
             href="#features"
           >
             Features
           </Link>
           <SignUpButton>
-      <span className="font-medium hover:underline underline-offset-4 text-sm cursor-pointer">
+            <span className="font-medium text-slate-600 hover:text-emerald-600 transition-colors cursor-pointer">
               Sign Up
             </span>
-
           </SignUpButton>
-         
+          
           <SignInButton>
-         
-            <span className="font-medium hover:underline underline-offset-4 text-sm cursor-pointer">
-            Login
+            <span className="font-medium text-slate-600 hover:text-emerald-600 transition-colors cursor-pointer">
+              Login
             </span>
           </SignInButton>
-        
         </nav>
       </header>
-      <main className="flex-1">
-        <section className="w-full bg-[#e2e9ce] py-12 md:py-24 lg:py-32 xl:py-48 flex flex-col items-center justify-center">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col  items-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl text-[#94b347] h-full font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  Welcome to GammaNote
-                </h1>
-                <h1 className="text-3xl text-[#8b976e] h-full font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-                  The world's most powerful notebook.
-                </h1>
-                <div className="flex flex-col items-center justify-center  ">
-                <p className="mx-auto max-w-[700px] mt-3 text-gray-500 md:text-xl dark:text-gray-400 py-4">
-                Transform your notes into an intelligent companion. Create learn, and test your understanding with AI-powered features that revolutionize how you capture and interact with knowledge. Crafted by you, Powered by AI.
-                </p>
+
+      <main className="flex-1 pt-16">
+        <section className="w-full py-20 md:py-28 lg:py-32 xl:py-40 flex flex-col items-center justify-center">
+          <div className="container px-4 md:px-6 max-w-6xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-6">
+                <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-[#94b347] text-white">
+                  <span className="flex h-2 w-2 rounded-full bg-white mr-2"></span>
+                  Introducing GammaNote
+                </div>
+                <div className="space-y-3">
+                  <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+                    Transform your <span className="text-[#94b347]">notes</span> into an intelligent <span className="text-[#94b347]">companion</span>
+                  </h1>
+                  <p className="text-xl text-slate-600 max-w-xl">
+                    Create, learn, and test your understanding with AI-powered features that revolutionize knowledge capture and interaction.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <SignInButton>
+                    <Button className="bg-[#94b347] hover:bg-[#b0ba93] shadow-md text-white h-12 px-6 rounded-lg font-medium gap-2 text-base">
+                      Try it free
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </SignInButton>
+                  <Button  className="h-12 px-6 rounded-lg font-medium gap-2 text-base border-none  bg-white shadow-md text-slate-700 hover:bg-slate-100">
+                    <Play className="h-5 w-5" />
+                    Watch demo
+                  </Button>
                 </div>
               </div>
-              <div className="space-x-4 flex flex-row items-center justify-center ">
-                <SignInButton>
-                    <div className="flex flex-row items-center justify-center  gap-2 font-bold rounded-lg cursor-pointer bg-[#94b347] px-12  text-white p-2 hover:bg-[#b0ba93]">
-                        Try me out
-                        <ArrowRight className="h-6 w-6" />
-                  </div>
-                  
-                  
-                </SignInButton>
-                <div className="flex flex-row items-center justify-center gap-2 rounded-lg cursor-pointer font-bold bg-white px-12 text-slate-500 p-2 hover:bg-gray-100">
-                        Watch Demo
-                      
+              <div className="relative hidden lg:block">
+                <div className="absolute -top-8 -left-8 w-64 h-64 bg-[#94b347] rounded-full opacity-70 blur-3xl"></div>
+                <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-blue-100 rounded-full opacity-70 blur-3xl"></div>
+                <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2 relative z-10">
+                  <div className="aspect-video rounded-lg bg-slate-100 w-full overflow-hidden flex items-center justify-center">
+                    <div className="text-center p-8">
+                      <div className="flex justify-center mb-4">
+                        <FileText className="h-12 w-12 text-emerald-600" />
+                      </div>
+                      <p className="text-sm text-slate-500">Your intelligent notes preview</p>
                     </div>
-               
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
+
         <section
           id="features"
-          className="w-full py-12 md:py-24 bg-white lg:py-32   flex flex-col items-center justify-center"
+          className="w-full py-20 bg-white"
         >
-          <div className="flex flex-col items-center justify-center mb-12 gap-4">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center  text-slate-500 max-w-[700px]">
-              Intelligent Features for Modern Note-Taking
-            </h2>
-            <p className="mx-auto max-w-[700px]  text-gray-500 md:text-xl dark:text-gray-400">
-            Everything you need to capture, organize, and interact with your thoughts.
-            </p>
-          </div>
+          <div className="container px-4 md:px-6 max-w-6xl mx-auto">
+            <div className="flex flex-col items-center text-center mb-16 space-y-4">
+              <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-slate-100 text-slate-800 mb-2">
+                Features
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900 max-w-3xl">
+                Intelligent Features for Modern Note-Taking
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl">
+                Everything you need to capture, organize, and interact with your knowledge.
+              </p>
+            </div>
            
-          <div className="container px-4 md:px-6">
-          
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-           
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                  <Zap className="h-8 w-8 mb-2" />
-                  <CardTitle>AI-Powered Notes</CardTitle>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">AI-Powered Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                    Let AI help you generate comprehensive notes from your content, which can be edited or expanded by you at any time.
+                  <p className="text-slate-600">
+                    Generate comprehensive notes from your content, with AI assistance that adapts to your learning style.
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                  <PenTool className="h-8 w-8 mb-2" />
-                  <CardTitle>AI-Powered OCR</CardTitle>
+
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <PenTool className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">AI-Powered OCR</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                  Convert your whiteboard and hand written notes into organized digital notes automatically.
+                  <p className="text-slate-600">
+                    Convert your whiteboard and handwritten notes into organized digital documents automatically.
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                  <CircleCheckBig  className="h-8 w-8 mb-2" />
-                  <CardTitle className="text-white" >Test your knowledge</CardTitle>
+
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <CheckCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">Test Your Knowledge</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                    Tailor our platform to your specific needs with easy-to-use
-                    customization tools.
+                  <p className="text-slate-600">
+                    Generate quizzes and flashcards based on your notes to reinforce learning and identify knowledge gaps.
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                  <Pointer className="h-8 w-8 mb-2" />
-                  <CardTitle>Interactive Learning</CardTitle>
+
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <ArrowRight className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">Interactive Learning</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                  Have conversations with your notes and get AI-generated quizzes to test your knowledge.
+                  <p className="text-slate-600">
+                    Have conversations with your notes and get AI-generated insights to deepen your understanding.
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                  <Brain className="h-8 w-8 mb-2" />
-                  <CardTitle>PDF Intelligence</CardTitle>
+
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">PDF Intelligence</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                  Extract, summarize, and interact with content from any PDF document effortlessly.
+                  <p className="text-slate-600">
+                    Extract, summarize, and interact with content from any PDF document with powerful AI analysis.
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#94b347] text-white">
-                <CardHeader>
-                <Target  className="h-8 w-8 mb-2" />
-                  <CardTitle>Progress Tracking</CardTitle>
+
+              <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="h-12 w-12 rounded-lg bg-[#94b347] flex items-center justify-center mb-4">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-slate-900">Progress Tracking</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>
-                  Monitor your learning journey with detailed analytics and insights.
+                  <p className="text-slate-600">
+                    Monitor your learning journey with detailed analytics and insights that help optimize your study time.
                   </p>
                 </CardContent>
               </Card>
             </div>
           </div>
         </section>
-        {/* <section id="pricing" className="w-full bg-slate-200 py-12 md:py-24 lg:py-32 flex flex-col items-center justify-center">
-          <div className="container px-4 md:px-6">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-center mb-12 text-slate-500">
-              Pricing Plans
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="bg-slate-100 text-slate-600">
-                <CardHeader>
-                  <CardTitle>Free (Beta Test)</CardTitle>
-                  <CardDescription>
-                    Check out the platform for free
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-[#94b347]">Free</p>
-                  <ul className="mt-4 space-y-2">
-                  <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Up to 3 notebooks
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 20 chat requests/day
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 5 AI Notes Generation requests/Month
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 2 Quizes/ Month
-                    </li>
-                 
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full bg-[#94b347] text-white">Choose Plan</Button>
-                </CardFooter>
-              </Card>
-              <Card className="bg-slate-100 text-slate-600">
-                <CardHeader>
-                  <CardTitle>Pro</CardTitle>
-                  <CardDescription>Best for students</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-[#94b347]">$15/mo</p>
-                  <ul className="mt-4 space-y-2">
-                  <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited notebooks
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited chat requests 
-                    </li>
-                    
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> 30 Notes generation/Month
-                    </li>
-                  
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Unlimited Quiz generation
-                    </li>
-                    
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full bg-[#94b347] text-white">Choose Plan</Button>
-                </CardFooter>
-              </Card>
-              <Card className="bg-slate-100 text-slate-600">
-                <CardHeader>
-                  <CardTitle>Tokens</CardTitle>
-                  <CardDescription>For large organizations</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold text-[#94b347]">$2/ 1000 tokens</p>
-                  <ul className="mt-4 space-y-2">
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> Pre-purchase tokens for unlimited use of all features
-                    </li>
-                    <li className="flex items-center">
-                      <Check className="mr-2 h-4 w-4" /> After, you can buy more or set up pay as you go 
-                    </li>
-                    
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full bg-[#94b347] text-white">Contact Sales</Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </div>
-        </section> */}
+
         <section
           id="cta"
-          className="w-full bg-[#94b347] py-12 text-white md:py-24 lg:py-32 flex flex-col items-center justify-center"
+          className="w-full py-20 flex flex-col items-center justify-center bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef"
         >
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Make this YOUR semester 
+          <div className="container px-4 md:px-6 max-w-4xl">
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="space-y-3">
+                <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-[#94b347]">
+                  Make this YOUR semester
                 </h2>
-                <p className="mx-auto max-w-[600px]  text-white text-md md:text-xl dark:text-gray-400">
-                Use AI the right way to revolutionize your learning experience with our AI-powered notebook.
+                <p className="text-xl text-slate-600 max-w-2xl">
+                  Use AI the right way to revolutionize your learning experience with our intelligent notebook.
                 </p>
               </div>
-              <Button className="inline-flex bg-white  h-10 items-center justify-center rounded-lg px-4 py-2 mt-10 text-md font-medium text-slate-800 shadow transition-colors hover:bg-gray-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50 ">
-                Sign Up Now
-              </Button>
+              <SignUpButton>
+                <Button className="bg-white text-[#94b347] hover:bg-slate-100 h-12 px-8 rounded-lg font-medium text-base mt-4">
+                  Get Started Free
+                </Button>
+              </SignUpButton>
             </div>
           </div>
         </section>
       </main>
-      <footer className="flex bg-[#94b347] border-none text-white flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-white">
-          © 2023 Acme Inc. All rights reserved.
-        </p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Terms of Service
-          </Link>
-          <Link className="text-xs hover:underline underline-offset-4" href="#">
-            Privacy
-          </Link>
-        </nav>
+
+      <footer className="bg-[#94b347] text-white py-12 px-4 md:px-6">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <Cpu className="h-6 w-6 text-[#94b347]" />
+                <span className="font-semibold text-white text-xl">GammaNotes</span>
+              </div>
+              <p className="text-sm text-white max-w-md">
+                Transform your notes into an intelligent companion. Create, learn, and test your understanding with AI.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div>
+                <h3 className="font-medium text-white mb-4">Links</h3>
+                <ul className="space-y-2">
+                  <li><Link className="text-sm hover:text-emerald-500 transition-colors" href="#features">Features</Link></li>
+                  <li><Link className="text-sm hover:text-emerald-500 transition-colors" href="#">Pricing</Link></li>
+                  <li><Link className="text-sm hover:text-emerald-500 transition-colors" href="#">About</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium text-white mb-4">Legal</h3>
+                <ul className="space-y-2">
+                  <li><Link className="text-sm hover:text-emerald-500 transition-colors" href="#">Terms</Link></li>
+                  <li><Link className="text-sm hover:text-emerald-500 transition-colors" href="#">Privacy</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-slate-800 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-xs text-white">
+              © 2023 GammaNote. All rights reserved.
+            </p>
+            <div className="flex gap-4 mt-4 md:mt-0">
+              <Link href="#" className="text-white hover:text-white">
+                <span className="sr-only">Twitter</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+              </Link>
+              <Link href="#" className="text-white hover:text-white">
+                <span className="sr-only">GitHub</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+              </Link>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );
