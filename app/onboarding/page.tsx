@@ -1,4 +1,4 @@
-
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -7,11 +7,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getUserByClerkId } from "@/lib/firebase/firestore";
 import LanguageSelector from "@/components/onboarding/language-selector";
-import { auth } from "@clerk/nextjs/server";
+import { useAuth } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { userId: clerkId, isLoaded } = useAuth();
   const [step, setStep] = useState(1);
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -19,8 +20,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     const initUser = async () => {
       try {
-        // Get current user from Clerk
-        const { userId: clerkId } = await auth();
+        if (!isLoaded) return;
         
         if (!clerkId) {
           router.push("/sign-in");
@@ -45,7 +45,7 @@ export default function OnboardingPage() {
     };
     
     initUser();
-  }, [router]);
+  }, [router, clerkId, isLoaded]);
 
   const handleCompleteStep = () => {
     if (step < 2) {
