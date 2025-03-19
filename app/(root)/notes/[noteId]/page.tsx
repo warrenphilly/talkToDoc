@@ -68,9 +68,9 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
   }));
 
   return (
-    <div className="flex flex-col h-full w-full bg-white">
+    <div className="flex flex-col h-full w-full bg-green-500">
       {/* Main content container with responsive padding */}
-      <div className="flex-1 w-full max-w-[100vw] mx-auto px-2 sm:px-4 md:px-6 bg-yellow-500 max-h-[90vh] container">
+      <div className="flex-1 w-full max-w-[100vw] mx-auto px-2 sm:px-4 md:px-6 bg-yellow-500 max-h-[60vh] container">
         {/* Responsive container for BrowserTabs */}
         <div className=" w-full overflow-hidden bg-green-500 rounded-lg">
           <BrowserTabs 
