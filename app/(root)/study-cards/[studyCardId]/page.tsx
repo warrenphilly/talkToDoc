@@ -440,7 +440,7 @@ export default function StudyCardPage() {
   }
 
   return (
-    <div className="bg-blue-500  ">
+    <div className="bg-white  ">
       <div className="flex  justify-between   md:pt-0 px-5">
         <Link href="/">
           <Button
@@ -460,7 +460,7 @@ export default function StudyCardPage() {
           <span className="hidden md:block">Create Study Cards</span>
         </Button>
       </div>
-      <div className="p-6 pb-16 md:pb-0 rounded-lg w-full h-[calc(100vh-8rem)] overflow-y-auto bg-white">
+      <div className="p-6 pb-16 md:pb-2 rounded-lg w-full h-[95vh] overflow-y-auto bg-white">
         <CreateCardModal
           showNotebookModal={showNotebookModal}
           setShowNotebookModal={setShowNotebookModal}
