@@ -440,8 +440,8 @@ export default function StudyCardPage() {
   }
 
   return (
-    <div className="  ">
-      <div className="flex justify-between my-8 pt-5 md:pt-0 px-5">
+    <div className="bg-blue-500  ">
+      <div className="flex  justify-between   md:pt-0 px-5">
         <Link href="/">
           <Button
             variant="ghost"
