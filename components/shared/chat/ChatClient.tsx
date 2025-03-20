@@ -78,6 +78,8 @@ import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
 import { FullscreenButton } from "@/components/shared/global/fullscreen-button";
 import { ResizeButton } from "@/components/shared/global/resize-button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface ChatClientProps {
   title: string;
@@ -131,6 +133,9 @@ const ChatClient = ({
 
   // Add a state for sidechat resize
   const [isSideChatExpanded, setIsSideChatExpanded] = useState(false);
+
+  // Add this new state for tracking cancellation
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const { user } = useUser();
 
@@ -228,7 +233,8 @@ const ChatClient = ({
         setIsProcessing,
         notebookId,
         tabId,
-        fileMetadata // Pass the file metadata to be saved
+        fileMetadata, // Pass the file metadata to be saved
+        tabId, // Pass the tabId to be saved
       );
     } catch (error) {
       console.error("Error processing files:", error);
@@ -548,10 +554,97 @@ const ChatClient = ({
     setIsSideChatExpanded(!isSideChatExpanded);
   };
 
-  return (
-    <div className="flex flex-col md:flex-row h-full  w-full items-center  rounded-xl">
-      {/* Show loading overlay when processing or updating database */}
+  // Add this new function to handle cancellation
+  const handleCancelGeneration = async () => {
+    setIsCancelling(true);
+    
+    try {
+      // First, make a local state change to immediately update UI
+      setIsProcessing(false);
+      setIsDatabaseUpdating(false);
+      
+      // We need to add this check to handle the "Page not found" error
+      // This will ensure we don't try to save a message to a non-existent page
+      const pageExists = await checkPageExists(notebookId, tabId);
+      
+      if (!pageExists) {
+        console.log("Page doesn't exist, redirecting to notebook");
+        router.push(`/notes/${notebookId}`);
+        return;
+      }
+      
+      // Call the cancel endpoint
+      const response = await fetch('/api/chat/cancel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          notebookId,
+          tabId,
+        }),
+      });
+      
+      if (!response.ok) {
+        console.error("Failed to cancel generation");
+      }
+      
+      // Add a message indicating cancellation if there are existing messages
+      if (messages.length > 0) {
+        const updatedMessages = [...messages];
+        
+        // Find the last AI message that might be incomplete
+        const lastAIMessageIndex = updatedMessages.findIndex(
+          msg => msg.user === "AI" && (!Array.isArray(msg.text) || msg.text.length === 0)
+        );
+        
+        if (lastAIMessageIndex >= 0) {
+          // Add the cancellation information to this message or replace it
+          updatedMessages[lastAIMessageIndex] = {
+            ...updatedMessages[lastAIMessageIndex],
+            text: "Generation was cancelled.",
+          };
+          setMessages(updatedMessages);
+        } else {
+          // Otherwise add a new message
+          handleSetMessages(prev => [...prev, {
+            user: "AI",
+            text: "Generation was cancelled.",
+          }]);
+        }
+      }
+      
+      // Reset all states
+      setCurrentSections(0);
+      setTotalSections(0);
+    } catch (error) {
+      console.error("Error cancelling generation:", error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
+  // Add this helper function to check if a page exists
+  const checkPageExists = async (notebookId: string, pageId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/notes/check-page?notebookId=${notebookId}&pageId=${pageId}`, {
+        method: 'GET',
+      });
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      const data = await response.json();
+      return data.exists;
+    } catch (error) {
+      console.error("Error checking if page exists:", error);
+      return false;
+    }
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row h-full w-full items-center rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
         <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
           <div className="flex flex-row gap-2 items-center md:pl-8 ">
@@ -649,6 +742,79 @@ const ChatClient = ({
             </DropdownMenu>
           </div>
         </div>
+
+        {/* Progress Indicator - Modified with cancel button */}
+        <AnimatePresence>
+          {(isProcessing || isDatabaseUpdating) && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full bg-[#94b347]/5 border-y border-[#94b347]/10 mb-2"
+            >
+              <div className="w-full max-w-screen-lg mx-auto flex items-center gap-3 px-4 py-2">
+                {/* Spinner and text */}
+                <div className="flex items-center gap-2">
+                <RefreshCw className="text-[#94b347] animate-spin" />
+                  <p className="text-xs font-medium text-gray-600">
+                    {currentSections > 0 && totalSections > 0 
+                      ? `Generating section ${currentSections} of ${totalSections}` 
+                      : "Analyzing document..."}
+                  </p>
+                </div>
+                
+                {/* Progress bar */}
+                <div className="flex-grow ml-2">
+                  <div className="w-full bg-gray-100 rounded-full h-1">
+                    {totalSections > 0 ? (
+                      // Determinate progress bar
+                      <motion.div
+                        initial={{ width: "5%" }}
+                        animate={{ 
+                          width: `${Math.min(100, (currentSections / totalSections) * 100)}%` 
+                        }}
+                        transition={{ duration: 0.4 }}
+                        className="bg-[#94b347] h-1 rounded-full"
+                      />
+                    ) : (
+                      // Indeterminate loader
+                      <motion.div className="relative w-full h-1 overflow-hidden">
+                        <motion.div
+                          animate={{ 
+                            x: ["-100%", "100%"]
+                          }}
+                          transition={{ 
+                            duration: 1.5, 
+                            repeat: Infinity,
+                            ease: "easeInOut" 
+                          }}
+                          className="absolute h-1 w-1/3 bg-[#94b347] rounded-full"
+                        />
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Cancel button */}
+                <Button
+                  onClick={handleCancelGeneration}
+                  disabled={isCancelling}
+                  className="text-xs px-2 py-1 h-7 bg-white border border-red-400 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors"
+                >
+                  {isCancelling ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-3 h-3 border-2 border-t-red-500 border-red-300 rounded-full mr-1"
+                    />
+                  ) : null}
+                  {isCancelling ? "Cancelling..." : "Cancel"}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup

@@ -15,6 +15,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast"
 import { AlertCircle } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
+import { Components } from 'react-markdown';
+import { ComponentProps, ReactNode } from 'react';
 
 // First, let's define our message types
 interface Sentence {
@@ -52,6 +59,38 @@ interface SideChatProps {
   primeSentence: string | null;
   setPrimeSentence: (sentence: string | null) => void;
 }
+
+// Add this near the imports section
+const MathEquationStyles = () => (
+  <style jsx global>{`
+    /* Make KaTeX equations bold and italic */
+    .katex {
+      font-weight: bold !important;
+    }
+    
+    /* Improve display math formatting */
+    .katex-display {
+      padding: 0.5rem;
+      margin: 1rem 0;
+      background-color: rgba(148, 179, 71, 0.05);
+      border: 1px solid rgba(148, 179, 71, 0.2);
+      border-radius: 0.375rem;
+      overflow-x: auto;
+    }
+    
+    /* Add a highlight effect to focused equations */
+    .katex-display:hover {
+      background-color: rgba(148, 179, 71, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Improve inline math visibility */
+    .katex-inline {
+      padding: 0 0.15rem;
+      color: #0a4c79;
+    }
+  `}</style>
+);
 
 const SideChat = ({
   primeSentence,
@@ -243,7 +282,21 @@ const SideChat = ({
       const contextText = contextSections.map(section => section.text).join("\n\n");
       formData.append("contextSections", contextText);
 
-      formData.append("systemMessage", `You are a helpful Teacher...`);
+      // Update system message to include formatting instructions
+      formData.append("systemMessage", `You are a helpful Teacher. 
+      
+Format your responses using markdown:
+- Use **bold text** for important concepts
+- Use *italic text* for emphasis
+- Use proper markdown for equations:
+  - Inline equations with single dollar signs: $E = mc^2$
+  - Display equations with double dollar signs: $$E = mc^2$$
+- Use bullet points and numbered lists for structured information
+- Use headers (##, ###) for section titles
+- Use code blocks with \`\`\` when appropriate
+- Use tables for tabular data when needed
+
+Always use proper markdown formatting for mathematical equations, making them clear and readable.`);
 
       const userMessage: Message = {
         user: "User",
@@ -380,7 +433,10 @@ const SideChat = ({
   );
 
   return (
-    <div className="flex flex-col h-full w-full rounded-2xl py-6 max-h-[90vh] bg-white overflow-hidden relative">
+    <div className="flex flex-col h-full w-full rounded-2xl py-6  bg-white overflow-hidden relative">
+      {/* Add the math styles */}
+      <MathEquationStyles />
+      
       {/* Header section */}
       <div className="bg-white py-3 px-4 border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
@@ -448,7 +504,70 @@ const SideChat = ({
                           <p className="text-sm font-semibold mb-1 text-[#94b347]">
                             Mr. Chudd (AI)
                           </p>
-                          <p className="text-sm leading-relaxed">{String(msg.text)}</p>
+                          <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                              components={{
+                                // Style headings
+                                h1: ({ node, ...props }) => <h1 className="text-lg font-bold my-2" {...props} />,
+                                h2: ({ node, ...props }) => <h2 className="text-base font-bold my-2" {...props} />,
+                                h3: ({ node, ...props }) => <h3 className="text-sm font-bold my-1" {...props} />,
+                                
+                                // Style links
+                                a: ({ node, ...props }) => (
+                                  <a className="text-blue-600 hover:underline" {...props} />
+                                ),
+                                
+                                // Style lists
+                                ul: ({ node, ...props }) => (
+                                  <ul className="list-disc pl-5 my-1 space-y-1" {...props} />
+                                ),
+                                ol: ({ node, ...props }) => (
+                                  <ol className="list-decimal pl-5 my-1 space-y-1" {...props} />
+                                ),
+                                
+                                // Style code blocks - Fixed the inline prop issue
+                                code: ({ className, children, ...props }: ComponentProps<'code'> & { className?: string }) => {
+                                  const match = /language-(\w+)/.exec(className || '');
+                                  const isInline = !match;
+                                  
+                                  return isInline ? (
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2" {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                },
+                                
+                                // Style blockquotes
+                                blockquote: ({ node, ...props }) => (
+                                  <blockquote className="border-l-4 border-[#94b347]/50 pl-3 italic my-2" {...props} />
+                                ),
+                                
+                                // Style tables
+                                table: ({ node, ...props }) => (
+                                  <div className="overflow-x-auto my-2">
+                                    <table className="min-w-full border-collapse border border-gray-300" {...props} />
+                                  </div>
+                                ),
+                                thead: ({ node, ...props }) => <thead className="bg-gray-100" {...props} />,
+                                th: ({ node, ...props }) => (
+                                  <th className="border border-gray-300 px-2 py-1 text-left" {...props} />
+                                ),
+                                td: ({ node, ...props }) => (
+                                  <td className="border border-gray-300 px-2 py-1" {...props} />
+                                ),
+                                
+                                // Instead of custom math components, we'll use CSS styling to target KaTeX output
+                              }}
+                            >
+                              {String(msg.text)}
+                            </ReactMarkdown>
+                          </div>
                         </div>
                       ) : (
                         <div className="flex-1">

@@ -196,12 +196,25 @@ Instructions:
    - Suggest refocusing on the provided context
    - Only if necessary, provide an answer using the broader document content
 
+Formatting Instructions:
+- Use **bold text** for important terms, concepts, and definitions
+- Use *italic text* for emphasis and secondary points
+- Format mathematical equations properly:
+  - Use $...$ for inline equations (e.g., $E = mc^2$)
+  - Use $$...$$ for display equations (e.g., $$\\frac{d}{dx}(x^2) = 2x$$)
+- Use proper markdown for lists:
+  - Use bullet points for unordered lists
+  - Use numbered lists for sequential steps or ranked items
+- Use ### headings for major sections
+- Use tables for structured comparative data
+- Use > blockquotes for important notes or quotes from the text
+
 Remember to:
 - Break down complex concepts into simple terms
 - Provide relevant examples when appropriate
 - Respond in clear, complete paragraphs
 - Always maintain focus on the specific context when possible
-- unless told otherwise, keep reponses as short as possible without losing information`,
+- Unless told otherwise, keep responses as short as possible without losing information`,
       },
       { role: "user", content: userMessage },
     ];

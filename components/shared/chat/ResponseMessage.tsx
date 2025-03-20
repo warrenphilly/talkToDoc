@@ -15,6 +15,12 @@ import { Message, ParagraphData, Section, Sentence } from "@/lib/types";
 import { motion } from "framer-motion";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkMath from 'remark-math';
+import remarkGfm from 'remark-gfm';
+import 'katex/dist/katex.min.css';
+import { ComponentProps } from 'react';
 
 interface ResponseProps {
   msg: Message;
@@ -49,6 +55,38 @@ const formatTextWithMarkdown = (text: string) => {
   });
 };
 
+// Add a styles component for math equations
+const MathEquationStyles = () => (
+  <style jsx global>{`
+    /* Make KaTeX equations bold and italic */
+    .katex {
+      font-weight: bold !important;
+    }
+    
+    /* Improve display math formatting */
+    .katex-display {
+      padding: 0.5rem;
+      margin: 1rem 0;
+      background-color: rgba(148, 179, 71, 0.05);
+      border: 1px solid rgba(148, 179, 71, 0.2);
+      border-radius: 0.375rem;
+      overflow-x: auto;
+    }
+    
+    /* Add a highlight effect to focused equations */
+    .katex-display:hover {
+      background-color: rgba(148, 179, 71, 0.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Improve inline math visibility */
+    .katex-inline {
+      padding: 0 0.15rem;
+      color: #0a4c79;
+    }
+  `}</style>
+);
+
 export const ResponseMessage = ({
   msg,
   handleSectionClick,
@@ -70,6 +108,21 @@ export const ResponseMessage = ({
 
     return () => clearTimeout(timer);
   }, []);
+
+  // At the start of your component, add this logging
+  useEffect(() => {
+    // Log the message data when the component mounts
+    if (typeof msg.text !== "string" && msg.text[0]) {
+      console.log("SECTION_RECEIVED:", {
+        title: msg.text[0].title,
+        sentenceCount: msg.text[0].sentences?.length || 0,
+        sentenceSample: msg.text[0].sentences?.slice(0, 2) || [],
+        hasValidSentences: msg.text[0].sentences?.every(s => 
+          s && typeof s.id === 'number' && typeof s.text === 'string' && s.text.trim() !== ''
+        )
+      });
+    }
+  }, [msg]);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -110,6 +163,67 @@ export const ResponseMessage = ({
     },
   };
 
+  const handleRegenerateSection = async () => {
+    try {
+      // Show loading state
+      const updatedSection = {
+        ...section,
+        sentences: [{
+          id: 1,
+          text: "Regenerating content...",
+          format: "paragraph"
+        }]
+      };
+      
+      // Update the section temporarily to show loading
+      onSave({
+        user: "AI",
+        text: [updatedSection]
+      }, index);
+      
+      // Now call your API to regenerate just this section
+      const response = await fetch('/api/regenerate-section', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: section.title,
+          // Send any additional context needed
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to regenerate section');
+      }
+      
+      const newSection = await response.json();
+      
+      // Update with the new content
+      onSave({
+        user: "AI",
+        text: [newSection.section]
+      }, index);
+      
+    } catch (error) {
+      console.error('Error regenerating section:', error);
+      // Show error state
+      const errorSection = {
+        ...section,
+        sentences: [{
+          id: 1,
+          text: "Failed to regenerate. Please try again.",
+          format: "paragraph"
+        }]
+      };
+      
+      onSave({
+        user: "AI",
+        text: [errorSection]
+      }, index);
+    }
+  };
+
   if (typeof msg.text === "string") {
     return (
       <motion.div
@@ -130,7 +244,7 @@ export const ResponseMessage = ({
   }
 
   // Now msg.text will be a single section
-  const section = msg.text[0];
+  let section = msg.text[0];
 
   if (isEditing) {
     return (
@@ -155,6 +269,62 @@ export const ResponseMessage = ({
     );
   }
 
+  if (section.sentences?.some(s => s.text.includes("properly formatted"))) {
+    console.log("MALFORMED_SECTION_DETECTED:", {
+      section,
+      sentencesWithIssues: section.sentences
+        ?.filter(s => s.text.includes("properly formatted"))
+        ?.map(s => ({ id: s.id, text: s.text }))
+    });
+    
+    return (
+      <motion.div className="md:p-2 rounded mb-2">
+        <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
+          <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
+            <h3 className="text-lg md:text-xl font-bold text-[#94b347]">
+              {section.title || "Section Error"}
+            </h3>
+          </div>
+          <div className="bg-red-50 p-4 rounded-md text-red-600 mb-4">
+            <p>This section couldn't be properly formatted.</p>
+            <div className="flex gap-2 mt-3">
+              <Button 
+                onClick={handleRegenerateSection}
+                className="bg-red-100 hover:bg-red-200 text-red-700 rounded"
+              >
+                Regenerate Section
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Call the debug endpoint
+                  fetch('/api/debug-section', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ section })
+                  })
+                  .then(res => res.json())
+                  .then(data => {
+                    console.log("SECTION_DEBUG_RESULT:", data);
+                    if (data.success && data.fixedSection) {
+                      onSave({
+                        user: "AI",
+                        text: [data.fixedSection]
+                      }, index);
+                    }
+                  })
+                  .catch(err => console.error("Debug error:", err));
+                }}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
+              >
+                Attempt Fix
+              </Button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       className="md:p-2 rounded mb-2"
@@ -162,6 +332,9 @@ export const ResponseMessage = ({
       animate={isVisible ? "visible" : "hidden"}
       variants={fadeIn}
     >
+      {/* Add the math styles */}
+      <MathEquationStyles />
+      
       <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
           <motion.h3
@@ -222,6 +395,47 @@ export const ResponseMessage = ({
             let key = 0;
             let isSummarySection = false;
 
+            // Update the safety check to be more resilient and provide helpful debugging
+            if (!section || !section.sentences || !Array.isArray(section.sentences)) {
+              console.error("Invalid section data:", section);
+              
+              // If we have a section but no sentences, create a default sentence
+              if (section && (!section.sentences || !Array.isArray(section.sentences) || section.sentences.length === 0)) {
+                // Create a fallback section with a default sentence
+                const fallbackSection = {
+                  ...section,
+                  title: section.title || "Content",
+                  sentences: [{
+                    id: 1,
+                    text: typeof section.sentences === 'string' 
+                      ? section.sentences 
+                      : "The content couldn't be properly formatted. Please try regenerating this section.",
+                    format: "paragraph"
+                  }]
+                };
+                
+                // Continue rendering with this fallback section
+                section = fallbackSection as Section;
+              } else {
+                // If we don't have enough data to create a fallback, show the error message
+                return (
+                  <motion.div 
+                    key="error-message"
+                    className="rounded-md p-3 bg-red-50 text-red-600 border border-red-200" 
+                    variants={itemAnimation}
+                  >
+                    <p>This section is missing or has invalid content. Please try reloading or generating a new response.</p>
+                    <button 
+                      className="mt-2 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-sm"
+                      onClick={() => console.log("Section data:", JSON.stringify(section))}
+                    >
+                      Debug Info
+                    </button>
+                  </motion.div>
+                );
+              }
+            }
+
             section.sentences.forEach((sentence, sentenceIdx) => {
               const format = sentence.format || "paragraph";
 
@@ -262,7 +476,7 @@ export const ResponseMessage = ({
                   currentListType = format;
                 }
 
-                // Add to current list with enhanced styling and markdown support
+                // Add to current list with enhanced styling using ReactMarkdown for math support
                 listItems.push(
                   <motion.li
                     key={`item-${sentenceIdx}`}
@@ -271,7 +485,30 @@ export const ResponseMessage = ({
                     }`}
                     variants={itemAnimation}
                   >
-                    {formatTextWithMarkdown(sentence.text)}
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath, remarkGfm]}
+                        rehypePlugins={[rehypeKatex]}
+                        components={{
+                          code: ({ className, children, ...props }: ComponentProps<'code'> & { className?: string }) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            const isInline = !match;
+                            
+                            return isInline ? (
+                              <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                                {children}
+                              </code>
+                            ) : (
+                              <code className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2" {...props}>
+                                {children}
+                              </code>
+                            );
+                          }
+                        }}
+                      >
+                        {sentence.text}
+                      </ReactMarkdown>
+                    </div>
                   </motion.li>
                 );
               } else {
@@ -303,51 +540,76 @@ export const ResponseMessage = ({
                 switch (format) {
                   case "formula":
                     content = (
-                      <div
-                        className="px-4 py-3 bg-gray-50 font-mono text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200"
-                      >
-                        {formatTextWithMarkdown(sentence.text)}
+                      <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {sentence.text}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     );
                     break;
                   case "italic":
                     content = (
-                      <p
-                        className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed"
-                      >
-                        {formatTextWithMarkdown(sentence.text)}
-                      </p>
+                      <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {sentence.text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     );
                     break;
                   case "bold":
                     content = (
-                      <p
-                        className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed"
-                      >
-                        {formatTextWithMarkdown(sentence.text)}
-                      </p>
+                      <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed">
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {sentence.text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     );
                     break;
                   case "heading":
                     content = (
-                      <h4
-                        className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
-                          isSummarySection ? "text-[#94b347]" : ""
-                        }`}
-                      >
-                        {formatTextWithMarkdown(sentence.text)}
-                      </h4>
+                      <div className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
+                        isSummarySection ? "text-[#94b347]" : ""
+                      }`}>
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {sentence.text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     );
                     break;
                   default: // paragraph
                     content = (
-                      <p
-                        className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
-                          isSummarySection ? "text-gray-700" : ""
-                        }`}
-                      >
-                        {formatTextWithMarkdown(sentence.text)}
-                      </p>
+                      <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                        isSummarySection ? "text-gray-700" : ""
+                      }`}>
+                        <div className="prose prose-sm max-w-none">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {sentence.text}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
                     );
                 }
 

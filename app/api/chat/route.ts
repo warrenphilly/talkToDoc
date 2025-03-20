@@ -147,11 +147,12 @@ Create clear sections with a natural teaching flow. Structure your content as fo
 3. Present concepts in a logical order with rich, detailed explanations
 4. Develop each main section with substantial depth (5-8 paragraphs)
 5. Use analogies, examples, case studies, and real-world applications to illustrate complex ideas
-6. Include mathematical equations and formulas when relevant, formatted properly
+6. Include mathematical equations and formulas when relevant, formatted properly using LaTeX syntax
 7. Explore nuances, exceptions, and alternative perspectives where appropriate
 8. For complex sections only: Include a brief "Section Summary" with 2-3 bullet points
 9. End the entire content with a comprehensive "Final Summary" that captures all key points
 10. In the Final Summary, use 5-7 bullet points to highlight the most important takeaways
+11. Do not return empty or incomplete sections. Each section must have a title and at least one sentence with meaningful content.
 
 Writing style guidelines:
 - Write in a conversational, engaging tone as if speaking directly to a student
@@ -164,13 +165,18 @@ Writing style guidelines:
 
 Formatting guidelines:
 - Use the "formula" format for mathematical equations and scientific formulas
+- Format inline mathematical expressions with $...$ (e.g., $E = mc^2$)
+- Format block/display mathematical equations with $$...$$ (e.g., $$\\frac{dx}{dt} = v(t)$$)
+- Make sure to escape backslashes in LaTeX expressions (use \\\\ instead of \\)
 - Use bullet points for lists of related items or in summaries
 - Use numbered lists for sequential steps or processes
 - Use italic formatting for technical terms, emphasis, or foreign words
 - Use bold formatting for key concepts and important definitions
 - Use heading format for subsection titles and for "Section Summary" and "Final Summary" headings
 
-Each section should be comprehensive and detailed while remaining accessible. Generate one section at a time. Respond in ${language}.`;
+Each section should be comprehensive and detailed while remaining accessible. Generate one section at a time. Respond in ${language}.
+
+IMPORTANT: Ensure each section has a valid title and at least one sentence. Each sentence must have an id, text content, and format. Properly close all JSON objects and arrays. Never return empty or malformed sections.`;
 
     // Split long text into chunks
     const MAX_CHUNK_LENGTH = 4000;
@@ -186,13 +192,13 @@ Each section should be comprehensive and detailed while remaining accessible. Ge
     if (streamMode) {
       // Create a TransformStream to process the chunks
       const encoder = new TextEncoder();
-      const decoder = new TextDecoder();
 
-      const stream = new TransformStream({
+      const transformStream = new TransformStream({
         async start(controller) {
           let allSections: Section[] = [];
           let sectionCounter = 0;
 
+          try {
           // Process each chunk
           for (const chunk of textChunks) {
             const messages = [
@@ -222,141 +228,388 @@ Each section should be comprehensive and detailed while remaining accessible. Ge
 
             for await (const part of stream) {
               if (part.choices[0]?.delta?.function_call?.arguments) {
-                functionCallBuffer +=
-                  part.choices[0].delta.function_call.arguments;
+                  const argumentChunk = part.choices[0].delta.function_call.arguments;
+                  functionCallBuffer += argumentChunk;
+                  
+                  // Log significant buffer changes
+                  if (argumentChunk.includes("title") || argumentChunk.includes("sentences")) {
+                    console.log("Added important chunk:", argumentChunk);
+                  }
+                  
+                  // Add periodic buffer diagnostics
+                  if (functionCallBuffer.length % 1000 === 0) {
+                    console.log(`Buffer size: ${functionCallBuffer.length}, contains valid JSON: ${isValidJson(functionCallBuffer)}`);
+                  }
+                  
+                  try {
+                    // The rest of your validation logic...
+                    const match = functionCallBuffer.match(
+                      /"title":\s*"[^"]+",\s*"sentences":\s*\[\s*(?:{[^}]+},\s*)*{[^}]+}\s*\]/g
+                    );
 
-                // Try to parse complete sections as they come in
-                try {
-                  // Look for complete section objects in the buffer
-                  const match = functionCallBuffer.match(
-                    /"title":\s*"[^"]+",\s*"sentences":\s*\[\s*(?:{[^}]+},\s*)*{[^}]+}\s*\]/g
-                  );
+                    if (match) {
+                      for (const sectionStr of match) {
+                        try {
+                          // Wrap the section in an object to make it valid JSON
+                          const sectionJson = `{"section":{${sectionStr}}}`;
+                          console.log("Potential section found:", sectionJson.substring(0, 200) + "...");
+                          
+                          try {
+                          const parsed = JSON.parse(sectionJson);
 
-                  if (match) {
-                    for (const sectionStr of match) {
-                      try {
-                        // Wrap the section in an object to make it valid JSON
-                        const sectionJson = `{"section":{${sectionStr}}}`;
-                        const parsed = JSON.parse(sectionJson);
-
-                        if (
-                          parsed.section &&
-                          parsed.section.title &&
-                          parsed.section.sentences
-                        ) {
-                          // Ensure each sentence has a format property if not provided
-                          parsed.section.sentences =
-                            parsed.section.sentences.map(
-                              (sentence: Sentence) => {
-                                // If no format is specified, default to paragraph
-                                if (!sentence.format) {
-                                  return { ...sentence, format: "paragraph" };
+                            // Enhanced section validation
+                          if (
+                            parsed.section &&
+                              typeof parsed.section.title === 'string' && 
+                              parsed.section.title.trim() !== '' &&
+                              Array.isArray(parsed.section.sentences) &&
+                              parsed.section.sentences.length > 0 &&
+                              parsed.section.sentences.every((s: Sentence) => typeof s.id === 'number' && typeof s.text === 'string' && s.text.trim() !== '')
+                            ) {
+                              console.log("Valid section found! Title:", parsed.section.title);
+                              // Add detailed logging here
+                              console.log("SECTION_DATA:", JSON.stringify({
+                                title: parsed.section.title,
+                                sentenceCount: parsed.section.sentences.length,
+                                firstSentence: parsed.section.sentences[0],
+                                hasValidFormats: parsed.section.sentences.every((s: Sentence) => 
+                                  !s.format || ["paragraph", "bullet", "numbered", "formula", "italic", "bold", "heading"].includes(s.format)
+                                )
+                              }, null, 2));
+                              
+                              // Process valid section
+                            sectionCounter++;
+                            const sectionData = {
+                              type: "section",
+                              data: parsed.section,
+                              total: sectionCounter,
+                            };
+                              controller.enqueue(
+                                encoder.encode(JSON.stringify(sectionData) + "\n")
+                              );
+                            } else {
+                              console.error("Found section with validation issues:", parsed.section);
+                              
+                              // Log specific validation failures
+                              const validationIssues = {
+                                hasSectionObject: !!parsed.section,
+                                hasValidTitle: parsed.section && typeof parsed.section.title === 'string' && parsed.section.title.trim() !== '',
+                                hasSentencesArray: parsed.section && Array.isArray(parsed.section.sentences),
+                                sentencesCount: parsed.section?.sentences?.length || 0,
+                                invalidSentences: parsed.section && Array.isArray(parsed.section.sentences) 
+                                  ? parsed.section.sentences
+                                      .map((s: Sentence, idx: number) => {
+                                        const issues = [];
+                                        if (typeof s.id !== 'number') issues.push('invalid id');
+                                        if (typeof s.text !== 'string') issues.push('invalid text');
+                                        if (typeof s.text === 'string' && s.text.trim() === '') issues.push('empty text');
+                                        if (issues.length > 0) return { index: idx, issues };
+                                        return null;
+                                      })
+                                      .filter(Boolean)
+                                  : ['sentences not an array']
+                              };
+                              
+                              console.log("VALIDATION_ISSUES:", JSON.stringify(validationIssues, null, 2));
+                              
+                              // Try to fix common issues with the section
+                              if (parsed.section) {
+                                // Ensure title exists
+                                if (!parsed.section.title || parsed.section.title.trim() === '') {
+                                  parsed.section.title = "Untitled Section";
                                 }
-                                // If the format is something other than the allowed formats, default to paragraph
-                                if (
-                                  ![
-                                    "paragraph",
-                                    "bullet",
-                                    "numbered",
-                                    "formula",
-                                    "italic",
-                                    "bold",
-                                    "heading",
-                                  ].includes(sentence.format)
-                                ) {
-                                  return { ...sentence, format: "paragraph" };
+                                
+                                // Ensure sentences array exists and has content
+                              if (!Array.isArray(parsed.section.sentences) || parsed.section.sentences.length === 0) {
+                                parsed.section.sentences = [{
+                                  id: 1,
+                                    text: "This section couldn't be fully processed. Try regenerating it.",
+                                  format: "paragraph"
+                                }];
+                                } else {
+                                  // Fix any invalid sentences
+                                  parsed.section.sentences = parsed.section.sentences.map((s: any, idx: number) => {
+                                    return {
+                                      id: typeof s.id === 'number' ? s.id : idx + 1,
+                                      text: typeof s.text === 'string' && s.text.trim() !== '' 
+                                        ? s.text 
+                                        : "This sentence couldn't be processed correctly.",
+                                      format: s.format || "paragraph"
+                                    };
+                                  });
                                 }
-                                return sentence;
+                                
+                                // Now send the fixed section
+                                sectionCounter++;
+                                const sectionData = {
+                                  type: "section",
+                                  data: parsed.section,
+                                  total: sectionCounter,
+                                };
+                                controller.enqueue(
+                                  encoder.encode(JSON.stringify(sectionData) + "\n")
+                                );
                               }
+                            }
+                            
+                            // Remove the processed section from the buffer regardless
+                            functionCallBuffer = functionCallBuffer.replace(
+                              sectionStr,
+                              ""
                             );
-
-                          sectionCounter++;
-
-                          // Send the section to the client
-                          const sectionData = {
-                            type: "section",
-                            data: parsed.section,
-                            total: sectionCounter,
-                          };
-
-                          controller.enqueue(
-                            encoder.encode(JSON.stringify(sectionData) + "\n")
-                          );
-
-                          // Remove the processed section from the buffer
-                          functionCallBuffer = functionCallBuffer.replace(
-                            sectionStr,
-                            ""
-                          );
+                          } catch (parseError) {
+                            console.error("JSON parse error for section:", parseError);
+                          }
+                        } catch (e) {
+                          console.error("Section parsing error:", e);
                         }
-                      } catch (e) {
-                        // Ignore parsing errors for incomplete sections
                       }
+                    }
+                  } catch (e) {
+                    console.error("Buffer processing error:", e);
+                }
+              }
+            }
+
+              // Process any remaining data in the buffer after the stream completes
+            if (functionCallBuffer) {
+                console.log("PROCESSING_REMAINING_BUFFER:");
+                console.log(`- Buffer size: ${functionCallBuffer.length} bytes`);
+                console.log(`- Buffer starts with: ${functionCallBuffer.substring(0, 100)}...`);
+                console.log(`- Buffer ends with: ${functionCallBuffer.substring(functionCallBuffer.length - 100)}`);
+                
+                try {
+                  // Clean the buffer to fix common JSON issues
+                  let cleanedBuffer = functionCallBuffer
+                    .replace(/([{,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '$1"$3":')
+                    .replace(/:\s*'([^']*)'/g, ':"$1"')
+                    .replace(/\\+"/g, '\\"')
+                    .replace(/\n/g, '\\n')
+                    .replace(/\r/g, '\\r')
+                    .replace(/\t/g, '\\t')
+                    .replace(/,\s*([}\]])/g, '$1');
+                  
+                console.log("Sanitized buffer (first 300 chars):", cleanedBuffer.substring(0, 300));
+                
+                  // Fix JSON structure if needed
+                if (!cleanedBuffer.startsWith('{') && !cleanedBuffer.startsWith('[')) {
+                  cleanedBuffer = '{' + cleanedBuffer;
+                }
+                if (!cleanedBuffer.endsWith('}') && !cleanedBuffer.endsWith(']')) {
+                  cleanedBuffer = cleanedBuffer + '}';
+                }
+                
+                  // Balance braces and brackets
+                const openBraces = (cleanedBuffer.match(/{/g) || []).length;
+                const closeBraces = (cleanedBuffer.match(/}/g) || []).length;
+                const openBrackets = (cleanedBuffer.match(/\[/g) || []).length;
+                const closeBrackets = (cleanedBuffer.match(/\]/g) || []).length;
+                
+                if (openBraces > closeBraces) {
+                  cleanedBuffer += '}'.repeat(openBraces - closeBraces);
+                }
+                if (openBrackets > closeBrackets) {
+                  cleanedBuffer += ']'.repeat(openBrackets - closeBrackets);
+                }
+                  
+                  // After cleaning, log the results:
+                  console.log("CLEANED_BUFFER_INFO:");
+                  console.log(`- Cleaned size: ${cleanedBuffer.length} bytes`);
+                  console.log(`- Valid JSON? ${isValidJson(cleanedBuffer)}`);
+                  console.log(`- Brace balance: ${openBraces}:${closeBraces}, Bracket balance: ${openBrackets}:${closeBrackets}`);
+                  
+                  try {
+                    // Try to parse the cleaned buffer
+                  const bufferObject = JSON.parse(cleanedBuffer);
+
+                    // Filter out empty sections that have no properties
+                    const validSections = bufferObject.sections.filter((section: any) => {
+                      // Check if it's a non-empty object (has at least some properties)
+                      return Object.keys(section).length > 0;
+                    });
+                    
+                    console.log(`Found ${bufferObject.sections.length} sections, ${validSections.length} valid after filtering`);
+                    
+                    // Only process sections that have content
+                    for (const section of validSections) {
+                      // Validate section structure
+                      if (!section.sentences || !Array.isArray(section.sentences)) {
+                        console.warn("Fixing invalid section:", section);
+                        section.sentences = [];
+                      }
+                      
+                        if (section.sentences.length === 0) {
+                          section.sentences.push({
+                            id: 1,
+                            text: "Content could not be properly formatted.",
+                            format: "paragraph"
+                          });
+                      }
+                      
+                      sectionCounter++;
+                      controller.enqueue(
+                        encoder.encode(JSON.stringify({
+                          type: "section",
+                          data: section,
+                          total: sectionCounter
+                        }) + "\n")
+                      );
+                    }
+                    
+                    // If we filtered out all sections, don't add any error messages
+                    if (bufferObject.sections.length > 0 && validSections.length === 0) {
+                      console.log("All sections were empty, skipping error generation");
+                    }
+                  } catch (parseError) {
+                    console.error("JSON parse error:", parseError);
+                    
+                    // Try to extract valid parts from the buffer as a fallback
+                  const validPartsPattern = /\{\s*"title"\s*:\s*"[^"]+"\s*,\s*"sentences"\s*:\s*\[\s*(?:\{[^\{\}]*\}\s*,\s*)*\{[^\{\}]*\}\s*\]\s*\}/g;
+                  const validParts = cleanedBuffer.match(validPartsPattern);
+                  
+                    // Only then use it in a condition
+                  if (validParts && validParts.length > 0) {
+                    console.log("Found", validParts.length, "valid section objects to salvage");
+                    
+                    for (const validSection of validParts) {
+                      try {
+                        const section = JSON.parse(validSection);
+                        
+                          // Validate sentences
+                        if (!section.sentences || !Array.isArray(section.sentences) || section.sentences.length === 0) {
+                          section.sentences = [{
+                            id: 1,
+                            text: "This section was recovered but may be incomplete.",
+                            format: "paragraph"
+                          }];
+                        }
+                        
+                        sectionCounter++;
+                          controller.enqueue(
+                            encoder.encode(JSON.stringify({
+                          type: "section",
+                          data: section,
+                              total: sectionCounter
+                            }) + "\n")
+                        );
+                      } catch (e) {
+                        console.error("Failed to parse seemingly valid section:", e);
+                      }
+                    }
+                  } else {
+                      // Last resort - extract any useful text from the buffer
+                      console.log("Attempting text extraction fallback...");
+                      
+                      // Try to extract any meaningful title and content
+                      const titleMatch = cleanedBuffer.match(/"title"\s*:\s*"([^"]+)"/);
+                      const title = titleMatch ? titleMatch[1] : "Content Processing Error";
+                      
+                      // Look for text content
+                      const textMatches = cleanedBuffer.match(/"text"\s*:\s*"([^"]{20,})"/g);
+                      let contentSentences: Array<{id: number, text: string, format: string}> = [];
+                      
+                      if (textMatches && textMatches.length > 0) {
+                        // Extract text content from matches
+                        contentSentences = textMatches.map((match: string, idx: number) => {
+                          const textContent = match.replace(/"text"\s*:\s*"/, '').replace(/"$/, '');
+                          return {
+                            id: idx + 1,
+                            text: textContent.length > 500 
+                              ? textContent.substring(0, 500) + "..." // Truncate very long text
+                              : textContent,
+                            format: "paragraph"
+                          };
+                        });
+                      }
+                      
+                      if (contentSentences.length === 0) {
+                        // If we couldn't extract any content, use a generic message
+                        contentSentences = [{
+                          id: 1,
+                          text: "We couldn't process the content properly. Please try again with a different input or smaller chunks.",
+                          format: "paragraph"
+                        }];
+                      }
+                      
+                      sectionCounter++;
+                      controller.enqueue(
+                        encoder.encode(JSON.stringify({
+                          type: "section",
+                          data: {
+                            title: title,
+                            sentences: contentSentences
+                          },
+                          total: sectionCounter
+                        }) + "\n")
+                      );
                     }
                   }
                 } catch (e) {
-                  // Continue collecting more data
-                }
-              }
-            }
-
-            // Process any remaining data in the buffer
-            if (functionCallBuffer) {
-              try {
-                // Try to parse the complete JSON
-                const fullJson = `{${functionCallBuffer}}`;
-                const parsed = JSON.parse(fullJson);
-
-                if (parsed.sections) {
-                  for (const section of parsed.sections) {
-                    sectionCounter++;
-                    const sectionData = {
+                  console.error("Error processing buffer:", e);
+                  
+                  // Send a generic error section as a last resort
+                  sectionCounter++;
+                  controller.enqueue(
+                    encoder.encode(JSON.stringify({
                       type: "section",
-                      data: section,
-                      total: sectionCounter,
-                    };
-                    controller.enqueue(
-                      encoder.encode(JSON.stringify(sectionData) + "\n")
-                    );
-                  }
+                      data: {
+                        title: "Error Processing Content",
+                        sentences: [{
+                          id: 1,
+                          text: "An error occurred while processing your content. Please try again with a smaller or simpler input.",
+                          format: "paragraph"
+                        }]
+                      },
+                      total: sectionCounter
+                    }) + "\n")
+                  );
                 }
-              } catch (e) {
-                console.error("Error parsing remaining buffer:", e);
               }
             }
-          }
 
-          // Send a completion message
+            // Send completion message AFTER all chunks are processed
           controller.enqueue(
             encoder.encode(
               JSON.stringify({ type: "done", total: sectionCounter }) + "\n"
             )
           );
-        },
-      });
 
-      // After successful processing, deduct credits if not Pro
+            // Process credits AFTER all chunks
       if (!isPro) {
         const newCreditBalance = creditBalance - requiredCredits;
-
-        // Update the user's credit balance in Firestore
-        const updateResult = await updateUserCreditBalance(
-          firestoreUser.id,
-          newCreditBalance
-        );
-
-        if (!updateResult) {
-          console.error(
-            `Failed to update credit balance for user ${firestoreUser.id}`
-          );
-        } else {
-          console.log(
-            `Successfully deducted ${requiredCredits} credits from user ${userId}. New balance: ${newCreditBalance}`
-          );
+              await updateUserCreditBalance(firestoreUser.id, newCreditBalance);
+            }
+          } catch (error) {
+            console.error("Error in streaming process:", error);
+            
+            // Send error message to client
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({
+                  type: "error",
+                  message: error instanceof Error ? error.message : "An unexpected error occurred",
+                }) + "\n"
+              )
+            );
+          } finally {
+            // No explicit close needed - stream closes when the function returns
+            console.log("Stream processing completed");
+            
+            // If you want to send a final message, you can do that here
+            controller.enqueue(
+              encoder.encode(
+                JSON.stringify({
+                  type: "complete",
+                  message: "Processing completed"
+                }) + "\n"
+              )
+            );
+          }
         }
-      }
+      });
 
-      return new StreamingTextResponse(stream.readable);
+      // Return the stream wrapped in StreamingTextResponse
+      return new StreamingTextResponse(transformStream.readable);
     } else {
       // Non-streaming mode (original implementation)
       let allSections: Section[] = [];
@@ -457,5 +710,15 @@ Each section should be comprehensive and detailed while remaining accessible. Ge
       },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to check if string is valid JSON
+function isValidJson(str: string) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
   }
 }

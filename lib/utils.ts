@@ -6,6 +6,7 @@ import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import fs from "fs";
 import path from "path";
 import { twMerge } from "tailwind-merge";
+import { registerStreamRequest } from "@/lib/streamManager";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -32,7 +33,8 @@ export const sendMessage = async (
     type: string;
     uploadedAt: number;
     id: string;
-  }> = []
+  }> = [],
+  tabId: string
 ) => {
   if (!input.trim() && files.length === 0) {
     console.warn("No input text or files provided");
@@ -184,7 +186,13 @@ export const sendMessage = async (
           // Process with chat API using streaming
           const sections: Section[] = [];
 
-          // Use streaming mode
+          // Create a stream ID from notebookId and tabId
+          const streamId = `${notebookId}-${tabId}`;
+          
+          // Register this stream with the manager
+          const controller = registerStreamRequest(streamId);
+          
+          // Use the controller's signal in your fetch request
           const chatResponse = await fetch("/api/chat", {
             method: "POST",
             headers: {
@@ -198,6 +206,7 @@ export const sendMessage = async (
               stream: true,
               language: language,
             }),
+            signal: controller.signal,
           });
 
           if (!chatResponse.ok) {

@@ -45,7 +45,7 @@ export default function RootLayout({
         >
           <SignedIn>
             <div className="flex h-screen overflow-hidden bg-white max-h-[90vh] md:max-h-screen  ">
-              {/* <CustomSidebar /> */}
+              <CustomSidebar />
               <main className="flex-1 flex-col ml-0 md:ml-64   transition-all duration-300 overflow-hidden bg-white ">
                 <div className="w-full rounded-lg  items-center  py-2 justify-center flex text-center text-[#94b347] text-2xl ">
                   gammanotes
