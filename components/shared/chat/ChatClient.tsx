@@ -759,7 +759,7 @@ const ChatClient = ({
                 <RefreshCw className="text-[#94b347] animate-spin" />
                   <p className="text-xs font-medium text-gray-600">
                     {currentSections > 0 && totalSections > 0 
-                      ? `Generating section ${currentSections} of ${totalSections}` 
+                      ? `Generating: ${currentSections} sections generated` 
                       : "Analyzing document..."}
                   </p>
                 </div>
@@ -772,7 +772,7 @@ const ChatClient = ({
                       <motion.div
                         initial={{ width: "5%" }}
                         animate={{ 
-                          width: `${Math.min(100, (currentSections / totalSections) * 100)}%` 
+                          width:  "100%" 
                         }}
                         transition={{ duration: 0.4 }}
                         className="bg-[#94b347] h-1 rounded-full"
@@ -780,17 +780,14 @@ const ChatClient = ({
                     ) : (
                       // Indeterminate loader
                       <motion.div className="relative w-full h-1 overflow-hidden">
-                        <motion.div
-                          animate={{ 
-                            x: ["-100%", "100%"]
-                          }}
-                          transition={{ 
-                            duration: 1.5, 
-                            repeat: Infinity,
-                            ease: "easeInOut" 
-                          }}
-                          className="absolute h-1 w-1/3 bg-[#94b347] rounded-full"
-                        />
+                          <motion.div
+                        initial={{ width: "5%" }}
+                        animate={{ 
+                          width:  "100%" 
+                        }}
+                        transition={{ duration: 0.4 }}
+                        className="bg-[#94b347] h-1 rounded-full"
+                      />
                       </motion.div>
                     )}
                   </div>
