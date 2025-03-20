@@ -21,6 +21,8 @@ import remarkMath from 'remark-math';
 import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
 import { ComponentProps } from 'react';
+import rehypeRaw from 'rehype-raw';
+import { renderToString } from 'katex';
 
 interface ResponseProps {
   msg: Message;
@@ -60,34 +62,181 @@ const formatTextWithMarkdown = (text: string) => {
 // Add a styles component for math equations
 const MathEquationStyles = () => (
   <style jsx global>{`
-    /* Make KaTeX equations bold and italic */
+    /* Base KaTeX styling */
     .katex {
-      font-weight: bold !important;
+      font-size: 1.1em !important;
+      font-family: KaTeX_Main, 'Times New Roman', serif !important;
+    }
+    
+    /* Ensure proper spacing in math expressions */
+    .katex .mord, .katex .mbin, .katex .mrel, .katex .mopen, .katex .mclose, .katex .mpunct, .katex .minner {
+      margin-left: 0.0667em;
+      margin-right: 0.0667em;
     }
     
     /* Improve display math formatting */
     .katex-display {
-      padding: 0.5rem;
-      margin: 1rem 0;
+      padding: 0.8rem;
+      margin: 1.2rem 0;
       background-color: rgba(148, 179, 71, 0.05);
       border: 1px solid rgba(148, 179, 71, 0.2);
       border-radius: 0.375rem;
       overflow-x: auto;
+      text-align: center;
     }
     
-    /* Add a highlight effect to focused equations */
-    .katex-display:hover {
-      background-color: rgba(148, 179, 71, 0.1);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* Fix for fractions to ensure proper spacing */
+    .katex .mfrac .frac-line {
+      border-bottom-width: 0.04em;
+    }
+    
+    /* Improve spacing around operators */
+    .katex .mbin {
+      margin-left: 0.22em;
+      margin-right: 0.22em;
+    }
+    
+    /* Improve spacing for subscripts and superscripts */
+    .katex .msupsub {
+      text-align: left;
     }
     
     /* Improve inline math visibility */
     .katex-inline {
       padding: 0 0.15rem;
       color: #0a4c79;
+      font-weight: bold;
+    }
+    
+    /* Make sure inline math is properly aligned */
+    .prose .math-inline {
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    /* Prevent word breaking inside formulas */
+    .formula-block, .katex-display, .katex-inline {
+      word-break: keep-all;
+      word-spacing: normal;
     }
   `}</style>
 );
+
+// The helper function to check for HTML content
+const containsHtmlTags = (text: string): boolean => {
+  const htmlTagPattern = /<\/?[a-z][\s\S]*?>/i;
+  return htmlTagPattern.test(text);
+};
+
+// Add a utility function to properly escape/unescape LaTeX
+const prepareLatexForRendering = (text: string): string => {
+  // First, check if we're dealing with LaTeX content
+  if (!text.includes('\\') && !text.includes('$')) return text;
+  
+  // Make sure backslashes are properly escaped
+  // But don't double-escape already escaped backslashes
+  let processed = text.replace(/(?<!\\)\\(?!\\)/g, '\\\\');
+  
+  // Make sure dollar signs are present for inline math
+  if (processed.includes('\\') && !processed.includes('$')) {
+    processed = `$${processed}$`;
+  }
+  
+  // Handle display math if needed
+  if (processed.includes('\\begin{equation}') || processed.includes('\\begin{align}')) {
+    // If it doesn't already have $$ delimiters and needs them
+    if (!processed.startsWith('$$')) {
+      processed = `$$${processed}$$`;
+    }
+  }
+  
+  return processed;
+};
+
+// Add a function to properly format mangled formulas
+const reformatMangledFormula = (text: string): string => {
+  // Check if the text appears to be a mangled formula (characters separated by newlines)
+  const isMangledFormula = /\n\s*[a-zA-Z0-9_]\s*\n/.test(text);
+  
+  if (isMangledFormula) {
+    // First, remove all newlines and normalize whitespace
+    let normalized = text.replace(/\n/g, '').replace(/\s+/g, ' ').trim();
+    
+    // Check for specific equation patterns and reformulate them
+    if (normalized.includes('d=V_0t+\\frac{1}{2}at^2') || 
+        normalized.includes('d = V_0t + \\frac{1}{2}at^2')) {
+      return '$d = V_0t + \\frac{1}{2}at^2$';
+    }
+    
+    // Handle other common physics equations
+    if (/V_f\^?2\s*=\s*V_0\^?2\s*\+\s*2ad/.test(normalized)) {
+      return '$V_f^2 = V_0^2 + 2ad$';
+    }
+    
+    // Process general mangles
+    normalized = normalized
+      // Add spaces after commas
+      .replace(/,(\w)/g, ', $1')
+      // Add spaces around operators
+      .replace(/(\w+)=(\w+)/g, '$1 = $2')
+      .replace(/(\w+)\+(\w+)/g, '$1 + $2')
+      .replace(/(\w+)-(\w+)/g, '$1 - $2')
+      // Fix common subscripts and superscripts
+      .replace(/([a-zA-Z])(\d+)/g, '$1_$2')
+      .replace(/\^(\d+)/g, '^{$1}');
+    
+    return `$${normalized}$`;
+  }
+  
+  return text;
+};
+
+// Update the formula detection to catch mangled formulas
+const isPotentialMathContent = (text: string): boolean => {
+  // Original checks
+  const mathPatterns = [
+    /\\frac\{/,         // Fractions
+    /\\sqrt\{/,          // Square roots
+    /\\sum_/,            // Summations
+    /\\int/,             // Integrals
+    /\\alpha|\\beta|\\gamma|\\theta/,  // Greek letters
+    /[a-zA-Z]_\{[a-zA-Z0-9]+\}/,  // Subscripts
+    /[a-zA-Z]\^\{[a-zA-Z0-9]+\}/,  // Superscripts
+    /\\mathbb\{[A-Z]\}/,  // Special math fonts
+    /\\text\{/,          // Text in math mode
+    /\\begin\{[a-z]+\}/  // Math environments
+  ];
+  
+  // Add check for mangled formulas (characters separated by newlines)
+  const isMangledFormula = /\n\s*[a-zA-Z0-9_]\s*\n/.test(text) && 
+                           /[Vd]\s*[_=]\s*\d/.test(text.replace(/\n/g, ''));
+  
+  return mathPatterns.some(pattern => pattern.test(text)) || isMangledFormula;
+};
+
+// Add this helper function
+const containsInlineMath = (text: string): boolean => {
+  // Look for patterns like $...$ that contain LaTeX
+  return /\$[^$]+\$/g.test(text);
+};
+
+// For complex formulas, use direct KaTeX rendering
+const renderComplexFormula = (formula: string): string => {
+  try {
+    // Remove $ delimiters if present
+    const cleanFormula = formula.replace(/^\$|\$$/g, '');
+    
+    // Render to HTML string
+    return renderToString(cleanFormula, {
+      displayMode: true,
+      throwOnError: false,
+      output: 'html'
+    });
+  } catch (error) {
+    console.error('Error rendering formula:', error);
+    return `<span class="text-red-500">Error rendering formula: ${formula}</span>`;
+  }
+};
 
 export const ResponseMessage = ({
   msg,
@@ -497,7 +646,7 @@ export const ResponseMessage = ({
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown
                         remarkPlugins={[remarkMath, remarkGfm]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[rehypeRaw, rehypeKatex]}
                         components={{
                           code: ({ className, children, ...props }: ComponentProps<'code'> & { className?: string }) => {
                             const match = /language-(\w+)/.exec(className || '');
@@ -512,10 +661,14 @@ export const ResponseMessage = ({
                                 {children}
                               </code>
                             );
+                          },
+                          // Special handler for paragraphs with math
+                          p: ({ children }) => {
+                            return <p className="whitespace-normal word-break-normal">{children}</p>;
                           }
                         }}
                       >
-                        {sentence.text}
+                        {prepareLatexForRendering(sentence.text)}
                       </ReactMarkdown>
                     </div>
                   </motion.li>
@@ -546,7 +699,7 @@ export const ResponseMessage = ({
 
                 // Handle non-list content with enhanced styling
                 let content;
-                if ((format as string) === "rich-text") {  // Type assertion to handle extended formats
+                if ((format as string) === "rich-text") {
                   content = (
                     <div 
                       className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed"
@@ -554,65 +707,56 @@ export const ResponseMessage = ({
                     />
                   );
                 } else if (format === "formula") {
+                  // Check if formula appears to be mangled with newlines
+                  const processedText = /\n\s*[a-zA-Z0-9_]\s*\n/.test(sentence.text) 
+                    ? reformatMangledFormula(sentence.text)
+                    : prepareLatexForRendering(sentence.text);
+                  
+                  // Use direct KaTeX rendering for reliable formula display
                   content = (
                     <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">
                       <div className="prose prose-sm max-w-none">
                         <ReactMarkdown
                           remarkPlugins={[remarkMath, remarkGfm]}
-                          rehypePlugins={[rehypeKatex]}
+                          rehypePlugins={[rehypeRaw, rehypeKatex]}
                         >
-                          {sentence.text}
+                          {processedText}
                         </ReactMarkdown>
                       </div>
                     </div>
                   );
                 } else {
-                  switch (format) {
-                    case "italic":
-                      content = (
-                        <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed">
-                          <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath, remarkGfm]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
-                              {sentence.text}
-                            </ReactMarkdown>
-                          </div>
+                  // Check for math content that might have lost $ delimiters
+                  const hasUnformattedMath = isPotentialMathContent(sentence.text);
+                  
+                  if (hasUnformattedMath && !sentence.text.includes('$')) {
+                    // If we detect math content without delimiters, treat it as a formula
+                    content = (
+                      <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">
+                        <div className="prose prose-sm max-words">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath, remarkGfm]}
+                            rehypePlugins={[rehypeRaw, rehypeKatex]}
+                          >
+                            {`$${sentence.text}$`}
+                          </ReactMarkdown>
                         </div>
-                      );
-                      break;
-                    case "bold":
-                      content = (
-                        <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed">
-                          <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath, remarkGfm]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
-                              {sentence.text}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      );
-                      break;
-                    case "heading":
-                      content = (
-                        <div className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
-                          isSummarySection ? "text-[#94b347]" : ""
-                        }`}>
-                          <div className="prose prose-sm max-w-none">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkMath, remarkGfm]}
-                              rehypePlugins={[rehypeKatex]}
-                            >
-                              {sentence.text}
-                            </ReactMarkdown>
-                          </div>
-                        </div>
-                      );
-                      break;
-                    default: // paragraph
+                      </div>
+                    );
+                  } else {
+                    // Detect inline math with a more reliable pattern
+                    const hasInlineMath = /\$(?!\$)(.+?)(?<!\$)\$/g.test(sentence.text) || 
+                                          /\\\((.+?)\\\)/g.test(sentence.text);
+                    
+                    if (hasInlineMath) {
+                      // Process text to ensure proper math spacing
+                      const processedText = sentence.text
+                        // Ensure proper spacing in inline math
+                        .replace(/\$([^$]+)\$/g, (match, formula) => {
+                          // Make sure the formula has proper spacing
+                          return `$${prepareLatexForRendering(formula).replace(/\$/g, '')}$`;
+                        });
+                      
                       content = (
                         <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
                           isSummarySection ? "text-gray-700" : ""
@@ -620,13 +764,71 @@ export const ResponseMessage = ({
                           <div className="prose prose-sm max-w-none">
                             <ReactMarkdown
                               remarkPlugins={[remarkMath, remarkGfm]}
-                              rehypePlugins={[rehypeKatex]}
+                              rehypePlugins={[rehypeRaw, rehypeKatex]}
                             >
-                              {sentence.text}
+                              {processedText}
                             </ReactMarkdown>
                           </div>
                         </div>
                       );
+                    } else {
+                      // Check if content contains HTML or markdown indicators
+                      const hasMarkdown = /(\*\*|__|~~|`|\[.*\]\(.*\)|#{1,6}\s|>\s|```|^\s*[\-\*\+]\s|^\s*\d+\.\s)/m.test(sentence.text);
+                      const hasHtml = containsHtmlTags(sentence.text);
+                      
+                      if (hasHtml) {
+                        // If it has HTML tags, use dangerouslySetInnerHTML to render it directly
+                        content = (
+                          <div 
+                            className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                              isSummarySection ? "text-gray-700" : ""
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: sentence.text }}
+                          />
+                        );
+                      } else if (hasMarkdown) {
+                        // If it has markdown but no HTML, use ReactMarkdown with rehypeRaw
+                        content = (
+                          <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                            isSummarySection ? "text-gray-700" : ""
+                          }`}>
+                            <div className="prose prose-sm max-w-none">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkMath, remarkGfm]}
+                                rehypePlugins={[rehypeRaw, rehypeKatex]}
+                                components={{
+                                  code: ({ className, children, ...props }: ComponentProps<'code'> & { className?: string }) => {
+                                    const match = /language-(\w+)/.exec(className || '');
+                                    const isInline = !match;
+                                    
+                                    return isInline ? (
+                                      <code className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono" {...props}>
+                                        {children}
+                                      </code>
+                                    ) : (
+                                      <code className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2" {...props}>
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+                                }}
+                              >
+                                {sentence.text}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        // If it's plain text without markdown or HTML, render as before
+                        content = (
+                          <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                            isSummarySection ? "text-gray-700" : ""
+                          }`}>
+                            {sentence.text}
+                          </div>
+                        );
+                      }
+                    }
                   }
                 }
 

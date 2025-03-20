@@ -45,6 +45,33 @@ class StreamingTextResponse extends Response {
   }
 }
 
+// Add a utility function for formula cleaning when receiving data from the client
+const cleanFormulaContent = (text: string): string => {
+  // Check if the text is likely a mangled formula
+  if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
+    // Remove newlines and normalize spaces
+    let cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Add delimiters if missing
+    if (!cleaned.startsWith('$')) cleaned = `$${cleaned}`;
+    if (!cleaned.endsWith('$')) cleaned = `${cleaned}$`;
+    
+    // Fix common physics equations
+    cleaned = cleaned
+      // Fix spacing around operators
+      .replace(/(\w+)=(\w+)/g, '$1 = $2')
+      .replace(/(\w+)\+(\w+)/g, '$1 + $2')
+      .replace(/(\w+)-(\w+)/g, '$1 - $2')
+      // Fix subscripts
+      .replace(/V0/g, 'V_0')
+      .replace(/Vf/g, 'V_f');
+      
+    return cleaned;
+  }
+  
+  return text;
+};
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
 
@@ -446,6 +473,16 @@ IMPORTANT: Ensure each section has a valid title and at least one sentence. Each
                           });
                       }
                       
+                      // Apply formula cleaning
+                      if (section.sentences) {
+                        section.sentences = section.sentences.map((sentence: Sentence) => {
+                          if (sentence.format === 'formula') {
+                            sentence.text = cleanFormulaContent(sentence.text);
+                          }
+                          return sentence;
+                        });
+                      }
+                      
                       sectionCounter++;
                       controller.enqueue(
                         encoder.encode(JSON.stringify({
@@ -482,6 +519,16 @@ IMPORTANT: Ensure each section has a valid title and at least one sentence. Each
                             text: "This section was recovered but may be incomplete.",
                             format: "paragraph"
                           }];
+                        }
+                        
+                        // Apply formula cleaning
+                        if (section.sentences) {
+                          section.sentences = section.sentences.map((sentence: Sentence) => {
+                            if (sentence.format === 'formula') {
+                              sentence.text = cleanFormulaContent(sentence.text);
+                            }
+                            return sentence;
+                          });
                         }
                         
                         sectionCounter++;

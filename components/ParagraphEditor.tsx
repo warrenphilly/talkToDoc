@@ -16,6 +16,7 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
+import { Node } from '@tiptap/core'
 
 // Make sure this matches the type in lib/types.ts
 type FormatType = "bold" | "heading" | "italic" | "paragraph" | "bullet" | "numbered" | "formula" | "rich-text";
@@ -38,6 +39,38 @@ interface ParagraphEditorProps {
   messageIndex: number;
   initialData?: ParagraphData;
 }
+
+// Create a custom Formula extension for TipTap
+const Formula = Node.create({
+  name: 'formula',
+  group: 'block',
+  content: 'text*',
+  
+  addAttributes() {
+    return {
+      latex: {
+        default: '',
+      },
+    };
+  },
+  
+  parseHTML() {
+    return [
+      {
+        tag: 'div.formula-block',
+        getAttrs: (node) => {
+          if (typeof node === 'string') return {};
+          const element = node as HTMLElement;
+          return { latex: element.textContent };
+        },
+      },
+    ];
+  },
+  
+  renderHTML({ node }) {
+    return ['div', { class: 'formula-block' }, node.attrs.latex];
+  },
+});
 
 // Create a toolbar for rich text editing with more options
 const RichTextToolbar = ({ editor }: { editor: any }) => {
@@ -159,15 +192,34 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
         {/* Special button for LaTeX/Math formulas */}
         <button
           onClick={() => {
-            // Insert a code block and mark it as a formula
-            editor.chain().focus().setCodeBlock().run();
-            const selection = editor.state.selection;
-            if (selection) {
-              editor.view.dispatch(
-                editor.state.tr.setNodeMarkup(selection.from, undefined, {
-                  class: 'math-formula'
-                })
-              );
+            // Get the current selection
+            const { from, to } = editor.state.selection;
+            const selectedText = editor.state.doc.textBetween(from, to, ' ');
+            
+            // If text is selected, wrap it in formula delimiters
+            if (selectedText) {
+              // Check if already has delimiters
+              if (selectedText.startsWith('$') && selectedText.endsWith('$')) {
+                // Already formatted, do nothing
+                return;
+              }
+              
+              // Create a formula block with the selected text
+              editor.chain()
+                .focus()
+                .deleteSelection()
+                .insertContent(`<div class="formula-block">$${selectedText}$</div>`)
+                .run();
+            } else {
+              // Insert an empty formula block
+              editor.chain()
+                .focus()
+                .insertContent('<div class="formula-block">$formula$</div>')
+                .run();
+                
+              // Position cursor inside the formula
+              const pos = editor.state.selection.from - 8;
+              editor.commands.setTextSelection({ from: pos, to: pos + 7 });
             }
           }}
           className={`p-1 rounded-md hover:bg-slate-100`}
@@ -183,6 +235,58 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
       </div>
     </div>
   );
+};
+
+// Add this helper function at the top of the file with your other utility functions
+const containsInlineMath = (text: string): boolean => {
+  // Look for patterns like $...$ that contain LaTeX
+  return /\$[^$]+\$/g.test(text);
+};
+
+// Add this function to properly handle formula text when saving
+const preserveFormulaFormatting = (text: string, isFormula: boolean): string => {
+  if (!isFormula) return text;
+
+  // Remove excessive line breaks and normalize whitespace
+  let normalized = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Ensure proper $ delimiters
+  if (!normalized.startsWith('$') && !normalized.endsWith('$')) {
+    normalized = `$${normalized}$`;
+  }
+  
+  // Special case for common physics equations
+  // Replace common patterns that might get messed up during editing
+  normalized = normalized
+    // Fix common physics variables with subscripts
+    .replace(/V(_?)0/g, 'V_0')
+    .replace(/V(_?)f/g, 'V_f')
+    .replace(/V(_?)i/g, 'V_i')
+    // Fix fractions that got mangled
+    .replace(/\\frac\{(\d+)\}\{(\d+)\}/g, '\\frac{$1}{$2}')
+    // Fix spacing around operators
+    .replace(/(\w+)=(\w+)/g, '$1 = $2')
+    .replace(/(\w+)\+(\w+)/g, '$1 + $2')
+    .replace(/(\w+)-(\w+)/g, '$1 - $2')
+    .replace(/(\w+)\*(\w+)/g, '$1 * $2')
+    // Fix power notation
+    .replace(/\^(\d+)/g, '^{$1}');
+  
+  return normalized;
+};
+
+// Function to detect if text might be mangled formula
+const isMangledFormula = (text: string): boolean => {
+  // Check if the text has characters separated by newlines
+  return /\n\s*[a-zA-Z0-9_]\s*\n/.test(text);
+};
+
+// Function to fix mangled formulas
+const fixMangledFormula = (text: string): string => {
+  if (!isMangledFormula(text)) return text;
+  
+  // Remove newlines and normalize spaces
+  return text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
 };
 
 export default function ParagraphEditor({ 
@@ -222,6 +326,7 @@ export default function ParagraphEditor({
       Placeholder.configure({
         placeholder: 'Edit your content here...'
       }),
+      Formula,
     ],
     content: '',
     onUpdate: ({ editor }) => {
@@ -320,7 +425,15 @@ export default function ParagraphEditor({
           break;
           
         case 'formula':
-          htmlContent += `<pre><code class="math-formula">${text}</code></pre>`;
+          // Check if the formula is already wrapped in $ or $$
+          if (text.startsWith('$') && text.endsWith('$')) {
+            htmlContent += `<div class="formula-block">${text}</div>`;
+          } else if (text.startsWith('$$') && text.endsWith('$$')) {
+            htmlContent += `<div class="formula-block">${text}</div>`;
+          } else {
+            // Add $ for inline math if not already present
+            htmlContent += `<div class="formula-block">$${text}$</div>`;
+          }
           break;
           
         default: // paragraph
@@ -399,6 +512,18 @@ export default function ParagraphEditor({
         }
       }
       
+      // Add special handling for formula blocks
+      if (element.classList.contains('formula-block')) {
+        format = 'formula';
+        // Preserve the formula exactly as it is
+        text = element.textContent || '';
+        
+        // Make sure it has proper LaTeX delimiters
+        if (!text.startsWith('$') && !text.endsWith('$')) {
+          text = '$' + text + '$';
+        }
+      }
+      
       sentences.push({
         id: id++,
         text,
@@ -432,12 +557,28 @@ export default function ParagraphEditor({
       onSave(paragraphData, messageIndex);
       setSavedData(paragraphData);
     } else {
-      // Otherwise use our structured format
+      // Special handling for formulas - ensure they are properly preserved
+      const processedSentences = updatedSentences.map(sentence => {
+        if (sentence.format === 'formula') {
+          // Special handling for formulas to preserve formatting
+          sentence.text = preserveFormulaFormatting(sentence.text, true);
+        } else if (sentence.format === 'paragraph' && containsInlineMath(sentence.text)) { 
+          // Check for paragraphs with inline math that need preservation
+          sentence.text = sentence.text.replace(/\$([^$]+)\$/g, (match, formula) => {
+            return `$${preserveFormulaFormatting(formula, true).replace(/^\$|\$$/g, '')}$`;
+          });
+        } else if (isMangledFormula(sentence.text)) {
+          // Fix mangled formulas (text split by newlines)
+          sentence.text = fixMangledFormula(sentence.text);
+        }
+        return sentence;
+      });
+      
       const paragraphData: ParagraphData = {
         user: "AI",
         text: [{
           title,
-          sentences: updatedSentences
+          sentences: processedSentences
         }]
       };
       
@@ -472,7 +613,7 @@ export default function ParagraphEditor({
           )}
         </button>
         {!isEditing && (
-          <div className="flex-grow h-[1px] bg-gray-200 ml-2" />
+        <div className="flex-grow h-[1px] bg-gray-200 ml-2" />
         )}
       </div>
 
@@ -504,6 +645,17 @@ export default function ParagraphEditor({
               border-radius: 0.375rem;
               padding: 0.5rem;
               font-family: monospace;
+              color: #0a4c79;
+              font-weight: bold;
+            }
+            
+            /* Add visual indicator that this is a formula */
+            .ProseMirror .formula-block::before {
+              content: "ƒ";
+              color: #94b347;
+              font-weight: bold;
+              margin-right: 4px;
+              opacity: 0.7;
             }
             
             .ProseMirror h3 {
