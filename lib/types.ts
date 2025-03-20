@@ -1,14 +1,7 @@
 export interface Sentence {
   id: number;
   text: string;
-  format?:
-    | "paragraph"
-    | "bullet"
-    | "numbered"
-    | "formula"
-    | "italic"
-    | "bold"
-    | "heading";
+  format?: "bold" | "heading" | "italic" | "paragraph" | "bullet" | "numbered" | "formula" | "rich-text";
 }
 
 export interface Section {

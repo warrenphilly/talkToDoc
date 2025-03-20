@@ -366,6 +366,7 @@ const ChatClient = ({
 
       if (Array.isArray(targetMessage.text)) {
         // Update only the specific section being edited
+        // No special handling needed for rich-text - just preserve the format
         targetMessage.text[sectionIndex] = editedData.text[0];
       }
 
@@ -891,7 +892,7 @@ const ChatClient = ({
                         setMessages([
                           {
                             user: "AI",
-                            text: data.text,
+                            text: data.text as unknown as Section[],
                           },
                         ]);
                       } else {
@@ -906,7 +907,7 @@ const ChatClient = ({
                           // Add the new paragraph at the beginning of the text array
                           updatedMessages[0] = {
                             ...firstMessage,
-                            text: [...data.text, ...firstMessage.text],
+                            text: [...data.text as unknown as Section[], ...firstMessage.text],
                           };
                           setMessages(updatedMessages);
                         } else {
@@ -915,7 +916,7 @@ const ChatClient = ({
                           setMessages([
                             {
                               user: "AI",
-                              text: data.text,
+                              text: data.text as unknown as Section[],
                             },
                             ...messages,
                           ]);
@@ -952,7 +953,13 @@ const ChatClient = ({
                                         setShowChat
                                       )
                                     }
-                                    handleParagraphSave={handleParagraphSave}
+                                    handleParagraphSave={(data) =>
+                                      handleParagraphSave(
+                                        data as unknown as import("@/lib/types").ParagraphData,
+                                        index,
+                                        sectionIndex
+                                      )
+                                    }
                                     onEdit={() =>
                                       handleMessageEdit(null, index, sectionIndex)
                                     }
@@ -969,7 +976,7 @@ const ChatClient = ({
                                     <ParagraphEditor
                                       onSave={(data) =>
                                         handleParagraphSave(
-                                          data,
+                                          data as unknown as import("@/lib/types").ParagraphData,
                                           index,
                                           sectionIndex
                                         )
@@ -991,7 +998,13 @@ const ChatClient = ({
                                   setShowChat
                                 )
                               }
-                              handleParagraphSave={handleParagraphSave}
+                              handleParagraphSave={(data) =>
+                                handleParagraphSave(
+                                  data as unknown as import("@/lib/types").ParagraphData,
+                                  index,
+                                  0  // Use 0 instead of undefined sectionIndex
+                                )
+                              }
                               onEdit={() => handleMessageEdit(null, index, 0)}
                               onDelete={() => handleMessageDelete(index, 0)}
                               onSave={(data) => handleMessageEdit(data, index, 0)}

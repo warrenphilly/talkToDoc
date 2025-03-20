@@ -546,80 +546,88 @@ export const ResponseMessage = ({
 
                 // Handle non-list content with enhanced styling
                 let content;
-                switch (format) {
-                  case "formula":
-                    content = (
-                      <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">
-                        <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath, remarkGfm]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {sentence.text}
-                          </ReactMarkdown>
-                        </div>
+                if ((format as string) === "rich-text") {  // Type assertion to handle extended formats
+                  content = (
+                    <div 
+                      className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: sentence.text }}
+                    />
+                  );
+                } else if (format === "formula") {
+                  content = (
+                    <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">
+                      <div className="prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath, remarkGfm]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {sentence.text}
+                        </ReactMarkdown>
                       </div>
-                    );
-                    break;
-                  case "italic":
-                    content = (
-                      <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed">
-                        <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath, remarkGfm]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {sentence.text}
-                          </ReactMarkdown>
+                    </div>
+                  );
+                } else {
+                  switch (format) {
+                    case "italic":
+                      content = (
+                        <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words italic my-3 leading-relaxed">
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {sentence.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    );
-                    break;
-                  case "bold":
-                    content = (
-                      <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed">
-                        <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath, remarkGfm]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {sentence.text}
-                          </ReactMarkdown>
+                      );
+                      break;
+                    case "bold":
+                      content = (
+                        <div className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words font-bold my-3 leading-relaxed">
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {sentence.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    );
-                    break;
-                  case "heading":
-                    content = (
-                      <div className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
-                        isSummarySection ? "text-[#94b347]" : ""
-                      }`}>
-                        <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath, remarkGfm]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {sentence.text}
-                          </ReactMarkdown>
+                      );
+                      break;
+                    case "heading":
+                      content = (
+                        <div className={`text-gray-800 text-base md:text-lg font-semibold text-left whitespace-normal break-words my-4 ${
+                          isSummarySection ? "text-[#94b347]" : ""
+                        }`}>
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {sentence.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    );
-                    break;
-                  default: // paragraph
-                    content = (
-                      <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
-                        isSummarySection ? "text-gray-700" : ""
-                      }`}>
-                        <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath, remarkGfm]}
-                            rehypePlugins={[rehypeKatex]}
-                          >
-                            {sentence.text}
-                          </ReactMarkdown>
+                      );
+                      break;
+                    default: // paragraph
+                      content = (
+                        <div className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
+                          isSummarySection ? "text-gray-700" : ""
+                        }`}>
+                          <div className="prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkMath, remarkGfm]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {sentence.text}
+                            </ReactMarkdown>
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
+                  }
                 }
 
                 result.push(
