@@ -49,6 +49,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
   const resolvedParams = await params;
   // console.log("Received params:", { noteId: resolvedParams.noteId });
   const notebook = await getNotebookData(resolvedParams.noteId);
+  //store the length of the message array in this page
 
   if (!notebook) {
     console.log("Notebook not found, redirecting to 404");
@@ -76,6 +77,7 @@ const NotePage = async ({ params, searchParams }: PageProps) => {
           <BrowserTabs 
             notebookId={notebook.id} 
             notebookTitle={notebook.title}
+            
             initialTabs={tabs}
             className="h-full w-full"
           />

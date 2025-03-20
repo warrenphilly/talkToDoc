@@ -385,6 +385,7 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             >
               <Pencil size={16} />
             </Button>
+            
           </div>
         )}
       </div>

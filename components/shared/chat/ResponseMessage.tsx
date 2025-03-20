@@ -34,6 +34,8 @@ interface ResponseProps {
     sectionIndex: number
   ) => void;
   index: number;
+  sectionNumber: number;
+  totalSections: number;
 }
 
 // Add this helper function to parse and format text with Markdown-style bold
@@ -95,6 +97,8 @@ export const ResponseMessage = ({
   onSave,
   handleParagraphSave,
   index,
+  sectionNumber,
+  totalSections,
 }: ResponseProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -337,13 +341,18 @@ export const ResponseMessage = ({
       
       <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
-          <motion.h3
-            className="text-lg md:text-xl font-bold text-[#94b347] hover:text-[#7a9639] cursor-pointer break-words"
-            onClick={() => handleSectionClick(section)}
-            variants={itemAnimation}
-          >
-            {section.title}
-          </motion.h3>
+          <motion.div className="flex items-center gap-2" variants={itemAnimation}>
+            {/* Display section number beside the title */}
+            <motion.h3
+              className="text-lg md:text-xl font-bold text-[#94b347] hover:text-[#7a9639] cursor-pointer break-words flex items-center"
+              onClick={() => handleSectionClick(section)}
+            >
+              <span className="inline-flex items-center justify-center bg-[#94b347]/10 text-[#94b347] text-sm font-medium rounded-full h-6 w-6 mr-2 flex-shrink-0">
+                {sectionNumber}
+              </span>
+              {section.title}
+            </motion.h3>
+          </motion.div>
           <motion.div className="flex gap-6" variants={itemAnimation}>
             <Button
               onClick={handleEditClick}

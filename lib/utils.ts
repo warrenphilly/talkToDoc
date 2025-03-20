@@ -234,7 +234,11 @@ export const sendMessage = async (
             const { value, done: doneReading } = await reader.read();
             done = doneReading;
 
-            if (done) break;
+            if (done) {
+              console.log("Stream complete - reader signaled completion");
+              setIsProcessing(false);
+              break;
+            }
 
             // Decode the chunk and add it to our buffer
             buffer += decoder.decode(value, { stream: true });
@@ -291,7 +295,7 @@ export const sendMessage = async (
                     );
                     // Continue processing even if an incremental save fails
                   }
-                } else if (data.type === "done") {
+                } else if (data.type === "done" || data.type === "complete") {
                   console.log(
                     "Streaming completed, received",
                     data.total,
@@ -299,6 +303,55 @@ export const sendMessage = async (
                   );
                   // Explicitly set processing to false when done
                   setIsProcessing(false);
+                  
+                  // Add a final database save to ensure all content is saved
+                  try {
+                    const aiMessage: Message = {
+                      user: "AI",
+                      text: sections,
+                      files: files.map((file) => file.name),
+                      fileMetadata: fileMetadata,
+                    };
+                    await saveNote(notebookId, pageId, [...messages, aiMessage]);
+                  } catch (finalSaveError) {
+                    console.error("Error saving final state:", finalSaveError);
+                  }
+                  
+                  // Early completion - exit the loop
+                  done = true;
+                  break;
+                } else if (data.type === "error") {
+                  console.error("Stream error:", data.message);
+                  setIsProcessing(false);
+                  
+                  // Handle error by adding an error message
+                  const errorMessage: Message = {
+                    user: "AI",
+                    text: [
+                      {
+                        title: "Error",
+                        sentences: [
+                          {
+                            id: 1,
+                            text: data.message || "An error occurred during processing",
+                          },
+                        ],
+                      },
+                    ],
+                    files: files.map((file) => file.name),
+                    fileMetadata: fileMetadata,
+                  };
+                  
+                  setMessages((prevMessages) => {
+                    // Replace the temporary message with the error
+                    const updatedMessages = [...prevMessages];
+                    updatedMessages[updatedMessages.length - 1] = errorMessage;
+                    return updatedMessages;
+                  });
+                  
+                  // Exit the loop
+                  done = true;
+                  break;
                 }
               } catch (error) {
                 console.error(

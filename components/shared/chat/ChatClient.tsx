@@ -125,6 +125,7 @@ const ChatClient = ({
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [messageLength, setMessageLength] = useState(0);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
 
@@ -136,6 +137,8 @@ const ChatClient = ({
 
   // Add this new state for tracking cancellation
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const [totalSectionCount, setTotalSectionCount] = useState(0);
 
   const { user } = useUser();
 
@@ -643,20 +646,67 @@ const ChatClient = ({
     }
   };
 
+  // Add this useEffect to ChatClient.tsx
+  useEffect(() => {
+    // Cleanup function to reset states when processing is done
+    if (!isProcessing && currentSections > 0) {
+      // Reset progress related states with a slight delay to allow animations to complete
+      const timer = setTimeout(() => {
+        setCurrentSections(0);
+        setTotalSections(0);
+        setProgress(0);
+        setIsDatabaseUpdating(false);
+      }, 1000); // Short delay to ensure animations complete smoothly
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isProcessing]);
+
+  // Also add a cleanup effect for component unmount
+  useEffect(() => {
+    return () => {
+      // Reset all processing states when component unmounts
+      setIsProcessing(false);
+      setIsDatabaseUpdating(false);
+      setCurrentSections(0);
+      setTotalSections(0);
+      setProgress(0);
+    };
+  }, []);
+
+  // Calculate total sections across all messages
+  useEffect(() => {
+    // Count all sections in all messages
+    let count = 0;
+    messages.forEach(msg => {
+      if (msg.user === "AI" && Array.isArray(msg.text)) {
+        count += msg.text.length;
+      }
+    });
+    setTotalSectionCount(count);
+  }, [messages]);
+
   return (
     <div className="flex flex-col md:flex-row h-full w-full items-center rounded-xl">
       <div className="flex flex-col bg-white w-full mx-0 md:mx-2 h-full">
-        <div className="flex flex-row items-center justify-between w-full py-1 md:py-2 px-2 md:px-0">
-          <div className="flex flex-row gap-2 items-center md:pl-8 ">
+        <div className="flex flex-row items-center  justify-between w-full py-1 md:py-2 px-2 md:px-0">
+          <div className="flex flex-row gap-6 items-center  md:pl-8 ">
             <Button
               onClick={() => setShowUploadModal(true)}
               className={` bg-white text-xs md:text-sm shadow-none border border-slate-400 hover:border-[#94b347] hover:text-[#94b347] hover:bg-white text-slate-500 w-fit px-4 md:px-4 rounded-full`}
             >
               Uploads
             </Button>
+            {totalSectionCount > 0 && (
+          <div className="w-full flex justify-center h-full ">
+            <div className="bg-white text-[#94b347] text-sm font-bold">
+              {totalSectionCount} {totalSectionCount === 1 ? 'Section' : 'Sections'}
+            </div>
+          </div>
+        )}
           </div>
 
-          <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 my-4">
+          <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 md:my-4 " >
             <Button
               onClick={() => handleComponentSelect("studyGuide")}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
@@ -684,7 +734,7 @@ const ChatClient = ({
           </div>
 
           {/* Mobile hamburger menu */}
-          <div className="md:hidden my-4">
+          <div className="md:hidden md:my-4 ">
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -746,12 +796,13 @@ const ChatClient = ({
         {/* Progress Indicator - Modified with cancel button */}
         <AnimatePresence>
           {(isProcessing || isDatabaseUpdating) && (
+            <div className="w-full flex justify-center items-center">
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full bg-[#94b347]/5 border-y border-[#94b347]/10 mb-2"
+              className="w-fit bg-[#94b347]/5 border-y border-[#94b347]/10 mb-2"
             >
               <div className="w-full max-w-screen-lg mx-auto flex items-center gap-3 px-4 py-2">
                 {/* Spinner and text */}
@@ -810,8 +861,12 @@ const ChatClient = ({
                 </Button>
               </div>
             </motion.div>
+            </div>
           )}
         </AnimatePresence>
+
+      
+
 
         <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup
@@ -875,43 +930,56 @@ const ChatClient = ({
                       return (
                         <div key={`message-${index}`}>
                           {Array.isArray(msg.text) ? (
-                            msg.text.map((section, sectionIndex) => (
-                              <React.Fragment key={`section-${sectionIndex}`}>
-                                <ResponseMessage
-                                  msg={{ ...msg, text: [section] }}
-                                  index={index}
-                                  handleSectionClick={(section) =>
-                                    handleSectionClick(
-                                      section,
-                                      setPrimeSentence,
-                                      setShowChat
-                                    )
-                                  }
-                                  handleParagraphSave={handleParagraphSave}
-                                  onEdit={() =>
-                                    handleMessageEdit(null, index, sectionIndex)
-                                  }
-                                  onDelete={() =>
-                                    handleMessageDelete(index, sectionIndex)
-                                  }
-                                  onSave={(data) =>
-                                    handleMessageEdit(data, index, sectionIndex)
-                                  }
-                                />
-                                {!isSaving && (
-                                  <ParagraphEditor
-                                    onSave={(data) =>
-                                      handleParagraphSave(
-                                        data,
-                                        index,
-                                        sectionIndex
+                            msg.text.map((section, sectionIndex) => {
+                              // Calculate the overall section number
+                              let sectionNumber = 1;
+                              for (let i = 0; i < index; i++) {
+                                if (messages[i].user === "AI" && Array.isArray(messages[i].text)) {
+                                  sectionNumber += messages[i].text.length;
+                                }
+                              }
+                              sectionNumber += sectionIndex;
+                              
+                              return (
+                                <React.Fragment key={`section-${sectionIndex}`}>
+                                  <ResponseMessage
+                                    msg={{ ...msg, text: [section] }}
+                                    index={index}
+                                    handleSectionClick={(section) =>
+                                      handleSectionClick(
+                                        section,
+                                        setPrimeSentence,
+                                        setShowChat
                                       )
                                     }
-                                    messageIndex={index}
+                                    handleParagraphSave={handleParagraphSave}
+                                    onEdit={() =>
+                                      handleMessageEdit(null, index, sectionIndex)
+                                    }
+                                    onDelete={() =>
+                                      handleMessageDelete(index, sectionIndex)
+                                    }
+                                    onSave={(data) =>
+                                      handleMessageEdit(data, index, sectionIndex)
+                                    }
+                                    sectionNumber={sectionNumber} 
+                                    totalSections={totalSectionCount}
                                   />
-                                )}
-                              </React.Fragment>
-                            ))
+                                  {!isSaving && (
+                                    <ParagraphEditor
+                                      onSave={(data) =>
+                                        handleParagraphSave(
+                                          data,
+                                          index,
+                                          sectionIndex
+                                        )
+                                      }
+                                      messageIndex={index}
+                                    />
+                                  )}
+                                </React.Fragment>
+                              );
+                            })
                           ) : (
                             <ResponseMessage
                               msg={msg}
@@ -927,6 +995,8 @@ const ChatClient = ({
                               onEdit={() => handleMessageEdit(null, index, 0)}
                               onDelete={() => handleMessageDelete(index, 0)}
                               onSave={(data) => handleMessageEdit(data, index, 0)}
+                              sectionNumber={1} // For non-array text messages
+                              totalSections={totalSectionCount}
                             />
                           )}
                         </div>

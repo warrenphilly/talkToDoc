@@ -595,12 +595,13 @@ IMPORTANT: Ensure each section has a valid title and at least one sentence. Each
             // No explicit close needed - stream closes when the function returns
             console.log("Stream processing completed");
             
-            // If you want to send a final message, you can do that here
+            // Always send a final completion message
             controller.enqueue(
               encoder.encode(
                 JSON.stringify({
                   type: "complete",
-                  message: "Processing completed"
+                  message: "Processing completed",
+                  total: sectionCounter
                 }) + "\n"
               )
             );
