@@ -83,6 +83,8 @@ const MathEquationStyles = () => (
       border-radius: 0.375rem;
       overflow-x: auto;
       text-align: center;
+      white-space: normal;      /* Allow breaking to new lines */
+      max-width: 100%;          /* Ensure doesn't overflow container */
     }
     
     /* Fix for fractions to ensure proper spacing */
@@ -114,10 +116,18 @@ const MathEquationStyles = () => (
       align-items: center;
     }
     
-    /* Prevent word breaking inside formulas */
-    .formula-block, .katex-display, .katex-inline {
-      word-break: keep-all;
-      word-spacing: normal;
+    /* Prevent word breaking inside formulas while allowing breaks between parts */
+    .formula-block, .katex-display {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      hyphens: auto;
+    }
+    
+    /* Formula containers should wrap */
+    .px-4.py-3.bg-gray-50 {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      white-space: normal;
     }
   `}</style>
 );

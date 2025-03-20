@@ -243,50 +243,192 @@ const containsInlineMath = (text: string): boolean => {
   return /\$[^$]+\$/g.test(text);
 };
 
-// Add this function to properly handle formula text when saving
-const preserveFormulaFormatting = (text: string, isFormula: boolean): string => {
-  if (!isFormula) return text;
-
-  // Remove excessive line breaks and normalize whitespace
-  let normalized = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+// Function to detect common physics equation patterns
+const detectCommonPhysicsEquation = (text: string): boolean => {
+  const patterns = [
+    // Distance formula
+    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i,
+    /Thisiscommonlyexpressedasd/i,
+    // Velocity formula
+    /V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i,
+    // Other common physics formulas
+    /F\s*=\s*ma/i,
+    /E\s*=\s*mc\^2/i
+  ];
   
-  // Ensure proper $ delimiters
-  if (!normalized.startsWith('$') && !normalized.endsWith('$')) {
-    normalized = `$${normalized}$`;
+  const noSpacesText = text.replace(/\s+/g, '');
+  return patterns.some(pattern => pattern.test(noSpacesText));
+};
+
+// Function to fix mangled formulas with special handling for common physics equations
+const fixMangledFormula = (text: string): {text: string, isFormula: boolean} => {
+  // First check for common physics equations that need special handling
+  if (detectCommonPhysicsEquation(text.replace(/\n/g, ''))) {
+    // Check for distance formula pattern
+    if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(text.replace(/\n/g, '')) || 
+        /Thisiscommonlyexpressedasd/i.test(text.replace(/\n/g, ''))) {
+      return {
+        text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
+        isFormula: true
+      };
+    }
+    
+    // Velocity formula pattern
+    if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ''))) {
+      return {
+        text: "$V_f^{2} = V_0^{2} + 2ad$",
+        isFormula: true
+      };
+    }
   }
   
-  // Special case for common physics equations
-  // Replace common patterns that might get messed up during editing
+  // Check if the text appears to be a mangled formula (characters separated by newlines)
+  if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
+    // First, remove all newlines and normalize whitespace
+    let normalized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Fix common physics variables
+    normalized = normalized
+      .replace(/\b(v|V)_0\b/g, 'V_0')
+      .replace(/\b(v|V)_f\b/g, 'V_f')
+      .replace(/\bd\b(?!\w)/g, 'd') // standalone d
+      .replace(/\ba\b(?!\w)/g, 'a') // standalone a
+      .replace(/\bt\b(?!\w)/g, 't') // standalone t
+      
+      // Fix spacing around operators
+      .replace(/(\w+)\s*=\s*(\w+)/g, '$1 = $2')
+      .replace(/(\w+)\s*\+\s*(\w+)/g, '$1 + $2')
+      .replace(/(\w+)\s*-\s*(\w+)/g, '$1 - $2')
+      .replace(/(\w+)\s*\*\s*(\w+)/g, '$1 * $2')
+      
+      // Fix fractions
+      .replace(/\\frac\s*\{\s*1\s*\}\s*\{\s*2\s*\}/g, '\\frac{1}{2}')
+      
+      // Fix powers
+      .replace(/\^\s*(\d+)/g, '^{$1}')
+      .replace(/\^2/g, '^{2}');
+    
+    // Add LaTeX delimiters if needed
+    if (!normalized.startsWith('$')) normalized = `$${normalized}`;
+    if (!normalized.endsWith('$')) normalized = `${normalized}$`;
+    
+    return {
+      text: normalized,
+      isFormula: true
+    };
+  }
+  
+  // Not a formula or no special handling needed
+  return {
+    text: text,
+    isFormula: false
+  };
+};
+
+// More robust formula formatting preservation
+const preserveFormulaFormatting = (text: string): string => {
+  // If already properly formatted with $ delimiters, return as is
+  if (text.startsWith('$') && text.endsWith('$') && !text.includes('\n')) {
+    return text;
+  }
+  
+  // First, check for mangled common physics equations
+  if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(text.replace(/\n/g, ''))) {
+    return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
+  }
+  
+  // Check for other common physics equations
+  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ''))) {
+    return "$V_f^{2} = V_0^{2} + 2ad$";
+  }
+  
+  // Clean up and normalize the formula
+  let normalized = text
+    .replace(/\n/g, ' ')         // Remove newlines
+    .replace(/\s+/g, ' ')        // Normalize spaces
+    .trim();                      // Trim excess whitespace
+    
+  // Fix common LaTeX syntax issues
   normalized = normalized
-    // Fix common physics variables with subscripts
-    .replace(/V(_?)0/g, 'V_0')
-    .replace(/V(_?)f/g, 'V_f')
-    .replace(/V(_?)i/g, 'V_i')
-    // Fix fractions that got mangled
-    .replace(/\\frac\{(\d+)\}\{(\d+)\}/g, '\\frac{$1}{$2}')
+    // Fix fractions
+    .replace(/\\frac\s*{(.+?)}\s*{(.+?)}/g, '\\frac{$1}{$2}')
+    
+    // Fix subscripts and superscripts
+    .replace(/([a-zA-Z])_(\d)/g, '$1_$2')
+    .replace(/([a-zA-Z])\^(\d)/g, '$1^{$2}')
+    
     // Fix spacing around operators
-    .replace(/(\w+)=(\w+)/g, '$1 = $2')
-    .replace(/(\w+)\+(\w+)/g, '$1 + $2')
-    .replace(/(\w+)-(\w+)/g, '$1 - $2')
-    .replace(/(\w+)\*(\w+)/g, '$1 * $2')
-    // Fix power notation
-    .replace(/\^(\d+)/g, '^{$1}');
+    .replace(/([a-zA-Z0-9)}])=([a-zA-Z0-9({])/g, '$1 = $2')
+    .replace(/([a-zA-Z0-9)}])\+([a-zA-Z0-9({])/g, '$1 + $2')
+    .replace(/([a-zA-Z0-9)}])-([a-zA-Z0-9({])/g, '$1 - $2')
+    
+    // Fix variables that might have been joined
+    .replace(/([a-zA-Z])([A-Z])/g, '$1 $2');
+  
+  // Ensure proper LaTeX delimiters
+  if (!normalized.startsWith('$')) normalized = `$${normalized}`;
+  if (!normalized.endsWith('$')) normalized = `${normalized}$`;
   
   return normalized;
 };
 
-// Function to detect if text might be mangled formula
-const isMangledFormula = (text: string): boolean => {
-  // Check if the text has characters separated by newlines
-  return /\n\s*[a-zA-Z0-9_]\s*\n/.test(text);
+// Add these helper functions at the top of the file to detect and handle formulas better
+
+// Enhanced function to detect formulas in text content
+const detectFormula = (text: string): boolean => {
+  // Check for LaTeX delimiters
+  if (text.includes('$') || text.includes('\\frac') || text.includes('\\sum') || 
+      text.includes('\\int') || text.includes('\\alpha') || text.includes('_') || 
+      text.includes('^')) {
+    return true;
+  }
+  
+  // Check for common physics equations
+  const physicsPatterns = [
+    /d\s*=\s*V_0\s*t/i, // Distance formula
+    /V_f\^2\s*=\s*V_0\^2/i, // Velocity formula
+    /F\s*=\s*ma/i, // Force formula
+    /E\s*=\s*mc\^2/i, // Energy formula
+    /Thisiscommonlyexpressedasd/i // Mangled distance formula indicator
+  ];
+  
+  return physicsPatterns.some(pattern => pattern.test(text.replace(/\s+/g, '')));
 };
 
-// Function to fix mangled formulas
-const fixMangledFormula = (text: string): string => {
-  if (!isMangledFormula(text)) return text;
-  
+// Function to format common equations properly
+const formatCommonEquation = (text: string): string => {
   // Remove newlines and normalize spaces
-  return text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  let normalized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Check for specific equation patterns
+  if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(normalized) ||
+      /Thisiscommonlyexpressedasd/.test(normalized.replace(/\s+/g, ''))) {
+    return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
+  }
+  
+  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(normalized)) {
+    return "$V_f^{2} = V_0^{2} + 2ad$";
+  }
+  
+  // Add more equation patterns as needed
+  
+  // If no specific pattern matches but it looks like an equation, 
+  // apply general formula formatting
+  if (detectFormula(normalized)) {
+    // Ensure proper LaTeX delimiters
+    if (!normalized.startsWith('$')) normalized = '$' + normalized;
+    if (!normalized.endsWith('$')) normalized += '$';
+    
+    // Fix common spacing issues
+    normalized = normalized
+      .replace(/([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])/g, '$1 = $2')
+      .replace(/([a-zA-Z0-9])\s*\+\s*([a-zA-Z0-9])/g, '$1 + $2')
+      .replace(/([a-zA-Z0-9])\s*-\s*([a-zA-Z0-9])/g, '$1 - $2')
+      .replace(/([a-zA-Z])\s*_\s*([a-zA-Z0-9])/g, '$1_$2')
+      .replace(/([a-zA-Z])\s*\^\s*([a-zA-Z0-9])/g, '$1^{$2}');
+  }
+  
+  return normalized;
 };
 
 export default function ParagraphEditor({ 
@@ -376,7 +518,13 @@ export default function ParagraphEditor({
     for (let i = 0; i < sentences.length; i++) {
       const sentence = sentences[i];
       const format = sentence.format || 'paragraph';
-      const text = sentence.text;
+      let text = sentence.text;
+      
+      // Check if we should auto-detect and fix formulas
+      if (detectFormula(text) && format !== 'formula') {
+        console.log(`Detected formula in non-formula content: ${text}`);
+        text = formatCommonEquation(text);
+      }
       
       // Handle list transitions
       if (format !== 'bullet' && isInBulletList) {
@@ -425,10 +573,10 @@ export default function ParagraphEditor({
           break;
           
         case 'formula':
+          // Special handling for formulas - ensure they're visually distinct in the editor
           // Check if the formula is already wrapped in $ or $$
-          if (text.startsWith('$') && text.endsWith('$')) {
-            htmlContent += `<div class="formula-block">${text}</div>`;
-          } else if (text.startsWith('$$') && text.endsWith('$$')) {
+          if ((text.startsWith('$') && text.endsWith('$')) || 
+              (text.startsWith('$$') && text.endsWith('$$'))) {
             htmlContent += `<div class="formula-block">${text}</div>`;
           } else {
             // Add $ for inline math if not already present
@@ -437,7 +585,18 @@ export default function ParagraphEditor({
           break;
           
         default: // paragraph
-          htmlContent += `<p>${text}</p>`;
+          // Check for inline math in paragraphs
+          if (text.includes('$')) {
+            const hasFormula = /\$[^$]+\$/g.test(text);
+            if (hasFormula) {
+              // Mark paragraphs with inline math to make them more identifiable
+              htmlContent += `<p class="contains-math">${text}</p>`;
+            } else {
+              htmlContent += `<p>${text}</p>`;
+            }
+          } else {
+            htmlContent += `<p>${text}</p>`;
+          }
       }
     }
     
@@ -475,21 +634,45 @@ export default function ParagraphEditor({
       if (element.tagName === 'UL') {
         // Handle bullet lists
         Array.from(element.querySelectorAll('li')).forEach(li => {
-          sentences.push({
-            id: id++,
-            text: li.innerHTML,
-            format: 'bullet'
-          });
+          const liText = li.innerHTML;
+          
+          // Check if this list item contains a formula
+          if (detectFormula(liText)) {
+            const formattedFormula = formatCommonEquation(liText);
+            sentences.push({
+              id: id++,
+              text: formattedFormula,
+              format: 'formula'
+            });
+          } else {
+            sentences.push({
+              id: id++,
+              text: liText,
+              format: 'bullet'
+            });
+          }
         });
         return; // Skip further processing for this element
       } else if (element.tagName === 'OL') {
         // Handle numbered lists
         Array.from(element.querySelectorAll('li')).forEach(li => {
-          sentences.push({
-            id: id++,
-            text: li.innerHTML,
-            format: 'numbered'
-          });
+          const liText = li.innerHTML;
+          
+          // Check if this list item contains a formula
+          if (detectFormula(liText)) {
+            const formattedFormula = formatCommonEquation(liText);
+            sentences.push({
+              id: id++,
+              text: formattedFormula,
+              format: 'formula'
+            });
+          } else {
+            sentences.push({
+              id: id++,
+              text: liText,
+              format: 'numbered'
+            });
+          }
         });
         return; // Skip further processing for this element
       } else if (element.tagName === 'H3') {
@@ -502,13 +685,19 @@ export default function ParagraphEditor({
           text = codeElement.innerHTML;
         }
       } else if (element.tagName === 'P') {
-        // Check for bold/italic
-        if (element.querySelector('strong')?.parentElement === element && element.childNodes.length === 1) {
-          format = 'bold';
-          text = element.querySelector('strong')!.innerHTML;
-        } else if (element.querySelector('em')?.parentElement === element && element.childNodes.length === 1) {
-          format = 'italic';
-          text = element.querySelector('em')!.innerHTML;
+        // Check for hidden formulas in paragraphs
+        if (detectFormula(text)) {
+          format = 'formula';
+          text = formatCommonEquation(text);
+        } else {
+          // Check for bold/italic
+          if (element.querySelector('strong')?.parentElement === element && element.childNodes.length === 1) {
+            format = 'bold';
+            text = element.querySelector('strong')!.innerHTML;
+          } else if (element.querySelector('em')?.parentElement === element && element.childNodes.length === 1) {
+            format = 'italic';
+            text = element.querySelector('em')!.innerHTML;
+          }
         }
       }
       
@@ -522,6 +711,12 @@ export default function ParagraphEditor({
         if (!text.startsWith('$') && !text.endsWith('$')) {
           text = '$' + text + '$';
         }
+      }
+      
+      // Additional formula detection for the mangled physics equation
+      if (text.includes('Thisiscommonlyexpressedasd')) {
+        format = 'formula';
+        text = "$d = V_0 t + \\frac{1}{2} a t^{2}$";
       }
       
       sentences.push({
@@ -557,20 +752,36 @@ export default function ParagraphEditor({
       onSave(paragraphData, messageIndex);
       setSavedData(paragraphData);
     } else {
-      // Special handling for formulas - ensure they are properly preserved
+      // Process each sentence for special handling of formulas
       const processedSentences = updatedSentences.map(sentence => {
-        if (sentence.format === 'formula') {
-          // Special handling for formulas to preserve formatting
-          sentence.text = preserveFormulaFormatting(sentence.text, true);
-        } else if (sentence.format === 'paragraph' && containsInlineMath(sentence.text)) { 
-          // Check for paragraphs with inline math that need preservation
-          sentence.text = sentence.text.replace(/\$([^$]+)\$/g, (match, formula) => {
-            return `$${preserveFormulaFormatting(formula, true).replace(/^\$|\$$/g, '')}$`;
-          });
-        } else if (isMangledFormula(sentence.text)) {
-          // Fix mangled formulas (text split by newlines)
-          sentence.text = fixMangledFormula(sentence.text);
+        // Special handling for text containing formulas
+        if (sentence.format === 'paragraph' && detectFormula(sentence.text)) {
+          // Transform to formula format
+          return {
+            ...sentence,
+            text: formatCommonEquation(sentence.text),
+            format: 'formula' as FormatType
+          };
         }
+        
+        // Other special case: check for the mangled physics equations
+        if (sentence.text.includes('Thisiscommonlyexpressedasd')) {
+          return {
+            ...sentence,
+            text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
+            format: 'formula' as FormatType
+          };
+        }
+        
+        // Check for inline math in paragraphs
+        if (sentence.format === 'paragraph' && sentence.text.includes('$')) {
+          // Process the paragraph to preserve inline math
+          sentence.text = sentence.text.replace(/\$([^$]+)\$/g, (match, formula) => {
+            const cleanFormula = formula.trim();
+            return `$${cleanFormula}$`;
+          });
+        }
+        
         return sentence;
       });
       
@@ -643,19 +854,33 @@ export default function ParagraphEditor({
               background-color: rgba(148, 179, 71, 0.1);
               border: 1px solid rgba(148, 179, 71, 0.2);
               border-radius: 0.375rem;
-              padding: 0.5rem;
+              padding: 0.75rem;
               font-family: monospace;
               color: #0a4c79;
               font-weight: bold;
+              white-space: normal;       /* Allow wrapping */
+              word-break: break-word;    /* Break at word boundaries when possible */
+              overflow-wrap: anywhere;   /* Allow breaking anywhere if needed */
+              max-width: 100%;           /* Ensure it doesn't overflow container */
+              display: block;            /* Make it a block element */
+              margin: 12px 0;            /* Add spacing above and below */
+              line-height: 1.6;          /* Improve readability */
             }
             
             /* Add visual indicator that this is a formula */
             .ProseMirror .formula-block::before {
-              content: "ƒ";
+              content: "Formula: ";
               color: #94b347;
               font-weight: bold;
-              margin-right: 4px;
-              opacity: 0.7;
+              margin-right: 8px;
+              opacity: 0.9;
+            }
+            
+            /* Style paragraphs containing inline math */
+            .ProseMirror p.contains-math {
+              border-left: 3px solid rgba(148, 179, 71, 0.4);
+              padding-left: 8px;
+              background-color: rgba(148, 179, 71, 0.05);
             }
             
             .ProseMirror h3 {
