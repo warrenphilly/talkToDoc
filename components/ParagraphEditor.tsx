@@ -1,36 +1,44 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { PlusIcon, XIcon, SaveIcon } from 'lucide-react'
-import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
-import BulletList from '@tiptap/extension-bullet-list'
-import OrderedList from '@tiptap/extension-ordered-list'
-import ListItem from '@tiptap/extension-list-item'
-import Bold from '@tiptap/extension-bold'
-import Italic from '@tiptap/extension-italic'
-import CodeBlock from '@tiptap/extension-code-block'
-import Heading from '@tiptap/extension-heading'
-import Placeholder from '@tiptap/extension-placeholder' 
-import Document from '@tiptap/extension-document'
-import Paragraph from '@tiptap/extension-paragraph'
-import Text from '@tiptap/extension-text'
-import { Node } from '@tiptap/core'
+import { Node } from "@tiptap/core";
+import Bold from "@tiptap/extension-bold";
+import BulletList from "@tiptap/extension-bullet-list";
+import CodeBlock from "@tiptap/extension-code-block";
+import Document from "@tiptap/extension-document";
+import Heading from "@tiptap/extension-heading";
+import Italic from "@tiptap/extension-italic";
+import ListItem from "@tiptap/extension-list-item";
+import OrderedList from "@tiptap/extension-ordered-list";
+import Paragraph from "@tiptap/extension-paragraph";
+import Placeholder from "@tiptap/extension-placeholder";
+import Text from "@tiptap/extension-text";
+import Underline from "@tiptap/extension-underline";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { PlusIcon, SaveIcon, XIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 // Make sure this matches the type in lib/types.ts
-type FormatType = "bold" | "heading" | "italic" | "paragraph" | "bullet" | "numbered" | "formula" | "rich-text";
+type FormatType =
+  | "bold"
+  | "heading"
+  | "italic"
+  | "paragraph"
+  | "bullet"
+  | "numbered"
+  | "formula"
+  | "rich-text";
 
 interface ParagraphData {
-  user: string
+  user: string;
   text: {
-    title: string
+    title: string;
     sentences: {
-      id: number
-      text: string
-      format?: FormatType
-    }[]
-  }[]
+      id: number;
+      text: string;
+      format?: FormatType;
+    }[];
+  }[];
 }
 
 interface ParagraphEditorProps {
@@ -42,33 +50,33 @@ interface ParagraphEditorProps {
 
 // Create a custom Formula extension for TipTap
 const Formula = Node.create({
-  name: 'formula',
-  group: 'block',
-  content: 'text*',
-  
+  name: "formula",
+  group: "block",
+  content: "text*",
+
   addAttributes() {
     return {
       latex: {
-        default: '',
+        default: "",
       },
     };
   },
-  
+
   parseHTML() {
     return [
       {
-        tag: 'div.formula-block',
+        tag: "div.formula-block",
         getAttrs: (node) => {
-          if (typeof node === 'string') return {};
+          if (typeof node === "string") return {};
           const element = node as HTMLElement;
           return { latex: element.textContent };
         },
       },
     ];
   },
-  
+
   renderHTML({ node }) {
-    return ['div', { class: 'formula-block' }, node.attrs.latex];
+    return ["div", { class: "formula-block" }, node.attrs.latex];
   },
 });
 
@@ -84,69 +92,130 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
       <div className="flex items-center space-x-1 mr-2">
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-1 rounded-md ${editor.isActive('bold') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("bold") ? "bg-slate-200" : "hover:bg-slate-100"
+          }`}
           title="Bold"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
             <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
           </svg>
         </button>
-        
+
         <button
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-1 rounded-md ${editor.isActive('italic') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("italic") ? "bg-slate-200" : "hover:bg-slate-100"
+          }`}
           title="Italic"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="19" y1="4" x2="10" y2="4"></line>
             <line x1="14" y1="20" x2="5" y2="20"></line>
             <line x1="15" y1="4" x2="9" y2="20"></line>
           </svg>
         </button>
-        
+
         <button
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-1 rounded-md ${editor.isActive('underline') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("underline") ? "bg-slate-200" : "hover:bg-slate-100"
+          }`}
           title="Underline"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path>
             <line x1="4" y1="21" x2="20" y2="21"></line>
           </svg>
         </button>
       </div>
-      
+
       {/* Heading controls */}
       <div className="flex items-center space-x-1 mr-2">
         <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={`p-1 rounded-md ${editor.isActive('heading', { level: 3 }) ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
+          className={`p-1 rounded-md ${
+            editor.isActive("heading", { level: 3 })
+              ? "bg-slate-200"
+              : "hover:bg-slate-100"
+          }`}
           title="Heading"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M6 12h12"></path>
             <path d="M6 4h12"></path>
             <path d="M9 4v16"></path>
           </svg>
         </button>
       </div>
-      
+
       <div className="h-6 w-px bg-slate-200 mx-1"></div>
-      
+
       {/* List controls */}
       <div className="flex items-center space-x-1 mr-2">
         <button
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-1 rounded-md ${editor.isActive('bulletList') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("bulletList")
+              ? "bg-slate-200"
+              : "hover:bg-slate-100"
+          }`}
           title="Bullet List"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="8" y1="6" x2="21" y2="6"></line>
             <line x1="8" y1="12" x2="21" y2="12"></line>
             <line x1="8" y1="18" x2="21" y2="18"></line>
@@ -155,14 +224,27 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
         </button>
-        
+
         <button
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`p-1 rounded-md ${editor.isActive('orderedList') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("orderedList")
+              ? "bg-slate-200"
+              : "hover:bg-slate-100"
+          }`}
           title="Numbered List"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="10" y1="6" x2="21" y2="6"></line>
             <line x1="10" y1="12" x2="21" y2="12"></line>
             <line x1="10" y1="18" x2="21" y2="18"></line>
@@ -172,51 +254,66 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
           </svg>
         </button>
       </div>
-      
+
       <div className="h-6 w-px bg-slate-200 mx-1"></div>
-      
+
       {/* Code and formula controls */}
       <div className="flex items-center space-x-1">
         <button
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={`p-1 rounded-md ${editor.isActive('codeBlock') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+          className={`p-1 rounded-md ${
+            editor.isActive("codeBlock") ? "bg-slate-200" : "hover:bg-slate-100"
+          }`}
           title="Code Block (for formulas)"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
           </svg>
         </button>
-        
+
         {/* Special button for LaTeX/Math formulas */}
         <button
           onClick={() => {
             // Get the current selection
             const { from, to } = editor.state.selection;
-            const selectedText = editor.state.doc.textBetween(from, to, ' ');
-            
+            const selectedText = editor.state.doc.textBetween(from, to, " ");
+
             // If text is selected, wrap it in formula delimiters
             if (selectedText) {
               // Check if already has delimiters
-              if (selectedText.startsWith('$') && selectedText.endsWith('$')) {
+              if (selectedText.startsWith("$") && selectedText.endsWith("$")) {
                 // Already formatted, do nothing
                 return;
               }
-              
+
               // Create a formula block with the selected text
-              editor.chain()
+              editor
+                .chain()
                 .focus()
                 .deleteSelection()
-                .insertContent(`<div class="formula-block">$${selectedText}$</div>`)
+                .insertContent(
+                  `<div class="formula-block">$${selectedText}$</div>`
+                )
                 .run();
             } else {
               // Insert an empty formula block
-              editor.chain()
+              editor
+                .chain()
                 .focus()
                 .insertContent('<div class="formula-block">$formula$</div>')
                 .run();
-                
+
               // Position cursor inside the formula
               const pos = editor.state.selection.from - 8;
               editor.commands.setTextSelection({ from: pos, to: pos + 7 });
@@ -225,8 +322,17 @@ const RichTextToolbar = ({ editor }: { editor: any }) => {
           className={`p-1 rounded-md hover:bg-slate-100`}
           title="Math Formula"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" 
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M3 6h18"></path>
             <path d="M7 12h10"></path>
             <path d="M5 18h14"></path>
@@ -253,122 +359,132 @@ const detectCommonPhysicsEquation = (text: string): boolean => {
     /V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i,
     // Other common physics formulas
     /F\s*=\s*ma/i,
-    /E\s*=\s*mc\^2/i
+    /E\s*=\s*mc\^2/i,
   ];
-  
-  const noSpacesText = text.replace(/\s+/g, '');
-  return patterns.some(pattern => pattern.test(noSpacesText));
+
+  const noSpacesText = text.replace(/\s+/g, "");
+  return patterns.some((pattern) => pattern.test(noSpacesText));
 };
 
 // Function to fix mangled formulas with special handling for common physics equations
-const fixMangledFormula = (text: string): {text: string, isFormula: boolean} => {
+const fixMangledFormula = (
+  text: string
+): { text: string; isFormula: boolean } => {
   // First check for common physics equations that need special handling
-  if (detectCommonPhysicsEquation(text.replace(/\n/g, ''))) {
+  if (detectCommonPhysicsEquation(text.replace(/\n/g, ""))) {
     // Check for distance formula pattern
-    if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(text.replace(/\n/g, '')) || 
-        /Thisiscommonlyexpressedasd/i.test(text.replace(/\n/g, ''))) {
+    if (
+      /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(
+        text.replace(/\n/g, "")
+      ) ||
+      /Thisiscommonlyexpressedasd/i.test(text.replace(/\n/g, ""))
+    ) {
       return {
         text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
-        isFormula: true
+        isFormula: true,
       };
     }
-    
+
     // Velocity formula pattern
-    if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ''))) {
+    if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ""))) {
       return {
         text: "$V_f^{2} = V_0^{2} + 2ad$",
-        isFormula: true
+        isFormula: true,
       };
     }
   }
-  
+
   // Check if the text appears to be a mangled formula (characters separated by newlines)
   if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
     // First, remove all newlines and normalize whitespace
-    let normalized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-    
+    let normalized = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+
     // Fix common physics variables
     normalized = normalized
-      .replace(/\b(v|V)_0\b/g, 'V_0')
-      .replace(/\b(v|V)_f\b/g, 'V_f')
-      .replace(/\bd\b(?!\w)/g, 'd') // standalone d
-      .replace(/\ba\b(?!\w)/g, 'a') // standalone a
-      .replace(/\bt\b(?!\w)/g, 't') // standalone t
-      
+      .replace(/\b(v|V)_0\b/g, "V_0")
+      .replace(/\b(v|V)_f\b/g, "V_f")
+      .replace(/\bd\b(?!\w)/g, "d") // standalone d
+      .replace(/\ba\b(?!\w)/g, "a") // standalone a
+      .replace(/\bt\b(?!\w)/g, "t") // standalone t
+
       // Fix spacing around operators
-      .replace(/(\w+)\s*=\s*(\w+)/g, '$1 = $2')
-      .replace(/(\w+)\s*\+\s*(\w+)/g, '$1 + $2')
-      .replace(/(\w+)\s*-\s*(\w+)/g, '$1 - $2')
-      .replace(/(\w+)\s*\*\s*(\w+)/g, '$1 * $2')
-      
+      .replace(/(\w+)\s*=\s*(\w+)/g, "$1 = $2")
+      .replace(/(\w+)\s*\+\s*(\w+)/g, "$1 + $2")
+      .replace(/(\w+)\s*-\s*(\w+)/g, "$1 - $2")
+      .replace(/(\w+)\s*\*\s*(\w+)/g, "$1 * $2")
+
       // Fix fractions
-      .replace(/\\frac\s*\{\s*1\s*\}\s*\{\s*2\s*\}/g, '\\frac{1}{2}')
-      
+      .replace(/\\frac\s*\{\s*1\s*\}\s*\{\s*2\s*\}/g, "\\frac{1}{2}")
+
       // Fix powers
-      .replace(/\^\s*(\d+)/g, '^{$1}')
-      .replace(/\^2/g, '^{2}');
-    
+      .replace(/\^\s*(\d+)/g, "^{$1}")
+      .replace(/\^2/g, "^{2}");
+
     // Add LaTeX delimiters if needed
-    if (!normalized.startsWith('$')) normalized = `$${normalized}`;
-    if (!normalized.endsWith('$')) normalized = `${normalized}$`;
-    
+    if (!normalized.startsWith("$")) normalized = `$${normalized}`;
+    if (!normalized.endsWith("$")) normalized = `${normalized}$`;
+
     return {
       text: normalized,
-      isFormula: true
+      isFormula: true,
     };
   }
-  
+
   // Not a formula or no special handling needed
   return {
     text: text,
-    isFormula: false
+    isFormula: false,
   };
 };
 
 // More robust formula formatting preservation
 const preserveFormulaFormatting = (text: string): string => {
   // If already properly formatted with $ delimiters, return as is
-  if (text.startsWith('$') && text.endsWith('$') && !text.includes('\n')) {
+  if (text.startsWith("$") && text.endsWith("$") && !text.includes("\n")) {
     return text;
   }
-  
+
   // First, check for mangled common physics equations
-  if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(text.replace(/\n/g, ''))) {
+  if (
+    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(
+      text.replace(/\n/g, "")
+    )
+  ) {
     return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
   }
-  
+
   // Check for other common physics equations
-  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ''))) {
+  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ""))) {
     return "$V_f^{2} = V_0^{2} + 2ad$";
   }
-  
+
   // Clean up and normalize the formula
   let normalized = text
-    .replace(/\n/g, ' ')         // Remove newlines
-    .replace(/\s+/g, ' ')        // Normalize spaces
-    .trim();                      // Trim excess whitespace
-    
+    .replace(/\n/g, " ") // Remove newlines
+    .replace(/\s+/g, " ") // Normalize spaces
+    .trim(); // Trim excess whitespace
+
   // Fix common LaTeX syntax issues
   normalized = normalized
     // Fix fractions
-    .replace(/\\frac\s*{(.+?)}\s*{(.+?)}/g, '\\frac{$1}{$2}')
-    
+    .replace(/\\frac\s*{(.+?)}\s*{(.+?)}/g, "\\frac{$1}{$2}")
+
     // Fix subscripts and superscripts
-    .replace(/([a-zA-Z])_(\d)/g, '$1_$2')
-    .replace(/([a-zA-Z])\^(\d)/g, '$1^{$2}')
-    
+    .replace(/([a-zA-Z])_(\d)/g, "$1_$2")
+    .replace(/([a-zA-Z])\^(\d)/g, "$1^{$2}")
+
     // Fix spacing around operators
-    .replace(/([a-zA-Z0-9)}])=([a-zA-Z0-9({])/g, '$1 = $2')
-    .replace(/([a-zA-Z0-9)}])\+([a-zA-Z0-9({])/g, '$1 + $2')
-    .replace(/([a-zA-Z0-9)}])-([a-zA-Z0-9({])/g, '$1 - $2')
-    
+    .replace(/([a-zA-Z0-9)}])=([a-zA-Z0-9({])/g, "$1 = $2")
+    .replace(/([a-zA-Z0-9)}])\+([a-zA-Z0-9({])/g, "$1 + $2")
+    .replace(/([a-zA-Z0-9)}])-([a-zA-Z0-9({])/g, "$1 - $2")
+
     // Fix variables that might have been joined
-    .replace(/([a-zA-Z])([A-Z])/g, '$1 $2');
-  
+    .replace(/([a-zA-Z])([A-Z])/g, "$1 $2");
+
   // Ensure proper LaTeX delimiters
-  if (!normalized.startsWith('$')) normalized = `$${normalized}`;
-  if (!normalized.endsWith('$')) normalized = `${normalized}$`;
-  
+  if (!normalized.startsWith("$")) normalized = `$${normalized}`;
+  if (!normalized.endsWith("$")) normalized = `${normalized}$`;
+
   return normalized;
 };
 
@@ -377,72 +493,95 @@ const preserveFormulaFormatting = (text: string): string => {
 // Enhanced function to detect formulas in text content
 const detectFormula = (text: string): boolean => {
   // Check for LaTeX delimiters
-  if (text.includes('$') || text.includes('\\frac') || text.includes('\\sum') || 
-      text.includes('\\int') || text.includes('\\alpha') || text.includes('_') || 
-      text.includes('^')) {
+  if (
+    text.includes("$") ||
+    text.includes("\\frac") ||
+    text.includes("\\sum") ||
+    text.includes("\\int") ||
+    text.includes("\\alpha") ||
+    text.includes("_") ||
+    text.includes("^")
+  ) {
     return true;
   }
-  
+
   // Check for common physics equations
   const physicsPatterns = [
     /d\s*=\s*V_0\s*t/i, // Distance formula
     /V_f\^2\s*=\s*V_0\^2/i, // Velocity formula
     /F\s*=\s*ma/i, // Force formula
     /E\s*=\s*mc\^2/i, // Energy formula
-    /Thisiscommonlyexpressedasd/i // Mangled distance formula indicator
+    /Thisiscommonlyexpressedasd/i, // Mangled distance formula indicator
   ];
-  
-  return physicsPatterns.some(pattern => pattern.test(text.replace(/\s+/g, '')));
+
+  return physicsPatterns.some((pattern) =>
+    pattern.test(text.replace(/\s+/g, ""))
+  );
 };
 
 // Function to format common equations properly
 const formatCommonEquation = (text: string): string => {
   // Remove newlines and normalize spaces
-  let normalized = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-  
+  let normalized = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+
   // Check for specific equation patterns
-  if (/d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(normalized) ||
-      /Thisiscommonlyexpressedasd/.test(normalized.replace(/\s+/g, ''))) {
+  if (
+    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(normalized) ||
+    /Thisiscommonlyexpressedasd/.test(normalized.replace(/\s+/g, ""))
+  ) {
     return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
   }
-  
+
   if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(normalized)) {
     return "$V_f^{2} = V_0^{2} + 2ad$";
   }
-  
+
   // Add more equation patterns as needed
-  
-  // If no specific pattern matches but it looks like an equation, 
+
+  // If no specific pattern matches but it looks like an equation,
   // apply general formula formatting
   if (detectFormula(normalized)) {
     // Ensure proper LaTeX delimiters
-    if (!normalized.startsWith('$')) normalized = '$' + normalized;
-    if (!normalized.endsWith('$')) normalized += '$';
-    
+    if (!normalized.startsWith("$")) normalized = "$" + normalized;
+    if (!normalized.endsWith("$")) normalized += "$";
+
     // Fix common spacing issues
     normalized = normalized
-      .replace(/([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])/g, '$1 = $2')
-      .replace(/([a-zA-Z0-9])\s*\+\s*([a-zA-Z0-9])/g, '$1 + $2')
-      .replace(/([a-zA-Z0-9])\s*-\s*([a-zA-Z0-9])/g, '$1 - $2')
-      .replace(/([a-zA-Z])\s*_\s*([a-zA-Z0-9])/g, '$1_$2')
-      .replace(/([a-zA-Z])\s*\^\s*([a-zA-Z0-9])/g, '$1^{$2}');
+      .replace(/([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])/g, "$1 = $2")
+      .replace(/([a-zA-Z0-9])\s*\+\s*([a-zA-Z0-9])/g, "$1 + $2")
+      .replace(/([a-zA-Z0-9])\s*-\s*([a-zA-Z0-9])/g, "$1 - $2")
+      .replace(/([a-zA-Z])\s*_\s*([a-zA-Z0-9])/g, "$1_$2")
+      .replace(/([a-zA-Z])\s*\^\s*([a-zA-Z0-9])/g, "$1^{$2}");
   }
-  
+
   return normalized;
 };
 
-export default function ParagraphEditor({ 
-  onSave, 
-  messageIndex, 
-  initialData 
+export default function ParagraphEditor({
+  onSave,
+  messageIndex,
+  initialData,
 }: ParagraphEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [savedData, setSavedData] = useState<ParagraphData | null>(initialData || null);
+  const [title, setTitle] = useState("");
+  const [savedData, setSavedData] = useState<ParagraphData | null>(
+    initialData || null
+  );
   // Store original formats for reconstruction
-  const [originalFormats, setOriginalFormats] = useState<Map<number, FormatType>>(new Map());
-  const [formatMappings, setFormatMappings] = useState<Map<string, number[]>>(new Map());
-  
+  const [originalFormats, setOriginalFormats] = useState<
+    Map<number, FormatType>
+  >(new Map());
+  const [formatMappings, setFormatMappings] = useState<Map<string, number[]>>(
+    new Map()
+  );
+  // Track original sentences and which ones were edited
+  const [originalSentences, setOriginalSentences] = useState<
+    Array<{ id: number; text: string; format?: FormatType }>
+  >([]);
+  const [editedSentenceIds, setEditedSentenceIds] = useState<Set<number>>(
+    new Set()
+  );
+
   // Create the rich text editor instance
   const editor = useEditor({
     extensions: [
@@ -459,21 +598,21 @@ export default function ParagraphEditor({
       Italic,
       CodeBlock.configure({
         HTMLAttributes: {
-          class: 'formula-block',
+          class: "formula-block",
         },
       }),
       Heading.configure({
         levels: [3],
       }),
       Placeholder.configure({
-        placeholder: 'Edit your content here...'
+        placeholder: "Edit your content here...",
       }),
       Formula,
     ],
-    content: '',
+    content: "",
     onUpdate: ({ editor }) => {
       // You can add real-time tracking here if needed
-    }
+    },
   });
 
   // Parse initial data when component mounts or when editing starts
@@ -481,327 +620,470 @@ export default function ParagraphEditor({
     if (initialData?.text[0] && editor) {
       // Set the title
       setTitle(initialData.text[0].title);
-      
+
+      // Store original sentences for comparison later
+      setOriginalSentences(initialData.text[0].sentences);
+
       // Store original format information for reconstruction
       const formats = new Map<number, FormatType>();
       const mappings = new Map<string, number[]>();
-      
+
       initialData.text[0].sentences.forEach((sentence, idx) => {
         if (sentence.format) {
           formats.set(idx, sentence.format);
-          
+
           // Group by format for bulk processing
           const existingIdxs = mappings.get(sentence.format) || [];
           mappings.set(sentence.format, [...existingIdxs, idx]);
         }
       });
-      
+
       setOriginalFormats(formats);
       setFormatMappings(mappings);
-      
+
       // Convert to HTML for the editor
       let htmlContent = parseContentToHTML(initialData.text[0].sentences);
-      
+
       // Set the content in the editor
       editor.commands.setContent(htmlContent);
-      
+
       setIsEditing(true);
     }
   }, [initialData, editor]);
 
+  // Add this function to track edited sentences
+  const trackChanges = () => {
+    if (!editor) return;
+
+    // Get current editor selections and changes
+    const { from, to } = editor.state.selection;
+
+    // If there's a selection or content changed, mark affected sentences
+    if (
+      from !== to ||
+      editor.isActive("formula") ||
+      editor.isActive("bulletList") ||
+      editor.isActive("orderedList") ||
+      editor.isActive("heading")
+    ) {
+      // Get paragraph elements from editor
+      const editorElement = editor.view.dom;
+      const paragraphs = editorElement.querySelectorAll(
+        "p, h3, li, div.formula-block"
+      );
+
+      // Find paragraphs that contain the selection
+      Array.from(paragraphs).forEach((para) => {
+        // Check for data-sentence-id attribute
+        const sentenceId = para.getAttribute("data-sentence-id");
+        if (sentenceId) {
+          const id = parseInt(sentenceId, 10);
+
+          // Check if this paragraph contains the selection or is active
+          if (
+            para.contains(
+              editor.view.dom.querySelector(".ProseMirror-selectednode")
+            ) ||
+            (editor.isFocused &&
+              para.textContent !== originalSentences[id]?.text)
+          ) {
+            // This sentence was edited - mark it
+            setEditedSentenceIds((prev) => new Set([...prev, id]));
+          }
+        }
+      });
+    }
+  };
+
+  // Add change tracking to the editor
+  useEffect(() => {
+    if (editor) {
+      // Add change handlers
+      editor.on("selectionUpdate", trackChanges);
+      editor.on("update", trackChanges);
+
+      return () => {
+        // Clean up event listeners
+        editor.off("selectionUpdate", trackChanges);
+        editor.off("update", trackChanges);
+      };
+    }
+  }, [editor, originalSentences]);
+
   // Helper function to convert sentences with their formats to HTML
-  const parseContentToHTML = (sentences: Array<{id: number, text: string, format?: FormatType}>) => {
-    let htmlContent = '';
+  const parseContentToHTML = (
+    sentences: Array<{ id: number; text: string; format?: FormatType }>
+  ) => {
+    let htmlContent = "";
     let isInBulletList = false;
     let isInNumberedList = false;
-    
+
     for (let i = 0; i < sentences.length; i++) {
       const sentence = sentences[i];
-      const format = sentence.format || 'paragraph';
+      const format = sentence.format || "paragraph";
       let text = sentence.text;
-      
+
+      // Add data attribute for tracking the original sentence ID
+      const dataAttr = `data-sentence-id="${i}"`;
+
       // Check if we should auto-detect and fix formulas
-      if (detectFormula(text) && format !== 'formula') {
+      if (detectFormula(text) && format !== "formula") {
         console.log(`Detected formula in non-formula content: ${text}`);
         text = formatCommonEquation(text);
       }
-      
+
       // Handle list transitions
-      if (format !== 'bullet' && isInBulletList) {
-        htmlContent += '</ul>';
+      if (format !== "bullet" && isInBulletList) {
+        htmlContent += "</ul>";
         isInBulletList = false;
       }
-      
-      if (format !== 'numbered' && isInNumberedList) {
-        htmlContent += '</ol>';
+
+      if (format !== "numbered" && isInNumberedList) {
+        htmlContent += "</ol>";
         isInNumberedList = false;
       }
-      
+
       // Process based on format
       switch (format) {
-        case 'rich-text':
+        case "rich-text":
           // Already HTML, include directly
           htmlContent += text;
           break;
-          
-        case 'bullet':
+
+        case "bullet":
           if (!isInBulletList) {
-            htmlContent += '<ul>';
+            htmlContent += "<ul>";
             isInBulletList = true;
           }
-          htmlContent += `<li>${text}</li>`;
+          htmlContent += `<li ${dataAttr}>${text}</li>`;
           break;
-          
-        case 'numbered':
+
+        case "numbered":
           if (!isInNumberedList) {
-            htmlContent += '<ol>';
+            htmlContent += "<ol>";
             isInNumberedList = true;
           }
-          htmlContent += `<li>${text}</li>`;
+          htmlContent += `<li ${dataAttr}>${text}</li>`;
           break;
-          
-        case 'heading':
-          htmlContent += `<h3>${text}</h3>`;
+
+        case "heading":
+          htmlContent += `<h3 ${dataAttr}>${text}</h3>`;
           break;
-          
-        case 'bold':
-          htmlContent += `<p><strong>${text}</strong></p>`;
+
+        case "bold":
+          htmlContent += `<p ${dataAttr}><strong>${text}</strong></p>`;
           break;
-          
-        case 'italic':
-          htmlContent += `<p><em>${text}</em></p>`;
+
+        case "italic":
+          htmlContent += `<p ${dataAttr}><em>${text}</em></p>`;
           break;
-          
-        case 'formula':
+
+        case "formula":
           // Special handling for formulas - ensure they're visually distinct in the editor
           // Check if the formula is already wrapped in $ or $$
-          if ((text.startsWith('$') && text.endsWith('$')) || 
-              (text.startsWith('$$') && text.endsWith('$$'))) {
-            htmlContent += `<div class="formula-block">${text}</div>`;
+          if (
+            (text.startsWith("$") && text.endsWith("$")) ||
+            (text.startsWith("$$") && text.endsWith("$$"))
+          ) {
+            htmlContent += `<div class="formula-block" ${dataAttr}>${text}</div>`;
           } else {
             // Add $ for inline math if not already present
-            htmlContent += `<div class="formula-block">$${text}$</div>`;
+            htmlContent += `<div class="formula-block" ${dataAttr}>$${text}$</div>`;
           }
           break;
-          
+
         default: // paragraph
           // Check for inline math in paragraphs
-          if (text.includes('$')) {
+          if (text.includes("$")) {
             const hasFormula = /\$[^$]+\$/g.test(text);
             if (hasFormula) {
               // Mark paragraphs with inline math to make them more identifiable
-              htmlContent += `<p class="contains-math">${text}</p>`;
+              htmlContent += `<p class="contains-math" ${dataAttr}>${text}</p>`;
             } else {
-              htmlContent += `<p>${text}</p>`;
+              htmlContent += `<p ${dataAttr}>${text}</p>`;
             }
           } else {
-            htmlContent += `<p>${text}</p>`;
+            htmlContent += `<p ${dataAttr}>${text}</p>`;
           }
       }
     }
-    
+
     // Close any open lists
     if (isInBulletList) {
-      htmlContent += '</ul>';
+      htmlContent += "</ul>";
     }
-    
+
     if (isInNumberedList) {
-      htmlContent += '</ol>';
+      htmlContent += "</ol>";
     }
-    
+
     return htmlContent;
   };
 
   // Helper function to analyze the editor content and reconstruct formatted sentences
   const parseHTMLToFormattedContent = () => {
     if (!editor) return [];
-    
+
     const content = editor.getHTML();
-    const sentences: Array<{id: number, text: string, format?: FormatType}> = [];
-    
+    const sentences: Array<{
+      id: number;
+      text: string;
+      format?: FormatType;
+      originalIndex?: number;
+    }> = [];
+
     // Create a temporary div to parse the HTML
-    const tempDiv = document.createElement('div');
+    const tempDiv = document.createElement("div");
     tempDiv.innerHTML = content;
-    
+
     // Process the children
     let id = 1;
-    
-    Array.from(tempDiv.children).forEach(element => {
-      let format: FormatType = 'paragraph';
+
+    Array.from(tempDiv.children).forEach((element) => {
+      let format: FormatType = "paragraph";
       let text = element.innerHTML;
-      
+
+      // Get original sentence ID if available
+      const originalIndex = element.getAttribute("data-sentence-id")
+        ? parseInt(element.getAttribute("data-sentence-id") || "0", 10)
+        : undefined;
+
       // Determine format based on tag
-      if (element.tagName === 'UL') {
+      if (element.tagName === "UL") {
         // Handle bullet lists
-        Array.from(element.querySelectorAll('li')).forEach(li => {
+        Array.from(element.querySelectorAll("li")).forEach((li) => {
           const liText = li.innerHTML;
-          
+
           // Check if this list item contains a formula
           if (detectFormula(liText)) {
             const formattedFormula = formatCommonEquation(liText);
             sentences.push({
               id: id++,
               text: formattedFormula,
-              format: 'formula'
+              format: "formula",
+              originalIndex,
             });
           } else {
             sentences.push({
               id: id++,
               text: liText,
-              format: 'bullet'
+              format: "bullet",
+              originalIndex,
             });
           }
         });
         return; // Skip further processing for this element
-      } else if (element.tagName === 'OL') {
+      } else if (element.tagName === "OL") {
         // Handle numbered lists
-        Array.from(element.querySelectorAll('li')).forEach(li => {
+        Array.from(element.querySelectorAll("li")).forEach((li) => {
           const liText = li.innerHTML;
-          
+
           // Check if this list item contains a formula
           if (detectFormula(liText)) {
             const formattedFormula = formatCommonEquation(liText);
             sentences.push({
               id: id++,
               text: formattedFormula,
-              format: 'formula'
+              format: "formula",
+              originalIndex,
             });
           } else {
             sentences.push({
               id: id++,
               text: liText,
-              format: 'numbered'
+              format: "numbered",
+              originalIndex,
             });
           }
         });
         return; // Skip further processing for this element
-      } else if (element.tagName === 'H3') {
-        format = 'heading';
-      } else if (element.tagName === 'PRE') {
+      } else if (element.tagName === "H3") {
+        format = "heading";
+      } else if (element.tagName === "PRE") {
         // Check for code/formula blocks
-        const codeElement = element.querySelector('code');
-        if (codeElement && codeElement.classList.contains('math-formula')) {
-          format = 'formula';
+        const codeElement = element.querySelector("code");
+        if (codeElement && codeElement.classList.contains("math-formula")) {
+          format = "formula";
           text = codeElement.innerHTML;
         }
-      } else if (element.tagName === 'P') {
+      } else if (element.tagName === "P") {
         // Check for hidden formulas in paragraphs
         if (detectFormula(text)) {
-          format = 'formula';
+          format = "formula";
           text = formatCommonEquation(text);
         } else {
           // Check for bold/italic
-          if (element.querySelector('strong')?.parentElement === element && element.childNodes.length === 1) {
-            format = 'bold';
-            text = element.querySelector('strong')!.innerHTML;
-          } else if (element.querySelector('em')?.parentElement === element && element.childNodes.length === 1) {
-            format = 'italic';
-            text = element.querySelector('em')!.innerHTML;
+          if (
+            element.querySelector("strong")?.parentElement === element &&
+            element.childNodes.length === 1
+          ) {
+            format = "bold";
+            text = element.querySelector("strong")!.innerHTML;
+          } else if (
+            element.querySelector("em")?.parentElement === element &&
+            element.childNodes.length === 1
+          ) {
+            format = "italic";
+            text = element.querySelector("em")!.innerHTML;
           }
         }
       }
-      
+
       // Add special handling for formula blocks
-      if (element.classList.contains('formula-block')) {
-        format = 'formula';
+      if (element.classList.contains("formula-block")) {
+        format = "formula";
         // Preserve the formula exactly as it is
-        text = element.textContent || '';
-        
+        text = element.textContent || "";
+
         // Make sure it has proper LaTeX delimiters
-        if (!text.startsWith('$') && !text.endsWith('$')) {
-          text = '$' + text + '$';
+        if (!text.startsWith("$") && !text.endsWith("$")) {
+          text = "$" + text + "$";
         }
       }
-      
+
       // Additional formula detection for the mangled physics equation
-      if (text.includes('Thisiscommonlyexpressedasd')) {
-        format = 'formula';
+      if (text.includes("Thisiscommonlyexpressedasd")) {
+        format = "formula";
         text = "$d = V_0 t + \\frac{1}{2} a t^{2}$";
       }
-      
+
       sentences.push({
         id: id++,
         text,
-        format
+        format,
+        originalIndex,
       });
     });
-    
+
     return sentences;
   };
 
   const handleSave = () => {
     if (!editor) return;
-    
+
     const updatedSentences = parseHTMLToFormattedContent();
-    
-    // For an existing section with rich-text format, preserve that special handling
-    if (initialData && originalFormats.size > 0 && formatMappings.get('rich-text')?.length) {
-      // If the original had rich-text formatting, maintain it
+
+    // If we're editing existing content, preserve unedited formulas
+    if (initialData && originalSentences.length > 0) {
+      // Create a map of sentence indices to content
+      const sentenceIdMap = new Map<
+        number,
+        { id: number; text: string; format?: FormatType }
+      >();
+
+      // First build up the new content
+      updatedSentences.forEach((sentence, idx) => {
+        // Get the original sentence index if available (from data attribute)
+        const originalIdx =
+          sentence.originalIndex !== undefined ? sentence.originalIndex : idx;
+
+        // Check if this formula/content was explicitly edited
+        const wasEdited = editedSentenceIds.has(originalIdx);
+
+        if (originalIdx < originalSentences.length && !wasEdited) {
+          // If this wasn't edited and has a valid original, preserve the original exactly
+          sentenceIdMap.set(idx, {
+            id: sentence.id,
+            text: originalSentences[originalIdx].text,
+            format: originalSentences[originalIdx].format,
+          });
+        } else {
+          // Only apply formatting to edited or new content
+          if (sentence.format === "paragraph" && detectFormula(sentence.text)) {
+            // Transform to formula format for NEW or EDITED formulas only
+            sentenceIdMap.set(idx, {
+              id: sentence.id,
+              text: formatCommonEquation(sentence.text),
+              format: "formula" as FormatType,
+            });
+          } else if (sentence.format === "formula") {
+            // For edited formulas, apply formatting
+            sentenceIdMap.set(idx, {
+              id: sentence.id,
+              text: preserveFormulaFormatting(sentence.text),
+              format: "formula",
+            });
+          } else {
+            // Otherwise keep as is
+            sentenceIdMap.set(idx, sentence);
+          }
+        }
+      });
+
+      // Convert the map back to an array in order
+      const processedSentences = Array.from(
+        { length: updatedSentences.length },
+        (_, i) => sentenceIdMap.get(i) || updatedSentences[i]
+      );
+
       const paragraphData: ParagraphData = {
         user: "AI",
-        text: [{
-          title,
-          sentences: [{
-            id: 1,
-            text: editor.getHTML(),
-            format: "rich-text" as FormatType
-          }]
-        }]
+        text: [
+          {
+            title,
+            sentences: processedSentences,
+          },
+        ],
       };
-      
+
       onSave(paragraphData, messageIndex);
       setSavedData(paragraphData);
     } else {
       // Process each sentence for special handling of formulas
-      const processedSentences = updatedSentences.map(sentence => {
+      const processedSentences = updatedSentences.map((sentence) => {
         // Special handling for text containing formulas
-        if (sentence.format === 'paragraph' && detectFormula(sentence.text)) {
+        if (sentence.format === "paragraph" && detectFormula(sentence.text)) {
           // Transform to formula format
           return {
             ...sentence,
             text: formatCommonEquation(sentence.text),
-            format: 'formula' as FormatType
+            format: "formula" as FormatType,
           };
         }
-        
+
         // Other special case: check for the mangled physics equations
-        if (sentence.text.includes('Thisiscommonlyexpressedasd')) {
+        if (sentence.text.includes("Thisiscommonlyexpressedasd")) {
           return {
             ...sentence,
             text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
-            format: 'formula' as FormatType
+            format: "formula" as FormatType,
           };
         }
-        
+
         // Check for inline math in paragraphs
-        if (sentence.format === 'paragraph' && sentence.text.includes('$')) {
+        if (sentence.format === "paragraph" && sentence.text.includes("$")) {
           // Process the paragraph to preserve inline math
-          sentence.text = sentence.text.replace(/\$([^$]+)\$/g, (match, formula) => {
-            const cleanFormula = formula.trim();
-            return `$${cleanFormula}$`;
-          });
+          sentence.text = sentence.text.replace(
+            /\$([^$]+)\$/g,
+            (match, formula) => {
+              const cleanFormula = formula.trim();
+              return `$${cleanFormula}$`;
+            }
+          );
         }
-        
+
         return sentence;
       });
-      
+
       const paragraphData: ParagraphData = {
         user: "AI",
-        text: [{
-          title,
-          sentences: processedSentences
-        }]
+        text: [
+          {
+            title,
+            sentences: processedSentences,
+          },
+        ],
       };
-      
+
       onSave(paragraphData, messageIndex);
       setSavedData(paragraphData);
     }
-    
+
     setIsEditing(false);
-    
+
     // Reset for new content
     if (!initialData) {
-      setTitle('');
+      setTitle("");
       if (editor) {
         editor.commands.clearContent();
       }
@@ -814,7 +1096,9 @@ export default function ParagraphEditor({
         <button
           onClick={() => setIsEditing(!isEditing)}
           className={`flex items-center justify-center w-6 h-6 rounded-full transition-colors duration-300 ease-in-out ${
-            isEditing ? 'bg-red-200 hover:bg-red-300' : 'bg-gray-200 hover:bg-gray-300'
+            isEditing
+              ? "bg-red-200 hover:bg-red-300"
+              : "bg-gray-200 hover:bg-gray-300"
           }`}
         >
           {isEditing ? (
@@ -823,9 +1107,7 @@ export default function ParagraphEditor({
             <PlusIcon className="w-4 h-4 text-gray-600" />
           )}
         </button>
-        {!isEditing && (
-        <div className="flex-grow h-[1px] bg-gray-200 ml-2" />
-        )}
+        {!isEditing && <div className="flex-grow h-[1px] bg-gray-200 ml-2" />}
       </div>
 
       {isEditing && (
@@ -838,15 +1120,18 @@ export default function ParagraphEditor({
             placeholder="Enter paragraph title"
           />
           <div className="w-full h-px bg-slate-300" />
-          
+
           {/* Rich text editor toolbar */}
           {editor && <RichTextToolbar editor={editor} />}
-          
+
           {/* Rich text editor content */}
           <div className="min-h-[150px] w-full p-2 rounded-md bg-slate-100 focus-within:ring-2 focus-within:ring-[#94b347]">
-            <EditorContent editor={editor} className="prose max-w-none focus:outline-none min-h-[120px]" />
+            <EditorContent
+              editor={editor}
+              className="prose max-w-none focus:outline-none min-h-[120px]"
+            />
           </div>
-          
+
           {/* Special styling for formulas in the editor */}
           <style jsx global>{`
             .ProseMirror .math-formula,
@@ -858,15 +1143,15 @@ export default function ParagraphEditor({
               font-family: monospace;
               color: #0a4c79;
               font-weight: bold;
-              white-space: normal;       /* Allow wrapping */
-              word-break: break-word;    /* Break at word boundaries when possible */
-              overflow-wrap: anywhere;   /* Allow breaking anywhere if needed */
-              max-width: 100%;           /* Ensure it doesn't overflow container */
-              display: block;            /* Make it a block element */
-              margin: 12px 0;            /* Add spacing above and below */
-              line-height: 1.6;          /* Improve readability */
+              white-space: normal; /* Allow wrapping */
+              word-break: break-word; /* Break at word boundaries when possible */
+              overflow-wrap: anywhere; /* Allow breaking anywhere if needed */
+              max-width: 100%; /* Ensure it doesn't overflow container */
+              display: block; /* Make it a block element */
+              margin: 12px 0; /* Add spacing above and below */
+              line-height: 1.6; /* Improve readability */
             }
-            
+
             /* Add visual indicator that this is a formula */
             .ProseMirror .formula-block::before {
               content: "Formula: ";
@@ -875,14 +1160,14 @@ export default function ParagraphEditor({
               margin-right: 8px;
               opacity: 0.9;
             }
-            
+
             /* Style paragraphs containing inline math */
             .ProseMirror p.contains-math {
               border-left: 3px solid rgba(148, 179, 71, 0.4);
               padding-left: 8px;
               background-color: rgba(148, 179, 71, 0.05);
             }
-            
+
             .ProseMirror h3 {
               color: #94b347;
               font-weight: bold;
@@ -890,20 +1175,21 @@ export default function ParagraphEditor({
               margin-top: 1rem;
               margin-bottom: 0.5rem;
             }
-            
-            .ProseMirror ul li, .ProseMirror ol li {
+
+            .ProseMirror ul li,
+            .ProseMirror ol li {
               margin-left: 1.5rem;
             }
-            
+
             .ProseMirror ul {
               list-style-type: disc;
             }
-            
+
             .ProseMirror ol {
               list-style-type: decimal;
             }
           `}</style>
-          
+
           <button
             onClick={handleSave}
             className="flex items-center justify-center px-4 py-2 bg-[#94b347] text-white rounded-md hover:bg-[#7a9339] transition-colors duration-300 ease-in-out"
@@ -916,4 +1202,3 @@ export default function ParagraphEditor({
     </div>
   );
 }
-
