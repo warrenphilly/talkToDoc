@@ -13,15 +13,12 @@ import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
 import TextAlign from "@tiptap/extension-text-align";
 import { BubbleMenu, Editor, EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   Bold as BoldIcon,
-  Heading1,
   Heading2,
-  Heading3,
   Italic as ItalicIcon,
   List,
   ListOrdered,
@@ -34,25 +31,110 @@ interface RichTextEditorProps {
   className?: string;
 }
 
-// Define a type for valid heading levels
+// Type for valid heading levels
 type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
 // Debug function to track list formatting
 const logListStatus = (editor: Editor | null) => {
   if (!editor) return;
 
-  console.log("List Status:", {
-    active: {
+  console.log("Editor status:", {
+    formats: {
+      bold: editor.isActive("bold"),
+      italic: editor.isActive("italic"),
+    },
+    lists: {
       bulletList: editor.isActive("bulletList"),
       orderedList: editor.isActive("orderedList"),
       listItem: editor.isActive("listItem"),
     },
-    can: {
-      toggleBulletList: editor.can().toggleBulletList(),
-      toggleOrderedList: editor.can().toggleOrderedList(),
-    },
-    selection: editor.state.selection,
+    selection: editor.state.selection.empty ? "No selection" : "Text selected",
+    html: editor.getHTML(),
   });
+};
+
+// Helper to toggle bullet list while preserving formatting
+const toggleBulletList = (editor: Editor) => {
+  // Remember the formatting state
+  const isBold = editor.isActive("bold");
+  const isItalic = editor.isActive("italic");
+
+  // Toggle the bullet list
+  editor.chain().focus().toggleBulletList().run();
+
+  // Wait for the next tick to restore formatting
+  setTimeout(() => {
+    if (isBold) {
+      editor.chain().focus().toggleBold().run();
+    }
+    if (isItalic) {
+      editor.chain().focus().toggleItalic().run();
+    }
+  }, 0);
+};
+
+// Helper to toggle ordered list while preserving formatting
+const toggleOrderedList = (editor: Editor) => {
+  // Remember the formatting state
+  const isBold = editor.isActive("bold");
+  const isItalic = editor.isActive("italic");
+
+  // Toggle the ordered list
+  editor.chain().focus().toggleOrderedList().run();
+
+  // Wait for the next tick to restore formatting
+  setTimeout(() => {
+    if (isBold) {
+      editor.chain().focus().toggleBold().run();
+    }
+    if (isItalic) {
+      editor.chain().focus().toggleItalic().run();
+    }
+  }, 0);
+};
+
+// Apply bold formatting while preserving list structure
+const applyBoldFormatting = (editor: Editor) => {
+  if (!editor || editor.state.selection.empty) return;
+
+  // Remember if we're in a list
+  const inBulletList = editor.isActive("bulletList");
+  const inOrderedList = editor.isActive("orderedList");
+
+  // Apply bold
+  editor.chain().focus().toggleBold().run();
+
+  // Check if we need to restore list formatting
+  if (inBulletList && !editor.isActive("bulletList")) {
+    editor.chain().focus().toggleBulletList().run();
+  } else if (inOrderedList && !editor.isActive("orderedList")) {
+    editor.chain().focus().toggleOrderedList().run();
+  }
+
+  // Debug
+  logListStatus(editor);
+};
+
+// Apply italic formatting while preserving list structure
+const applyItalicFormatting = (editor: Editor) => {
+  if (!editor || editor.state.selection.empty) return;
+
+  // Remember if we're in a list
+  const inBulletList = editor.isActive("bulletList");
+  const inOrderedList = editor.isActive("orderedList");
+
+  // Apply italic
+  editor.chain().focus().toggleItalic().run();
+
+  // Check if we need to restore list formatting
+  if (inBulletList && !editor.isActive("bulletList")) {
+    editor.chain().focus().toggleBulletList().run();
+  } else if (inOrderedList && !editor.isActive("orderedList")) {
+    editor.chain().focus().toggleOrderedList().run();
+  }
+
+  // Debug
+  logListStatus(editor);
 };
 
 const RichTextEditor = ({
@@ -70,20 +152,16 @@ const RichTextEditor = ({
     isItalic: false,
     isBulletList: false,
     isOrderedList: false,
-    isHeading1: false,
     isHeading2: false,
+    textSelected: false,
   });
 
   // Show a temporary notification message
   const showNotification = (message: string) => {
     setNotification(message);
-
-    // Clear any existing timeout
     if (notificationTimeoutRef.current) {
       clearTimeout(notificationTimeoutRef.current);
     }
-
-    // Set a new timeout to clear the notification
     notificationTimeoutRef.current = setTimeout(() => {
       setNotification(null);
     }, 2000);
@@ -98,78 +176,108 @@ const RichTextEditor = ({
     };
   }, []);
 
-  // Initialize the editor with explicitly imported extensions and improved list handling
+  // Initialize the editor with explicit configuration
   const editor = useEditor({
     extensions: [
       Document,
       Paragraph,
       Text,
+      // Configure Bold extension to ensure it works with lists
       Bold.configure({
         HTMLAttributes: {
           class: "format-bold",
         },
       }),
+      // Configure Italic extension to ensure it works with lists
       Italic.configure({
         HTMLAttributes: {
           class: "format-italic",
         },
       }),
       Heading.configure({
-        levels: [1, 2, 3],
+        levels: [2],
       }),
+      // Critical configuration for BulletList to preserve marks
       BulletList.configure({
         keepMarks: true,
+        keepAttributes: true,
         HTMLAttributes: {
-          class: "bullet-list-container",
+          class: "bullet-list",
         },
       }),
+      // Critical configuration for OrderedList to preserve marks
       OrderedList.configure({
         keepMarks: true,
+        keepAttributes: true,
         HTMLAttributes: {
-          class: "ordered-list-container",
+          class: "ordered-list",
         },
       }),
+      // Configure ListItem
       ListItem.configure({
         HTMLAttributes: {
           class: "list-item",
         },
       }),
       TextAlign.configure({
-        types: [
-          "heading",
-          "paragraph",
-          "listItem",
-          "bulletList",
-          "orderedList",
-        ],
+        types: ["heading", "paragraph"],
         alignments: ["left", "center", "right"],
         defaultAlignment: "left",
       }),
     ],
+    // Set initial content
     content: initialContent,
+
+    // Handle content updates
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       setContent(html);
       onChange(html);
-      console.log("Editor update:", html); // Debug log to see content changes
 
-      // Update editor state
+      // Update editor state for UI feedback
       setEditorState({
         isBold: editor.isActive("bold"),
         isItalic: editor.isActive("italic"),
         isBulletList: editor.isActive("bulletList"),
         isOrderedList: editor.isActive("orderedList"),
-        isHeading1: editor.isActive("heading", { level: 1 }),
         isHeading2: editor.isActive("heading", { level: 2 }),
+        textSelected: !editor.state.selection.empty,
       });
 
-      // Log list status for debugging
+      // Debug log
       logListStatus(editor);
     },
+
+    // Add key handlers to catch formatting shortcuts
     editorProps: {
+      handleKeyDown: (view, event) => {
+        // Handle keyboard shortcuts for formatting in lists (Ctrl+B/Cmd+B, Ctrl+I/Cmd+I)
+        if (
+          (event.ctrlKey || event.metaKey) &&
+          (event.key === "b" || event.key === "i") &&
+          !view.state.selection.empty &&
+          (editor?.isActive("bulletList") || editor?.isActive("orderedList"))
+        ) {
+          // Remember list state
+          const inBulletList = editor?.isActive("bulletList");
+          const inOrderedList = editor?.isActive("orderedList");
+
+          // Let the browser handle the shortcut normally
+
+          // Check after processing to ensure list structure remains
+          setTimeout(() => {
+            if (inBulletList && !editor?.isActive("bulletList")) {
+              editor?.chain().focus().toggleBulletList().run();
+            } else if (inOrderedList && !editor?.isActive("orderedList")) {
+              editor?.chain().focus().toggleOrderedList().run();
+            }
+          }, 10);
+        }
+        return false; // Allow default handling
+      },
       attributes: {
         class:
-          "prose prose-sm sm:prose-base lg:prose-lg max-w-none focus:outline-none min-h-[200px] p-4",
+          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[200px] p-4",
       },
     },
   });
@@ -182,136 +290,19 @@ const RichTextEditor = ({
   // Update content if initialContent changes
   useEffect(() => {
     if (editor && initialContent) {
-      // Only update if content is different to avoid cursor jumping
       if (editor.getHTML() !== initialContent) {
         editor.commands.setContent(initialContent);
         setContent(initialContent);
-        console.log("Setting initial content:", initialContent); // Debug log
       }
     }
   }, [editor, initialContent]);
 
-  // Debug logging on mount
-  useEffect(() => {
-    if (editor) {
-      console.log("Editor initialized with content:", initialContent);
-      console.log("Editor HTML on init:", editor.getHTML());
-    }
-  }, [editor, initialContent]);
-
-  // Just make sure the Italic extension is properly applied with this debug log
-  useEffect(() => {
-    if (editor) {
-      console.log("Editor extensions:", editor.extensionManager.extensions);
-      console.log("Italic extension is active:", editor.can().toggleItalic());
-    }
-  }, [editor]);
-
-  // Add visual indicator for nested formatting
-  useEffect(() => {
-    if (editor) {
-      // Add a class to detect when both bold and italic are active
-      const updateNestedFormatClass = () => {
-        const isBold = editor.isActive("bold");
-        const isItalic = editor.isActive("italic");
-
-        // Find the editor DOM element
-        const editorElement = document.querySelector(".editor-content");
-        if (editorElement) {
-          if (isBold && isItalic) {
-            editorElement.classList.add("nested-format-active");
-          } else {
-            editorElement.classList.remove("nested-format-active");
-          }
-        }
-      };
-
-      // Update on selection change or content change
-      editor.on("selectionUpdate", updateNestedFormatClass);
-      editor.on("update", updateNestedFormatClass);
-
-      return () => {
-        editor.off("selectionUpdate", updateNestedFormatClass);
-        editor.off("update", updateNestedFormatClass);
-      };
-    }
-  }, [editor]);
-
-  // Add event handlers to help with formatting in lists
-  useEffect(() => {
-    if (editor) {
-      // Create a custom event handler for detecting formatting commands
-      const handleFormatting = ({
-        editor: editorInstance,
-        transaction,
-      }: {
-        editor: any;
-        transaction: { getMeta: (key: string) => any };
-      }) => {
-        // Check if we're toggling bold/italic inside a list
-        if (
-          transaction.getMeta("formattingCommand") &&
-          (editor.isActive("bulletList") || editor.isActive("orderedList"))
-        ) {
-          console.log(
-            "Formatting inside list:",
-            transaction.getMeta("formattingCommand")
-          );
-        }
-        return true; // Allow the transaction
-      };
-
-      // Add the handler
-      editor.on("beforeTransaction", handleFormatting);
-
-      return () => {
-        editor.off("beforeTransaction", handleFormatting);
-      };
-    }
-  }, [editor]);
-
-  // Add a debugging function to track list items during formatting operations
-  useEffect(() => {
-    if (editor) {
-      const trackListItems = () => {
-        // Check if we're in a list and what kind
-        const isInBulletList = editor.isActive("bulletList");
-        const isInOrderedList = editor.isActive("orderedList");
-        const isInListItem = editor.isActive("listItem");
-
-        if (isInBulletList || isInOrderedList) {
-          console.log("List state:", {
-            bulletList: isInBulletList,
-            orderedList: isInOrderedList,
-            listItem: isInListItem,
-            selectionEmpty: editor.state.selection.empty,
-            html: editor.getHTML(),
-          });
-        }
-      };
-
-      // Track when selection changes
-      editor.on("selectionUpdate", trackListItems);
-      editor.on("update", trackListItems);
-
-      return () => {
-        editor.off("selectionUpdate", trackListItems);
-        editor.off("update", trackListItems);
-      };
-    }
-  }, [editor]);
-
-  // Add selection tracking
+  // Selection tracking
   useEffect(() => {
     if (editor) {
       const handleSelectionUpdate = () => {
-        const isEmpty = editor.state.selection.empty;
-        setHasTextSelected(!isEmpty);
-
-        if (!isEmpty) {
-          const { from, to } = editor.state.selection;
-          console.log(`Text selected: ${from} to ${to}`);
-        }
+        const hasSelection = !editor.state.selection.empty;
+        setHasTextSelected(hasSelection);
       };
 
       editor.on("selectionUpdate", handleSelectionUpdate);
@@ -330,12 +321,11 @@ const RichTextEditor = ({
     return <div>Loading editor...</div>;
   }
 
-  // Helper to check if a style is active - with better error handling
+  // Helper to check if a style is active
   const isStyleActive = (style: string, options = {}) => {
     try {
       return editor.isActive(style, options);
     } catch (error) {
-      console.error(`Error checking if ${style} is active:`, error);
       return false;
     }
   };
@@ -345,52 +335,7 @@ const RichTextEditor = ({
     try {
       return editor.isActive({ textAlign: alignment });
     } catch (error) {
-      console.error(
-        `Error checking if text alignment ${alignment} is active:`,
-        error
-      );
       return false;
-    }
-  };
-
-  const applyBold = () => {
-    try {
-      // Check if there's a text selection
-      if (editor.state.selection.empty) {
-        showNotification("Select text first to apply bold formatting");
-        console.log("No text selected for formatting");
-        return;
-      }
-
-      editor.chain().focus().toggleBold().run();
-      console.log("Bold applied, current HTML:", editor.getHTML());
-    } catch (error) {
-      console.error("Error applying bold:", error);
-    }
-  };
-
-  const applyItalic = () => {
-    try {
-      // Check if there's a text selection
-      if (editor.state.selection.empty) {
-        showNotification("Select text first to apply italic formatting");
-        console.log("No text selected for formatting");
-        return;
-      }
-
-      editor.chain().focus().toggleItalic().run();
-      console.log("Italic applied, current HTML:", editor.getHTML());
-    } catch (error) {
-      console.error("Error applying italic:", error);
-    }
-  };
-
-  const applyHeading = (level: Level) => {
-    try {
-      editor.chain().focus().toggleHeading({ level }).run();
-      console.log(`Heading ${level} applied, current HTML:`, editor.getHTML());
-    } catch (error) {
-      console.error(`Error applying heading level ${level}:`, error);
     }
   };
 
@@ -410,7 +355,7 @@ const RichTextEditor = ({
         </div>
       )}
 
-      {/* Provide visual indication of active formatting */}
+      {/* Active formatting indicators */}
       <div className="absolute top-0 right-0 z-10 flex space-x-1 p-1 text-xs bg-gray-100 rounded-bl-md opacity-70">
         {editorState.isBold && (
           <span className="px-1 bg-blue-200 rounded">B</span>
@@ -424,24 +369,21 @@ const RichTextEditor = ({
         {editorState.isOrderedList && (
           <span className="px-1 bg-orange-200 rounded">1.</span>
         )}
-        {editorState.isHeading1 && (
-          <span className="px-1 bg-purple-200 rounded">H1</span>
-        )}
         {editorState.isHeading2 && (
-          <span className="px-1 bg-pink-200 rounded">H2</span>
+          <span className="px-1 bg-purple-200 rounded">H2</span>
         )}
         {editorState.isBold && editorState.isItalic && (
           <span className="px-1 bg-red-200 rounded italic font-bold">B+I</span>
         )}
       </div>
 
+      {/* Bubble menu that appears when text is selected */}
       {editor && (
         <BubbleMenu
           editor={editor}
           tippyOptions={{ duration: 100 }}
           className="bg-white shadow-md rounded-lg flex overflow-hidden border border-gray-200"
-          shouldShow={({ editor, view, state, oldState, from, to }) => {
-            // Only show bubble menu if text is selected and not empty
+          shouldShow={({ editor, view, state, from, to }) => {
             return from !== to && !editor.state.selection.empty;
           }}
         >
@@ -453,11 +395,7 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("bold") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => {
-              if (!editor.state.selection.empty) {
-                editor.chain().focus().toggleBold().run();
-              }
-            }}
+            onClick={() => applyBoldFormatting(editor)}
             title="Bold selected text"
           >
             <BoldIcon className="h-4 w-4" />
@@ -470,11 +408,7 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("italic") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => {
-              if (!editor.state.selection.empty) {
-                editor.chain().focus().toggleItalic().run();
-              }
-            }}
+            onClick={() => applyItalicFormatting(editor)}
             title="Italic selected text"
           >
             <ItalicIcon className="h-4 w-4" />
@@ -487,7 +421,7 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("bulletList") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            onClick={() => toggleBulletList(editor)}
             title="Convert to bullet list"
           >
             <List className="h-4 w-4" />
@@ -500,23 +434,32 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("orderedList") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            onClick={() => toggleOrderedList(editor)}
             title="Convert to numbered list"
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
         </BubbleMenu>
       )}
+
       <div className="rich-editor-container rounded-md border bg-white">
-        {/* Add a selection hint */}
+        {/* Selection hint */}
         <div className="px-3 py-1 bg-gray-50 text-gray-500 text-xs border-b">
-          Tip: Select specific text to format individual words or phrases
+          Tip: Select text to format individual words or phrases
         </div>
+
+        {/* Toolbar */}
         <div className="flex flex-wrap gap-1 p-2 border-b bg-gray-50">
           <Button
             variant="ghost"
             size="sm"
-            onClick={applyBold}
+            onClick={() => {
+              if (editor.state.selection.empty) {
+                showNotification("Select text first to apply bold formatting");
+                return;
+              }
+              applyBoldFormatting(editor);
+            }}
             className={isStyleActive("bold") ? "bg-gray-200" : ""}
             aria-label="Bold"
             title="Bold (select text first to format only that text)"
@@ -526,15 +469,22 @@ const RichTextEditor = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={applyItalic}
+            onClick={() => {
+              if (editor.state.selection.empty) {
+                showNotification(
+                  "Select text first to apply italic formatting"
+                );
+                return;
+              }
+              applyItalicFormatting(editor);
+            }}
             className={isStyleActive("italic") ? "bg-gray-200" : ""}
             aria-label="Italic"
             title="Italic (select text first to format only that text)"
           >
             <ItalicIcon className="h-4 w-4" />
           </Button>
-          {/* Add a visual indicator for combined formatting */}
-          {editor && editor.isActive("bold") && editor.isActive("italic") && (
+          {editor.isActive("bold") && editor.isActive("italic") && (
             <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
               Combined Format
             </span>
@@ -542,7 +492,9 @@ const RichTextEditor = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => applyHeading(2 as Level)}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
             className={
               isStyleActive("heading", { level: 2 }) ? "bg-gray-200" : ""
             }
@@ -553,7 +505,7 @@ const RichTextEditor = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            onClick={() => toggleBulletList(editor)}
             className={isStyleActive("bulletList") ? "bg-gray-200" : ""}
             aria-label="Bullet List"
           >
@@ -562,7 +514,7 @@ const RichTextEditor = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            onClick={() => toggleOrderedList(editor)}
             className={isStyleActive("orderedList") ? "bg-gray-200" : ""}
             aria-label="Ordered List"
           >
@@ -596,218 +548,109 @@ const RichTextEditor = ({
             <AlignRight className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Editor content */}
         <EditorContent editor={editor} className="editor-content" />
       </div>
 
-      {/* Enhanced styles for nested formatting */}
+      {/* Enhanced styles */}
       <style jsx global>{`
-        .nested-format-active {
-          background-color: rgba(59, 130, 246, 0.05);
-        }
-
-        /* Make nested formatting more visible */
-        .ProseMirror strong em,
-        .ProseMirror em strong,
-        .ProseMirror b i,
-        .ProseMirror i b {
-          background-color: rgba(99, 102, 241, 0.1);
-          padding: 0 2px;
-          border-radius: 2px;
-        }
-
-        /* Highlight individual formatted words */
-        .ProseMirror p strong,
-        .ProseMirror p .format-bold {
-          color: #1e40af;
-          background-color: rgba(30, 64, 175, 0.05);
-          padding: 0 1px;
-          border-radius: 2px;
-          border-bottom: 1px solid rgba(30, 64, 175, 0.2);
-          display: inline;
-        }
-
-        .ProseMirror p em,
-        .ProseMirror p .format-italic {
-          color: #047857;
-          background-color: rgba(4, 120, 87, 0.05);
-          padding: 0 1px;
-          border-radius: 2px;
-          border-bottom: 1px solid rgba(4, 120, 87, 0.2);
-          display: inline;
-        }
-
-        /* Show selection more clearly */
-        .ProseMirror-selectednode {
-          outline: 2px solid #60a5fa !important;
-          border-radius: 2px;
-        }
-
-        /* Improve list styling */
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5em;
-          margin: 0.5em 0;
-        }
-
-        .ProseMirror ul {
-          list-style-type: disc;
-        }
-
-        .ProseMirror ol {
-          list-style-type: decimal;
-        }
-
-        /* Style list items */
-        .ProseMirror li {
-          position: relative;
-          padding: 0.2em 0;
-          margin: 0.2em 0;
-        }
-
-        /* Style nested lists */
-        .ProseMirror li ul,
-        .ProseMirror li ol {
-          margin: 0.2em 0 0.2em 1em;
-        }
-
-        /* Style formatting in list items */
-        .ProseMirror li strong,
-        .ProseMirror li em,
-        .ProseMirror li b,
-        .ProseMirror li i {
-          display: inline-block;
-          position: relative;
-        }
-
-        /* Add subtle indicator for formatted list items */
-        .ProseMirror li:has(strong, em, b, i) {
-          border-left: 2px solid rgba(99, 102, 241, 0.3);
-          padding-left: 4px;
-          margin-left: -6px;
-        }
-
-        /* Special style for lists with nested formatting */
-        .bullet-list-container:has(strong, em, b, i),
-        .ordered-list-container:has(strong, em, b, i) {
-          border-left: 2px solid rgba(99, 102, 241, 0.2);
-          padding-left: 6px;
-          border-radius: 4px;
-        }
-
-        /* Base ProseMirror styles */
+        /* Base editor styles */
         .ProseMirror {
           min-height: 150px;
+          cursor: text;
+          white-space: pre-wrap;
         }
 
         /* List styling */
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin-top: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
         .ProseMirror ul {
-          list-style-type: disc;
+          list-style-type: disc !important;
+          padding-left: 1.5em !important;
+          margin: 0.5em 0 !important;
         }
 
         .ProseMirror ol {
-          list-style-type: decimal;
+          list-style-type: decimal !important;
+          padding-left: 1.5em !important;
+          margin: 0.5em 0 !important;
         }
 
+        /* Ensure list items are properly displayed */
         .ProseMirror li {
-          margin-bottom: 0.3rem;
+          position: relative !important;
+          margin-bottom: 0.3rem !important;
         }
 
         /* Nested list styling */
         .ProseMirror li > ul,
         .ProseMirror li > ol {
-          margin-top: 0.3rem;
-          margin-bottom: 0.3rem;
+          margin-top: 0.3rem !important;
+          margin-bottom: 0.3rem !important;
         }
 
-        /* Visual indicators for formatted list items */
-        .ProseMirror li strong {
-          font-weight: 700;
-          color: #1e40af;
-          background-color: rgba(30, 64, 175, 0.05);
-          padding: 0 2px;
-          border-radius: 2px;
+        /* Ensure lists have bullets/numbers */
+        .ProseMirror ul {
+          list-style-position: outside !important;
         }
 
-        .ProseMirror li em {
-          font-style: italic;
-          color: #047857;
-          background-color: rgba(4, 120, 87, 0.05);
-          padding: 0 2px;
-          border-radius: 2px;
+        .ProseMirror ol {
+          list-style-position: outside !important;
         }
 
-        /* Style nested formatting in lists */
-        .ProseMirror li strong em,
-        .ProseMirror li em strong {
+        /* Handling combined formatting */
+        .ProseMirror strong em,
+        .ProseMirror em strong {
           color: #be185d;
           background-color: rgba(190, 24, 93, 0.05);
           padding: 0 2px;
           border-radius: 2px;
         }
 
-        /* Add additional CSS for preservation of list markers */
-        .ProseMirror ul,
-        .ProseMirror ol {
-          list-style-position: outside !important;
-          padding-left: 1.5em !important;
-        }
-
-        /* Ensure list markers remain visible */
-        .ProseMirror ol {
-          list-style-type: decimal !important;
-          counter-reset: list-counter !important;
-        }
-
-        .ProseMirror ol > li {
-          display: list-item !important;
-          counter-increment: list-counter !important;
-        }
-
-        .ProseMirror ol > li::before {
-          content: counter(list-counter) "." !important;
-          position: absolute !important;
-          left: -1.5em !important;
-          width: 1.2em !important;
-          text-align: right !important;
-        }
-
-        /* Specific styling for individual formatting */
-        .ProseMirror p .format-bold,
-        .ProseMirror p strong {
-          font-weight: bold;
+        /* Formatting in lists */
+        .ProseMirror li strong {
+          color: #1e40af;
+          background-color: rgba(30, 64, 175, 0.05);
+          padding: 0 2px;
+          border-radius: 2px;
           display: inline;
         }
 
-        .ProseMirror p .format-italic,
-        .ProseMirror p em {
-          font-style: italic;
+        .ProseMirror li em {
+          color: #047857;
+          background-color: rgba(4, 120, 87, 0.05);
+          padding: 0 2px;
+          border-radius: 2px;
           display: inline;
         }
 
-        /* Fix for selection-based formatting */
-        .ProseMirror p {
-          white-space: pre-wrap;
+        /* Fix for list item formatting */
+        .ProseMirror li b,
+        .ProseMirror li i,
+        .ProseMirror li strong,
+        .ProseMirror li em {
+          display: inline;
         }
 
-        /* Style Selections */
+        /* Selection styling */
         .ProseMirror ::selection {
           background: rgba(59, 130, 246, 0.2);
         }
 
-        /* Make the editor show the cursor as a text input */
-        .ProseMirror {
-          cursor: text;
+        /* Make nested formatting more visible */
+        .ProseMirror strong,
+        .ProseMirror .format-bold {
+          font-weight: bold;
+          display: inline;
+        }
+
+        .ProseMirror em,
+        .ProseMirror .format-italic {
+          font-style: italic;
+          display: inline;
         }
       `}</style>
 
-      {/* Debug panel - remove in production */}
+      {/* Debug panel */}
       {process.env.NODE_ENV === "development" && (
         <div className="mt-2 p-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-500">
           <details>
@@ -820,66 +663,33 @@ const RichTextEditor = ({
             <summary>Formatting Status</summary>
             <div className="mt-2 p-2 bg-gray-100 rounded">
               <div>
-                Bold: {editor?.isActive("bold") ? "Active" : "Inactive"}
+                Bold: {editor.isActive("bold") ? "✅ Active" : "❌ Inactive"}
               </div>
               <div>
-                Italic: {editor?.isActive("italic") ? "Active" : "Inactive"}
+                Italic:{" "}
+                {editor.isActive("italic") ? "✅ Active" : "❌ Inactive"}
               </div>
               <div>
                 Combined:{" "}
-                {editor?.isActive("bold") && editor?.isActive("italic")
-                  ? "Active"
-                  : "Inactive"}
+                {editor.isActive("bold") && editor.isActive("italic")
+                  ? "✅ Active"
+                  : "❌ Inactive"}
               </div>
-            </div>
-          </details>
-          <details>
-            <summary>List Formatting Status</summary>
-            <div className="mt-2 p-2 bg-gray-100 rounded">
               <div>
                 Bullet List:{" "}
-                {editor?.isActive("bulletList") ? "Active" : "Inactive"}
+                {editor.isActive("bulletList") ? "✅ Active" : "❌ Inactive"}
               </div>
               <div>
                 Ordered List:{" "}
-                {editor?.isActive("orderedList") ? "Active" : "Inactive"}
+                {editor.isActive("orderedList") ? "✅ Active" : "❌ Inactive"}
               </div>
               <div>
                 Bold in List:{" "}
-                {editor?.isActive("bulletList") && editor?.isActive("bold")
-                  ? "Active"
-                  : "Inactive"}
-              </div>
-              <div>
-                Italic in List:{" "}
-                {editor?.isActive("bulletList") && editor?.isActive("italic")
-                  ? "Active"
-                  : "Inactive"}
-              </div>
-            </div>
-          </details>
-          <details className="mt-1 text-xs border-t border-gray-100 pt-1">
-            <summary className="cursor-pointer text-gray-400">
-              Debug Format Status
-            </summary>
-            <div className="p-1 mt-1 bg-gray-50 rounded text-xs">
-              <div>Bold Active: {editor?.isActive("bold") ? "Yes" : "No"}</div>
-              <div>
-                Italic Active: {editor?.isActive("italic") ? "Yes" : "No"}
-              </div>
-              <div>
-                List Active:{" "}
-                {editor?.isActive("bulletList") ||
-                editor?.isActive("orderedList")
-                  ? "Yes"
-                  : "No"}
-              </div>
-              <div>
-                Mark Types:{" "}
-                {editor?.extensionManager.extensions
-                  .filter((ext) => ext.type === "mark")
-                  .map((ext) => ext.name)
-                  .join(", ")}
+                {(editor.isActive("bulletList") ||
+                  editor.isActive("orderedList")) &&
+                editor.isActive("bold")
+                  ? "✅ Active"
+                  : "❌ Inactive"}
               </div>
             </div>
           </details>

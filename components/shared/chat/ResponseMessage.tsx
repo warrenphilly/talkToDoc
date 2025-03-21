@@ -713,302 +713,129 @@ export const ResponseMessage = ({
     });
   };
 
-  // Add a function to convert HTML back to a section structure
-  const htmlToSection = (html: string, originalSection: Section): Section => {
+  // Update the htmlToSection function to better handle combined formatting
+  const htmlToSection = (html: string): Section => {
+    if (!html) return { title: "", sentences: [] };
+
     // Create a temporary DOM element to parse the HTML
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = DOMPurify.sanitize(html);
+    const tempEl = document.createElement("div");
+    tempEl.innerHTML = html;
 
-    console.log("Parsing HTML:", tempDiv.innerHTML);
-
-    // Extract title from the first h2, or keep original if not found
-    const titleElement = tempDiv.querySelector("h2");
-    const title = titleElement
-      ? titleElement.textContent || originalSection.title
-      : originalSection.title;
-
-    // Remove the title element as we've already processed it
-    if (titleElement) {
-      titleElement.remove();
+    // Extract title if it exists
+    let title = "";
+    const h1 = tempEl.querySelector("h1");
+    if (h1) {
+      title = h1.textContent || "";
+      h1.remove();
     }
 
-    // Initialize sentences array
+    // Get the content elements
+    const elements = Array.from(tempEl.children);
+
+    // Process the elements into sentences
     const sentences: Sentence[] = [];
     let sentenceId = 1;
 
-    // Helper function to detect if paragraph contains partial formatting
-    const hasPartialFormatting = (node: Element): boolean => {
-      // If no formatting elements exist, it can't be partially formatted
-      if (!node.querySelector("strong, em, b, i")) return false;
-
-      // Get total text length
-      const totalText = node.textContent || "";
-      if (!totalText.trim()) return false;
-
-      // Get total length of formatted text
-      const boldElements = Array.from(node.querySelectorAll("strong, b"));
-      const italicElements = Array.from(node.querySelectorAll("em, i"));
-
-      // Check if any bold or italic element doesn't contain the entire text
-      for (const el of [...boldElements, ...italicElements]) {
-        const formattedText = el.textContent || "";
-        if (formattedText.length < totalText.length) {
-          return true; // Found partial formatting
-        }
-      }
-
-      // Check for direct text nodes mixed with formatted elements
-      let hasDirectTextNode = false;
-      node.childNodes.forEach((child) => {
-        if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
-          hasDirectTextNode = true;
-        }
-      });
-
-      return hasDirectTextNode;
-    };
-
-    // Process all elements
-    const processNode = (node: Element) => {
-      // Skip already processed nodes
-      if (node.getAttribute("data-processed") === "true") {
+    elements.forEach((element) => {
+      // Process headings
+      if (element.tagName.match(/^H[1-6]$/)) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent || "",
+          format: "heading",
+        });
         return;
       }
 
-      const tagName = node.tagName.toLowerCase();
-      const style = node.getAttribute("style") || "";
-      const textAlign =
-        style.match(/text-align:\s*(center|right|left)/i)?.[1] || null;
-
-      // Handle different element types
-      switch (tagName) {
-        case "h1":
+      // Process lists
+      if (element.tagName === "UL" || element.tagName === "OL") {
+        // Process each list item
+        Array.from(element.querySelectorAll("li")).forEach((li) => {
+          const richTextContent = processListItem(li);
           sentences.push({
             id: sentenceId++,
-            text: node.textContent?.trim() || "",
-            format: "h1",
-            align: textAlign || undefined,
+            text: richTextContent,
+            format: element.tagName === "OL" ? "numbered" : "bullet",
           });
-          break;
-        case "h2":
-          sentences.push({
-            id: sentenceId++,
-            text: node.textContent?.trim() || "",
-            format: "h2",
-            align: textAlign || undefined,
-          });
-          break;
-        case "h3":
-          sentences.push({
-            id: sentenceId++,
-            text: node.textContent?.trim() || "",
-            format: "heading",
-            align: textAlign || undefined,
-          });
-          break;
-        case "ul":
-          Array.from(node.querySelectorAll("li")).forEach((li) => {
-            // Check for complex formatting within list items
-            if (hasNestedFormatting(li)) {
-              sentences.push({
-                id: sentenceId++,
-                text: li.innerHTML,
-                format: "rich-text",
-                align: textAlign || undefined,
-              });
-            } else {
-              sentences.push({
-                id: sentenceId++,
-                text: li.textContent?.trim() || "",
-                format: "bullet",
-                align: textAlign || undefined,
-              });
-            }
-          });
-          return; // Skip further processing for this element
-        case "ol":
-          Array.from(node.querySelectorAll("li")).forEach((li) => {
-            // Check for complex formatting within list items
-            if (hasNestedFormatting(li)) {
-              sentences.push({
-                id: sentenceId++,
-                text: li.innerHTML,
-                format: "rich-text",
-                align: textAlign || undefined,
-              });
-            } else {
-              sentences.push({
-                id: sentenceId++,
-                text: li.textContent?.trim() || "",
-                format: "numbered",
-                align: textAlign || undefined,
-              });
-            }
-          });
-          return; // Skip further processing for this element
-        case "div":
-          if (node.classList.contains("formula")) {
-            sentences.push({
-              id: sentenceId++,
-              text: node.textContent?.trim() || "",
-              format: "formula",
-            });
-          } else {
-            // Process div with possible formatting
-            processFormattedContent(node, textAlign);
-          }
-          break;
-        case "p":
-          // Check if paragraph has mixed formatting (some words bold/italic but not all)
-          if (hasPartialFormatting(node)) {
-            // Use rich-text format to preserve exact HTML
-            console.log(
-              "Detected partial formatting in paragraph:",
-              node.innerHTML.substring(0, 50)
-            );
-            sentences.push({
-              id: sentenceId++,
-              text: node.innerHTML,
-              format: "rich-text",
-              align: textAlign || undefined,
-            });
-          } else {
-            processFormattedContent(node, textAlign);
-          }
-          break;
-        default:
-          // For other elements, process children
-          Array.from(node.children).forEach((child) => {
-            if (child instanceof Element) {
-              processNode(child);
-            }
-          });
-
-          // If node has text but no processed children, add as paragraph
-          if (
-            !node.getAttribute("data-processed") &&
-            node.textContent?.trim() &&
-            !Array.from(node.children).some(
-              (c) => c.getAttribute("data-processed") === "true"
-            )
-          ) {
-            sentences.push({
-              id: sentenceId++,
-              text: node.textContent.trim(),
-              format: "paragraph",
-            });
-          }
+        });
+        return;
       }
 
-      // Mark as processed
-      node.setAttribute("data-processed", "true");
-    };
+      // Process paragraphs and other elements
+      if (element.innerHTML) {
+        // Check if the element contains rich text formatting
+        const hasRichFormatting =
+          element.querySelector("strong, b, em, i, code") !== null ||
+          element.innerHTML.includes('class="format-bold"') ||
+          element.innerHTML.includes('class="format-italic"');
 
-    // Improve the processFormattedContent function to better detect italic text
-    const processFormattedContent = (
-      node: Element,
-      textAlign: string | null
-    ) => {
-      // First check if the node itself is an italic or emphasis element
-      const isDirectItalic =
-        node.tagName.toLowerCase() === "em" ||
-        node.tagName.toLowerCase() === "i";
-
-      // Check for em/italic direct children or if the node itself is italic
-      const hasEm =
-        isDirectItalic ||
-        node.querySelector(":scope > em, :scope > i") !== null;
-
-      // Check for strong/bold direct children or if the node itself is bold
-      const isDirectBold =
-        node.tagName.toLowerCase() === "strong" ||
-        node.tagName.toLowerCase() === "b";
-      const hasStrong =
-        isDirectBold ||
-        node.querySelector(":scope > strong, :scope > b") !== null;
-
-      // Check for mixed formatting (e.g., bold text within italic or vice versa)
-      const hasNestedFormatting =
-        (isDirectItalic && node.querySelector("strong, b") !== null) ||
-        (isDirectBold && node.querySelector("em, i") !== null) ||
-        node.innerHTML.includes("<strong><em>") ||
-        node.innerHTML.includes("<em><strong>");
-
-      // Check if any formatting doesn't cover the entire text
-      const hasPartial = hasPartialFormatting(node);
-
-      // Check for nested markdown formatting
-      const textContent = node.textContent?.trim() || "";
-
-      if (!textContent) return;
-
-      // Check for markdown-style formatting
-      const hasBoldMarkdown = textContent.includes("**");
-      const hasItalicMarkdown = textContent.includes("$$");
-      const hasNestedMarkdown = hasBoldMarkdown && hasItalicMarkdown;
-
-      // Determine the format based on the content and HTML structure
-      let format = "paragraph";
-
-      // Store full HTML content for nested formatting
-      let htmlContent = "";
-
-      if (hasNestedFormatting || hasNestedMarkdown || hasPartial) {
-        // For mixed formatting, preserve the full HTML structure
-        format = "rich-text";
-        htmlContent = node.innerHTML;
-      } else if (hasStrong || hasBoldMarkdown) {
-        format = "bold";
-      } else if (hasEm || hasItalicMarkdown) {
-        format = "italic";
-      }
-
-      console.log("Format detection:", {
-        format,
-        text: textContent.substring(0, 30),
-        isDirectItalic,
-        hasEm,
-        hasItalicMarkdown,
-        isDirectBold,
-        hasStrong,
-        hasBoldMarkdown,
-        hasNestedFormatting,
-        hasNestedMarkdown,
-        hasPartialFormatting: hasPartial,
-      });
-
-      // Add the properly formatted sentence
-      sentences.push({
-        id: sentenceId++,
-        text: format === "rich-text" ? htmlContent : textContent,
-        format: format as
-          | "bold"
-          | "heading"
-          | "italic"
-          | "paragraph"
-          | "bullet"
-          | "numbered"
-          | "formula"
-          | "rich-text",
-        align: textAlign || undefined,
-      });
-
-      node.setAttribute("data-processed", "true");
-    };
-
-    // Process all direct children of the div
-    Array.from(tempDiv.children).forEach((node) => {
-      if (node instanceof Element) {
-        processNode(node);
+        sentences.push({
+          id: sentenceId++,
+          text: element.innerHTML,
+          format: hasRichFormatting ? "rich-text" : "paragraph",
+        });
       }
     });
 
-    console.log("Generated sentences:", sentences);
+    return { title, sentences };
+  };
 
-    return {
-      title,
-      sentences: sentences.length > 0 ? sentences : originalSection.sentences,
-    };
+  // Process a list item and preserve its formatting
+  const processListItem = (li: HTMLLIElement): string => {
+    // Clone the element to avoid modifying the original
+    const clone = li.cloneNode(true) as HTMLLIElement;
+
+    // Check for nested lists and handle them specially
+    const nestedLists = clone.querySelectorAll("ul, ol");
+    if (nestedLists.length > 0) {
+      // Remove nested lists from the clone for now
+      nestedLists.forEach((list) => list.remove());
+    }
+
+    // Return the innerHTML to preserve formatting
+    return clone.innerHTML;
+  };
+
+  // Helper function to detect nested formatting
+  const hasNestedFormatting = (content: string): boolean => {
+    // Create a temporary element to work with the HTML content
+    const tempEl = document.createElement("div");
+    tempEl.innerHTML = content;
+
+    // Check for bold within italic or italic within bold
+    const boldWithinItalic =
+      tempEl.querySelector("em strong, i b, i strong, em b") !== null;
+    const italicWithinBold =
+      tempEl.querySelector("strong em, b i, b em, strong i") !== null;
+
+    // Check for direct formatting of list items
+    const formattedListItems =
+      tempEl.querySelector("li > strong, li > b, li > em, li > i") !== null;
+
+    // Check for nested lists
+    const hasNestedLists = tempEl.querySelector("li > ul, li > ol") !== null;
+
+    // Check for lists with formatted text
+    const hasFormattedListItem =
+      tempEl.querySelector("li strong, li b, li em, li i") !== null;
+
+    // Check for formulas in list items
+    const hasFormulaInList = tempEl.querySelector("li span.formula") !== null;
+
+    // Check for complex formatting combinations
+    const hasMultipleFormats =
+      (tempEl.innerHTML.match(/<\/(strong|b|em|i|code)>/g) || []).length > 1;
+
+    // Return true if any of the complex formatting conditions are met
+    return (
+      boldWithinItalic ||
+      italicWithinBold ||
+      formattedListItems ||
+      hasNestedLists ||
+      hasFormattedListItem ||
+      hasFormulaInList ||
+      hasMultipleFormats
+    );
   };
 
   const handleEditClick = () => {
@@ -1033,7 +860,7 @@ export const ResponseMessage = ({
         console.log("Parsed editor DOM:", debugDiv);
 
         // Convert the HTML back to a section structure
-        const updatedSection = htmlToSection(editorContent, msg.text[0]);
+        const updatedSection = htmlToSection(editorContent);
 
         // Debug logging after conversion - check for rich-text content
         const richTextSentences = updatedSection.sentences
@@ -1813,60 +1640,6 @@ export const ResponseMessage = ({
         </motion.div>
       </div>
     </motion.div>
-  );
-};
-
-// Add helper function to detect nested formatting
-const hasNestedFormatting = (element: Element): boolean => {
-  // Check for bold within italic or italic within bold
-  const hasNestedBoldInItalic =
-    element.querySelector("em strong, em b, i strong, i b") !== null;
-  const hasNestedItalicInBold =
-    element.querySelector("strong em, strong i, b em, b i") !== null;
-
-  // Check for direct formatting of list items
-  const hasDirectFormatting =
-    element.tagName === "LI" &&
-    element.querySelector("strong, em, b, i, u") !== null;
-
-  // Check for nested lists
-  const hasNestedList =
-    element.tagName === "LI" && element.querySelector("ul, ol") !== null;
-
-  // Check for formula in list items
-  const hasFormulaClass = element.querySelector(".formula") !== null;
-  const textContent = element.textContent || "";
-  const containsDollarSign = textContent.includes("$");
-  const hasDollarFormula =
-    containsDollarSign && textContent.match(/\$[^$]+\$/) !== null;
-  const hasFormula = hasFormulaClass || hasDollarFormula;
-
-  // Check for other complex formatting combinations
-  const html = element.innerHTML;
-
-  // Look for patterns like <strong><em>text</em></strong> or <em><strong>text</strong></em>
-  const hasNestedTags =
-    html.includes("<strong><em>") ||
-    html.includes("<em><strong>") ||
-    html.includes("<b><i>") ||
-    html.includes("<i><b>") ||
-    html.includes("<u>") ||
-    html.includes("</u>");
-
-  // Check for custom markdown syntax like **bold** or $$italic$$
-  const hasCustomMarkdown =
-    (textContent.includes("**") &&
-      textContent.match(/\*\*[^*]+\*\*/) !== null) ||
-    (textContent.includes("$$") && textContent.match(/\$\$[^$]+\$\$/) !== null);
-
-  return (
-    hasNestedBoldInItalic ||
-    hasNestedItalicInBold ||
-    hasNestedTags ||
-    hasDirectFormatting ||
-    hasNestedList ||
-    hasCustomMarkdown ||
-    hasFormula
   );
 };
 
