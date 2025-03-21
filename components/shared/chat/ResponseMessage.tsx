@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Message, ParagraphData, Section, Sentence } from "@/lib/types";
+import { Editor } from "@tiptap/react";
 import { motion } from "framer-motion";
 import { renderToString } from "katex";
 import "katex/dist/katex.min.css";
 import { Edit2, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
 import React, { ComponentProps, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
@@ -38,6 +40,14 @@ interface ResponseProps {
   sectionNumber: number;
   totalSections: number;
 }
+
+// Dynamically import the TipTap editor to avoid SSR issues
+const RichTextEditor = dynamic(() => import("@/components/rich-text-editor"), {
+  ssr: false,
+  loading: () => (
+    <div className="p-4 bg-gray-50 rounded-md">Loading editor...</div>
+  ),
+});
 
 // Add this helper function to parse and format text with Markdown-style bold
 const formatTextWithMarkdown = (text: string) => {
@@ -305,6 +315,8 @@ export const ResponseMessage = ({
 }: ResponseProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [editorContent, setEditorContent] = useState("");
+  const [editorInitialized, setEditorInitialized] = useState(false);
 
   // Add effect to trigger animation after component mounts
   useEffect(() => {
@@ -335,9 +347,196 @@ export const ResponseMessage = ({
     }
   }, [msg]);
 
+  // Add a function to convert the section content to HTML for the editor
+  const sectionToHtml = (section: Section): string => {
+    if (!section || !section.sentences || section.sentences.length === 0) {
+      return "<p>No content available</p>";
+    }
+
+    let html = `<h2>${section.title}</h2>`;
+    let currentListType: string | null = null;
+    let listItems = "";
+
+    section.sentences.forEach((sentence) => {
+      const format = sentence.format || "paragraph";
+      const text = sentence.text;
+
+      // Handle list grouping
+      if (format === "bullet" || format === "numbered") {
+        // Start a new list if needed
+        if (currentListType !== format) {
+          // Close previous list if exists
+          if (currentListType) {
+            html += currentListType === "bullet" ? "</ul>" : "</ol>";
+          }
+          // Start new list
+          currentListType = format;
+          html += format === "bullet" ? "<ul>" : "<ol>";
+        }
+        // Add list item
+        html += `<li>${text}</li>`;
+      } else {
+        // Close any open list
+        if (currentListType) {
+          html += currentListType === "bullet" ? "</ul>" : "</ol>";
+          currentListType = null;
+        }
+
+        // Handle other formats
+        switch (format) {
+          case "heading":
+            html += `<h3>${text}</h3>`;
+            break;
+          case "formula":
+            html += `<div class="formula">${text}</div>`;
+            break;
+          case "italic":
+            html += `<p><em>${text}</em></p>`;
+            break;
+          case "bold":
+            html += `<p><strong>${text}</strong></p>`;
+            break;
+          default: // paragraph
+            html += `<p>${text}</p>`;
+        }
+      }
+    });
+
+    // Close any open list
+    if (currentListType) {
+      html += currentListType === "bullet" ? "</ul>" : "</ol>";
+    }
+
+    return html;
+  };
+
+  // Add a function to convert HTML back to a section structure
+  const htmlToSection = (html: string, originalSection: Section): Section => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    // Extract title from the first h2, or keep original if not found
+    const titleElement = doc.querySelector("h2");
+    const title = titleElement
+      ? titleElement.textContent || originalSection.title
+      : originalSection.title;
+
+    // Initialize sentences array
+    const sentences: Sentence[] = [];
+    let sentenceId = 1;
+
+    // Process each element to construct sentences
+    Array.from(doc.body.children).forEach((element) => {
+      const tagName = element.tagName.toLowerCase();
+
+      if (tagName === "h2") {
+        // Skip the title element as we've already processed it
+        return;
+      } else if (tagName === "h3") {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent || "",
+          format: "heading",
+        });
+      } else if (tagName === "p") {
+        // Check for italic or bold
+        if (
+          element.querySelector("em") &&
+          element.innerHTML.trim().startsWith("<em>")
+        ) {
+          sentences.push({
+            id: sentenceId++,
+            text: element.textContent || "",
+            format: "italic",
+          });
+        } else if (
+          element.querySelector("strong") &&
+          element.innerHTML.trim().startsWith("<strong>")
+        ) {
+          sentences.push({
+            id: sentenceId++,
+            text: element.textContent || "",
+            format: "bold",
+          });
+        } else {
+          sentences.push({
+            id: sentenceId++,
+            text: element.textContent || "",
+            format: "paragraph",
+          });
+        }
+      } else if (tagName === "ul") {
+        // Process bullet list
+        Array.from(element.querySelectorAll("li")).forEach((li) => {
+          sentences.push({
+            id: sentenceId++,
+            text: li.textContent || "",
+            format: "bullet",
+          });
+        });
+      } else if (tagName === "ol") {
+        // Process numbered list
+        Array.from(element.querySelectorAll("li")).forEach((li) => {
+          sentences.push({
+            id: sentenceId++,
+            text: li.textContent || "",
+            format: "numbered",
+          });
+        });
+      } else if (tagName === "div" && element.classList.contains("formula")) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent || "",
+          format: "formula",
+        });
+      } else {
+        // For any other elements, treat as paragraphs
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent || "",
+          format: "paragraph",
+        });
+      }
+    });
+
+    return {
+      title,
+      sentences,
+    };
+  };
+
   const handleEditClick = () => {
-    setIsEditing(true);
-    onEdit(); // Call the parent's onEdit handler
+    if (typeof msg.text !== "string" && msg.text[0]) {
+      // Convert section to HTML for the editor
+      const html = sectionToHtml(msg.text[0]);
+      setEditorContent(html);
+      setIsEditing(true);
+      setEditorInitialized(true);
+      onEdit(); // Call the parent's onEdit handler
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (typeof msg.text !== "string" && msg.text[0]) {
+      // Convert the HTML back to a section structure
+      const updatedSection = htmlToSection(editorContent, msg.text[0]);
+
+      // Create updated message
+      const updatedMessage = {
+        user: "AI",
+        text: [updatedSection],
+        files: msg.files || [],
+        fileMetadata: msg.fileMetadata || [],
+      };
+
+      // Save the updated content
+      onSave(updatedMessage, index);
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
   };
 
   // Animation variants for framer-motion
@@ -372,6 +571,11 @@ export const ResponseMessage = ({
       y: 0,
       transition: { duration: 0.4 },
     },
+  };
+
+  // Handler for editor content change
+  const handleEditorUpdate = (html: string) => {
+    setEditorContent(html);
   };
 
   const handleRegenerateSection = async () => {
@@ -472,22 +676,37 @@ export const ResponseMessage = ({
   if (isEditing) {
     return (
       <div className="md:p-2 rounded mb-2">
-        <ParagraphEditor
-          onSave={(data) => {
-            onSave(data, index);
-            setIsEditing(false);
-          }}
-          messageIndex={index}
-          initialData={{
-            user: "AI",
-            text: [
-              {
-                title: section.title,
-                sentences: section.sentences,
-              },
-            ],
-          }}
-        />
+        <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
+          <div className="mb-4">
+            <h3 className="text-lg md:text-xl font-bold text-[#94b347] mb-4">
+              Editing: {section.title}
+            </h3>
+
+            {editorInitialized && (
+              <RichTextEditor
+                initialContent={editorContent}
+                onChange={handleEditorUpdate}
+                className="min-h-[300px] border border-gray-200 rounded-md"
+              />
+            )}
+
+            <div className="flex justify-end space-x-3 mt-4">
+              <Button
+                onClick={handleCancelEdit}
+                variant="outline"
+                className="border-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveEdit}
+                className="bg-[#94b347] hover:bg-[#7a9639] text-white"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -818,16 +1037,26 @@ export const ResponseMessage = ({
                     />
                   );
                 } else if (format === "formula") {
-                  // Use the same cleanFormulaContent function as in chat route
+                  // Check if formula appears to be mangled with newlines or missing delimiters
                   let processedText = cleanFormulaContent(sentence.text);
 
-                  // Ensure proper LaTeX delimiters
-                  if (
-                    !processedText.startsWith("$") &&
+                  // Additional formula cleaning for edge cases
+                  if (!processedText.startsWith("$")) {
+                    processedText = `$${processedText}$`;
+                  } else if (
+                    processedText.startsWith("$$") &&
+                    !processedText.endsWith("$$")
+                  ) {
+                    processedText = `${processedText}$$`;
+                  } else if (
+                    processedText.startsWith("$") &&
                     !processedText.endsWith("$")
                   ) {
-                    processedText = `$${processedText}$`;
+                    processedText = `${processedText}$`;
                   }
+
+                  // For debugging
+                  console.log("Rendering formula:", processedText);
 
                   content = (
                     <div className="px-4 py-3 bg-gray-50 text-gray-800 text-sm md:text-base text-left whitespace-normal break-words overflow-x-auto my-3 rounded-md border border-gray-200">

@@ -557,6 +557,33 @@ const formatCommonEquation = (text: string): string => {
   return normalized;
 };
 
+// Update the cleanFormulaContent function to match the one in ResponseMessage.tsx
+const cleanFormulaContent = (text: string): string => {
+  // Check if the text is likely a mangled formula
+  if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
+    // Remove newlines and normalize spaces
+    let cleaned = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+
+    // Add delimiters if missing
+    if (!cleaned.startsWith("$")) cleaned = `$${cleaned}`;
+    if (!cleaned.endsWith("$")) cleaned = `${cleaned}$`;
+
+    // Fix common physics equations
+    cleaned = cleaned
+      // Fix spacing around operators
+      .replace(/(\w+)=(\w+)/g, "$1 = $2")
+      .replace(/(\w+)\+(\w+)/g, "$1 + $2")
+      .replace(/(\w+)-(\w+)/g, "$1 - $2")
+      // Fix subscripts
+      .replace(/V0/g, "V_0")
+      .replace(/Vf/g, "V_f");
+
+    return cleaned;
+  }
+
+  return text;
+};
+
 export default function ParagraphEditor({
   onSave,
   messageIndex,
@@ -997,10 +1024,11 @@ export default function ParagraphEditor({
               format: "formula" as FormatType,
             });
           } else if (sentence.format === "formula") {
-            // For edited formulas, apply formatting
+            // For edited formulas, apply consistent formatting
+            const cleanedFormula = cleanFormulaContent(sentence.text);
             sentenceIdMap.set(idx, {
               id: sentence.id,
-              text: preserveFormulaFormatting(sentence.text),
+              text: cleanedFormula,
               format: "formula",
             });
           } else {
@@ -1026,6 +1054,14 @@ export default function ParagraphEditor({
         ],
       };
 
+      // Log the data before saving to help with debugging
+      console.log(
+        "Saving paragraph data:",
+        JSON.stringify(
+          paragraphData.text[0].sentences.filter((s) => s.format === "formula")
+        )
+      );
+
       onSave(paragraphData, messageIndex);
       setSavedData(paragraphData);
     } else {
@@ -1037,6 +1073,16 @@ export default function ParagraphEditor({
           return {
             ...sentence,
             text: formatCommonEquation(sentence.text),
+            format: "formula" as FormatType,
+          };
+        }
+
+        // Special handling for formula format to ensure consistency with ResponseMessage rendering
+        if (sentence.format === "formula") {
+          const cleanedFormula = cleanFormulaContent(sentence.text);
+          return {
+            ...sentence,
+            text: cleanedFormula,
             format: "formula" as FormatType,
           };
         }
