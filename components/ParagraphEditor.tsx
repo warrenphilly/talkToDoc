@@ -584,6 +584,332 @@ const cleanFormulaContent = (text: string): string => {
   return text;
 };
 
+// Add or update the nested formatting detection function
+const hasNestedFormatting = (html: string): boolean => {
+  // Check for bold within italic or italic within bold
+  const hasNestedBoldInItalic =
+    html.includes("<em><strong>") ||
+    html.includes("<em><b>") ||
+    html.includes("<i><strong>") ||
+    html.includes("<i><b>");
+
+  const hasNestedItalicInBold =
+    html.includes("<strong><em>") ||
+    html.includes("<strong><i>") ||
+    html.includes("<b><em>") ||
+    html.includes("<b><i>");
+
+  // Check for direct formatting of list items
+  const hasFormattedListItems =
+    html.includes("<li><strong>") ||
+    html.includes("<li><em>") ||
+    html.includes("<li><b>") ||
+    html.includes("<li><i>");
+
+  // Check for nested lists
+  const hasNestedList = html.includes("<li><ul>") || html.includes("<li><ol>");
+
+  return (
+    hasNestedBoldInItalic ||
+    hasNestedItalicInBold ||
+    hasFormattedListItems ||
+    hasNestedList
+  );
+};
+
+// Update the parseContentToHTML function to handle rich-text format in lists
+const parseContentToHTML = (sentences: Sentence[]): string => {
+  let html = "";
+  let inBulletList = false;
+  let inNumberedList = false;
+
+  sentences.forEach((sentence, index) => {
+    const { text = "", format, align } = sentence;
+    const alignStyle = align ? `text-align: ${align};` : "";
+    const textDiv = alignStyle
+      ? `<div style="${alignStyle}">${text}</div>`
+      : text;
+
+    // Check for rich-text format to preserve complex nested formatting
+    if (format === "rich-text") {
+      // If we're in a list, add list item with preserved formatting
+      if (inBulletList) {
+        html += `<li>${text}</li>`;
+      } else if (inNumberedList) {
+        html += `<li>${text}</li>`;
+      } else {
+        // Not in a list, just add the rich text directly
+        html += text;
+      }
+      return;
+    }
+
+    // Handle list transitions
+    if (format === "bullet") {
+      if (!inBulletList) {
+        // Close any open numbered list
+        if (inNumberedList) {
+          html += "</ol>";
+          inNumberedList = false;
+        }
+        // Start a new bullet list
+        html += "<ul>";
+        inBulletList = true;
+      }
+      html += `<li>${textDiv}</li>`;
+      return;
+    }
+
+    if (format === "numbered") {
+      if (!inNumberedList) {
+        // Close any open bullet list
+        if (inBulletList) {
+          html += "</ul>";
+          inBulletList = false;
+        }
+        // Start a new numbered list
+        html += "<ol>";
+        inNumberedList = true;
+      }
+      html += `<li>${textDiv}</li>`;
+      return;
+    }
+
+    // Close any open lists when transitioning to non-list content
+    if (inBulletList) {
+      html += "</ul>";
+      inBulletList = false;
+    }
+    if (inNumberedList) {
+      html += "</ol>";
+      inNumberedList = false;
+    }
+
+    // Handle other formats
+    switch (format) {
+      case "h1":
+        html += `<h1 style="${alignStyle}">${text}</h1>`;
+        break;
+      case "h2":
+        html += `<h2 style="${alignStyle}">${text}</h2>`;
+        break;
+      case "bold":
+        html += `<p style="${alignStyle}"><strong>${text}</strong></p>`;
+        break;
+      case "italic":
+        html += `<p style="${alignStyle}"><em>${text}</em></p>`;
+        break;
+      case "formula":
+        html += `<div class="formula" style="${alignStyle}">${text}</div>`;
+        break;
+      default:
+        html += `<p style="${alignStyle}">${text}</p>`;
+    }
+  });
+
+  // Close any open lists at the end
+  if (inBulletList) {
+    html += "</ul>";
+  }
+  if (inNumberedList) {
+    html += "</ol>";
+  }
+
+  return html;
+};
+
+// Update the parseHTMLFromEditor function to detect and preserve rich formatted content
+const parseHTMLFromEditor = (html: string): Sentence[] => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const sentences: Sentence[] = [];
+  let sentenceId = 1;
+
+  // Helper to extract text alignment from style attribute
+  const getTextAlign = (style?: string): string | undefined => {
+    if (!style) return undefined;
+    const match = style.match(/text-align\s*:\s*(left|center|right|justify)/i);
+    return match ? match[1] : undefined;
+  };
+
+  // Process document body
+  Array.from(doc.body.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        sentences.push({
+          id: sentenceId++,
+          text,
+          align: undefined,
+        });
+      }
+      return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const element = node as HTMLElement;
+    const tagName = element.tagName.toLowerCase();
+    const textAlign = getTextAlign(element.getAttribute("style") || undefined);
+
+    // Handle lists (ul/ol)
+    if (tagName === "ul") {
+      Array.from(element.querySelectorAll("li")).forEach((li) => {
+        // Check if the list item has complex formatting
+        if (hasNestedFormatting(li.innerHTML)) {
+          sentences.push({
+            id: sentenceId++,
+            text: li.innerHTML,
+            format: "rich-text",
+            align: textAlign,
+          });
+        } else {
+          sentences.push({
+            id: sentenceId++,
+            text: li.textContent?.trim() || "",
+            format: "bullet",
+            align: textAlign,
+          });
+        }
+      });
+      return;
+    }
+
+    if (tagName === "ol") {
+      Array.from(element.querySelectorAll("li")).forEach((li) => {
+        // Check if the list item has complex formatting
+        if (hasNestedFormatting(li.innerHTML)) {
+          sentences.push({
+            id: sentenceId++,
+            text: li.innerHTML,
+            format: "rich-text",
+            align: textAlign,
+          });
+        } else {
+          sentences.push({
+            id: sentenceId++,
+            text: li.textContent?.trim() || "",
+            format: "numbered",
+            align: textAlign,
+          });
+        }
+      });
+      return;
+    }
+
+    // Process div elements
+    if (tagName === "div") {
+      // Check for formulas
+      if (element.classList.contains("formula")) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.innerHTML,
+          format: "formula",
+          align: textAlign,
+        });
+        return;
+      }
+
+      // Check for other div content
+      const text = element.textContent?.trim();
+      if (text) {
+        sentences.push({
+          id: sentenceId++,
+          text,
+          align: textAlign,
+        });
+      }
+      return;
+    }
+
+    // Handle headings
+    if (tagName === "h1") {
+      sentences.push({
+        id: sentenceId++,
+        text: element.textContent?.trim() || "",
+        format: "h1",
+        align: textAlign,
+      });
+      return;
+    }
+
+    if (tagName === "h2") {
+      sentences.push({
+        id: sentenceId++,
+        text: element.textContent?.trim() || "",
+        format: "h2",
+        align: textAlign,
+      });
+      return;
+    }
+
+    // Handle paragraphs
+    if (tagName === "p") {
+      // Check for nested formatting in paragraphs
+      if (hasNestedFormatting(element.innerHTML)) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.innerHTML,
+          format: "rich-text",
+          align: textAlign,
+        });
+        return;
+      }
+
+      // Check for bold (strong/b)
+      if (
+        element.querySelector("strong, b") &&
+        !element.querySelector("em, i")
+      ) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent?.trim() || "",
+          format: "bold",
+          align: textAlign,
+        });
+        return;
+      }
+
+      // Check for italic (em/i)
+      if (
+        element.querySelector("em, i") &&
+        !element.querySelector("strong, b")
+      ) {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent?.trim() || "",
+          format: "italic",
+          align: textAlign,
+        });
+        return;
+      }
+
+      // Regular paragraph
+      const text = element.textContent?.trim();
+      if (text) {
+        sentences.push({
+          id: sentenceId++,
+          text,
+          align: textAlign,
+        });
+      }
+      return;
+    }
+
+    // Handle other elements
+    const text = element.textContent?.trim();
+    if (text) {
+      sentences.push({
+        id: sentenceId++,
+        text,
+        align: textAlign,
+      });
+    }
+  });
+
+  return sentences;
+};
+
 export default function ParagraphEditor({
   onSave,
   messageIndex,
@@ -737,258 +1063,10 @@ export default function ParagraphEditor({
     }
   }, [editor, originalSentences]);
 
-  // Helper function to convert sentences with their formats to HTML
-  const parseContentToHTML = (
-    sentences: Array<{ id: number; text: string; format?: FormatType }>
-  ) => {
-    let htmlContent = "";
-    let isInBulletList = false;
-    let isInNumberedList = false;
-
-    for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i];
-      const format = sentence.format || "paragraph";
-      let text = sentence.text;
-
-      // Add data attribute for tracking the original sentence ID
-      const dataAttr = `data-sentence-id="${i}"`;
-
-      // Check if we should auto-detect and fix formulas
-      if (detectFormula(text) && format !== "formula") {
-        console.log(`Detected formula in non-formula content: ${text}`);
-        text = formatCommonEquation(text);
-      }
-
-      // Handle list transitions
-      if (format !== "bullet" && isInBulletList) {
-        htmlContent += "</ul>";
-        isInBulletList = false;
-      }
-
-      if (format !== "numbered" && isInNumberedList) {
-        htmlContent += "</ol>";
-        isInNumberedList = false;
-      }
-
-      // Process based on format
-      switch (format) {
-        case "rich-text":
-          // Already HTML, include directly
-          htmlContent += text;
-          break;
-
-        case "bullet":
-          if (!isInBulletList) {
-            htmlContent += "<ul>";
-            isInBulletList = true;
-          }
-          htmlContent += `<li ${dataAttr}>${text}</li>`;
-          break;
-
-        case "numbered":
-          if (!isInNumberedList) {
-            htmlContent += "<ol>";
-            isInNumberedList = true;
-          }
-          htmlContent += `<li ${dataAttr}>${text}</li>`;
-          break;
-
-        case "heading":
-          htmlContent += `<h3 ${dataAttr}>${text}</h3>`;
-          break;
-
-        case "bold":
-          htmlContent += `<p ${dataAttr}><strong>${text}</strong></p>`;
-          break;
-
-        case "italic":
-          htmlContent += `<p ${dataAttr}><em>${text}</em></p>`;
-          break;
-
-        case "formula":
-          // Special handling for formulas - ensure they're visually distinct in the editor
-          // Check if the formula is already wrapped in $ or $$
-          if (
-            (text.startsWith("$") && text.endsWith("$")) ||
-            (text.startsWith("$$") && text.endsWith("$$"))
-          ) {
-            htmlContent += `<div class="formula-block" ${dataAttr}>${text}</div>`;
-          } else {
-            // Add $ for inline math if not already present
-            htmlContent += `<div class="formula-block" ${dataAttr}>$${text}$</div>`;
-          }
-          break;
-
-        default: // paragraph
-          // Check for inline math in paragraphs
-          if (text.includes("$")) {
-            const hasFormula = /\$[^$]+\$/g.test(text);
-            if (hasFormula) {
-              // Mark paragraphs with inline math to make them more identifiable
-              htmlContent += `<p class="contains-math" ${dataAttr}>${text}</p>`;
-            } else {
-              htmlContent += `<p ${dataAttr}>${text}</p>`;
-            }
-          } else {
-            htmlContent += `<p ${dataAttr}>${text}</p>`;
-          }
-      }
-    }
-
-    // Close any open lists
-    if (isInBulletList) {
-      htmlContent += "</ul>";
-    }
-
-    if (isInNumberedList) {
-      htmlContent += "</ol>";
-    }
-
-    return htmlContent;
-  };
-
-  // Helper function to analyze the editor content and reconstruct formatted sentences
-  const parseHTMLToFormattedContent = () => {
-    if (!editor) return [];
-
-    const content = editor.getHTML();
-    const sentences: Array<{
-      id: number;
-      text: string;
-      format?: FormatType;
-      originalIndex?: number;
-    }> = [];
-
-    // Create a temporary div to parse the HTML
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = content;
-
-    // Process the children
-    let id = 1;
-
-    Array.from(tempDiv.children).forEach((element) => {
-      let format: FormatType = "paragraph";
-      let text = element.innerHTML;
-
-      // Get original sentence ID if available
-      const originalIndex = element.getAttribute("data-sentence-id")
-        ? parseInt(element.getAttribute("data-sentence-id") || "0", 10)
-        : undefined;
-
-      // Determine format based on tag
-      if (element.tagName === "UL") {
-        // Handle bullet lists
-        Array.from(element.querySelectorAll("li")).forEach((li) => {
-          const liText = li.innerHTML;
-
-          // Check if this list item contains a formula
-          if (detectFormula(liText)) {
-            const formattedFormula = formatCommonEquation(liText);
-            sentences.push({
-              id: id++,
-              text: formattedFormula,
-              format: "formula",
-              originalIndex,
-            });
-          } else {
-            sentences.push({
-              id: id++,
-              text: liText,
-              format: "bullet",
-              originalIndex,
-            });
-          }
-        });
-        return; // Skip further processing for this element
-      } else if (element.tagName === "OL") {
-        // Handle numbered lists
-        Array.from(element.querySelectorAll("li")).forEach((li) => {
-          const liText = li.innerHTML;
-
-          // Check if this list item contains a formula
-          if (detectFormula(liText)) {
-            const formattedFormula = formatCommonEquation(liText);
-            sentences.push({
-              id: id++,
-              text: formattedFormula,
-              format: "formula",
-              originalIndex,
-            });
-          } else {
-            sentences.push({
-              id: id++,
-              text: liText,
-              format: "numbered",
-              originalIndex,
-            });
-          }
-        });
-        return; // Skip further processing for this element
-      } else if (element.tagName === "H3") {
-        format = "heading";
-      } else if (element.tagName === "PRE") {
-        // Check for code/formula blocks
-        const codeElement = element.querySelector("code");
-        if (codeElement && codeElement.classList.contains("math-formula")) {
-          format = "formula";
-          text = codeElement.innerHTML;
-        }
-      } else if (element.tagName === "P") {
-        // Check for hidden formulas in paragraphs
-        if (detectFormula(text)) {
-          format = "formula";
-          text = formatCommonEquation(text);
-        } else {
-          // Check for bold/italic
-          if (
-            element.querySelector("strong")?.parentElement === element &&
-            element.childNodes.length === 1
-          ) {
-            format = "bold";
-            text = element.querySelector("strong")!.innerHTML;
-          } else if (
-            element.querySelector("em")?.parentElement === element &&
-            element.childNodes.length === 1
-          ) {
-            format = "italic";
-            text = element.querySelector("em")!.innerHTML;
-          }
-        }
-      }
-
-      // Add special handling for formula blocks
-      if (element.classList.contains("formula-block")) {
-        format = "formula";
-        // Preserve the formula exactly as it is
-        text = element.textContent || "";
-
-        // Make sure it has proper LaTeX delimiters
-        if (!text.startsWith("$") && !text.endsWith("$")) {
-          text = "$" + text + "$";
-        }
-      }
-
-      // Additional formula detection for the mangled physics equation
-      if (text.includes("Thisiscommonlyexpressedasd")) {
-        format = "formula";
-        text = "$d = V_0 t + \\frac{1}{2} a t^{2}$";
-      }
-
-      sentences.push({
-        id: id++,
-        text,
-        format,
-        originalIndex,
-      });
-    });
-
-    return sentences;
-  };
-
   const handleSave = () => {
     if (!editor) return;
 
-    const updatedSentences = parseHTMLToFormattedContent();
+    const updatedSentences = parseHTMLFromEditor(editor.getHTML());
 
     // If we're editing existing content, preserve unedited formulas
     if (initialData && originalSentences.length > 0) {

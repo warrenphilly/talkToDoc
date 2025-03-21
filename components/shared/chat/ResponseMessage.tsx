@@ -13,12 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Message, ParagraphData, Section, Sentence } from "@/lib/types";
 import { Editor } from "@tiptap/react";
+import DOMPurify from "dompurify";
 import { motion } from "framer-motion";
 import { renderToString } from "katex";
 import "katex/dist/katex.min.css";
 import { Edit2, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import React, { ComponentProps, useEffect, useState } from "react";
+import React, { ComponentProps, ReactNode, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -49,22 +50,136 @@ const RichTextEditor = dynamic(() => import("@/components/rich-text-editor"), {
   ),
 });
 
-// Add this helper function to parse and format text with Markdown-style bold
-const formatTextWithMarkdown = (text: string) => {
-  // Replace **text** with bold spans
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-
-  if (parts.length === 1) {
-    return text; // No markdown formatting found
+// Enhanced function to handle both bold (**) and italic ($$) markdown formatting
+const formatTextWithMarkdown = (text: string): React.ReactNode => {
+  // Check if we have any markdown formatting to process
+  if (!text.includes("**") && !text.includes("$$")) {
+    return text;
   }
 
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      // Extract the text between ** and render it as bold
-      const boldText = part.slice(2, -2);
-      return <strong key={i}>{boldText}</strong>;
+  // Process both bold and italic markdown
+  const segments: Array<{
+    text: string;
+    isBold: boolean;
+    isItalic: boolean;
+  }> = [];
+
+  // First, split the text by bold markers
+  let currentText = text;
+  let boldMatch: RegExpExecArray | null;
+  const boldRegex = /\*\*([^*]+)\*\*/g;
+
+  // Keep track of positions to avoid overlap issues
+  let lastBoldEnd = 0;
+  let normalTextStart = 0;
+
+  // Process bold formatting first
+  while ((boldMatch = boldRegex.exec(currentText)) !== null) {
+    // Add any normal text before this bold match
+    if (boldMatch.index > normalTextStart) {
+      segments.push({
+        text: currentText.substring(normalTextStart, boldMatch.index),
+        isBold: false,
+        isItalic: false,
+      });
     }
-    return part;
+
+    // Add the bold text
+    segments.push({
+      text: boldMatch[1], // The content inside ** marks
+      isBold: true,
+      isItalic: false,
+    });
+
+    // Update our position trackers
+    normalTextStart = boldMatch.index + boldMatch[0].length;
+    lastBoldEnd = normalTextStart;
+  }
+
+  // Add any remaining text after the last bold match
+  if (normalTextStart < currentText.length) {
+    segments.push({
+      text: currentText.substring(normalTextStart),
+      isBold: false,
+      isItalic: false,
+    });
+  }
+
+  // Now process italic formatting within each segment
+  const processedSegments: Array<{
+    text: string;
+    isBold: boolean;
+    isItalic: boolean;
+  }> = [];
+
+  for (const segment of segments) {
+    // Only process non-bold segments for italic, or we already have bold segments
+    if (!segment.text.includes("$$")) {
+      processedSegments.push(segment);
+      continue;
+    }
+
+    // For segments with potential italic formatting
+    let italicText = segment.text;
+    let italicMatch: RegExpExecArray | null;
+    const italicRegex = /\$\$([^$]+)\$\$/g;
+    let italicStart = 0;
+
+    while ((italicMatch = italicRegex.exec(italicText)) !== null) {
+      // Add any text before this italic match
+      if (italicMatch.index > italicStart) {
+        processedSegments.push({
+          text: italicText.substring(italicStart, italicMatch.index),
+          isBold: segment.isBold,
+          isItalic: false,
+        });
+      }
+
+      // Add the italic text
+      processedSegments.push({
+        text: italicMatch[1], // The content inside $$ marks
+        isBold: segment.isBold,
+        isItalic: true,
+      });
+
+      italicStart = italicMatch.index + italicMatch[0].length;
+    }
+
+    // Add any remaining text after the last italic match
+    if (italicStart < italicText.length) {
+      processedSegments.push({
+        text: italicText.substring(italicStart),
+        isBold: segment.isBold,
+        isItalic: false,
+      });
+    }
+  }
+
+  // Debug logging
+  console.log("Markdown processed segments:", processedSegments);
+
+  // Convert the segments to React elements
+  if (processedSegments.length === 0) {
+    return text; // Return original if no formatting
+  }
+
+  return processedSegments.map((segment, index) => {
+    let content = segment.text;
+
+    // Apply formatting based on flags
+    if (segment.isBold && segment.isItalic) {
+      return (
+        <strong key={index}>
+          <em>{content}</em>
+        </strong>
+      );
+    } else if (segment.isBold) {
+      return <strong key={index}>{content}</strong>;
+    } else if (segment.isItalic) {
+      return <em key={index}>{content}</em>;
+    } else {
+      return <span key={index}>{content}</span>;
+    }
   });
 };
 
@@ -302,6 +417,132 @@ const renderComplexFormula = (formula: string): string => {
   }
 };
 
+// Update EditorStyles function with better heading differentiation
+const EditorStyles = () => (
+  <style jsx global>{`
+    /* Editor-specific styling to highlight formatting */
+    .editor-content strong,
+    .editor-content b,
+    .ProseMirror strong,
+    .ProseMirror b {
+      font-weight: 700 !important;
+      color: #000 !important;
+    }
+
+    .editor-content em,
+    .editor-content i,
+    .ProseMirror em,
+    .ProseMirror i {
+      font-style: italic !important;
+      color: #000 !important;
+    }
+
+    /* Update heading styles with better hierarchy */
+    .editor-content h1,
+    .ProseMirror h1 {
+      font-size: 1.8em !important;
+      font-weight: 700 !important;
+      margin: 1.2em 0 0.6em !important;
+      color: #94b347 !important; /* Green color for h1 */
+      line-height: 1.3 !important;
+    }
+
+    .editor-content h2,
+    .ProseMirror h2 {
+      font-size: 1.5em !important;
+      font-weight: 600 !important;
+      margin: 1em 0 0.5em !important;
+      color: #333 !important;
+      line-height: 1.4 !important;
+    }
+
+    .editor-content h3,
+    .ProseMirror h3 {
+      font-size: 1.3em !important;
+      font-weight: bold !important;
+      margin: 0.8em 0 0.4em !important;
+      color: #444 !important;
+      line-height: 1.4 !important;
+    }
+
+    .editor-content p,
+    .ProseMirror p {
+      margin: 0.5em 0 !important;
+    }
+
+    .editor-content [style*="text-align: center"],
+    .ProseMirror [style*="text-align: center"] {
+      text-align: center !important;
+    }
+
+    .editor-content [style*="text-align: right"],
+    .ProseMirror [style*="text-align: right"] {
+      text-align: right !important;
+    }
+
+    /* Lists styling */
+    .editor-content ul,
+    .ProseMirror ul {
+      list-style-type: disc !important;
+      padding-left: 1.5em !important;
+      margin: 0.5em 0 !important;
+    }
+
+    .editor-content ol,
+    .ProseMirror ol {
+      list-style-type: decimal !important;
+      padding-left: 1.5em !important;
+      margin: 0.5em 0 !important;
+    }
+
+    .editor-content li,
+    .ProseMirror li {
+      margin: 0.25em 0 !important;
+    }
+
+    .editor-content .formula,
+    .ProseMirror .formula {
+      background-color: #f5f7fa !important;
+      padding: 0.5em !important;
+      border-radius: 0.25em !important;
+      margin: 0.5em 0 !important;
+    }
+
+    /* Make sure formatting is clearly visible */
+    .prose strong,
+    b {
+      font-weight: 700 !important;
+    }
+
+    .prose em,
+    i {
+      font-style: italic !important;
+    }
+
+    /* Apply heading styles in the output content as well */
+    .prose h1 {
+      font-size: 1.8em !important;
+      font-weight: 700 !important;
+      color: #94b347 !important;
+      margin: 1.2em 0 0.6em !important;
+    }
+
+    .prose h2 {
+      font-size: 1.5em !important;
+      font-weight: 600 !important;
+      color: #333 !important;
+      margin: 1em 0 0.5em !important;
+    }
+
+    .prose h3 {
+      font-size: 1.3em !important;
+      font-weight: bold !important;
+      color: #444 !important;
+      margin: 0.8em 0 0.4em !important;
+    }
+  `}</style>
+);
+
 export const ResponseMessage = ({
   msg,
   handleSectionClick,
@@ -347,7 +588,7 @@ export const ResponseMessage = ({
     }
   }, [msg]);
 
-  // Add a function to convert the section content to HTML for the editor
+  // Update the function to handle list formatting better
   const sectionToHtml = (section: Section): string => {
     if (!section || !section.sentences || section.sentences.length === 0) {
       return "<p>No content available</p>";
@@ -357,151 +598,365 @@ export const ResponseMessage = ({
     let currentListType: string | null = null;
     let listItems = "";
 
+    console.log("Converting section to HTML:", {
+      title: section.title,
+      sentenceCount: section.sentences.length,
+    });
+
     section.sentences.forEach((sentence) => {
       const format = sentence.format || "paragraph";
       const text = sentence.text;
+      const align = sentence.align || null;
+
+      // Create style attribute for alignment if present
+      const alignStyle = align ? ` style="text-align: ${align};"` : "";
 
       // Handle list grouping
       if (format === "bullet" || format === "numbered") {
-        // Start a new list if needed
+        // If we don't have a list started, or we're changing list types
         if (currentListType !== format) {
           // Close previous list if exists
           if (currentListType) {
+            html += listItems;
             html += currentListType === "bullet" ? "</ul>" : "</ol>";
+            listItems = "";
           }
+
           // Start new list
           currentListType = format;
-          html += format === "bullet" ? "<ul>" : "<ol>";
-        }
-        // Add list item
-        html += `<li>${text}</li>`;
-      } else {
-        // Close any open list
-        if (currentListType) {
-          html += currentListType === "bullet" ? "</ul>" : "</ol>";
-          currentListType = null;
+          const listTag = format === "bullet" ? "ul" : "ol";
+          const listClass =
+            format === "bullet"
+              ? "bullet-list-container"
+              : "ordered-list-container";
+          html += `<${listTag} class="${listClass}"${alignStyle}>`;
         }
 
-        // Handle other formats
-        switch (format) {
-          case "heading":
-            html += `<h3>${text}</h3>`;
-            break;
-          case "formula":
-            html += `<div class="formula">${text}</div>`;
-            break;
-          case "italic":
-            html += `<p><em>${text}</em></p>`;
-            break;
-          case "bold":
-            html += `<p><strong>${text}</strong></p>`;
-            break;
-          default: // paragraph
-            html += `<p>${text}</p>`;
+        // Add list item with alignment if needed
+        // For numbered lists, ensure we add the proper data attributes to preserve numbering
+        const listItemAttrs =
+          format === "numbered"
+            ? ` class="list-item" data-list-type="ordered"${alignStyle}`
+            : ` class="list-item"${alignStyle}`;
+
+        listItems += `<li${listItemAttrs}>${text}</li>`;
+      } else {
+        // If we were in a list, close it
+        if (currentListType) {
+          html += listItems;
+          html += currentListType === "bullet" ? "</ul>" : "</ol>";
+          currentListType = null;
+          listItems = "";
+        }
+
+        // Handle nested formatting
+        if (format === "rich-text") {
+          // For rich-text format, use the HTML content directly
+          html += `<div${alignStyle}>${text}</div>`;
+        } else {
+          // Handle other formats with proper HTML tags and alignment
+          switch (format) {
+            case "h1":
+              html += `<h1${alignStyle}>${text}</h1>`;
+              break;
+            case "h2":
+              html += `<h2${alignStyle}>${text}</h2>`;
+              break;
+            case "heading":
+              html += `<h3${alignStyle}>${text}</h3>`;
+              break;
+            case "formula":
+              html += `<div class="formula p-3 bg-gray-50 rounded my-3"${alignStyle}>${text}</div>`;
+              break;
+            case "italic":
+            case "em":
+              // Handle special case where text already has $$ markup
+              if (text.includes("$$")) {
+                html += `<p${alignStyle}>${text}</p>`;
+              } else {
+                html += `<p${alignStyle}><em>${text}</em></p>`;
+              }
+              break;
+            case "bold":
+              // Handle special case where text already has ** markup
+              if (text.includes("**")) {
+                html += `<p${alignStyle}>${text}</p>`;
+              } else {
+                html += `<p${alignStyle}><strong>${text}</strong></p>`;
+              }
+              break;
+            default: // paragraph
+              // Check if text contains markdown formatting that should be preserved
+              if (text.includes("**") || text.includes("$$")) {
+                // Process markdown in paragraphs but preserve the original markup
+                html += `<p${alignStyle}>${text}</p>`;
+              } else {
+                html += `<p${alignStyle}>${text}</p>`;
+              }
+          }
         }
       }
     });
 
     // Close any open list
     if (currentListType) {
+      html += listItems;
       html += currentListType === "bullet" ? "</ul>" : "</ol>";
     }
 
-    return html;
+    // Log for debugging
+    console.log("Generated HTML for editor:", html.substring(0, 200) + "...");
+
+    // Sanitize HTML to prevent XSS
+    return DOMPurify.sanitize(html, {
+      ADD_ATTR: ["data-list-type"], // Allow our custom data attributes
+    });
   };
 
   // Add a function to convert HTML back to a section structure
   const htmlToSection = (html: string, originalSection: Section): Section => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+    // Create a temporary DOM element to parse the HTML
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = DOMPurify.sanitize(html);
+
+    console.log("Parsing HTML:", tempDiv.innerHTML);
 
     // Extract title from the first h2, or keep original if not found
-    const titleElement = doc.querySelector("h2");
+    const titleElement = tempDiv.querySelector("h2");
     const title = titleElement
       ? titleElement.textContent || originalSection.title
       : originalSection.title;
+
+    // Remove the title element as we've already processed it
+    if (titleElement) {
+      titleElement.remove();
+    }
 
     // Initialize sentences array
     const sentences: Sentence[] = [];
     let sentenceId = 1;
 
-    // Process each element to construct sentences
-    Array.from(doc.body.children).forEach((element) => {
-      const tagName = element.tagName.toLowerCase();
-
-      if (tagName === "h2") {
-        // Skip the title element as we've already processed it
+    // Process all elements
+    const processNode = (node: Element) => {
+      // Skip already processed nodes
+      if (node.getAttribute("data-processed") === "true") {
         return;
-      } else if (tagName === "h3") {
-        sentences.push({
-          id: sentenceId++,
-          text: element.textContent || "",
-          format: "heading",
-        });
-      } else if (tagName === "p") {
-        // Check for italic or bold
-        if (
-          element.querySelector("em") &&
-          element.innerHTML.trim().startsWith("<em>")
-        ) {
+      }
+
+      const tagName = node.tagName.toLowerCase();
+      const style = node.getAttribute("style") || "";
+      const textAlign =
+        style.match(/text-align:\s*(center|right|left)/i)?.[1] || null;
+
+      // Handle different element types
+      switch (tagName) {
+        case "h1":
           sentences.push({
             id: sentenceId++,
-            text: element.textContent || "",
-            format: "italic",
+            text: node.textContent?.trim() || "",
+            format: "h1",
+            align: textAlign || undefined,
           });
-        } else if (
-          element.querySelector("strong") &&
-          element.innerHTML.trim().startsWith("<strong>")
-        ) {
+          break;
+        case "h2":
           sentences.push({
             id: sentenceId++,
-            text: element.textContent || "",
-            format: "bold",
+            text: node.textContent?.trim() || "",
+            format: "h2",
+            align: textAlign || undefined,
           });
-        } else {
+          break;
+        case "h3":
           sentences.push({
             id: sentenceId++,
-            text: element.textContent || "",
-            format: "paragraph",
+            text: node.textContent?.trim() || "",
+            format: "heading",
+            align: textAlign || undefined,
           });
-        }
-      } else if (tagName === "ul") {
-        // Process bullet list
-        Array.from(element.querySelectorAll("li")).forEach((li) => {
-          sentences.push({
-            id: sentenceId++,
-            text: li.textContent || "",
-            format: "bullet",
+          break;
+        case "ul":
+          Array.from(node.querySelectorAll("li")).forEach((li) => {
+            // Check for complex formatting within list items
+            if (hasNestedFormatting(li)) {
+              sentences.push({
+                id: sentenceId++,
+                text: li.innerHTML,
+                format: "rich-text",
+                align: textAlign || undefined,
+              });
+            } else {
+              sentences.push({
+                id: sentenceId++,
+                text: li.textContent?.trim() || "",
+                format: "bullet",
+                align: textAlign || undefined,
+              });
+            }
           });
-        });
-      } else if (tagName === "ol") {
-        // Process numbered list
-        Array.from(element.querySelectorAll("li")).forEach((li) => {
-          sentences.push({
-            id: sentenceId++,
-            text: li.textContent || "",
-            format: "numbered",
+          return; // Skip further processing for this element
+        case "ol":
+          Array.from(node.querySelectorAll("li")).forEach((li) => {
+            // Check for complex formatting within list items
+            if (hasNestedFormatting(li)) {
+              sentences.push({
+                id: sentenceId++,
+                text: li.innerHTML,
+                format: "rich-text",
+                align: textAlign || undefined,
+              });
+            } else {
+              sentences.push({
+                id: sentenceId++,
+                text: li.textContent?.trim() || "",
+                format: "numbered",
+                align: textAlign || undefined,
+              });
+            }
           });
-        });
-      } else if (tagName === "div" && element.classList.contains("formula")) {
-        sentences.push({
-          id: sentenceId++,
-          text: element.textContent || "",
-          format: "formula",
-        });
-      } else {
-        // For any other elements, treat as paragraphs
-        sentences.push({
-          id: sentenceId++,
-          text: element.textContent || "",
-          format: "paragraph",
-        });
+          return; // Skip further processing for this element
+        case "div":
+          if (node.classList.contains("formula")) {
+            sentences.push({
+              id: sentenceId++,
+              text: node.textContent?.trim() || "",
+              format: "formula",
+            });
+          } else {
+            // Process div with possible formatting
+            processFormattedContent(node, textAlign);
+          }
+          break;
+        case "p":
+          processFormattedContent(node, textAlign);
+          break;
+        default:
+          // For other elements, process children
+          Array.from(node.children).forEach((child) => {
+            if (child instanceof Element) {
+              processNode(child);
+            }
+          });
+
+          // If node has text but no processed children, add as paragraph
+          if (
+            !node.getAttribute("data-processed") &&
+            node.textContent?.trim() &&
+            !Array.from(node.children).some(
+              (c) => c.getAttribute("data-processed") === "true"
+            )
+          ) {
+            sentences.push({
+              id: sentenceId++,
+              text: node.textContent.trim(),
+              format: "paragraph",
+            });
+          }
+      }
+
+      // Mark as processed
+      node.setAttribute("data-processed", "true");
+    };
+
+    // Improve the processFormattedContent function to better detect italic text
+    const processFormattedContent = (
+      node: Element,
+      textAlign: string | null
+    ) => {
+      // First check if the node itself is an italic or emphasis element
+      const isDirectItalic =
+        node.tagName.toLowerCase() === "em" ||
+        node.tagName.toLowerCase() === "i";
+
+      // Check for em/italic direct children or if the node itself is italic
+      const hasEm =
+        isDirectItalic ||
+        node.querySelector(":scope > em, :scope > i") !== null;
+
+      // Check for strong/bold direct children or if the node itself is bold
+      const isDirectBold =
+        node.tagName.toLowerCase() === "strong" ||
+        node.tagName.toLowerCase() === "b";
+      const hasStrong =
+        isDirectBold ||
+        node.querySelector(":scope > strong, :scope > b") !== null;
+
+      // Check for mixed formatting (e.g., bold text within italic or vice versa)
+      const hasNestedFormatting =
+        (isDirectItalic && node.querySelector("strong, b") !== null) ||
+        (isDirectBold && node.querySelector("em, i") !== null) ||
+        node.innerHTML.includes("<strong><em>") ||
+        node.innerHTML.includes("<em><strong>");
+
+      // Check for nested markdown formatting
+      const textContent = node.textContent?.trim() || "";
+
+      if (!textContent) return;
+
+      // Check for markdown-style formatting
+      const hasBoldMarkdown = textContent.includes("**");
+      const hasItalicMarkdown = textContent.includes("$$");
+      const hasNestedMarkdown = hasBoldMarkdown && hasItalicMarkdown;
+
+      // Determine the format based on the content and HTML structure
+      let format = "paragraph";
+
+      // Store full HTML content for nested formatting
+      let htmlContent = "";
+
+      if (hasNestedFormatting || hasNestedMarkdown) {
+        // For mixed formatting, preserve the full HTML structure
+        format = "rich-text";
+        htmlContent = node.innerHTML;
+      } else if (hasStrong || hasBoldMarkdown) {
+        format = "bold";
+      } else if (hasEm || hasItalicMarkdown) {
+        format = "italic";
+      }
+
+      console.log("Format detection:", {
+        format,
+        text: textContent.substring(0, 30),
+        isDirectItalic,
+        hasEm,
+        hasItalicMarkdown,
+        isDirectBold,
+        hasStrong,
+        hasBoldMarkdown,
+        hasNestedFormatting,
+        hasNestedMarkdown,
+      });
+
+      // Add the properly formatted sentence
+      sentences.push({
+        id: sentenceId++,
+        text: format === "rich-text" ? htmlContent : textContent,
+        format: format as
+          | "bold"
+          | "heading"
+          | "italic"
+          | "paragraph"
+          | "bullet"
+          | "numbered"
+          | "formula"
+          | "rich-text",
+        align: textAlign || undefined,
+      });
+
+      node.setAttribute("data-processed", "true");
+    };
+
+    // Process all direct children of the div
+    Array.from(tempDiv.children).forEach((node) => {
+      if (node instanceof Element) {
+        processNode(node);
       }
     });
 
+    console.log("Generated sentences:", sentences);
+
     return {
       title,
-      sentences,
+      sentences: sentences.length > 0 ? sentences : originalSection.sentences,
     };
   };
 
@@ -511,27 +966,49 @@ export const ResponseMessage = ({
       const html = sectionToHtml(msg.text[0]);
       setEditorContent(html);
       setIsEditing(true);
-      setEditorInitialized(true);
       onEdit(); // Call the parent's onEdit handler
     }
   };
 
   const handleSaveEdit = () => {
     if (typeof msg.text !== "string" && msg.text[0]) {
-      // Convert the HTML back to a section structure
-      const updatedSection = htmlToSection(editorContent, msg.text[0]);
+      try {
+        // Debug logging before conversion
+        console.log("Editor content before conversion:", editorContent);
 
-      // Create updated message
-      const updatedMessage = {
-        user: "AI",
-        text: [updatedSection],
-        files: msg.files || [],
-        fileMetadata: msg.fileMetadata || [],
-      };
+        // Save what's currently in the editor for debugging
+        const debugDiv = document.createElement("div");
+        debugDiv.innerHTML = editorContent;
+        console.log("Parsed editor DOM:", debugDiv);
 
-      // Save the updated content
-      onSave(updatedMessage, index);
-      setIsEditing(false);
+        // Convert the HTML back to a section structure
+        const updatedSection = htmlToSection(editorContent, msg.text[0]);
+
+        // Debug logging after conversion - add this
+        console.log(
+          "Format preservation check:",
+          updatedSection.sentences.map((s) => ({
+            text: s.text.substring(0, 30),
+            format: s.format,
+            align: s.align,
+          }))
+        );
+
+        // Create updated message
+        const updatedMessage = {
+          user: "AI",
+          text: [updatedSection],
+          files: msg.files || [],
+          fileMetadata: msg.fileMetadata || [],
+        };
+
+        // Save the updated content
+        onSave(updatedMessage, index);
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Error saving edited content:", error);
+        alert("There was an error saving your changes. Please try again.");
+      }
     }
   };
 
@@ -676,18 +1153,32 @@ export const ResponseMessage = ({
   if (isEditing) {
     return (
       <div className="md:p-2 rounded mb-2">
+        {/* Add the editor styles */}
+        <EditorStyles />
+
         <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
           <div className="mb-4">
             <h3 className="text-lg md:text-xl font-bold text-[#94b347] mb-4">
               Editing: {section.title}
             </h3>
 
-            {editorInitialized && (
-              <RichTextEditor
-                initialContent={editorContent}
-                onChange={handleEditorUpdate}
-                className="min-h-[300px] border border-gray-200 rounded-md"
-              />
+            <RichTextEditor
+              initialContent={editorContent}
+              onChange={setEditorContent}
+              className="min-h-[300px] border border-gray-200 rounded-md mb-4"
+            />
+
+            {process.env.NODE_ENV === "development" && (
+              <div className="mt-4 p-3 border border-gray-200 rounded-md">
+                <details>
+                  <summary className="text-sm text-gray-500 font-medium">
+                    HTML Debug
+                  </summary>
+                  <pre className="mt-2 p-2 bg-gray-50 text-xs text-gray-700 overflow-auto max-h-[200px] rounded">
+                    {editorContent}
+                  </pre>
+                </details>
+              </div>
             )}
 
             <div className="flex justify-end space-x-3 mt-4">
@@ -779,6 +1270,9 @@ export const ResponseMessage = ({
     >
       {/* Add the math styles */}
       <MathEquationStyles />
+
+      {/* Add the editor styles to ensure formatting is visible */}
+      <EditorStyles />
 
       <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
         <div className="flex flex-row gap-2 md:gap-0 justify-between items-start mb-4">
@@ -946,7 +1440,7 @@ export const ResponseMessage = ({
                   currentListType = format;
                 }
 
-                // Add to current list with enhanced styling using ReactMarkdown for math support
+                // Add to current list with enhanced formatting support
                 listItems.push(
                   <motion.li
                     key={`item-${sentenceIdx}`}
@@ -955,52 +1449,61 @@ export const ResponseMessage = ({
                     }`}
                     variants={itemAnimation}
                   >
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath, remarkGfm]}
-                        rehypePlugins={[rehypeRaw, rehypeKatex]}
-                        components={{
-                          code: ({
-                            className,
-                            children,
-                            ...props
-                          }: ComponentProps<"code"> & {
-                            className?: string;
-                          }) => {
-                            const match = /language-(\w+)/.exec(
-                              className || ""
-                            );
-                            const isInline = !match;
+                    {sentence.format === "rich-text" ? (
+                      // For rich formatted list items, use dangerouslySetInnerHTML
+                      <div
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: sentence.text }}
+                      />
+                    ) : (
+                      // For regular list items, use the existing ReactMarkdown approach
+                      <div className="prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath, remarkGfm]}
+                          rehypePlugins={[rehypeRaw, rehypeKatex]}
+                          components={{
+                            code: ({
+                              className,
+                              children,
+                              ...props
+                            }: ComponentProps<"code"> & {
+                              className?: string;
+                            }) => {
+                              const match = /language-(\w+)/.exec(
+                                className || ""
+                              );
+                              const isInline = !match;
 
-                            return isInline ? (
-                              <code
-                                className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono"
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            ) : (
-                              <code
-                                className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2"
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            );
-                          },
-                          // Special handler for paragraphs with math
-                          p: ({ children }) => {
-                            return (
-                              <p className="whitespace-normal word-break-normal">
-                                {children}
-                              </p>
-                            );
-                          },
-                        }}
-                      >
-                        {prepareLatexForRendering(sentence.text)}
-                      </ReactMarkdown>
-                    </div>
+                              return isInline ? (
+                                <code
+                                  className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono"
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              ) : (
+                                <code
+                                  className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2"
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              );
+                            },
+                            // Special handler for paragraphs with math
+                            p: ({ children }) => {
+                              return (
+                                <p className="whitespace-normal word-break-normal">
+                                  {children}
+                                </p>
+                              );
+                            },
+                          }}
+                        >
+                          {prepareLatexForRendering(sentence.text)}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </motion.li>
                 );
               } else {
@@ -1029,10 +1532,12 @@ export const ResponseMessage = ({
 
                 // Handle non-list content with enhanced styling
                 let content;
-                if ((format as string) === "rich-text") {
+                if (format === "rich-text") {
                   content = (
                     <div
-                      className="text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed"
+                      className={`text-gray-800 text-sm md:text-base whitespace-normal break-words my-3 leading-relaxed ${
+                        isSummarySection ? "text-gray-700" : ""
+                      }`}
                       dangerouslySetInnerHTML={{ __html: sentence.text }}
                     />
                   );
@@ -1125,82 +1630,79 @@ export const ResponseMessage = ({
                         </div>
                       );
                     } else {
-                      // Check if content contains HTML or markdown indicators
-                      const hasMarkdown =
-                        /(\*\*|__|~~|`|\[.*\]\(.*\)|#{1,6}\s|>\s|```|^\s*[\-\*\+]\s|^\s*\d+\.\s)/m.test(
-                          sentence.text
-                        );
-                      const hasHtml = containsHtmlTags(sentence.text);
+                      // Check for formatting and alignment
+                      let className = `text-gray-800 text-sm md:text-base whitespace-normal break-words my-3 leading-relaxed ${
+                        isSummarySection ? "text-gray-700" : ""
+                      }`;
 
-                      if (hasHtml) {
-                        // If it has HTML tags, use dangerouslySetInnerHTML to render it directly
-                        content = (
-                          <div
-                            className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
-                              isSummarySection ? "text-gray-700" : ""
-                            }`}
-                            dangerouslySetInnerHTML={{ __html: sentence.text }}
-                          />
-                        );
-                      } else if (hasMarkdown) {
-                        // If it has markdown but no HTML, use ReactMarkdown with rehypeRaw
-                        content = (
-                          <div
-                            className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
-                              isSummarySection ? "text-gray-700" : ""
-                            }`}
-                          >
-                            <div className="prose prose-sm max-w-none">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkMath, remarkGfm]}
-                                rehypePlugins={[rehypeRaw, rehypeKatex]}
-                                components={{
-                                  code: ({
-                                    className,
-                                    children,
-                                    ...props
-                                  }: ComponentProps<"code"> & {
-                                    className?: string;
-                                  }) => {
-                                    const match = /language-(\w+)/.exec(
-                                      className || ""
-                                    );
-                                    const isInline = !match;
+                      // Apply text alignment if present
+                      if (sentence.align) {
+                        className += ` text-${sentence.align}`;
+                      }
 
-                                    return isInline ? (
-                                      <code
-                                        className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono"
-                                        {...props}
-                                      >
-                                        {children}
-                                      </code>
-                                    ) : (
-                                      <code
-                                        className="block bg-gray-100 p-2 rounded text-sm font-mono overflow-x-auto my-2"
-                                        {...props}
-                                      >
-                                        {children}
-                                      </code>
-                                    );
-                                  },
-                                }}
-                              >
-                                {sentence.text}
-                              </ReactMarkdown>
-                            </div>
+                      // Apply styling based on format
+                      if (format === "bold") {
+                        // Support both native bold and markdown bold
+                        content = (
+                          <div className={className}>
+                            {sentence.text.includes("**") ? (
+                              formatTextWithMarkdown(sentence.text)
+                            ) : (
+                              <strong>{sentence.text}</strong>
+                            )}
                           </div>
                         );
-                      } else {
-                        // If it's plain text without markdown or HTML, render as before
+                      } else if (format === "italic" || format === "em") {
+                        // Support both native italic and markdown italic
                         content = (
-                          <div
-                            className={`text-gray-800 text-sm md:text-base text-left whitespace-normal break-words my-3 leading-relaxed ${
-                              isSummarySection ? "text-gray-700" : ""
-                            }`}
+                          <div className={className}>
+                            {sentence.text.includes("$$") ? (
+                              formatTextWithMarkdown(sentence.text)
+                            ) : (
+                              <em>{sentence.text}</em>
+                            )}
+                          </div>
+                        );
+                      } else if (format === "h1") {
+                        content = (
+                          <h1
+                            className={`text-2xl font-bold text-[#94b347] ${className}`}
                           >
                             {sentence.text}
-                          </div>
+                          </h1>
                         );
+                      } else if (format === "h2") {
+                        content = (
+                          <h2
+                            className={`text-xl font-semibold text-gray-800 ${className}`}
+                          >
+                            {sentence.text}
+                          </h2>
+                        );
+                      } else if (format === "heading") {
+                        content = (
+                          <h3
+                            className={`text-lg font-medium text-gray-700 ${className}`}
+                          >
+                            {sentence.text}
+                          </h3>
+                        );
+                      } else {
+                        // Check for markdown in regular paragraphs too
+                        if (
+                          sentence.text.includes("**") ||
+                          sentence.text.includes("$$")
+                        ) {
+                          content = (
+                            <div className={className}>
+                              {formatTextWithMarkdown(sentence.text)}
+                            </div>
+                          );
+                        } else {
+                          content = (
+                            <div className={className}>{sentence.text}</div>
+                          );
+                        }
                       }
                     }
                   }
@@ -1240,6 +1742,66 @@ export const ResponseMessage = ({
         </motion.div>
       </div>
     </motion.div>
+  );
+};
+
+// Add helper function to detect nested formatting
+const hasNestedFormatting = (element: Element): boolean => {
+  // Check for bold within italic or italic within bold
+  const hasNestedBoldInItalic =
+    element.querySelector("em strong, em b, i strong, i b") !== null;
+  const hasNestedItalicInBold =
+    element.querySelector("strong em, strong i, b em, b i") !== null;
+
+  // Check for direct formatting of list items
+  const hasDirectFormatting =
+    element.tagName === "LI" &&
+    element.querySelector("strong, em, b, i") !== null;
+
+  // Check for nested lists
+  const hasNestedList =
+    element.tagName === "LI" && element.querySelector("ul, ol") !== null;
+
+  // Check for other complex formatting combinations
+  const html = element.innerHTML;
+
+  // Look for patterns like <strong><em>text</em></strong> or <em><strong>text</strong></em>
+  const hasNestedTags =
+    html.includes("<strong><em>") ||
+    html.includes("<em><strong>") ||
+    html.includes("<b><i>") ||
+    html.includes("<i><b>");
+
+  // Check for custom markdown syntax like **bold** or $$italic$$
+  const textContent = element.textContent || "";
+  const hasCustomMarkdown =
+    (textContent.includes("**") &&
+      textContent.match(/\*\*[^*]+\*\*/) !== null) ||
+    (textContent.includes("$$") && textContent.match(/\$\$[^$]+\$\$/) !== null);
+
+  // Debug logging
+  if (
+    element.tagName === "LI" &&
+    (hasDirectFormatting || hasNestedTags || hasCustomMarkdown)
+  ) {
+    console.log("Detected formatting in list item:", {
+      html: element.innerHTML,
+      hasDirectFormatting,
+      hasNestedTags,
+      hasCustomMarkdown,
+      hasNestedBoldInItalic,
+      hasNestedItalicInBold,
+      hasNestedList,
+    });
+  }
+
+  return (
+    hasNestedBoldInItalic ||
+    hasNestedItalicInBold ||
+    hasNestedTags ||
+    hasDirectFormatting ||
+    hasNestedList ||
+    hasCustomMarkdown
   );
 };
 

@@ -1,7 +1,8 @@
 export interface Sentence {
   id: number;
   text: string;
-  format?: "bold" | "heading" | "italic" | "paragraph" | "bullet" | "numbered" | "formula" | "rich-text";
+  format?: string;
+  align?: string;
 }
 
 export interface Section {
