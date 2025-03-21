@@ -457,12 +457,12 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               </>
             ))}
         </div>
-        <div className="hidden md:flex items-center w-full">
+        <div className="hidden md:flex items-center w-full p-2">
           <div className="flex flex-row items-center scrollbar-hide w-full max-w-[80vw]">
             {tabs.map((tab, index) => (
               <React.Fragment key={tab.id}>
                 {index > 0 && (
-                  <div className="h-5 w-px bg-slate-300 mx-1 flex-shrink-0" />
+                  <div className="h-5 w-px bg-slate-300 mx-1 flex-shrink-0 " />
                 )}
                 <motion.div
                   layout

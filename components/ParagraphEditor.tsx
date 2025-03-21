@@ -1,22 +1,15 @@
 "use client";
 
-import { Node } from "@tiptap/core";
-import Bold from "@tiptap/extension-bold";
-import BulletList from "@tiptap/extension-bullet-list";
-import CodeBlock from "@tiptap/extension-code-block";
-import Document from "@tiptap/extension-document";
-import Heading from "@tiptap/extension-heading";
-import Italic from "@tiptap/extension-italic";
-import ListItem from "@tiptap/extension-list-item";
-import OrderedList from "@tiptap/extension-ordered-list";
-import Paragraph from "@tiptap/extension-paragraph";
-import Placeholder from "@tiptap/extension-placeholder";
-import Text from "@tiptap/extension-text";
-import Underline from "@tiptap/extension-underline";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { PlusIcon, SaveIcon, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PlusIcon,
+  SaveIcon,
+  XIcon,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import RichTextEditor from "./rich-text-editor";
 
 // Make sure this matches the type in lib/types.ts
 type FormatType =
@@ -48,1174 +41,239 @@ interface ParagraphEditorProps {
   initialData?: ParagraphData;
 }
 
-// Create a custom Formula extension for TipTap
-const Formula = Node.create({
-  name: "formula",
-  group: "block",
-  content: "text*",
-
-  addAttributes() {
-    return {
-      latex: {
-        default: "",
-      },
-    };
-  },
-
-  parseHTML() {
-    return [
-      {
-        tag: "div.formula-block",
-        getAttrs: (node) => {
-          if (typeof node === "string") return {};
-          const element = node as HTMLElement;
-          return { latex: element.textContent };
-        },
-      },
-    ];
-  },
-
-  renderHTML({ node }) {
-    return ["div", { class: "formula-block" }, node.attrs.latex];
-  },
-});
-
-// Create a toolbar for rich text editing with more options
-const RichTextToolbar = ({ editor }: { editor: any }) => {
-  if (!editor) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 p-2 mb-2">
-      {/* Text formatting controls */}
-      <div className="flex items-center space-x-1 mr-2">
-        <button
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("bold") ? "bg-slate-200" : "hover:bg-slate-100"
-          }`}
-          title="Bold"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-            <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-          </svg>
-        </button>
-
-        <button
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("italic") ? "bg-slate-200" : "hover:bg-slate-100"
-          }`}
-          title="Italic"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="19" y1="4" x2="10" y2="4"></line>
-            <line x1="14" y1="20" x2="5" y2="20"></line>
-            <line x1="15" y1="4" x2="9" y2="20"></line>
-          </svg>
-        </button>
-
-        <button
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("underline") ? "bg-slate-200" : "hover:bg-slate-100"
-          }`}
-          title="Underline"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path>
-            <line x1="4" y1="21" x2="20" y2="21"></line>
-          </svg>
-        </button>
-      </div>
-
-      {/* Heading controls */}
-      <div className="flex items-center space-x-1 mr-2">
-        <button
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 3 }).run()
-          }
-          className={`p-1 rounded-md ${
-            editor.isActive("heading", { level: 3 })
-              ? "bg-slate-200"
-              : "hover:bg-slate-100"
-          }`}
-          title="Heading"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 12h12"></path>
-            <path d="M6 4h12"></path>
-            <path d="M9 4v16"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div className="h-6 w-px bg-slate-200 mx-1"></div>
-
-      {/* List controls */}
-      <div className="flex items-center space-x-1 mr-2">
-        <button
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("bulletList")
-              ? "bg-slate-200"
-              : "hover:bg-slate-100"
-          }`}
-          title="Bullet List"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-        </button>
-
-        <button
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("orderedList")
-              ? "bg-slate-200"
-              : "hover:bg-slate-100"
-          }`}
-          title="Numbered List"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="10" y1="6" x2="21" y2="6"></line>
-            <line x1="10" y1="12" x2="21" y2="12"></line>
-            <line x1="10" y1="18" x2="21" y2="18"></line>
-            <path d="M4 6h1v4"></path>
-            <path d="M4 10h2"></path>
-            <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div className="h-6 w-px bg-slate-200 mx-1"></div>
-
-      {/* Code and formula controls */}
-      <div className="flex items-center space-x-1">
-        <button
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={`p-1 rounded-md ${
-            editor.isActive("codeBlock") ? "bg-slate-200" : "hover:bg-slate-100"
-          }`}
-          title="Code Block (for formulas)"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="16 18 22 12 16 6"></polyline>
-            <polyline points="8 6 2 12 8 18"></polyline>
-          </svg>
-        </button>
-
-        {/* Special button for LaTeX/Math formulas */}
-        <button
-          onClick={() => {
-            // Get the current selection
-            const { from, to } = editor.state.selection;
-            const selectedText = editor.state.doc.textBetween(from, to, " ");
-
-            // If text is selected, wrap it in formula delimiters
-            if (selectedText) {
-              // Check if already has delimiters
-              if (selectedText.startsWith("$") && selectedText.endsWith("$")) {
-                // Already formatted, do nothing
-                return;
-              }
-
-              // Create a formula block with the selected text
-              editor
-                .chain()
-                .focus()
-                .deleteSelection()
-                .insertContent(
-                  `<div class="formula-block">$${selectedText}$</div>`
-                )
-                .run();
-            } else {
-              // Insert an empty formula block
-              editor
-                .chain()
-                .focus()
-                .insertContent('<div class="formula-block">$formula$</div>')
-                .run();
-
-              // Position cursor inside the formula
-              const pos = editor.state.selection.from - 8;
-              editor.commands.setTextSelection({ from: pos, to: pos + 7 });
-            }
-          }}
-          className={`p-1 rounded-md hover:bg-slate-100`}
-          title="Math Formula"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 6h18"></path>
-            <path d="M7 12h10"></path>
-            <path d="M5 18h14"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Add this helper function at the top of the file with your other utility functions
-const containsInlineMath = (text: string): boolean => {
-  // Look for patterns like $...$ that contain LaTeX
-  return /\$[^$]+\$/g.test(text);
-};
-
-// Function to detect common physics equation patterns
-const detectCommonPhysicsEquation = (text: string): boolean => {
-  const patterns = [
-    // Distance formula
-    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i,
-    /Thisiscommonlyexpressedasd/i,
-    // Velocity formula
-    /V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i,
-    // Other common physics formulas
-    /F\s*=\s*ma/i,
-    /E\s*=\s*mc\^2/i,
-  ];
-
-  const noSpacesText = text.replace(/\s+/g, "");
-  return patterns.some((pattern) => pattern.test(noSpacesText));
-};
-
-// Function to fix mangled formulas with special handling for common physics equations
-const fixMangledFormula = (
-  text: string
-): { text: string; isFormula: boolean } => {
-  // First check for common physics equations that need special handling
-  if (detectCommonPhysicsEquation(text.replace(/\n/g, ""))) {
-    // Check for distance formula pattern
-    if (
-      /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(
-        text.replace(/\n/g, "")
-      ) ||
-      /Thisiscommonlyexpressedasd/i.test(text.replace(/\n/g, ""))
-    ) {
-      return {
-        text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
-        isFormula: true,
-      };
+// Add the EditorStyles component from ResponseMessage
+const EditorStyles = () => (
+  <style jsx global>{`
+    /* Editor-specific styling to highlight formatting */
+    .editor-content strong,
+    .editor-content b,
+    .ProseMirror strong,
+    .ProseMirror b {
+      font-weight: 700 !important;
+      color: #000 !important;
     }
 
-    // Velocity formula pattern
-    if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ""))) {
-      return {
-        text: "$V_f^{2} = V_0^{2} + 2ad$",
-        isFormula: true,
-      };
-    }
-  }
-
-  // Check if the text appears to be a mangled formula (characters separated by newlines)
-  if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
-    // First, remove all newlines and normalize whitespace
-    let normalized = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-
-    // Fix common physics variables
-    normalized = normalized
-      .replace(/\b(v|V)_0\b/g, "V_0")
-      .replace(/\b(v|V)_f\b/g, "V_f")
-      .replace(/\bd\b(?!\w)/g, "d") // standalone d
-      .replace(/\ba\b(?!\w)/g, "a") // standalone a
-      .replace(/\bt\b(?!\w)/g, "t") // standalone t
-
-      // Fix spacing around operators
-      .replace(/(\w+)\s*=\s*(\w+)/g, "$1 = $2")
-      .replace(/(\w+)\s*\+\s*(\w+)/g, "$1 + $2")
-      .replace(/(\w+)\s*-\s*(\w+)/g, "$1 - $2")
-      .replace(/(\w+)\s*\*\s*(\w+)/g, "$1 * $2")
-
-      // Fix fractions
-      .replace(/\\frac\s*\{\s*1\s*\}\s*\{\s*2\s*\}/g, "\\frac{1}{2}")
-
-      // Fix powers
-      .replace(/\^\s*(\d+)/g, "^{$1}")
-      .replace(/\^2/g, "^{2}");
-
-    // Add LaTeX delimiters if needed
-    if (!normalized.startsWith("$")) normalized = `$${normalized}`;
-    if (!normalized.endsWith("$")) normalized = `${normalized}$`;
-
-    return {
-      text: normalized,
-      isFormula: true,
-    };
-  }
-
-  // Not a formula or no special handling needed
-  return {
-    text: text,
-    isFormula: false,
-  };
-};
-
-// More robust formula formatting preservation
-const preserveFormulaFormatting = (text: string): string => {
-  // If already properly formatted with $ delimiters, return as is
-  if (text.startsWith("$") && text.endsWith("$") && !text.includes("\n")) {
-    return text;
-  }
-
-  // First, check for mangled common physics equations
-  if (
-    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(
-      text.replace(/\n/g, "")
-    )
-  ) {
-    return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
-  }
-
-  // Check for other common physics equations
-  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(text.replace(/\n/g, ""))) {
-    return "$V_f^{2} = V_0^{2} + 2ad$";
-  }
-
-  // Clean up and normalize the formula
-  let normalized = text
-    .replace(/\n/g, " ") // Remove newlines
-    .replace(/\s+/g, " ") // Normalize spaces
-    .trim(); // Trim excess whitespace
-
-  // Fix common LaTeX syntax issues
-  normalized = normalized
-    // Fix fractions
-    .replace(/\\frac\s*{(.+?)}\s*{(.+?)}/g, "\\frac{$1}{$2}")
-
-    // Fix subscripts and superscripts
-    .replace(/([a-zA-Z])_(\d)/g, "$1_$2")
-    .replace(/([a-zA-Z])\^(\d)/g, "$1^{$2}")
-
-    // Fix spacing around operators
-    .replace(/([a-zA-Z0-9)}])=([a-zA-Z0-9({])/g, "$1 = $2")
-    .replace(/([a-zA-Z0-9)}])\+([a-zA-Z0-9({])/g, "$1 + $2")
-    .replace(/([a-zA-Z0-9)}])-([a-zA-Z0-9({])/g, "$1 - $2")
-
-    // Fix variables that might have been joined
-    .replace(/([a-zA-Z])([A-Z])/g, "$1 $2");
-
-  // Ensure proper LaTeX delimiters
-  if (!normalized.startsWith("$")) normalized = `$${normalized}`;
-  if (!normalized.endsWith("$")) normalized = `${normalized}$`;
-
-  return normalized;
-};
-
-// Add these helper functions at the top of the file to detect and handle formulas better
-
-// Enhanced function to detect formulas in text content
-const detectFormula = (text: string): boolean => {
-  // Check for LaTeX delimiters
-  if (
-    text.includes("$") ||
-    text.includes("\\frac") ||
-    text.includes("\\sum") ||
-    text.includes("\\int") ||
-    text.includes("\\alpha") ||
-    text.includes("_") ||
-    text.includes("^")
-  ) {
-    return true;
-  }
-
-  // Check for common physics equations
-  const physicsPatterns = [
-    /d\s*=\s*V_0\s*t/i, // Distance formula
-    /V_f\^2\s*=\s*V_0\^2/i, // Velocity formula
-    /F\s*=\s*ma/i, // Force formula
-    /E\s*=\s*mc\^2/i, // Energy formula
-    /Thisiscommonlyexpressedasd/i, // Mangled distance formula indicator
-  ];
-
-  return physicsPatterns.some((pattern) =>
-    pattern.test(text.replace(/\s+/g, ""))
-  );
-};
-
-// Function to format common equations properly
-const formatCommonEquation = (text: string): string => {
-  // Remove newlines and normalize spaces
-  let normalized = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-
-  // Check for specific equation patterns
-  if (
-    /d\s*=\s*V_0\s*t\s*\+\s*\\frac\{1\}\{2\}\s*a\s*t\^2/i.test(normalized) ||
-    /Thisiscommonlyexpressedasd/.test(normalized.replace(/\s+/g, ""))
-  ) {
-    return "$d = V_0 t + \\frac{1}{2} a t^{2}$";
-  }
-
-  if (/V_f\^2\s*=\s*V_0\^2\s*\+\s*2ad/i.test(normalized)) {
-    return "$V_f^{2} = V_0^{2} + 2ad$";
-  }
-
-  // Add more equation patterns as needed
-
-  // If no specific pattern matches but it looks like an equation,
-  // apply general formula formatting
-  if (detectFormula(normalized)) {
-    // Ensure proper LaTeX delimiters
-    if (!normalized.startsWith("$")) normalized = "$" + normalized;
-    if (!normalized.endsWith("$")) normalized += "$";
-
-    // Fix common spacing issues
-    normalized = normalized
-      .replace(/([a-zA-Z0-9])\s*=\s*([a-zA-Z0-9])/g, "$1 = $2")
-      .replace(/([a-zA-Z0-9])\s*\+\s*([a-zA-Z0-9])/g, "$1 + $2")
-      .replace(/([a-zA-Z0-9])\s*-\s*([a-zA-Z0-9])/g, "$1 - $2")
-      .replace(/([a-zA-Z])\s*_\s*([a-zA-Z0-9])/g, "$1_$2")
-      .replace(/([a-zA-Z])\s*\^\s*([a-zA-Z0-9])/g, "$1^{$2}");
-  }
-
-  return normalized;
-};
-
-// Update the cleanFormulaContent function to match the one in ResponseMessage.tsx
-const cleanFormulaContent = (text: string): string => {
-  // Check if the text is likely a mangled formula
-  if (/\n\s*[a-zA-Z0-9_]\s*\n/.test(text)) {
-    // Remove newlines and normalize spaces
-    let cleaned = text.replace(/\n/g, " ").replace(/\s+/g, " ").trim();
-
-    // Add delimiters if missing
-    if (!cleaned.startsWith("$")) cleaned = `$${cleaned}`;
-    if (!cleaned.endsWith("$")) cleaned = `${cleaned}$`;
-
-    // Fix common physics equations
-    cleaned = cleaned
-      // Fix spacing around operators
-      .replace(/(\w+)=(\w+)/g, "$1 = $2")
-      .replace(/(\w+)\+(\w+)/g, "$1 + $2")
-      .replace(/(\w+)-(\w+)/g, "$1 - $2")
-      // Fix subscripts
-      .replace(/V0/g, "V_0")
-      .replace(/Vf/g, "V_f");
-
-    return cleaned;
-  }
-
-  return text;
-};
-
-// Add or update the nested formatting detection function
-const hasNestedFormatting = (html: string): boolean => {
-  // Check for bold within italic or italic within bold
-  const hasNestedBoldInItalic =
-    html.includes("<em><strong>") ||
-    html.includes("<em><b>") ||
-    html.includes("<i><strong>") ||
-    html.includes("<i><b>");
-
-  const hasNestedItalicInBold =
-    html.includes("<strong><em>") ||
-    html.includes("<strong><i>") ||
-    html.includes("<b><em>") ||
-    html.includes("<b><i>");
-
-  // Check for direct formatting of list items
-  const hasFormattedListItems =
-    html.includes("<li><strong>") ||
-    html.includes("<li><em>") ||
-    html.includes("<li><b>") ||
-    html.includes("<li><i>");
-
-  // Check for nested lists
-  const hasNestedList = html.includes("<li><ul>") || html.includes("<li><ol>");
-
-  return (
-    hasNestedBoldInItalic ||
-    hasNestedItalicInBold ||
-    hasFormattedListItems ||
-    hasNestedList
-  );
-};
-
-// Update the parseContentToHTML function to handle rich-text format in lists
-const parseContentToHTML = (sentences: Sentence[]): string => {
-  let html = "";
-  let inBulletList = false;
-  let inNumberedList = false;
-
-  sentences.forEach((sentence, index) => {
-    const { text = "", format, align } = sentence;
-    const alignStyle = align ? `text-align: ${align};` : "";
-    const textDiv = alignStyle
-      ? `<div style="${alignStyle}">${text}</div>`
-      : text;
-
-    // Check for rich-text format to preserve complex nested formatting
-    if (format === "rich-text") {
-      // If we're in a list, add list item with preserved formatting
-      if (inBulletList) {
-        html += `<li>${text}</li>`;
-      } else if (inNumberedList) {
-        html += `<li>${text}</li>`;
-      } else {
-        // Not in a list, just add the rich text directly
-        html += text;
-      }
-      return;
+    .editor-content em,
+    .editor-content i,
+    .ProseMirror em,
+    .ProseMirror i {
+      font-style: italic !important;
+      color: #000 !important;
     }
 
-    // Handle list transitions
-    if (format === "bullet") {
-      if (!inBulletList) {
-        // Close any open numbered list
-        if (inNumberedList) {
-          html += "</ol>";
-          inNumberedList = false;
-        }
-        // Start a new bullet list
-        html += "<ul>";
-        inBulletList = true;
-      }
-      html += `<li>${textDiv}</li>`;
-      return;
+    /* Default heading styles - don't modify H1 */
+    .editor-content h1,
+    .ProseMirror h1 {
+      font-size: 1.8em !important;
+      font-weight: 700 !important;
+      margin: 1.2em 0 0.6em !important;
+      color: #94b347 !important; /* Green color for h1 */
+      line-height: 1.3 !important;
     }
 
-    if (format === "numbered") {
-      if (!inNumberedList) {
-        // Close any open bullet list
-        if (inBulletList) {
-          html += "</ul>";
-          inBulletList = false;
-        }
-        // Start a new numbered list
-        html += "<ol>";
-        inNumberedList = true;
-      }
-      html += `<li>${textDiv}</li>`;
-      return;
+    /* Only enhance H2 headings from rich text editor */
+    .editor-content h2,
+    .ProseMirror h2,
+    .editor-heading {
+      font-size: 1.75em !important;
+      font-weight: 600 !important;
+      margin: 1em 0 0.5em !important;
+      color: #333 !important;
+      line-height: 1.4 !important;
+      border-bottom: 1px solid #eaeaea !important;
+      padding-bottom: 0.3em !important;
     }
 
-    // Close any open lists when transitioning to non-list content
-    if (inBulletList) {
-      html += "</ul>";
-      inBulletList = false;
-    }
-    if (inNumberedList) {
-      html += "</ol>";
-      inNumberedList = false;
-    }
-
-    // Handle other formats
-    switch (format) {
-      case "h1":
-        html += `<h1 style="${alignStyle}">${text}</h1>`;
-        break;
-      case "h2":
-        html += `<h2 style="${alignStyle}">${text}</h2>`;
-        break;
-      case "bold":
-        html += `<p style="${alignStyle}"><strong>${text}</strong></p>`;
-        break;
-      case "italic":
-        html += `<p style="${alignStyle}"><em>${text}</em></p>`;
-        break;
-      case "formula":
-        html += `<div class="formula" style="${alignStyle}">${text}</div>`;
-        break;
-      default:
-        html += `<p style="${alignStyle}">${text}</p>`;
-    }
-  });
-
-  // Close any open lists at the end
-  if (inBulletList) {
-    html += "</ul>";
-  }
-  if (inNumberedList) {
-    html += "</ol>";
-  }
-
-  return html;
-};
-
-// Update the parseHTMLFromEditor function to detect and preserve rich formatted content
-const parseHTMLFromEditor = (html: string): Sentence[] => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  const sentences: Sentence[] = [];
-  let sentenceId = 1;
-
-  // Helper to extract text alignment from style attribute
-  const getTextAlign = (style?: string): string | undefined => {
-    if (!style) return undefined;
-    const match = style.match(/text-align\s*:\s*(left|center|right|justify)/i);
-    return match ? match[1] : undefined;
-  };
-
-  // Process document body
-  Array.from(doc.body.childNodes).forEach((node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent?.trim();
-      if (text) {
-        sentences.push({
-          id: sentenceId++,
-          text,
-          align: undefined,
-        });
-      }
-      return;
+    .editor-content h3,
+    .ProseMirror h3 {
+      font-size: 1.4em !important;
+      font-weight: bold !important;
+      margin: 0.8em 0 0.4em !important;
+      color: #444 !important;
+      line-height: 1.4 !important;
     }
 
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-
-    const element = node as HTMLElement;
-    const tagName = element.tagName.toLowerCase();
-    const textAlign = getTextAlign(element.getAttribute("style") || undefined);
-
-    // Handle lists (ul/ol)
-    if (tagName === "ul") {
-      Array.from(element.querySelectorAll("li")).forEach((li) => {
-        // Check if the list item has complex formatting
-        if (hasNestedFormatting(li.innerHTML)) {
-          sentences.push({
-            id: sentenceId++,
-            text: li.innerHTML,
-            format: "rich-text",
-            align: textAlign,
-          });
-        } else {
-          sentences.push({
-            id: sentenceId++,
-            text: li.textContent?.trim() || "",
-            format: "bullet",
-            align: textAlign,
-          });
-        }
-      });
-      return;
+    .editor-content p,
+    .ProseMirror p {
+      margin: 0.5em 0 !important;
     }
 
-    if (tagName === "ol") {
-      Array.from(element.querySelectorAll("li")).forEach((li) => {
-        // Check if the list item has complex formatting
-        if (hasNestedFormatting(li.innerHTML)) {
-          sentences.push({
-            id: sentenceId++,
-            text: li.innerHTML,
-            format: "rich-text",
-            align: textAlign,
-          });
-        } else {
-          sentences.push({
-            id: sentenceId++,
-            text: li.textContent?.trim() || "",
-            format: "numbered",
-            align: textAlign,
-          });
-        }
-      });
-      return;
+    .editor-content [style*="text-align: center"],
+    .ProseMirror [style*="text-align: center"] {
+      text-align: center !important;
     }
 
-    // Process div elements
-    if (tagName === "div") {
-      // Check for formulas
-      if (element.classList.contains("formula")) {
-        sentences.push({
-          id: sentenceId++,
-          text: element.innerHTML,
-          format: "formula",
-          align: textAlign,
-        });
-        return;
-      }
-
-      // Check for other div content
-      const text = element.textContent?.trim();
-      if (text) {
-        sentences.push({
-          id: sentenceId++,
-          text,
-          align: textAlign,
-        });
-      }
-      return;
+    .editor-content [style*="text-align: right"],
+    .ProseMirror [style*="text-align: right"] {
+      text-align: right !important;
     }
 
-    // Handle headings
-    if (tagName === "h1") {
-      sentences.push({
-        id: sentenceId++,
-        text: element.textContent?.trim() || "",
-        format: "h1",
-        align: textAlign,
-      });
-      return;
+    /* Lists styling */
+    .editor-content ul,
+    .ProseMirror ul {
+      list-style-type: disc !important;
+      padding-left: 1.5em !important;
+      margin: 0.5em 0 !important;
     }
 
-    if (tagName === "h2") {
-      sentences.push({
-        id: sentenceId++,
-        text: element.textContent?.trim() || "",
-        format: "h2",
-        align: textAlign,
-      });
-      return;
+    .editor-content ol,
+    .ProseMirror ol {
+      list-style-type: decimal !important;
+      padding-left: 1.5em !important;
+      margin: 0.5em 0 !important;
     }
 
-    // Handle paragraphs
-    if (tagName === "p") {
-      // Check for nested formatting in paragraphs
-      if (hasNestedFormatting(element.innerHTML)) {
-        sentences.push({
-          id: sentenceId++,
-          text: element.innerHTML,
-          format: "rich-text",
-          align: textAlign,
-        });
-        return;
-      }
-
-      // Check for bold (strong/b)
-      if (
-        element.querySelector("strong, b") &&
-        !element.querySelector("em, i")
-      ) {
-        sentences.push({
-          id: sentenceId++,
-          text: element.textContent?.trim() || "",
-          format: "bold",
-          align: textAlign,
-        });
-        return;
-      }
-
-      // Check for italic (em/i)
-      if (
-        element.querySelector("em, i") &&
-        !element.querySelector("strong, b")
-      ) {
-        sentences.push({
-          id: sentenceId++,
-          text: element.textContent?.trim() || "",
-          format: "italic",
-          align: textAlign,
-        });
-        return;
-      }
-
-      // Regular paragraph
-      const text = element.textContent?.trim();
-      if (text) {
-        sentences.push({
-          id: sentenceId++,
-          text,
-          align: textAlign,
-        });
-      }
-      return;
+    .editor-content li,
+    .ProseMirror li {
+      margin: 0.25em 0 !important;
     }
 
-    // Handle other elements
-    const text = element.textContent?.trim();
-    if (text) {
-      sentences.push({
-        id: sentenceId++,
-        text,
-        align: textAlign,
-      });
+    .editor-content .formula,
+    .ProseMirror .formula {
+      background-color: #f5f7fa !important;
+      padding: 0.5em !important;
+      border-radius: 0.25em !important;
+      margin: 0.5em 0 !important;
     }
-  });
 
-  return sentences;
-};
+    /* Make sure formatting is clearly visible */
+    .prose strong,
+    b {
+      font-weight: 700 !important;
+    }
+
+    .prose em,
+    i {
+      font-style: italic !important;
+    }
+
+    /* Apply heading styles in the output content as well */
+    .prose h1 {
+      font-size: 1.8em !important;
+      font-weight: 700 !important;
+      color: #94b347 !important;
+      margin: 1.2em 0 0.6em !important;
+    }
+
+    .prose h2 {
+      font-size: 1.75em !important;
+      font-weight: 600 !important;
+      color: #333 !important;
+      margin: 1em 0 0.5em !important;
+      border-bottom: 1px solid #eaeaea !important;
+      padding-bottom: 0.3em !important;
+    }
+
+    .prose h3 {
+      font-size: 1.4em !important;
+      font-weight: bold !important;
+      color: #444 !important;
+      margin: 0.8em 0 0.4em !important;
+    }
+  `}</style>
+);
 
 export default function ParagraphEditor({
   onSave,
   messageIndex,
   initialData,
+  onDelete,
 }: ParagraphEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [title, setTitle] = useState("");
-  const [savedData, setSavedData] = useState<ParagraphData | null>(
-    initialData || null
-  );
-  // Store original formats for reconstruction
-  const [originalFormats, setOriginalFormats] = useState<
-    Map<number, FormatType>
-  >(new Map());
-  const [formatMappings, setFormatMappings] = useState<Map<string, number[]>>(
-    new Map()
-  );
-  // Track original sentences and which ones were edited
-  const [originalSentences, setOriginalSentences] = useState<
-    Array<{ id: number; text: string; format?: FormatType }>
-  >([]);
-  const [editedSentenceIds, setEditedSentenceIds] = useState<Set<number>>(
-    new Set()
-  );
+  const [content, setContent] = useState("");
 
-  // Create the rich text editor instance
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [3], // We only need h3 for section headings
-        },
-      }),
-      Underline,
-      BulletList,
-      OrderedList,
-      ListItem,
-      Bold,
-      Italic,
-      CodeBlock.configure({
-        HTMLAttributes: {
-          class: "formula-block",
-        },
-      }),
-      Heading.configure({
-        levels: [3],
-      }),
-      Placeholder.configure({
-        placeholder: "Edit your content here...",
-      }),
-      Formula,
-    ],
-    content: "",
-    onUpdate: ({ editor }) => {
-      // You can add real-time tracking here if needed
-    },
-  });
-
-  // Parse initial data when component mounts or when editing starts
+  // Initialize with initialData if present
   useEffect(() => {
-    if (initialData?.text[0] && editor) {
-      // Set the title
-      setTitle(initialData.text[0].title);
+    if (initialData && initialData.text && initialData.text[0]) {
+      setTitle(initialData.text[0].title || "");
 
-      // Store original sentences for comparison later
-      setOriginalSentences(initialData.text[0].sentences);
-
-      // Store original format information for reconstruction
-      const formats = new Map<number, FormatType>();
-      const mappings = new Map<string, number[]>();
-
-      initialData.text[0].sentences.forEach((sentence, idx) => {
-        if (sentence.format) {
-          formats.set(idx, sentence.format);
-
-          // Group by format for bulk processing
-          const existingIdxs = mappings.get(sentence.format) || [];
-          mappings.set(sentence.format, [...existingIdxs, idx]);
-        }
-      });
-
-      setOriginalFormats(formats);
-      setFormatMappings(mappings);
-
-      // Convert to HTML for the editor
-      let htmlContent = parseContentToHTML(initialData.text[0].sentences);
-
-      // Set the content in the editor
-      editor.commands.setContent(htmlContent);
-
-      setIsEditing(true);
-    }
-  }, [initialData, editor]);
-
-  // Add this function to track edited sentences
-  const trackChanges = () => {
-    if (!editor) return;
-
-    // Get current editor selections and changes
-    const { from, to } = editor.state.selection;
-
-    // If there's a selection or content changed, mark affected sentences
-    if (
-      from !== to ||
-      editor.isActive("formula") ||
-      editor.isActive("bulletList") ||
-      editor.isActive("orderedList") ||
-      editor.isActive("heading")
-    ) {
-      // Get paragraph elements from editor
-      const editorElement = editor.view.dom;
-      const paragraphs = editorElement.querySelectorAll(
-        "p, h3, li, div.formula-block"
+      // Get content from the rich-text formatted sentence
+      const richTextSentence = initialData.text[0].sentences.find(
+        (sentence) => sentence.format === "rich-text"
       );
 
-      // Find paragraphs that contain the selection
-      Array.from(paragraphs).forEach((para) => {
-        // Check for data-sentence-id attribute
-        const sentenceId = para.getAttribute("data-sentence-id");
-        if (sentenceId) {
-          const id = parseInt(sentenceId, 10);
+      if (richTextSentence) {
+        setContent(richTextSentence.text || "");
+      }
 
-          // Check if this paragraph contains the selection or is active
-          if (
-            para.contains(
-              editor.view.dom.querySelector(".ProseMirror-selectednode")
-            ) ||
-            (editor.isFocused &&
-              para.textContent !== originalSentences[id]?.text)
-          ) {
-            // This sentence was edited - mark it
-            setEditedSentenceIds((prev) => new Set([...prev, id]));
-          }
-        }
-      });
+      // If there's content, we've already edited this paragraph before
+      if (richTextSentence?.text) {
+        setIsCollapsed(true);
+      }
+    }
+  }, [initialData]);
+
+  const handleSave = () => {
+    if (!title.trim() && !content.trim()) {
+      // Don't save if both title and content are empty
+      setIsEditing(false);
+      return;
+    }
+
+    // Create a basic paragraph data structure
+    const paragraphData: ParagraphData = {
+      user: "AI",
+      text: [
+        {
+          title: title,
+          sentences: [
+            {
+              id: 1,
+              text: content,
+              format: "rich-text",
+            },
+          ],
+        },
+      ],
+    };
+
+    onSave(paragraphData, messageIndex);
+    setIsEditing(false);
+    setIsCollapsed(true);
+
+    // Reset fields if this is a new paragraph (no initialData)
+    if (!initialData) {
+      setTitle("");
+      setContent("");
     }
   };
 
-  // Add change tracking to the editor
-  useEffect(() => {
-    if (editor) {
-      // Add change handlers
-      editor.on("selectionUpdate", trackChanges);
-      editor.on("update", trackChanges);
-
-      return () => {
-        // Clean up event listeners
-        editor.off("selectionUpdate", trackChanges);
-        editor.off("update", trackChanges);
-      };
+  const handleToggle = () => {
+    if (!isEditing) {
+      setIsCollapsed(!isCollapsed);
     }
-  }, [editor, originalSentences]);
+  };
 
-  const handleSave = () => {
-    if (!editor) return;
-
-    const updatedSentences = parseHTMLFromEditor(editor.getHTML());
-
-    // If we're editing existing content, preserve unedited formulas
-    if (initialData && originalSentences.length > 0) {
-      // Create a map of sentence indices to content
-      const sentenceIdMap = new Map<
-        number,
-        { id: number; text: string; format?: FormatType }
-      >();
-
-      // First build up the new content
-      updatedSentences.forEach((sentence, idx) => {
-        // Get the original sentence index if available (from data attribute)
-        const originalIdx =
-          sentence.originalIndex !== undefined ? sentence.originalIndex : idx;
-
-        // Check if this formula/content was explicitly edited
-        const wasEdited = editedSentenceIds.has(originalIdx);
-
-        if (originalIdx < originalSentences.length && !wasEdited) {
-          // If this wasn't edited and has a valid original, preserve the original exactly
-          sentenceIdMap.set(idx, {
-            id: sentence.id,
-            text: originalSentences[originalIdx].text,
-            format: originalSentences[originalIdx].format,
-          });
-        } else {
-          // Only apply formatting to edited or new content
-          if (sentence.format === "paragraph" && detectFormula(sentence.text)) {
-            // Transform to formula format for NEW or EDITED formulas only
-            sentenceIdMap.set(idx, {
-              id: sentence.id,
-              text: formatCommonEquation(sentence.text),
-              format: "formula" as FormatType,
-            });
-          } else if (sentence.format === "formula") {
-            // For edited formulas, apply consistent formatting
-            const cleanedFormula = cleanFormulaContent(sentence.text);
-            sentenceIdMap.set(idx, {
-              id: sentence.id,
-              text: cleanedFormula,
-              format: "formula",
-            });
-          } else {
-            // Otherwise keep as is
-            sentenceIdMap.set(idx, sentence);
-          }
-        }
-      });
-
-      // Convert the map back to an array in order
-      const processedSentences = Array.from(
-        { length: updatedSentences.length },
-        (_, i) => sentenceIdMap.get(i) || updatedSentences[i]
-      );
-
-      const paragraphData: ParagraphData = {
-        user: "AI",
-        text: [
-          {
-            title,
-            sentences: processedSentences,
-          },
-        ],
-      };
-
-      // Log the data before saving to help with debugging
-      console.log(
-        "Saving paragraph data:",
-        JSON.stringify(
-          paragraphData.text[0].sentences.filter((s) => s.format === "formula")
-        )
-      );
-
-      onSave(paragraphData, messageIndex);
-      setSavedData(paragraphData);
-    } else {
-      // Process each sentence for special handling of formulas
-      const processedSentences = updatedSentences.map((sentence) => {
-        // Special handling for text containing formulas
-        if (sentence.format === "paragraph" && detectFormula(sentence.text)) {
-          // Transform to formula format
-          return {
-            ...sentence,
-            text: formatCommonEquation(sentence.text),
-            format: "formula" as FormatType,
-          };
-        }
-
-        // Special handling for formula format to ensure consistency with ResponseMessage rendering
-        if (sentence.format === "formula") {
-          const cleanedFormula = cleanFormulaContent(sentence.text);
-          return {
-            ...sentence,
-            text: cleanedFormula,
-            format: "formula" as FormatType,
-          };
-        }
-
-        // Other special case: check for the mangled physics equations
-        if (sentence.text.includes("Thisiscommonlyexpressedasd")) {
-          return {
-            ...sentence,
-            text: "$d = V_0 t + \\frac{1}{2} a t^{2}$",
-            format: "formula" as FormatType,
-          };
-        }
-
-        // Check for inline math in paragraphs
-        if (sentence.format === "paragraph" && sentence.text.includes("$")) {
-          // Process the paragraph to preserve inline math
-          sentence.text = sentence.text.replace(
-            /\$([^$]+)\$/g,
-            (match, formula) => {
-              const cleanFormula = formula.trim();
-              return `$${cleanFormula}$`;
-            }
-          );
-        }
-
-        return sentence;
-      });
-
-      const paragraphData: ParagraphData = {
-        user: "AI",
-        text: [
-          {
-            title,
-            sentences: processedSentences,
-          },
-        ],
-      };
-
-      onSave(paragraphData, messageIndex);
-      setSavedData(paragraphData);
-    }
-
-    setIsEditing(false);
-
-    // Reset for new content
-    if (!initialData) {
-      setTitle("");
-      if (editor) {
-        editor.commands.clearContent();
-      }
-    }
+  // Sanitize HTML when displaying content
+  const sanitizeHtml = (html: string) => {
+    return DOMPurify.sanitize(html, {
+      ADD_ATTR: ["style", "class", "data-list-type"],
+      ADD_TAGS: [
+        "span",
+        "h1",
+        "h2",
+        "h3",
+        "strong",
+        "em",
+        "b",
+        "i",
+        "ul",
+        "ol",
+        "li",
+        "p",
+        "div",
+      ],
+      ALLOW_DATA_ATTR: true,
+    });
   };
 
   return (
     <div className="relative p-4">
+      {/* Add the EditorStyles component */}
+      <EditorStyles />
+
       <div className="flex items-center">
         <button
           onClick={() => setIsEditing(!isEditing)}
@@ -1232,6 +290,21 @@ export default function ParagraphEditor({
           )}
         </button>
         {!isEditing && <div className="flex-grow h-[1px] bg-gray-200 ml-2" />}
+
+        {/* Show toggle button when not editing but only if isEditing has been true before (content exists) */}
+        {!isEditing && content && (
+          <button
+            onClick={handleToggle}
+            className="ml-2 p-1 rounded-full hover:bg-gray-100"
+            aria-label={isCollapsed ? "Expand" : "Collapse"}
+          >
+            {isCollapsed ? (
+              <ChevronDownIcon className="w-4 h-4 text-gray-600" />
+            ) : (
+              <ChevronUpIcon className="w-4 h-4 text-gray-600" />
+            )}
+          </button>
+        )}
       </div>
 
       {isEditing && (
@@ -1245,82 +318,52 @@ export default function ParagraphEditor({
           />
           <div className="w-full h-px bg-slate-300" />
 
-          {/* Rich text editor toolbar */}
-          {editor && <RichTextToolbar editor={editor} />}
+          {/* Use the RichTextEditor component with correct props */}
+          <RichTextEditor
+            initialContent={content}
+            onChange={(html) => setContent(html)}
+            className="w-full min-h-[250px] border border-gray-200 rounded-md"
+          />
 
-          {/* Rich text editor content */}
-          <div className="min-h-[150px] w-full p-2 rounded-md bg-slate-100 focus-within:ring-2 focus-within:ring-[#94b347]">
-            <EditorContent
-              editor={editor}
-              className="prose max-w-none focus:outline-none min-h-[120px]"
-            />
+          <div className="flex justify-between">
+            <button
+              onClick={handleSave}
+              className="flex items-center justify-center px-4 py-2 bg-[#94b347] text-white rounded-md hover:bg-[#7a9339] transition-colors duration-300 ease-in-out"
+            >
+              <SaveIcon className="w-4 h-4 mr-2" />
+              Save
+            </button>
+
+            {onDelete && (
+              <button
+                onClick={onDelete}
+                className="flex items-center justify-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300 ease-in-out"
+              >
+                <XIcon className="w-4 h-4 mr-2" />
+                Delete
+              </button>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* Special styling for formulas in the editor */}
-          <style jsx global>{`
-            .ProseMirror .math-formula,
-            .ProseMirror .formula-block {
-              background-color: rgba(148, 179, 71, 0.1);
-              border: 1px solid rgba(148, 179, 71, 0.2);
-              border-radius: 0.375rem;
-              padding: 0.75rem;
-              font-family: monospace;
-              color: #0a4c79;
-              font-weight: bold;
-              white-space: normal; /* Allow wrapping */
-              word-break: break-word; /* Break at word boundaries when possible */
-              overflow-wrap: anywhere; /* Allow breaking anywhere if needed */
-              max-width: 100%; /* Ensure it doesn't overflow container */
-              display: block; /* Make it a block element */
-              margin: 12px 0; /* Add spacing above and below */
-              line-height: 1.6; /* Improve readability */
-            }
+      {/* Show a preview of content when collapsed and not editing */}
+      {!isEditing && content && isCollapsed && (
+        <div className="mt-2 ml-8 text-sm text-gray-500 italic">
+          Click to expand editor...
+        </div>
+      )}
 
-            /* Add visual indicator that this is a formula */
-            .ProseMirror .formula-block::before {
-              content: "Formula: ";
-              color: #94b347;
-              font-weight: bold;
-              margin-right: 8px;
-              opacity: 0.9;
-            }
-
-            /* Style paragraphs containing inline math */
-            .ProseMirror p.contains-math {
-              border-left: 3px solid rgba(148, 179, 71, 0.4);
-              padding-left: 8px;
-              background-color: rgba(148, 179, 71, 0.05);
-            }
-
-            .ProseMirror h3 {
-              color: #94b347;
-              font-weight: bold;
-              font-size: 1.25rem;
-              margin-top: 1rem;
-              margin-bottom: 0.5rem;
-            }
-
-            .ProseMirror ul li,
-            .ProseMirror ol li {
-              margin-left: 1.5rem;
-            }
-
-            .ProseMirror ul {
-              list-style-type: disc;
-            }
-
-            .ProseMirror ol {
-              list-style-type: decimal;
-            }
-          `}</style>
-
-          <button
-            onClick={handleSave}
-            className="flex items-center justify-center px-4 py-2 bg-[#94b347] text-white rounded-md hover:bg-[#7a9339] transition-colors duration-300 ease-in-out"
-          >
-            <SaveIcon className="w-4 h-4 mr-2" />
-            Save
-          </button>
+      {/* Show the editor in read-only mode when expanded but not editing */}
+      {!isEditing && content && !isCollapsed && (
+        <div className="mt-4 ml-8 border-l-2 border-[#94b347] pl-4 transition-all duration-300 ease-in-out">
+          {title && (
+            <h3 className="text-lg font-bold text-[#94b347] mb-2">{title}</h3>
+          )}
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
+          />
         </div>
       )}
     </div>
