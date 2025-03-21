@@ -437,7 +437,7 @@ const EditorStyles = () => (
       color: #000 !important;
     }
 
-    /* Update heading styles with better hierarchy */
+    /* Default heading styles - don't modify H1 */
     .editor-content h1,
     .ProseMirror h1 {
       font-size: 1.8em !important;
@@ -447,18 +447,22 @@ const EditorStyles = () => (
       line-height: 1.3 !important;
     }
 
+    /* Only enhance H2 headings from rich text editor */
     .editor-content h2,
-    .ProseMirror h2 {
-      font-size: 1.5em !important;
+    .ProseMirror h2,
+    .editor-heading {
+      font-size: 1.75em !important;
       font-weight: 600 !important;
       margin: 1em 0 0.5em !important;
       color: #333 !important;
       line-height: 1.4 !important;
+      border-bottom: 1px solid #eaeaea !important;
+      padding-bottom: 0.3em !important;
     }
 
     .editor-content h3,
     .ProseMirror h3 {
-      font-size: 1.3em !important;
+      font-size: 1.4em !important;
       font-weight: bold !important;
       margin: 0.8em 0 0.4em !important;
       color: #444 !important;
@@ -528,14 +532,16 @@ const EditorStyles = () => (
     }
 
     .prose h2 {
-      font-size: 1.5em !important;
+      font-size: 1.75em !important;
       font-weight: 600 !important;
       color: #333 !important;
       margin: 1em 0 0.5em !important;
+      border-bottom: 1px solid #eaeaea !important;
+      padding-bottom: 0.3em !important;
     }
 
     .prose h3 {
-      font-size: 1.3em !important;
+      font-size: 1.4em !important;
       font-weight: bold !important;
       color: #444 !important;
       margin: 0.8em 0 0.4em !important;
@@ -558,6 +564,7 @@ export const ResponseMessage = ({
   const [isVisible, setIsVisible] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [editorInitialized, setEditorInitialized] = useState(false);
+  const [titleInput, setTitleInput] = useState("");
 
   // Add effect to trigger animation after component mounts
   useEffect(() => {
@@ -594,7 +601,8 @@ export const ResponseMessage = ({
       return "<p>No content available</p>";
     }
 
-    let html = `<h2>${section.title}</h2>`;
+    // Don't include the title in the HTML content for the editor
+    let html = "";
     let currentListType: string | null = null;
     let listItems = "";
 
@@ -607,6 +615,11 @@ export const ResponseMessage = ({
       const format = sentence.format || "paragraph";
       const text = sentence.text;
       const align = sentence.align || null;
+
+      // Skip all h1 headings to avoid duplication
+      if (format === "h1") {
+        return;
+      }
 
       // Create style attribute for alignment if present
       const alignStyle = align ? ` style="text-align: ${align};"` : "";
@@ -660,10 +673,12 @@ export const ResponseMessage = ({
               html += `<h1${alignStyle}>${text}</h1>`;
               break;
             case "h2":
-              html += `<h2${alignStyle}>${text}</h2>`;
+              // Use h2 tag with proper class for enhanced styling
+              html += `<h2${alignStyle} class="editor-heading editor-h2 text-xl font-semibold text-gray-800">${text}</h2>`;
               break;
             case "heading":
-              html += `<h3${alignStyle}>${text}</h3>`;
+            case "h3":
+              html += `<h3${alignStyle} class="editor-heading editor-h3 text-lg font-medium text-gray-700">${text}</h3>`;
               break;
             case "formula":
               html += `<div class="formula p-3 bg-gray-50 rounded my-3"${alignStyle}>${text}</div>`;
@@ -709,7 +724,23 @@ export const ResponseMessage = ({
 
     // Sanitize HTML to prevent XSS
     return DOMPurify.sanitize(html, {
-      ADD_ATTR: ["data-list-type"], // Allow our custom data attributes
+      ADD_ATTR: ["data-list-type", "class", "style"], // Allow our custom data attributes and style
+      ADD_TAGS: [
+        "h1",
+        "h2",
+        "h3",
+        "ul",
+        "ol",
+        "li",
+        "p",
+        "div",
+        "span",
+        "strong",
+        "em",
+        "b",
+        "i",
+      ], // Ensure all our tags are allowed
+      ALLOW_DATA_ATTR: true, // Allow data attributes
     });
   };
 
@@ -717,17 +748,17 @@ export const ResponseMessage = ({
   const htmlToSection = (html: string): Section => {
     if (!html) return { title: "", sentences: [] };
 
+    // Retrieve the current title from the existing section to preserve it
+    const currentTitle =
+      typeof msg.text !== "string" && msg.text[0] ? msg.text[0].title : "";
+
     // Create a temporary DOM element to parse the HTML
     const tempEl = document.createElement("div");
     tempEl.innerHTML = html;
 
-    // Extract title if it exists
-    let title = "";
-    const h1 = tempEl.querySelector("h1");
-    if (h1) {
-      title = h1.textContent || "";
-      h1.remove();
-    }
+    // Remove any H1 tags as they should not be part of the editor content
+    const h1Elements = tempEl.querySelectorAll("h1");
+    h1Elements.forEach((h1) => h1.remove());
 
     // Get the content elements
     const elements = Array.from(tempEl.children);
@@ -736,9 +767,26 @@ export const ResponseMessage = ({
     const sentences: Sentence[] = [];
     let sentenceId = 1;
 
+    // We will add the title from the title input field later in handleSaveEdit
+    // DO NOT add the title here as a sentence to avoid duplication
+
     elements.forEach((element) => {
-      // Process headings
-      if (element.tagName.match(/^H[1-6]$/)) {
+      // Process headings - special handling for h2 elements
+      if (element.tagName === "H2") {
+        sentences.push({
+          id: sentenceId++,
+          text: element.textContent || "",
+          format: "h2",
+        });
+        return;
+      }
+      // Skip any H1 tags that might still be in the editor content
+      else if (element.tagName === "H1") {
+        // Skip H1 tags to avoid duplication
+        return;
+      }
+      // Process other headings
+      else if (element.tagName.match(/^H[3-6]$/)) {
         sentences.push({
           id: sentenceId++,
           text: element.textContent || "",
@@ -777,7 +825,7 @@ export const ResponseMessage = ({
       }
     });
 
-    return { title, sentences };
+    return { title: currentTitle, sentences };
   };
 
   // Process a list item and preserve its formatting
@@ -840,9 +888,26 @@ export const ResponseMessage = ({
 
   const handleEditClick = () => {
     if (typeof msg.text !== "string" && msg.text[0]) {
-      // Convert section to HTML for the editor
-      const html = sectionToHtml(msg.text[0]);
-      setEditorContent(html);
+      // Set the title input to the current title
+      setTitleInput(msg.text[0].title);
+
+      console.log("ORIGINAL SECTION:", {
+        title: msg.text[0].title,
+        sentences: msg.text[0].sentences.map((s) => ({
+          id: s.id,
+          format: s.format,
+          textPreview: s.text.substring(0, 30),
+        })),
+      });
+
+      // Convert section to HTML for the editor (excluding the title)
+      const editorHtml = sectionToHtml(msg.text[0]);
+      console.log(
+        "HTML SENT TO EDITOR (should not contain H1 tags):",
+        editorHtml
+      );
+
+      setEditorContent(editorHtml);
       setIsEditing(true);
       onEdit(); // Call the parent's onEdit handler
     }
@@ -853,6 +918,7 @@ export const ResponseMessage = ({
       try {
         // Debug logging before conversion
         console.log("Editor content before conversion:", editorContent);
+        console.log("Current title input:", titleInput);
 
         // Save what's currently in the editor for debugging
         const debugDiv = document.createElement("div");
@@ -862,29 +928,31 @@ export const ResponseMessage = ({
         // Convert the HTML back to a section structure
         const updatedSection = htmlToSection(editorContent);
 
-        // Debug logging after conversion - check for rich-text content
-        const richTextSentences = updatedSection.sentences
-          .filter((s) => s.format === "rich-text")
-          .map((s) => ({
-            id: s.id,
-            preview: s.text.substring(0, 50) + "...",
-            isPartiallyFormatted:
-              s.text.includes("<strong>") && !s.text.startsWith("<strong>"),
-          }));
+        // Update the title from the title input
+        updatedSection.title = titleInput;
 
-        console.log("Rich-text formatting check:", {
-          hasRichTextContent: richTextSentences.length > 0,
-          richTextSentences,
+        // Add the title as the first H1 sentence
+        const titleSentence = {
+          id: 1,
+          text: titleInput,
+          format: "h1",
+        };
+
+        // Reindex the existing sentences to start from ID 2
+        const contentSentences = updatedSection.sentences.map((s, index) => ({
+          ...s,
+          id: index + 2,
+        }));
+
+        // Combine the title sentence with the content sentences
+        updatedSection.sentences = [titleSentence, ...contentSentences];
+
+        // Debug logging for the updated section
+        console.log("Updated section:", {
+          title: updatedSection.title,
+          firstSentence: updatedSection.sentences[0],
+          sentenceCount: updatedSection.sentences.length,
         });
-
-        console.log(
-          "Format preservation check:",
-          updatedSection.sentences.map((s) => ({
-            text: s.text.substring(0, 30),
-            format: s.format,
-            align: s.align,
-          }))
-        );
 
         // Create updated message
         const updatedMessage = {
@@ -896,6 +964,14 @@ export const ResponseMessage = ({
 
         // Save the updated content
         onSave(updatedMessage, index);
+        console.log("SAVED_SECTION:", {
+          title: updatedSection.title,
+          sentences: updatedSection.sentences.map((s) => ({
+            id: s.id,
+            format: s.format,
+            preview: s.text.substring(0, 30),
+          })),
+        });
         setIsEditing(false);
       } catch (error) {
         console.error("Error saving edited content:", error);
@@ -1050,15 +1126,33 @@ export const ResponseMessage = ({
 
         <div className="p-3 md:p-5 rounded-2xl transition-colors bg-white shadow-lg border border-gray-100">
           <div className="mb-4">
-            <h3 className="text-lg md:text-xl font-bold text-[#94b347] mb-4">
-              Editing: {section.title}
-            </h3>
+            <div className="mb-4">
+              <label
+                htmlFor="section-title"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Section Title
+              </label>
+              <input
+                type="text"
+                id="section-title"
+                className="w-full p-2 border border-gray-300 rounded-md text-lg font-bold text-[#94b347]"
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                placeholder="Enter section title"
+              />
+            </div>
 
-            <RichTextEditor
-              initialContent={editorContent}
-              onChange={setEditorContent}
-              className="min-h-[300px] border border-gray-200 rounded-md mb-4"
-            />
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Section Content
+              </label>
+              <RichTextEditor
+                initialContent={editorContent}
+                onChange={setEditorContent}
+                className="min-h-[300px] border border-gray-200 rounded-md mb-4"
+              />
+            </div>
 
             {process.env.NODE_ENV === "development" && (
               <div className="mt-4 p-3 border border-gray-200 rounded-md">
@@ -1227,7 +1321,7 @@ export const ResponseMessage = ({
         </div>
         <motion.div className="space-y-4" variants={contentAnimation}>
           {/* Group consecutive paragraphs for better readability */}
-          {(() => {
+          {((): React.ReactNode => {
             let currentListType: string | null = null;
             let listItems: React.ReactElement[] = [];
             let result: React.ReactElement[] = [];
@@ -1294,6 +1388,11 @@ export const ResponseMessage = ({
 
             section.sentences.forEach((sentence, sentenceIdx) => {
               const format = sentence.format || "paragraph";
+
+              // Skip the first sentence if it's an H1 (title) to avoid duplication
+              if (sentenceIdx === 0 && format === "h1") {
+                return;
+              }
 
               // Check if we're entering a summary section
               if (
@@ -1433,8 +1532,23 @@ export const ResponseMessage = ({
                       }`}
                       dangerouslySetInnerHTML={{
                         __html: DOMPurify.sanitize(sentence.text, {
-                          ADD_ATTR: ["style", "class"],
-                          ADD_TAGS: ["span"],
+                          ADD_ATTR: ["style", "class", "data-list-type"],
+                          ADD_TAGS: [
+                            "span",
+                            "h1",
+                            "h2",
+                            "h3",
+                            "strong",
+                            "em",
+                            "b",
+                            "i",
+                            "ul",
+                            "ol",
+                            "li",
+                            "p",
+                            "div",
+                          ],
+                          ALLOW_DATA_ATTR: true,
                         }),
                       }}
                     />
@@ -1563,25 +1677,19 @@ export const ResponseMessage = ({
                         );
                       } else if (format === "h1") {
                         content = (
-                          <h1
-                            className={`text-2xl font-bold text-[#94b347] ${className}`}
-                          >
+                          <h1 className="text-2xl font-bold text-[#94b347] my-3">
                             {sentence.text}
                           </h1>
                         );
                       } else if (format === "h2") {
                         content = (
-                          <h2
-                            className={`text-xl font-semibold text-gray-800 ${className}`}
-                          >
+                          <h2 className="text-xl font-semibold text-gray-800 my-3 pb-2 border-b border-gray-200 leading-snug">
                             {sentence.text}
                           </h2>
                         );
-                      } else if (format === "heading") {
+                      } else if (format === "h3" || format === "heading") {
                         content = (
-                          <h3
-                            className={`text-lg font-medium text-gray-700 ${className}`}
-                          >
+                          <h3 className="text-lg font-medium text-gray-700 my-2 leading-normal">
                             {sentence.text}
                           </h3>
                         );

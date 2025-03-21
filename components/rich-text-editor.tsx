@@ -14,10 +14,8 @@ import Text from "@tiptap/extension-text";
 import TextAlign from "@tiptap/extension-text-align";
 import { BubbleMenu, Editor, EditorContent, useEditor } from "@tiptap/react";
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   Bold as BoldIcon,
+  Heading1,
   Heading2,
   Italic as ItalicIcon,
   List,
@@ -195,7 +193,7 @@ const RichTextEditor = ({
         },
       }),
       Heading.configure({
-        levels: [2],
+        levels: [1, 2],
       }),
       // Critical configuration for BulletList to preserve marks
       BulletList.configure({
@@ -218,11 +216,6 @@ const RichTextEditor = ({
         HTMLAttributes: {
           class: "list-item",
         },
-      }),
-      TextAlign.configure({
-        types: ["heading", "paragraph"],
-        alignments: ["left", "center", "right"],
-        defaultAlignment: "left",
       }),
     ],
     // Set initial content
@@ -313,6 +306,18 @@ const RichTextEditor = ({
     }
   }, [editor]);
 
+  // Add a useEffect to detect and warn about H1 content
+  useEffect(() => {
+    if (editor && editor.isActive("heading", { level: 1 })) {
+      console.warn(
+        "WARNING: H1 content detected in editor. This may cause title duplication!"
+      );
+      showNotification(
+        "Please use H2 for section headings. H1 is reserved for the document title."
+      );
+    }
+  }, [editor, editor?.state]);
+
   if (!isMounted) {
     return null;
   }
@@ -325,15 +330,6 @@ const RichTextEditor = ({
   const isStyleActive = (style: string, options = {}) => {
     try {
       return editor.isActive(style, options);
-    } catch (error) {
-      return false;
-    }
-  };
-
-  // Helper to check if text alignment is active
-  const isTextAlignActive = (alignment: string) => {
-    try {
-      return editor.isActive({ textAlign: alignment });
     } catch (error) {
       return false;
     }
@@ -492,6 +488,23 @@ const RichTextEditor = ({
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => {
+              showNotification(
+                "Note: H1 is reserved for the document title and edited separately"
+              );
+              editor.chain().focus().toggleHeading({ level: 1 }).run();
+            }}
+            className={
+              isStyleActive("heading", { level: 1 }) ? "bg-gray-200" : ""
+            }
+            aria-label="Heading 1"
+            title="Primary Title (H1) - reserved for document title"
+          >
+            <Heading1 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 2 }).run()
             }
@@ -520,33 +533,6 @@ const RichTextEditor = ({
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("left").run()}
-            className={isTextAlignActive("left") ? "bg-gray-200" : ""}
-            aria-label="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("center").run()}
-            className={isTextAlignActive("center") ? "bg-gray-200" : ""}
-            aria-label="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setTextAlign("right").run()}
-            className={isTextAlignActive("right") ? "bg-gray-200" : ""}
-            aria-label="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
         </div>
 
         {/* Editor content */}
@@ -560,6 +546,26 @@ const RichTextEditor = ({
           min-height: 150px;
           cursor: text;
           white-space: pre-wrap;
+        }
+
+        /* Keep default H1 styling */
+        .ProseMirror h1 {
+          font-size: 1.8em !important;
+          font-weight: 700 !important;
+          margin: 1em 0 0.5em !important;
+          color: #94b347 !important;
+          line-height: 1.3 !important;
+        }
+
+        /* Enhanced H2 styling */
+        .ProseMirror h2 {
+          font-size: 1.75em !important;
+          font-weight: 600 !important;
+          margin: 1em 0 0.5em !important;
+          color: #333 !important;
+          line-height: 1.4 !important;
+          border-bottom: 1px solid #eaeaea;
+          padding-bottom: 0.3em;
         }
 
         /* List styling */
@@ -647,6 +653,35 @@ const RichTextEditor = ({
         .ProseMirror .format-italic {
           font-style: italic;
           display: inline;
+        }
+
+        /* Additional styles for Response component to ensure consistency */
+        .editor-content h2 {
+          font-size: 1.5em !important;
+          font-weight: 600 !important;
+          margin: 1em 0 0.5em !important;
+          color: #333 !important;
+          line-height: 1.4 !important;
+          border-bottom: 1px solid #eaeaea;
+          padding-bottom: 0.3em;
+        }
+
+        /* Improve the visibility of headings in the rendered content */
+        .prose h1 {
+          font-size: 1.8em !important;
+          font-weight: 700 !important;
+          color: #94b347 !important;
+          margin: 1em 0 0.5em !important;
+        }
+
+        .prose h2 {
+          font-size: 1.75em !important;
+          font-weight: 600 !important;
+          margin: 1em 0 0.5em !important;
+          color: #333 !important;
+          line-height: 1.4 !important;
+          border-bottom: 1px solid #eaeaea;
+          padding-bottom: 0.3em;
         }
       `}</style>
 
