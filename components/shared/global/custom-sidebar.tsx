@@ -56,7 +56,24 @@ export function CustomSidebar() {
   const [user, setUser] = useState<FirestoreUser | null>(null);
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Check screen size on component mount to set initial sidebar state
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const isMediumScreen = window.innerWidth >= 768; // md breakpoint in Tailwind
+      setSidebarOpen(isMediumScreen);
+    };
+
+    // Set initial state
+    checkScreenSize();
+
+    // Add event listener for resize
+    window.addEventListener("resize", checkScreenSize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   // Get user data
   useEffect(() => {
