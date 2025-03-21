@@ -736,6 +736,38 @@ export const ResponseMessage = ({
     const sentences: Sentence[] = [];
     let sentenceId = 1;
 
+    // Helper function to detect if paragraph contains partial formatting
+    const hasPartialFormatting = (node: Element): boolean => {
+      // If no formatting elements exist, it can't be partially formatted
+      if (!node.querySelector("strong, em, b, i")) return false;
+
+      // Get total text length
+      const totalText = node.textContent || "";
+      if (!totalText.trim()) return false;
+
+      // Get total length of formatted text
+      const boldElements = Array.from(node.querySelectorAll("strong, b"));
+      const italicElements = Array.from(node.querySelectorAll("em, i"));
+
+      // Check if any bold or italic element doesn't contain the entire text
+      for (const el of [...boldElements, ...italicElements]) {
+        const formattedText = el.textContent || "";
+        if (formattedText.length < totalText.length) {
+          return true; // Found partial formatting
+        }
+      }
+
+      // Check for direct text nodes mixed with formatted elements
+      let hasDirectTextNode = false;
+      node.childNodes.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE && child.textContent?.trim()) {
+          hasDirectTextNode = true;
+        }
+      });
+
+      return hasDirectTextNode;
+    };
+
     // Process all elements
     const processNode = (node: Element) => {
       // Skip already processed nodes
@@ -827,7 +859,22 @@ export const ResponseMessage = ({
           }
           break;
         case "p":
-          processFormattedContent(node, textAlign);
+          // Check if paragraph has mixed formatting (some words bold/italic but not all)
+          if (hasPartialFormatting(node)) {
+            // Use rich-text format to preserve exact HTML
+            console.log(
+              "Detected partial formatting in paragraph:",
+              node.innerHTML.substring(0, 50)
+            );
+            sentences.push({
+              id: sentenceId++,
+              text: node.innerHTML,
+              format: "rich-text",
+              align: textAlign || undefined,
+            });
+          } else {
+            processFormattedContent(node, textAlign);
+          }
           break;
         default:
           // For other elements, process children
@@ -887,6 +934,9 @@ export const ResponseMessage = ({
         node.innerHTML.includes("<strong><em>") ||
         node.innerHTML.includes("<em><strong>");
 
+      // Check if any formatting doesn't cover the entire text
+      const hasPartial = hasPartialFormatting(node);
+
       // Check for nested markdown formatting
       const textContent = node.textContent?.trim() || "";
 
@@ -903,7 +953,7 @@ export const ResponseMessage = ({
       // Store full HTML content for nested formatting
       let htmlContent = "";
 
-      if (hasNestedFormatting || hasNestedMarkdown) {
+      if (hasNestedFormatting || hasNestedMarkdown || hasPartial) {
         // For mixed formatting, preserve the full HTML structure
         format = "rich-text";
         htmlContent = node.innerHTML;
@@ -924,6 +974,7 @@ export const ResponseMessage = ({
         hasBoldMarkdown,
         hasNestedFormatting,
         hasNestedMarkdown,
+        hasPartialFormatting: hasPartial,
       });
 
       // Add the properly formatted sentence
@@ -984,7 +1035,21 @@ export const ResponseMessage = ({
         // Convert the HTML back to a section structure
         const updatedSection = htmlToSection(editorContent, msg.text[0]);
 
-        // Debug logging after conversion - add this
+        // Debug logging after conversion - check for rich-text content
+        const richTextSentences = updatedSection.sentences
+          .filter((s) => s.format === "rich-text")
+          .map((s) => ({
+            id: s.id,
+            preview: s.text.substring(0, 50) + "...",
+            isPartiallyFormatted:
+              s.text.includes("<strong>") && !s.text.startsWith("<strong>"),
+          }));
+
+        console.log("Rich-text formatting check:", {
+          hasRichTextContent: richTextSentences.length > 0,
+          richTextSentences,
+        });
+
         console.log(
           "Format preservation check:",
           updatedSection.sentences.map((s) => ({
@@ -1533,12 +1598,18 @@ export const ResponseMessage = ({
                 // Handle non-list content with enhanced styling
                 let content;
                 if (format === "rich-text") {
+                  // For rich-text format, preserve all HTML formatting exactly as it is
                   content = (
                     <div
-                      className={`text-gray-800 text-sm md:text-base whitespace-normal break-words my-3 leading-relaxed ${
+                      className={`text-gray-800 text-sm md:text-base whitespace-normal break-words my-3 leading-relaxed prose prose-sm max-w-none ${
                         isSummarySection ? "text-gray-700" : ""
                       }`}
-                      dangerouslySetInnerHTML={{ __html: sentence.text }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(sentence.text, {
+                          ADD_ATTR: ["style", "class"],
+                          ADD_TAGS: ["span"],
+                        }),
+                      }}
                     />
                   );
                 } else if (format === "formula") {
@@ -1756,11 +1827,19 @@ const hasNestedFormatting = (element: Element): boolean => {
   // Check for direct formatting of list items
   const hasDirectFormatting =
     element.tagName === "LI" &&
-    element.querySelector("strong, em, b, i") !== null;
+    element.querySelector("strong, em, b, i, u") !== null;
 
   // Check for nested lists
   const hasNestedList =
     element.tagName === "LI" && element.querySelector("ul, ol") !== null;
+
+  // Check for formula in list items
+  const hasFormulaClass = element.querySelector(".formula") !== null;
+  const textContent = element.textContent || "";
+  const containsDollarSign = textContent.includes("$");
+  const hasDollarFormula =
+    containsDollarSign && textContent.match(/\$[^$]+\$/) !== null;
+  const hasFormula = hasFormulaClass || hasDollarFormula;
 
   // Check for other complex formatting combinations
   const html = element.innerHTML;
@@ -1770,30 +1849,15 @@ const hasNestedFormatting = (element: Element): boolean => {
     html.includes("<strong><em>") ||
     html.includes("<em><strong>") ||
     html.includes("<b><i>") ||
-    html.includes("<i><b>");
+    html.includes("<i><b>") ||
+    html.includes("<u>") ||
+    html.includes("</u>");
 
   // Check for custom markdown syntax like **bold** or $$italic$$
-  const textContent = element.textContent || "";
   const hasCustomMarkdown =
     (textContent.includes("**") &&
       textContent.match(/\*\*[^*]+\*\*/) !== null) ||
     (textContent.includes("$$") && textContent.match(/\$\$[^$]+\$\$/) !== null);
-
-  // Debug logging
-  if (
-    element.tagName === "LI" &&
-    (hasDirectFormatting || hasNestedTags || hasCustomMarkdown)
-  ) {
-    console.log("Detected formatting in list item:", {
-      html: element.innerHTML,
-      hasDirectFormatting,
-      hasNestedTags,
-      hasCustomMarkdown,
-      hasNestedBoldInItalic,
-      hasNestedItalicInBold,
-      hasNestedList,
-    });
-  }
 
   return (
     hasNestedBoldInItalic ||
@@ -1801,7 +1865,8 @@ const hasNestedFormatting = (element: Element): boolean => {
     hasNestedTags ||
     hasDirectFormatting ||
     hasNestedList ||
-    hasCustomMarkdown
+    hasCustomMarkdown ||
+    hasFormula
   );
 };
 

@@ -26,7 +26,7 @@ import {
   List,
   ListOrdered,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface RichTextEditorProps {
   initialContent: string;
@@ -62,6 +62,9 @@ const RichTextEditor = ({
 }: RichTextEditorProps) => {
   const [isMounted, setIsMounted] = useState(false);
   const [content, setContent] = useState(initialContent);
+  const [hasTextSelected, setHasTextSelected] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [editorState, setEditorState] = useState({
     isBold: false,
     isItalic: false,
@@ -71,14 +74,46 @@ const RichTextEditor = ({
     isHeading2: false,
   });
 
+  // Show a temporary notification message
+  const showNotification = (message: string) => {
+    setNotification(message);
+
+    // Clear any existing timeout
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
+
+    // Set a new timeout to clear the notification
+    notificationTimeoutRef.current = setTimeout(() => {
+      setNotification(null);
+    }, 2000);
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Initialize the editor with explicitly imported extensions and improved list handling
   const editor = useEditor({
     extensions: [
       Document,
       Paragraph,
       Text,
-      Bold,
-      Italic,
+      Bold.configure({
+        HTMLAttributes: {
+          class: "format-bold",
+        },
+      }),
+      Italic.configure({
+        HTMLAttributes: {
+          class: "format-italic",
+        },
+      }),
       Heading.configure({
         levels: [1, 2, 3],
       }),
@@ -266,6 +301,27 @@ const RichTextEditor = ({
     }
   }, [editor]);
 
+  // Add selection tracking
+  useEffect(() => {
+    if (editor) {
+      const handleSelectionUpdate = () => {
+        const isEmpty = editor.state.selection.empty;
+        setHasTextSelected(!isEmpty);
+
+        if (!isEmpty) {
+          const { from, to } = editor.state.selection;
+          console.log(`Text selected: ${from} to ${to}`);
+        }
+      };
+
+      editor.on("selectionUpdate", handleSelectionUpdate);
+
+      return () => {
+        editor.off("selectionUpdate", handleSelectionUpdate);
+      };
+    }
+  }, [editor]);
+
   if (!isMounted) {
     return null;
   }
@@ -299,6 +355,13 @@ const RichTextEditor = ({
 
   const applyBold = () => {
     try {
+      // Check if there's a text selection
+      if (editor.state.selection.empty) {
+        showNotification("Select text first to apply bold formatting");
+        console.log("No text selected for formatting");
+        return;
+      }
+
       editor.chain().focus().toggleBold().run();
       console.log("Bold applied, current HTML:", editor.getHTML());
     } catch (error) {
@@ -308,6 +371,13 @@ const RichTextEditor = ({
 
   const applyItalic = () => {
     try {
+      // Check if there's a text selection
+      if (editor.state.selection.empty) {
+        showNotification("Select text first to apply italic formatting");
+        console.log("No text selected for formatting");
+        return;
+      }
+
       editor.chain().focus().toggleItalic().run();
       console.log("Italic applied, current HTML:", editor.getHTML());
     } catch (error) {
@@ -326,6 +396,20 @@ const RichTextEditor = ({
 
   return (
     <div className={`relative ${className}`}>
+      {/* Notification message */}
+      {notification && (
+        <div className="absolute top-0 left-0 right-0 z-20 bg-blue-100 text-blue-800 text-sm py-2 px-3 rounded-t-md text-center">
+          {notification}
+        </div>
+      )}
+
+      {/* Selection indicator */}
+      {hasTextSelected && (
+        <div className="absolute top-0 left-0 z-10 bg-green-100 text-green-800 text-xs py-1 px-2 rounded-bl-md">
+          Text selected - ready to format
+        </div>
+      )}
+
       {/* Provide visual indication of active formatting */}
       <div className="absolute top-0 right-0 z-10 flex space-x-1 p-1 text-xs bg-gray-100 rounded-bl-md opacity-70">
         {editorState.isBold && (
@@ -356,6 +440,10 @@ const RichTextEditor = ({
           editor={editor}
           tippyOptions={{ duration: 100 }}
           className="bg-white shadow-md rounded-lg flex overflow-hidden border border-gray-200"
+          shouldShow={({ editor, view, state, oldState, from, to }) => {
+            // Only show bubble menu if text is selected and not empty
+            return from !== to && !editor.state.selection.empty;
+          }}
         >
           <Button
             type="button"
@@ -365,7 +453,12 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("bold") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => editor.chain().focus().toggleBold().run()}
+            onClick={() => {
+              if (!editor.state.selection.empty) {
+                editor.chain().focus().toggleBold().run();
+              }
+            }}
+            title="Bold selected text"
           >
             <BoldIcon className="h-4 w-4" />
           </Button>
@@ -377,7 +470,12 @@ const RichTextEditor = ({
               "text-gray-600 p-2 h-8 hover:bg-gray-100",
               editor.isActive("italic") && "bg-gray-200 text-gray-900"
             )}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
+            onClick={() => {
+              if (!editor.state.selection.empty) {
+                editor.chain().focus().toggleItalic().run();
+              }
+            }}
+            title="Italic selected text"
           >
             <ItalicIcon className="h-4 w-4" />
           </Button>
@@ -390,6 +488,7 @@ const RichTextEditor = ({
               editor.isActive("bulletList") && "bg-gray-200 text-gray-900"
             )}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
+            title="Convert to bullet list"
           >
             <List className="h-4 w-4" />
           </Button>
@@ -402,42 +501,17 @@ const RichTextEditor = ({
               editor.isActive("orderedList") && "bg-gray-200 text-gray-900"
             )}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            title="Convert to numbered list"
           >
             <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "text-gray-600 p-2 h-8 hover:bg-gray-100",
-              editor.isActive("heading", { level: 1 }) &&
-                "bg-gray-200 text-gray-900"
-            )}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 1 }).run()
-            }
-          >
-            <Heading1 className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "text-gray-600 p-2 h-8 hover:bg-gray-100",
-              editor.isActive("heading", { level: 2 }) &&
-                "bg-gray-200 text-gray-900"
-            )}
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-          >
-            <Heading2 className="h-4 w-4" />
           </Button>
         </BubbleMenu>
       )}
       <div className="rich-editor-container rounded-md border bg-white">
+        {/* Add a selection hint */}
+        <div className="px-3 py-1 bg-gray-50 text-gray-500 text-xs border-b">
+          Tip: Select specific text to format individual words or phrases
+        </div>
         <div className="flex flex-wrap gap-1 p-2 border-b bg-gray-50">
           <Button
             variant="ghost"
@@ -445,7 +519,7 @@ const RichTextEditor = ({
             onClick={applyBold}
             className={isStyleActive("bold") ? "bg-gray-200" : ""}
             aria-label="Bold"
-            title="Bold (can be applied along with other formatting)"
+            title="Bold (select text first to format only that text)"
           >
             <BoldIcon className="h-4 w-4" />
           </Button>
@@ -455,7 +529,7 @@ const RichTextEditor = ({
             onClick={applyItalic}
             className={isStyleActive("italic") ? "bg-gray-200" : ""}
             aria-label="Italic"
-            title="Italic (can be applied along with other formatting)"
+            title="Italic (select text first to format only that text)"
           >
             <ItalicIcon className="h-4 w-4" />
           </Button>
@@ -538,6 +612,33 @@ const RichTextEditor = ({
         .ProseMirror i b {
           background-color: rgba(99, 102, 241, 0.1);
           padding: 0 2px;
+          border-radius: 2px;
+        }
+
+        /* Highlight individual formatted words */
+        .ProseMirror p strong,
+        .ProseMirror p .format-bold {
+          color: #1e40af;
+          background-color: rgba(30, 64, 175, 0.05);
+          padding: 0 1px;
+          border-radius: 2px;
+          border-bottom: 1px solid rgba(30, 64, 175, 0.2);
+          display: inline;
+        }
+
+        .ProseMirror p em,
+        .ProseMirror p .format-italic {
+          color: #047857;
+          background-color: rgba(4, 120, 87, 0.05);
+          padding: 0 1px;
+          border-radius: 2px;
+          border-bottom: 1px solid rgba(4, 120, 87, 0.2);
+          display: inline;
+        }
+
+        /* Show selection more clearly */
+        .ProseMirror-selectednode {
+          outline: 2px solid #60a5fa !important;
           border-radius: 2px;
         }
 
@@ -675,6 +776,34 @@ const RichTextEditor = ({
           left: -1.5em !important;
           width: 1.2em !important;
           text-align: right !important;
+        }
+
+        /* Specific styling for individual formatting */
+        .ProseMirror p .format-bold,
+        .ProseMirror p strong {
+          font-weight: bold;
+          display: inline;
+        }
+
+        .ProseMirror p .format-italic,
+        .ProseMirror p em {
+          font-style: italic;
+          display: inline;
+        }
+
+        /* Fix for selection-based formatting */
+        .ProseMirror p {
+          white-space: pre-wrap;
+        }
+
+        /* Style Selections */
+        .ProseMirror ::selection {
+          background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* Make the editor show the cursor as a text input */
+        .ProseMirror {
+          cursor: text;
         }
       `}</style>
 
