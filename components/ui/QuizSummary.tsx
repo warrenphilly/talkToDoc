@@ -1,6 +1,7 @@
 import { QuizState } from "@/types/quiz";
-import { CheckCircle, XCircle } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "../ui/button";
 
 interface QuizSummaryProps {
   quiz: QuizState;
@@ -14,7 +15,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
       return timestamp.toDate().toLocaleDateString();
     }
     // Handle serialized timestamp
-    if (timestamp && typeof timestamp === 'object' && 'seconds' in timestamp) {
+    if (timestamp && typeof timestamp === "object" && "seconds" in timestamp) {
       return new Date(timestamp.seconds * 1000).toLocaleDateString();
     }
     // Fallback
@@ -22,7 +23,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
   };
 
   return (
-    <div className=" rounded-lg  p-6">
+    <div className="rounded-lg p-6">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -47,9 +48,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
               <div
                 key={`summary-question-${index}-${quiz.id}`}
                 className={`p-4 rounded-lg border-none ${
-                  isCorrect
-                    ? " bg-green-50 shadow-lg"
-                    : " bg-red-50 shadow-lg"
+                  isCorrect ? " bg-green-50 shadow-lg" : " bg-red-50 shadow-lg"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -95,7 +94,17 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
           })}
         </div>
 
-   
+        {/* Add Back to Quiz button */}
+        <div className="w-full flex justify-center mt-8">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 border-slate-300"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Quiz
+          </Button>
+        </div>
       </div>
     </div>
   );

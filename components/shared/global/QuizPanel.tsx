@@ -457,8 +457,23 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
 
   // Function to handle returning to quiz list
   const handleBackToList = () => {
+    // Clear all quiz-related state
     setSelectedQuiz(null);
     setQuizData(null);
+    setShowSummary(false);
+    setShowQuizForm(false);
+    setCurrentTitle("");
+    setEditedTitle("");
+
+    // Force a re-render of the quiz list
+    setQuizzes((prevQuizzes) => [...prevQuizzes]);
+
+    // Clear any session storage data
+    try {
+      sessionStorage.removeItem("lastSelectedQuiz");
+    } catch (error) {
+      console.error("Error clearing session storage:", error);
+    }
   };
 
   // Convert SerializedQuizState back to QuizState

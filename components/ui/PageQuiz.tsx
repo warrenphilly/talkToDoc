@@ -448,11 +448,20 @@ const PageQuiz: React.FC<QuizProps> = ({
     }
   };
 
+  // Add a handler specifically for returning from results view
+  const handleBackFromResults = () => {
+    setShowResults(false);
+    setShowSummary(true); // Keep summary expanded when returning to the quiz
+
+    // Ensure we're still at the last question
+    if (currentQuestionIndex !== data.questions.length - 1) {
+      setCurrentQuestionIndex(data.questions.length - 1);
+    }
+  };
+
   return (
     <div className="flex flex-col bg-white items-center justify-start w-full h-full ">
       <div className="bg-white w-full  rounded-xl px-4 md:px-8 ">
-
-        
         {showResults ? (
           <>
             <div className="bg-white text-center p-4 md:p-6 rounded-lg">
@@ -480,19 +489,19 @@ const PageQuiz: React.FC<QuizProps> = ({
                 quizData: data,
                 createdAt: new Timestamp(new Date().getTime() / 1000, 0),
               }}
-              onClose={() => setShowResults(false)}
+              onClose={handleBackFromResults}
             />
           </>
         ) : (
           <div className="flex flex-col bg-white sm:flex-row justify-center items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-500" />
-            <span className="font-medium text-slate-500">
-              Score: {score}/{data.questions.length} |{" "}
-              {Math.round((score / data.questions.length) * 100)}%
-            </span>
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              <span className="font-medium text-slate-500">
+                Score: {score}/{data.questions.length} |{" "}
+                {Math.round((score / data.questions.length) * 100)}%
+              </span>
+            </div>
           </div>
-        </div>
         )}
         {!showResults && (
           <div className="flex flex-col items-center justify-center w-full">
@@ -562,7 +571,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                         onClick={() => !selectedAnswer && handleAnswer(option)}
                         disabled={!!selectedAnswer}
                         variant="outline"
-                        className={`w-full min-h-[48px] p-3 sm:p-4  hover:bg-slate-300 justify-between my-1 ${
+                        className={`w-full line-clamp-2 text-wrap min-h-[48px] h-fit p-3 sm:p-4  hover:bg-slate-300 justify-between my-1 ${
                           selectedAnswer === option
                             ? isCorrect
                               ? "border-green-500 bg-green-50 text-green-500 shadow-lg"
