@@ -222,7 +222,7 @@ The response should follow this format:
           studyGuideContent = JSON.parse(jsonContent);
 
           // Function to restore LaTeX notation in the parsed content
-          const restoreLatex = (obj) => {
+          const restoreLatex = (obj: unknown): unknown => {
             if (typeof obj === "string") {
               return obj
                 .replace(/__LATEX_CMD_([a-zA-Z]+)__/g, "\\$1")
@@ -236,9 +236,11 @@ The response should follow this format:
             } else if (Array.isArray(obj)) {
               return obj.map(restoreLatex);
             } else if (obj !== null && typeof obj === "object") {
-              const result = {};
+              const result: Record<string, unknown> = {};
               for (const key in obj) {
-                result[key] = restoreLatex(obj[key]);
+                result[key] = restoreLatex(
+                  (obj as Record<string, unknown>)[key]
+                );
               }
               return result;
             }
@@ -258,7 +260,7 @@ The response should follow this format:
             // Fully encode all problematic characters in the raw JSON
             const fullyEncodedContent = cleanContent.replace(
               /\\./g,
-              (match) => {
+              (match: string) => {
                 return `\\u${match
                   .charCodeAt(1)
                   .toString(16)
