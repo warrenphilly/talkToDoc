@@ -18,21 +18,21 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Image,
   Loader2,
   Mic,
   MicOff,
+  Pencil,
   Plus,
   PlusCircle,
   RefreshCw,
   Trash,
+  Trophy,
   Upload,
   Volume2,
   VolumeOff,
-  Pencil,
   X,
-  ChevronUp,
-  Trophy,
 } from "lucide-react"; // Import icons
 import React, { MutableRefObject, useEffect, useRef, useState } from "react";
 
@@ -56,6 +56,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+import PageQuiz from "@/components/ui/PageQuiz";
+import { Separator } from "@/components/ui/separator";
 import { db } from "@/firebase";
 import {
   getAllNotebooks,
@@ -75,17 +77,15 @@ import {
   onSnapshot,
   orderBy,
   query,
-  Timestamp,
-  where,
   serverTimestamp,
+  Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "react-hot-toast";
 import FormUpload from "../study/formUpload";
 import QuizForm from "./QuizForm";
-import PageQuiz from "@/components/ui/PageQuiz";
-import { Separator } from "@/components/ui/separator";
 
 // First, let's define our message types
 interface Sentence {
@@ -718,14 +718,120 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
     );
   };
 
+  // Add a new useEffect for better resilience during screen resizing
+  useEffect(() => {
+    // Store initial quiz state in session storage when a quiz is selected
+    if (selectedQuiz && quizData) {
+      try {
+        sessionStorage.setItem(
+          "lastSelectedQuiz",
+          JSON.stringify({
+            quizId: selectedQuiz.id,
+            timestamp: Date.now(),
+          })
+        );
+      } catch (error) {
+        console.error("Error saving quiz state to session storage:", error);
+      }
+    }
+  }, [selectedQuiz, quizData]);
+
+  // Add recovery logic when component mounts or when quizzes change
+  useEffect(() => {
+    // Skip if already have a selected quiz
+    if (selectedQuiz || quizzes.length === 0) return;
+
+    try {
+      const savedQuizData = sessionStorage.getItem("lastSelectedQuiz");
+      if (savedQuizData) {
+        const { quizId, timestamp } = JSON.parse(savedQuizData);
+
+        // Only recover if saved within last 10 minutes
+        if (Date.now() - timestamp < 10 * 60 * 1000) {
+          const savedQuiz = quizzes.find((q) => q.id === quizId);
+          if (savedQuiz) {
+            console.log("Recovering quiz from session storage", quizId);
+            handleQuizSelect(savedQuiz);
+          }
+        } else {
+          // Clear old session data
+          sessionStorage.removeItem("lastSelectedQuiz");
+        }
+      }
+    } catch (error) {
+      console.error("Error recovering quiz state:", error);
+    }
+  }, [quizzes, selectedQuiz]);
+
+  // Enhance the existing resize handler to be more proactive about maintaining state
+  useEffect(() => {
+    // Function to handle window resize events
+    const handleResize = () => {
+      const isSmallScreen = window.innerWidth < 768;
+      console.log("QuizPanel resize detected:", {
+        isSmallScreen,
+        hasSelectedQuiz: !!selectedQuiz,
+        hasQuizData: !!quizData,
+        quizzesCount: quizzes.length,
+      });
+
+      // If quiz is selected but data is missing, try to restore it
+      if (selectedQuiz && !quizData && quizzes.length > 0) {
+        console.log("Quiz data missing during resize, attempting to reload...");
+
+        // Find the current quiz in the quizzes array
+        const currentQuiz = quizzes.find((q) => q.id === selectedQuiz.id);
+        if (currentQuiz?.quizData) {
+          console.log("Found quiz data in quizzes array, restoring...");
+          setQuizData(currentQuiz.quizData);
+        } else {
+          console.log("Quiz data not found in quizzes array");
+
+          // As a fallback, try to re-fetch from Firestore directly
+          // This is more resilient than relying only on the in-memory quizzes array
+          const fetchQuizDirectly = async () => {
+            try {
+              if (!user?.id) return;
+
+              // Re-fetch specific quiz by ID from Firestore
+              const quizzesRef = collection(db, "quizzes");
+              const q = query(quizzesRef, where("id", "==", selectedQuiz.id));
+              const snapshot = await getDocs(q);
+
+              if (!snapshot.empty) {
+                const quizDoc = snapshot.docs[0];
+                const quizData = quizDoc.data();
+                console.log("Re-fetched quiz data from Firestore:", quizData);
+                if (quizData.quizData) {
+                  setQuizData(quizData.quizData);
+                }
+              }
+            } catch (error) {
+              console.error("Error re-fetching quiz:", error);
+            }
+          };
+
+          fetchQuizDirectly();
+        }
+      }
+    };
+
+    // Add event listener for window resize
+    window.addEventListener("resize", handleResize);
+
+    // Initial check
+    handleResize();
+
+    // Cleanup function to remove event listener
+    return () => window.removeEventListener("resize", handleResize);
+  }, [selectedQuiz, quizData, quizzes, user?.id]);
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4 h-full overflow-y-auto">
       {/* Header with Create Quiz button */}
       {!selectedQuiz && (
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-[#94b347] mb-2">
-            Quiz Me
-          </h2>
+          <h2 className="text-2xl font-bold text-[#94b347] mb-2">Quiz Me</h2>
           <p className="text-slate-600 text-sm mb-6">
             Create and review quizzes to test your knowledge
           </p>
@@ -744,9 +850,11 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {!showQuizForm && !selectedQuiz && (
         <div className="w-full mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
           {quizzes.map((quiz, index) => (
-            <div 
+            <div
               key={quiz.id}
-              className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${index === 0 ? 'border-t-0' : ''}`}
+              className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${
+                index === 0 ? "border-t-0" : ""
+              }`}
               onClick={() => {
                 const serializedQuiz: SerializedQuizState = {
                   ...quiz,
@@ -767,7 +875,6 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between w-full gap-2">
                   <div className="flex flex-col md:flex-row md:items-center md:gap-4">
                     <h3 className="font-medium text-slate-700 text-lg">
-                      
                       <span className="text-[#94b347] font-semibold">
                         {quiz.title}
                       </span>
@@ -775,25 +882,22 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                     <div className="hidden md:flex items-center gap-4">
                       <div className="h-4 w-px bg-slate-200"></div>
                       {quiz.isComplete ? (
-                      <span className="text-xs px-2 py-1 bg-slate-100 rounded-full">
-                        Score: <span className="font-medium">{quiz.score}/{quiz.totalQuestions}</span>
-                      </span>
-                    ) : (
-                      <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                        Active: {quiz.totalQuestions} questions
-                      </span>
-                    )}
-
-                     
+                        <span className="text-xs px-2 py-1 bg-slate-100 rounded-full">
+                          Score:{" "}
+                          <span className="font-medium">
+                            {quiz.score}/{quiz.totalQuestions}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                          Active: {quiz.totalQuestions} questions
+                        </span>
+                      )}
                     </div>
-                 
-               
                   </div>
-                  
+
                   <div className="flex items-center justify-between gap-3 mt-1 md:mt-0">
-                  
-                    
-                  <p className="text-sm text-slate-400 mr-1">
+                    <p className="text-sm text-slate-400 mr-1">
                       {(() => {
                         try {
                           if (
@@ -828,7 +932,8 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
                             Delete Quiz?
                           </AlertDialogTitle>
                           <AlertDialogDescription className="text-center">
-                            This will permanently delete your quiz and all associated data.
+                            This will permanently delete your quiz and all
+                            associated data.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex justify-center gap-3 mt-4">
@@ -859,7 +964,9 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
           {quizzes.length === 0 && (
             <div className="text-center py-16 px-4">
               <Trophy className="h-16 w-16 text-slate-200 mx-auto mb-4" />
-              <h3 className="text-slate-700 font-medium mb-2">No quizzes yet</h3>
+              <h3 className="text-slate-700 font-medium mb-2">
+                No quizzes yet
+              </h3>
               <p className="text-slate-500 text-sm max-w-md mx-auto">
                 Create your first quiz to start testing your knowledge.
               </p>
@@ -895,15 +1002,15 @@ const QuizPanel = ({ notebookId, pageId }: QuizPanelProps) => {
       {selectedQuiz && quizData && !showQuizForm && (
         <div className=" ">
           <div className="flex items-center justify-center p-3 md:justify-between mb-4  mx-auto">
-          <Button
-            onClick={handleBackToList}
-            variant="ghost"
-            className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent text-sm sm:text-base"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            <span className="hidden md:block">Back to List</span>
-            <span className="md:hidden">Back</span>
-          </Button>
+            <Button
+              onClick={handleBackToList}
+              variant="ghost"
+              className="text-slate-400 hover:text-slate-600 m-0 p-0 hover:bg-transparent text-sm sm:text-base"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              <span className="hidden md:block">Back to List</span>
+              <span className="md:hidden">Back</span>
+            </Button>
           </div>
           <div className="flex  bg-white p-4 flex-col items-center justify-center w-full">
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 flex-wrap">

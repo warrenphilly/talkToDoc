@@ -427,8 +427,87 @@ const ChatClient = ({
   // Modify the screen size useEffect
   useEffect(() => {
     const handleResize = () => {
+      const wasSmallScreen = isSmallScreen;
       const newIsSmallScreen = window.innerWidth < 1068;
+
+      // If size didn't actually change, don't do anything
+      if (wasSmallScreen === newIsSmallScreen) {
+        return;
+      }
+
+      console.log("Screen size changed:", {
+        from: wasSmallScreen ? "small" : "large",
+        to: newIsSmallScreen ? "small" : "large",
+        showQuiz,
+        showChat,
+        showStudyCards,
+        showStudyGuides,
+        isDrawerOpen,
+      });
+
+      // Remember quiz visibility state before setting screen size
+      const quizWasVisible = showQuiz;
+      const chatWasVisible = showChat;
+      const studyCardsWereVisible = showStudyCards;
+      const studyGuidesWereVisible = showStudyGuides;
+
       setIsSmallScreen(newIsSmallScreen);
+
+      // Track which component was visible before resize
+      const visibleComponent = showQuiz
+        ? "quiz"
+        : showChat
+        ? "chat"
+        : showStudyCards
+        ? "studyCards"
+        : showStudyGuides
+        ? "studyGuides"
+        : null;
+
+      // If going from desktop to mobile AND a component is visible
+      if (!wasSmallScreen && newIsSmallScreen && visibleComponent) {
+        console.log(
+          "Transitioning desktop->mobile with visible component:",
+          visibleComponent
+        );
+        // Make sure drawer is open for mobile view
+        setIsDrawerOpen(true);
+
+        // Explicitly maintain the quiz state from desktop to mobile
+        if (visibleComponent === "quiz") {
+          setTimeout(() => {
+            if (!showQuiz) {
+              console.log("Forcing quiz visibility after transition to mobile");
+              setShowQuiz(true);
+            }
+          }, 50); // Small timeout to ensure state updates in correct order
+        }
+      }
+
+      // If going from mobile to desktop AND drawer is open with a component
+      if (
+        wasSmallScreen &&
+        !newIsSmallScreen &&
+        isDrawerOpen &&
+        visibleComponent
+      ) {
+        console.log(
+          "Transitioning mobile->desktop with visible component:",
+          visibleComponent
+        );
+
+        // For quiz specifically, ensure it stays visible
+        if (visibleComponent === "quiz") {
+          setTimeout(() => {
+            if (!showQuiz) {
+              console.log(
+                "Forcing quiz visibility after transition to desktop"
+              );
+              setShowQuiz(true);
+            }
+          }, 50);
+        }
+      }
     };
 
     // Set initial value
@@ -438,11 +517,15 @@ const ChatClient = ({
     window.addEventListener("resize", handleResize);
 
     // Cleanup
-    if (isSmallScreen) {
-      setShowQuiz(false);
-    }
     return () => window.removeEventListener("resize", handleResize);
-  }, [isSmallScreen]);
+  }, [
+    isSmallScreen,
+    showQuiz,
+    showChat,
+    showStudyCards,
+    showStudyGuides,
+    isDrawerOpen,
+  ]);
 
   const handleComponentSelect = (component: string) => {
     setDropdownOpen(false);
@@ -502,19 +585,35 @@ const ChatClient = ({
     }
   };
 
-  // Add this function to handle drawer close
+  // Modify drawer close handler to be more specific
   const handleDrawerClose = () => {
+    // Only reset component states if explicitly closed by the user, not during resize transitions
+    console.log("Drawer close requested, smallScreen:", isSmallScreen);
+
+    // Track which components were active before closing
+    const hadVisibleQuiz = showQuiz;
+
+    if (!isSmallScreen) {
+      // Reset all fullscreen states when drawer closes on desktop
+      setIsChatFullscreen(false);
+      setIsQuizFullscreen(false);
+      setIsStudyCardsFullscreen(false);
+      setIsStudyGuidesFullscreen(false);
+
+      // Reset all component states when drawer closes on desktop
+      setShowStudyGuides(false);
+      setShowStudyCards(false);
+      setShowQuiz(false);
+      setShowChat(false);
+    } else {
+      // On mobile, we have to be more careful to preserve state during transitions
+      // We'll still close the drawer but potentially preserve the showX states
+      // based on what we're doing elsewhere in resize handlers
+      console.log("Closing mobile drawer, preserving component states");
+    }
+
+    // Always close the drawer
     setIsDrawerOpen(false);
-    // Reset all fullscreen states when drawer closes
-    setIsChatFullscreen(false);
-    setIsQuizFullscreen(false);
-    setIsStudyCardsFullscreen(false);
-    setIsStudyGuidesFullscreen(false);
-    // Reset all component states when drawer closes
-    setShowStudyGuides(false);
-    setShowStudyCards(false);
-    setShowQuiz(false);
-    setShowChat(false);
   };
 
   // Update the handlers for side panel components to make notebook fullscreen when they toggle off
@@ -1239,7 +1338,9 @@ const ChatClient = ({
                   setPrimeSentence={setPrimeSentence}
                 />
               )}
-              {showQuiz && <QuizPanel notebookId={notebookId} pageId={tabId} />}
+              {showQuiz && (
+                <QuizPanel notebookId={notebookId} pageId={tabId} />
+              )}
               {showStudyCards && (
                 <StudyCards notebookId={notebookId} pageId={tabId} />
               )}
