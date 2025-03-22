@@ -42,7 +42,7 @@ import {
   ArrowLeft,
   Check,
   ChevronLeft,
-    Circle,
+  Circle,
   CircleX,
   Eye,
   List,
@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ChatClient from "./shared/chat/ChatClient";
 import { TitleEditor } from "./shared/chat/title-editor";
 import { Button } from "./ui/button";
@@ -155,16 +155,19 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
 
   const addTab = async () => {
     const newTitle = `Untitled Page ${tabs.length + 1}`;
+
     try {
-      // Create new page object before database call for optimistic update
-      const tempId = `temp_${crypto.randomUUID()}`;
-      const tempNewTab: Tab = {
-        id: tempId,
-        title: newTitle,
+      // Create the page in the database first
+      const newPage = await addPageToNotebook(notebookId, newTitle);
+
+      // Create the new tab object
+      const newTab: Tab = {
+        id: newPage.id,
+        title: newPage.title,
         content: (
           <ChatClient
-            title={newTitle}
-            tabId={tempId}
+            title={newPage.title}
+            tabId={newPage.id}
             notebookId={notebookId}
             onPageDelete={syncTabs}
           />
@@ -174,41 +177,17 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
         isEditing: false,
       };
 
-      // Optimistically update UI
-      setAllPages((prev) => [...prev, tempNewTab]);
-      setTabs((prev) => [...prev, tempNewTab]);
-      setActiveTabId(tempId);
+      // Batch state updates with React's state function pattern
+      setTabs((prevTabs) => [...prevTabs, newTab]);
+      setAllPages((prevPages) => [...prevPages, newTab]);
 
-      // Actually create the page in the database
-      const newPage = await addPageToNotebook(notebookId, newTitle);
-
-      // Update the temporary ID with the real one
-      const finalNewTab: Tab = {
-        ...tempNewTab,
-        id: newPage.id,
-        content: (
-          <ChatClient
-            title={newTitle}
-            tabId={newPage.id}
-            notebookId={notebookId}
-            onPageDelete={syncTabs}
-          />
-        ),
-      };
-
-      // Update states with the real ID
-      setAllPages((prev) =>
-        prev.map((tab) => (tab.id === tempId ? finalNewTab : tab))
-      );
-      setTabs((prev) =>
-        prev.map((tab) => (tab.id === tempId ? finalNewTab : tab))
-      );
-      setActiveTabId(newPage.id);
+      // Set active tab ID last, since this triggers the animation/remount
+      setTimeout(() => {
+        setActiveTabId(newPage.id);
+      }, 0);
     } catch (error) {
       console.error("Error adding new tab:", error);
       alert("Failed to create new page. Please try again.");
-      // Revert optimistic updates on error
-      router.refresh();
     }
   };
 
@@ -229,6 +208,21 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
   };
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
+
+  // Memoize the ChatClient component to prevent unnecessary rerenders
+  const memoizedChatClient = useMemo(() => {
+    if (!activeTab) return null;
+
+    return (
+      <ChatClient
+        key={`chat-${activeTabId}`}
+        title={activeTab.title}
+        tabId={activeTab.id}
+        notebookId={notebookId}
+        onPageDelete={syncTabs}
+      />
+    );
+  }, [activeTabId, activeTab?.title, notebookId]);
 
   const handlePageToggle = async (pageId: string) => {
     const page = allPages.find((p) => p.id === pageId);
@@ -354,7 +348,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               }}
             >
               <span className="hidden md:block">Save</span>
-              <span className="md:hidden bg-green-100 rounded-full p-2 text-green-600"><Check size={16} /></span>
+              <span className="md:hidden bg-green-100 rounded-full p-2 text-green-600">
+                <Check size={16} />
+              </span>
             </Button>
             <Button
               variant="ghost"
@@ -366,7 +362,9 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
               }}
             >
               <span className="hidden md:block">Cancel</span>
-              <span className="md:hidden bg-red-100 rounded-full p-2 text-red-600"><X size={16} /></span>
+              <span className="md:hidden bg-red-100 rounded-full p-2 text-red-600">
+                <X size={16} />
+              </span>
             </Button>
           </div>
         ) : (
@@ -385,7 +383,6 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             >
               <Pencil size={16} />
             </Button>
-            
           </div>
         )}
       </div>
@@ -429,7 +426,8 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     className="p-2 text-muted-foreground hover:text-foreground"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
                       setTabs((prev) =>
                         prev.map((tab) =>
                           tab.id === activeTab.id
@@ -443,7 +441,10 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                   </button>
                   <button
                     className="p-2 text-muted-foreground hover:text-foreground"
-                    onClick={addTab}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addTab();
+                    }}
                   >
                     <Plus size={16} />
                   </button>
@@ -497,7 +498,10 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
             ))}
             <button
               className="p-1 ml-2 text-muted-foreground group relative flex items-center"
-              onClick={addTab}
+              onClick={(e) => {
+                e.preventDefault();
+                addTab();
+              }}
             >
               <Plus size={14} className="w-5 h-5" />
               <span className="absolute left-full ml-2 hidden group-hover:flex transition-opacity whitespace-nowrap text-sm text-slate-400">
@@ -516,23 +520,22 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
           </div>
         </div>
       </div>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTabId}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className=" h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden  z-10 "
-        >
-          <ChatClient
-            title={activeTab?.title || ""}
-            tabId={activeTab?.id || ""}
-            notebookId={notebookId}
-            onPageDelete={syncTabs}
-          />
-        </motion.div>
-      </AnimatePresence>
+      <div className="w-full h-full relative">
+        <AnimatePresence mode="wait">
+          {activeTab && (
+            <motion.div
+              key={activeTabId}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="h-[90vh] rounded-l-xl md:rounded-l-none rounded-r-xl rounded-b-xl w-full bg-white overflow-hidden z-10 absolute inset-0"
+            >
+              {memoizedChatClient}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white ">
           <DialogHeader>
@@ -541,7 +544,13 @@ export const BrowserTabs: React.FC<BrowserTabsProps> = ({
                 <p>All Pages</p>
                 <button
                   className="bg-white border border-slate-600 hover:border-[#94b347] hover:bg-slate-100 text-slate-600 rounded-full  hover:text-[#94b347] px-3 py-1 text-sm flex items-center gap-1 w-fit p-4 justify-center"
-                  onClick={addTab}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsModalOpen(false);
+                    setTimeout(() => {
+                      addTab();
+                    }, 100);
+                  }}
                 >
                   <Plus size={16} />
                   New Page
