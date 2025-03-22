@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import FormattedText from "@/components/ui/formatted-text";
 import { Input } from "@/components/ui/input";
 import { db, storage } from "@/firebase";
 import {
@@ -433,20 +434,26 @@ export function StudyGuidePage({
                 onClick={() => setIsEditing(true)}
               >
                 <h3 className="text-2xl text-[#94b347] rounded-lg cursor-pointer">
-                  Study Guide: <span className="text-slate-600 font-bold">{guide.title}</span>
+                  Study Guide:{" "}
+                  <span className="text-slate-600 font-bold">
+                    {guide.title}
+                  </span>
                 </h3>
-                <div className="flex items-center justify-center rounded-lg ml-2 h-8 w-8 hover:bg-slate-100 transition-colors" onClick={() => setIsEditing(true)}>
+                <div
+                  className="flex items-center justify-center rounded-lg ml-2 h-8 w-8 hover:bg-slate-100 transition-colors"
+                  onClick={() => setIsEditing(true)}
+                >
                   <Pencil className="h-4 w-4 text-slate-500 hover:text-[#7a943a]" />
                 </div>
               </div>
             )}
           </div>
 
-           {guide.content.map((section, sectionIndex) => (
+          {guide.content.map((section, sectionIndex) => (
             <div key={sectionIndex} className="rounded-lg py-6 ">
               <div className="text-center mb-6">
                 <h4 className="text-xl font-semibold text-slate-800 mb-2">
-                  {section.topic}
+                  <FormattedText text={section.topic} />
                 </h4>
                 <p className="text-sm text-gray-500">
                   Created: {guide.createdAt.toLocaleDateString()}
@@ -455,13 +462,17 @@ export function StudyGuidePage({
 
               <div className="grid gap-6 w-full mx-auto pb-32 md:pb-24">
                 {section.subtopics.map((subtopic, subtopicIndex) => (
-                  <div key={subtopicIndex} className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                  <div
+                    key={subtopicIndex}
+                    className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow"
+                  >
                     <h5 className="text-lg font-semibold text-[#94b347] mb-3">
-                      {subtopic.title}
+                      <FormattedText text={subtopic.title} />
                     </h5>
-                    <p className="text-slate-600 mb-4 leading-relaxed">{subtopic.description}</p>
+                    <p className="text-slate-600 mb-4 leading-relaxed">
+                      <FormattedText text={subtopic.description} />
+                    </p>
 
-                  
                     <div className="mb-4 bg-slate-50 p-4 rounded-lg">
                       <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
                         <span className="h-1.5 w-1.5 bg-[#94b347] rounded-full mr-2"></span>
@@ -470,13 +481,12 @@ export function StudyGuidePage({
                       <ul className="list-disc pl-5 space-y-2">
                         {subtopic.keyPoints.map((point, index) => (
                           <li key={index} className="text-slate-600">
-                            {point}
+                            <FormattedText text={point} />
                           </li>
                         ))}
                       </ul>
                     </div>
 
-                   
                     {subtopic.examples && subtopic.examples.length > 0 && (
                       <div className="mb-4 bg-slate-50 p-4 rounded-lg">
                         <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
@@ -486,14 +496,13 @@ export function StudyGuidePage({
                         <ul className="list-disc pl-5 space-y-2">
                           {subtopic.examples.map((example, index) => (
                             <li key={index} className="text-slate-600">
-                              {example}
+                              <FormattedText text={example} />
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
 
-                    
                     {subtopic.studyTips && subtopic.studyTips.length > 0 && (
                       <div className="bg-[#eef5db] p-4 rounded-lg mt-4 border-l-4 border-[#94b347]">
                         <h6 className="text-sm font-semibold text-slate-700 mb-2 flex items-center">
@@ -503,7 +512,7 @@ export function StudyGuidePage({
                         <ul className="list-disc pl-5 space-y-2">
                           {subtopic.studyTips.map((tip, index) => (
                             <li key={index} className="text-slate-600">
-                              {tip}
+                              <FormattedText text={tip} />
                             </li>
                           ))}
                         </ul>
@@ -513,9 +522,9 @@ export function StudyGuidePage({
                 ))}
               </div>
             </div>
-          ))} 
+          ))}
         </div>
-        
+
         <div className="w-full mx-auto p-4 mt-4">
           {showModal && (
             <StudyGuideModal

@@ -1,7 +1,8 @@
-import { SidebarHeader } from "@/components/shared/global/sidebar-header";
 import { CustomSidebar } from "@/components/shared/global/custom-sidebar";
+import { SidebarHeader } from "@/components/shared/global/sidebar-header";
 import { SidebarNav } from "@/components/shared/global/SidebarNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/toaster";
 import {
   ClerkProvider,
   SignInButton,
@@ -9,10 +10,10 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
+import "katex/dist/katex.min.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
