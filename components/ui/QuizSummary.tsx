@@ -22,6 +22,72 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
     return new Date().toLocaleDateString();
   };
 
+  // Helper function to format mathematical equations for better readability
+  const formatEquation = (text: string): string => {
+    if (!text) return "";
+
+    return (
+      text
+        // Format superscripts (x^2 becomes x²)
+        .replace(/\b(\w+)\^(\d+)\b/g, (_, base, exp) => {
+          const superscripts: Record<string, string> = {
+            "0": "⁰",
+            "1": "¹",
+            "2": "²",
+            "3": "³",
+            "4": "⁴",
+            "5": "⁵",
+            "6": "⁶",
+            "7": "⁷",
+            "8": "⁸",
+            "9": "⁹",
+          };
+          return `${base}${exp
+            .split("")
+            .map((d: string) => superscripts[d] || d)
+            .join("")}`;
+        })
+        // Format square roots
+        .replace(/sqrt\(([^)]+)\)/g, "√($1)")
+        // Format fractions with HTML
+        .replace(
+          /(\d+)\/(\d+)/g,
+          '<span class="inline-block align-middle"><span class="block border-b border-current">$1</span><span class="block">$2</span></span>'
+        )
+        // Format subscripts (Q_1 becomes Q₁)
+        .replace(/(\w+)_(\d+)/g, (_, base, sub) => {
+          const subscripts: Record<string, string> = {
+            "0": "₀",
+            "1": "₁",
+            "2": "₂",
+            "3": "₃",
+            "4": "₄",
+            "5": "₅",
+            "6": "₆",
+            "7": "₇",
+            "8": "₈",
+            "9": "₉",
+          };
+          return `${base}${sub
+            .split("")
+            .map((d: string) => subscripts[d] || d)
+            .join("")}`;
+        })
+        // Format matrices and vectors with special styling
+        .replace(/\b(\w+)\^T\b/g, "$1<sup>T</sup>") // Transpose notation
+        // Format Greek letters
+        .replace(/\balpha\b/g, "α")
+        .replace(/\bbeta\b/g, "β")
+        .replace(/\bgamma\b/g, "γ")
+        .replace(/\bdelta\b/g, "δ")
+        .replace(/\bepsilon\b/g, "ε")
+        .replace(/\bpi\b/g, "π")
+        .replace(/\bsigma\b/g, "σ")
+        .replace(/\btheta\b/g, "θ")
+        .replace(/\bomega\b/g, "ω")
+    );
+  };
+
   return (
     <div className="rounded-lg p-6">
       <div className="space-y-6">
@@ -58,32 +124,55 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ quiz, onClose }) => {
                     <XCircle className="w-5 h-5 text-red-500 mt-1" />
                   )}
                   <div className="flex-1">
-                    <p className="font-medium text-slate-700 mb-2">
-                      {question.question}
-                    </p>
+                    <p
+                      className="font-medium text-slate-700 mb-2"
+                      dangerouslySetInnerHTML={{
+                        __html: formatEquation(question.question),
+                      }}
+                    />
                     <div className="space-y-1 text-sm">
                       <p className="text-slate-600">
                         Your answer:{" "}
-                        <span className="font-medium">{userAnswer}</span>
+                        <span
+                          className="font-medium"
+                          dangerouslySetInnerHTML={{
+                            __html: formatEquation(userAnswer),
+                          }}
+                        />
                       </p>
                       {!isCorrect && (
                         <p className="text-green-600">
                           Correct answer:{" "}
-                          <span className="font-medium">
-                            {question.correctAnswer}
-                          </span>
+                          <span
+                            className="font-medium"
+                            dangerouslySetInnerHTML={{
+                              __html: formatEquation(
+                                typeof question.correctAnswer === "string"
+                                  ? question.correctAnswer
+                                  : String(question.correctAnswer)
+                              ),
+                            }}
+                          />
                         </p>
                       )}
                       {question.type === "shortAnswer" && quiz.gptFeedback && (
                         <p className="text-slate-500 mt-2">
                           <span className="font-medium">AI Feedback: </span>
-                          {quiz.gptFeedback}
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: formatEquation(quiz.gptFeedback),
+                            }}
+                          />
                         </p>
                       )}
                       {question.explanation && (
                         <p className="text-slate-500 mt-2">
                           <span className="font-medium">Explanation: </span>
-                          {question.explanation}
+                          <span
+                            dangerouslySetInnerHTML={{
+                              __html: formatEquation(question.explanation),
+                            }}
+                          />
                         </p>
                       )}
                     </div>

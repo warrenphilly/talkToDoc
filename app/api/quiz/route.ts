@@ -79,7 +79,8 @@ export async function POST(req: NextRequest) {
     const messageStr = formData.get("message") as string;
     // Use the user's stored language preference as the primary source
     // Only fall back to the formData language if needed
-    const language = userLanguage || (formData.get("language") as string) || "English";
+    const language =
+      userLanguage || (formData.get("language") as string) || "English";
 
     if (!messageStr) {
       throw new Error("No message provided");
@@ -206,10 +207,20 @@ For multiple choice questions:
 - Ensure options are mutually exclusive
 - Keep option lengths relatively consistent
 - Use the language of the content to create the questions
+
 For short answer questions:
 - Create clear, specific questions with concise expected answers
 - Avoid questions that could have multiple valid interpretations
 - Use the language of the content to create the questions
+
+For mathematical expressions and formulas:
+- Use proper formatting for equations with consistent notation
+- For exponents, use the syntax x^2, x^3, etc.
+- For square roots, use sqrt(x)
+- For fractions, use notation like 1/2, 3/4, etc.
+- For Greek letters, spell them out: alpha, beta, pi, etc.
+- Use clear and concise mathematical notation to improve readability
+- Provide detailed explanations for mathematical concepts
 
 Return ONLY valid JSON with no additional text.`;
 

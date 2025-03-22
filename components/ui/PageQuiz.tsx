@@ -79,6 +79,72 @@ const PageQuiz: React.FC<QuizProps> = ({
     id: question.id || index,
   }));
 
+  // Helper function to format mathematical equations for better readability
+  const formatEquation = (text: string): string => {
+    if (!text) return "";
+
+    return (
+      text
+        // Format superscripts (x^2 becomes x²)
+        .replace(/\b(\w+)\^(\d+)\b/g, (_, base, exp) => {
+          const superscripts: Record<string, string> = {
+            "0": "⁰",
+            "1": "¹",
+            "2": "²",
+            "3": "³",
+            "4": "⁴",
+            "5": "⁵",
+            "6": "⁶",
+            "7": "⁷",
+            "8": "⁸",
+            "9": "⁹",
+          };
+          return `${base}${exp
+            .split("")
+            .map((d: string) => superscripts[d] || d)
+            .join("")}`;
+        })
+        // Format square roots
+        .replace(/sqrt\(([^)]+)\)/g, "√($1)")
+        // Format fractions with HTML
+        .replace(
+          /(\d+)\/(\d+)/g,
+          '<span class="inline-block align-middle"><span class="block border-b border-current">$1</span><span class="block">$2</span></span>'
+        )
+        // Format subscripts (Q_1 becomes Q₁)
+        .replace(/(\w+)_(\d+)/g, (_, base, sub) => {
+          const subscripts: Record<string, string> = {
+            "0": "₀",
+            "1": "₁",
+            "2": "₂",
+            "3": "₃",
+            "4": "₄",
+            "5": "₅",
+            "6": "₆",
+            "7": "₇",
+            "8": "₈",
+            "9": "₉",
+          };
+          return `${base}${sub
+            .split("")
+            .map((d: string) => subscripts[d] || d)
+            .join("")}`;
+        })
+        // Format matrices and vectors with special styling
+        .replace(/\b(\w+)\^T\b/g, "$1<sup>T</sup>") // Transpose notation
+        // Format Greek letters
+        .replace(/\balpha\b/g, "α")
+        .replace(/\bbeta\b/g, "β")
+        .replace(/\bgamma\b/g, "γ")
+        .replace(/\bdelta\b/g, "δ")
+        .replace(/\bepsilon\b/g, "ε")
+        .replace(/\bpi\b/g, "π")
+        .replace(/\bsigma\b/g, "σ")
+        .replace(/\btheta\b/g, "θ")
+        .replace(/\bomega\b/g, "ω")
+    );
+  };
+
   const handleAnswer = async (answer: string) => {
     console.log("Handling answer:", answer);
     console.log("Current question index:", currentQuestionIndex);
@@ -315,9 +381,11 @@ const PageQuiz: React.FC<QuizProps> = ({
   const QuestionSummary = ({
     question,
     userAnswer,
+    formatEquation,
   }: {
     question: (typeof questionsWithIds)[0];
     userAnswer?: string;
+    formatEquation: (text: string) => string;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
     const isAnswered = userAnswer !== undefined;
@@ -365,9 +433,12 @@ const PageQuiz: React.FC<QuizProps> = ({
               ) : (
                 <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
               ))}
-            <span className="font-medium text-slate-500 text-wrap ">
-              {question.question}
-            </span>
+            <span
+              className="font-medium text-slate-500 text-wrap"
+              dangerouslySetInnerHTML={{
+                __html: formatEquation(question.question),
+              }}
+            />
           </div>
           {isOpen ? (
             <ChevronUp className="w-5 h-5 text-gray-500" />
@@ -387,28 +458,33 @@ const PageQuiz: React.FC<QuizProps> = ({
                     className={
                       isCorrectAnswer ? "text-green-600" : "text-red-600"
                     }
-                  >
-                    {userAnswer}
-                  </span>
+                    dangerouslySetInnerHTML={{
+                      __html: formatEquation(userAnswer || ""),
+                    }}
+                  />
                 </div>
                 <div className="mb-2">
                   <span className="font-medium text-slate-500">
                     Correct answer:{" "}
                   </span>
-                  <span className="text-green-600">
-                    {question.type === "multipleChoice" && question.options
-                      ? // For multiple choice, show the text of the correct answer option
-                        (() => {
-                          // Convert letter (A, B, C, D) to index (0, 1, 2, 3)
-                          const correctIndex =
-                            question.correctAnswer.charCodeAt(0) - 65;
-                          return (
-                            question.options[correctIndex] ||
-                            question.correctAnswer
-                          );
-                        })()
-                      : question.correctAnswer}
-                  </span>
+                  <span
+                    className="text-green-600"
+                    dangerouslySetInnerHTML={{
+                      __html: formatEquation(
+                        question.type === "multipleChoice" && question.options
+                          ? (() => {
+                              // Convert letter (A, B, C, D) to index (0, 1, 2, 3)
+                              const correctIndex =
+                                question.correctAnswer.charCodeAt(0) - 65;
+                              return (
+                                question.options[correctIndex] ||
+                                question.correctAnswer
+                              );
+                            })()
+                          : String(question.correctAnswer)
+                      ),
+                    }}
+                  />
                 </div>
                 {question.type === "shortAnswer" &&
                   evaluationResults[question.id] !== undefined && (
@@ -425,7 +501,12 @@ const PageQuiz: React.FC<QuizProps> = ({
             )}
             <div className="mt-2">
               <span className="font-medium text-slate-500">Explanation: </span>
-              <span className="text-slate-500">{question.explanation}</span>
+              <span
+                className="text-slate-500"
+                dangerouslySetInnerHTML={{
+                  __html: formatEquation(question.explanation),
+                }}
+              />
             </div>
           </div>
         )}
@@ -523,9 +604,14 @@ const PageQuiz: React.FC<QuizProps> = ({
                 </div>
               </div>
               <div className="w-full flex flex-col items-center justify-center">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-6 text-center px-2">
-                  {questionsWithIds[currentQuestionIndex].question}
-                </h2>
+                <h2
+                  className="text-lg md:text-xl font-semibold text-gray-800 mb-6 text-center px-2"
+                  dangerouslySetInnerHTML={{
+                    __html: formatEquation(
+                      questionsWithIds[currentQuestionIndex].question
+                    ),
+                  }}
+                ></h2>
               </div>
               <div className="w-full flex flex-col items-center justify-center gap-4">
                 {currentQuestion.type === "trueFalse" ? (
@@ -670,9 +756,12 @@ const PageQuiz: React.FC<QuizProps> = ({
                 <h3 className="font-semibold text-gray-700 mb-2">
                   Explanation:
                 </h3>
-                <p className="text-gray-600 text-sm md:text-base">
-                  {currentQuestion.explanation}
-                </p>
+                <p
+                  className="text-gray-600 text-sm md:text-base"
+                  dangerouslySetInnerHTML={{
+                    __html: formatEquation(currentQuestion.explanation),
+                  }}
+                ></p>
               </div>
             )}
             {selectedAnswer && showExplanation && !isLastQuestion ? (
@@ -730,6 +819,7 @@ const PageQuiz: React.FC<QuizProps> = ({
                     <QuestionSummary
                       question={question}
                       userAnswer={userAnswers[index]}
+                      formatEquation={formatEquation}
                     />
                   </div>
                 ))}
