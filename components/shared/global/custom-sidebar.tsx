@@ -362,7 +362,7 @@ export function CustomSidebar() {
                   href={item.url}
                   className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-md ${
                     pathname === item.url
-                      ? "bg-[#bdcc97] text-white"
+                      ? "bg-[#b9d27a] text-white"
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
@@ -396,7 +396,7 @@ export function CustomSidebar() {
                   />
                 </button>
                 {notebooksOpen && (
-                  <div className="ml-4 mt-1 border-l-2 border-slate-200 pl-4">
+                  <div className="ml-4 mt-1 border-l-2 border-slate-200 px-4">
                     {notebooks.length === 0 ? (
                       <div className="text-sm text-slate-500 py-2 px-3">
                         No notebooks yet
@@ -408,7 +408,7 @@ export function CustomSidebar() {
                           href={`/notes/${notebook.id}`}
                           className={`flex items-center gap-2 py-2 px-3 my-1 rounded-md ${
                             pathname === `/notes/${notebook.id}`
-                              ? "bg-[#bdcc97] text-white"
+                              ? "bg-[#b9d27a] text-white"
                               : "text-slate-600 hover:bg-slate-100"
                           }`}
                         >
@@ -448,7 +448,7 @@ export function CustomSidebar() {
                   />
                 </button>
                 {studyCardsOpen && (
-                  <div className="ml-4 mt-1 border-l-2 border-slate-200 pl-4">
+                  <div className="ml-4 mt-1 border-l-2 border-slate-200 px-4">
                     {studyCards.length === 0 ? (
                       <div className="text-sm text-slate-500 py-2 px-3">
                         No study cards yet
@@ -460,7 +460,7 @@ export function CustomSidebar() {
                           href={`/study-cards/${set.id}`}
                           className={`flex items-center gap-2 py-2 px-3 my-1 rounded-md ${
                             pathname === `/study-cards/${set.id}`
-                              ? "bg-[#bdcc97] text-white"
+                              ? "bg-[#b9d27a] text-white"
                               : "text-slate-600 hover:bg-slate-100"
                           }`}
                         >
@@ -502,7 +502,7 @@ export function CustomSidebar() {
                   />
                 </button>
                 {studyGuidesOpen && (
-                  <div className="ml-4 mt-1 border-l-2 border-slate-200 pl-4">
+                  <div className="ml-4 mt-1 border-l-2 border-slate-200 px-4">
                     {studyGuides.length === 0 ? (
                       <div className="text-sm text-slate-500 py-2 px-3">
                         No study guides yet
@@ -514,7 +514,7 @@ export function CustomSidebar() {
                           href={`/study-guides/${guide.id}`}
                           className={`flex items-center gap-2 py-2 px-3 my-1 rounded-md ${
                             pathname === `/study-guides/${guide.id}`
-                              ? "bg-[#bdcc97] text-white"
+                              ? "bg-[#b9d27a] text-white"
                               : "text-slate-600 hover:bg-slate-100"
                           }`}
                         >
@@ -554,7 +554,7 @@ export function CustomSidebar() {
                   />
                 </button>
                 {quizzesOpen && (
-                  <div className="ml-4 mt-1 border-l-2 border-slate-200 pl-4">
+                  <div className="ml-4 mt-1 border-l-2 border-slate-200 px-4">
                     {quizzes.length === 0 ? (
                       <div className="text-sm text-slate-500 py-2 px-3">
                         No quizzes yet
@@ -566,7 +566,7 @@ export function CustomSidebar() {
                           href={`/quizzes/${quiz.id}`}
                           className={`flex items-center gap-2 py-2 px-3 my-1 rounded-md ${
                             pathname === `/quizzes/${quiz.id}`
-                              ? "bg-[#bdcc97] text-white"
+                              ? "bg-[#b9d27a] text-white"
                               : "text-slate-600 hover:bg-slate-100"
                           }`}
                         >

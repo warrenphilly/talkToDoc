@@ -834,7 +834,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   <Card className="h-full transition-transform hover:scale-105 bg-[#b9d27a] dark:bg-[#c6d996] border-none relative shadow-lg">
                     <button
                       onClick={(e) => handleDeleteNotebook(e, notebook.id)}
-                      className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"
+                      className="absolute top-2 right-2 p-1.5 sm:p-2 hover:bg-[#b9d27a] dark:hover:bg-[#b9d27a] rounded-full transition-colors"
                     >
                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-white hover:text-red-500 dark:hover:text-red-400" />
                     </button>
