@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import FormattedText from "@/components/ui/formatted-text";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { db } from "@/firebase";
+import "@/styles/math.css";
 import { StudyCardSet } from "@/types/studyCards";
 import {
   doc,
@@ -138,14 +140,14 @@ export function StudyCardList({
                 }`}
               >
                 <h3 className="font-semibold text-[#94b347]">
-                  {index + 1}. {card.title}
+                  {index + 1}. <FormattedText text={card.title} />
                 </h3>
                 <div
                   className={`mt-2 text-slate-600 ${
                     showListAnswer[index] ? "block" : "hidden"
                   }`}
                 >
-                  <p>{card.content}</p>
+                  <FormattedText text={card.content} />
                 </div>
                 <button
                   onClick={() => toggleListAnswer(index)}

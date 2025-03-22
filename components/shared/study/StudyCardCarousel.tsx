@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import FormattedText from "@/components/ui/formatted-text";
 import { Input } from "@/components/ui/input";
 import { updateStudyCardSetTitle } from "@/lib/firebase/firestore";
+import "@/styles/math.css";
 import { StudyCardSet } from "@/types/studyCards";
 import {
   Check,
@@ -120,44 +122,44 @@ export function StudyCardCarousel({
         <div className="flex flex-col w-full items-center justify-center ">
           <div className="flex flex-row items-center justify-center w-full ">
             <CardTitle className="text-2xl  text-[#94b347] flex items-center gap-2 ">
-             
               {isEditing ? (
-                 <div className="flex items-center gap-2">
-                 <input
-                   type="text"
-                   value={editedTitle}
-                   onChange={(e) => setEditedTitle(e.target.value)}
-                   className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
-                   autoFocus
-                 />
-                 <button
-                   onClick={handleSaveTitle}
-                   className="p-1 hover:bg-green-100 rounded-full"
-                 >
-                   <Check className="h-4 w-4 text-green-600" />
-                 </button>
-                 <button
-                   onClick={handleCancelEdit}
-                   className="p-1 hover:bg-red-100 rounded-full"
-                 >
-                   <X className="h-4 w-4 text-red-600" />
-                 </button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="border border-slate-300 rounded-md px-2 py-1 text-[#94b347] focus:outline-none focus:border-[#94b347] text-base sm:text-lg font-semibold"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleSaveTitle}
+                    className="p-1 hover:bg-green-100 rounded-full"
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="p-1 hover:bg-red-100 rounded-full"
+                  >
+                    <X className="h-4 w-4 text-red-600" />
+                  </button>
                 </div>
               ) : (
-                  <>
-                Study Deck:{" "}
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600 font-bold">{currentTitle}</span>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="p-1 hover:bg-slate-100 rounded-full"
-                  >
-                    <Pencil className="h-4 w-4 text-slate-400 hover:text-[#94b347]" />
-                  </button>
-                    </div>
-                    </>
+                <>
+                  Study Deck:{" "}
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600 font-bold">
+                      {currentTitle}
+                    </span>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="p-1 hover:bg-slate-100 rounded-full"
+                    >
+                      <Pencil className="h-4 w-4 text-slate-400 hover:text-[#94b347]" />
+                    </button>
+                  </div>
+                </>
               )}
-              
             </CardTitle>
           </div>
 
@@ -201,8 +203,8 @@ export function StudyCardCarousel({
             onClick={() => toggleAnswer(currentCardIndex)}
             className="bg-white shadow-lg border border-slate-100 h-fit  min-h-48 md:min-h-72  w-full p-4 flex flex-col justify-center items-center  rounded-xl cursor-pointer transition-colors"
           >
-            <h3 className="font-bold text-[#94b347] text-lg md:text-2xl text-center" >
-              {studySet.cards[currentCardIndex].title}
+            <h3 className="font-bold text-[#94b347] text-lg md:text-2xl text-center">
+              <FormattedText text={studySet.cards[currentCardIndex].title} />
             </h3>
             {showAnswer[currentCardIndex] && (
               <div className="mt-4 w-full h-px bg-[#94b347]"></div>
@@ -212,7 +214,7 @@ export function StudyCardCarousel({
                 showAnswer[currentCardIndex] ? "block" : "hidden"
               }`}
             >
-              <p>{studySet.cards[currentCardIndex].content}</p>
+              <FormattedText text={studySet.cards[currentCardIndex].content} />
             </div>
             <p className="text-slate-500 mt-4 md:mt-10 text-sm md:text-lg">
               {!showAnswer[currentCardIndex]

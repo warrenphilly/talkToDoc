@@ -74,6 +74,13 @@ async function makeOpenAIRequest(
                 role: "system",
                 content: `Create ${numCards} study cards from this content. Focus on the most important concepts and key information:
                 ${content}
+                
+                When writing mathematical formulas or equations, use simple ASCII notation such as:
+                - x^2 for superscripts
+                - sqrt(x) for square roots
+                - a/b for fractions
+                - Use Greek letter names like 'alpha', 'beta', 'pi', etc.
+                
                 Format your response as a valid JSON object with this structure:
                 {
                   "cards": [
@@ -295,6 +302,13 @@ export async function POST(req: NextRequest) {
             role: "system",
             content: `Create ${numCards} study cards from this content. Respond in ${language}. Focus on the most important concepts and key information:
             ${allContent}
+            
+            When writing mathematical formulas or equations, use simple ASCII notation such as:
+            - x^2 for superscripts
+            - sqrt(x) for square roots
+            - a/b for fractions
+            - Use Greek letter names like 'alpha', 'beta', 'pi', etc.
+            
             Format your response as a valid JSON object with this structure:
             {
               "cards": [

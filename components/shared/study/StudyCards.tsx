@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import "@/styles/math.css";
 
 import { Notebook as ImportedNotebook, Page } from "@/types/notebooks";
 import { StudyCard, StudyCardSet, StudySetMetadata } from "@/types/studyCards";
@@ -80,9 +81,18 @@ interface StudyMaterialTabsProps {
   pageId: string;
 }
 
-interface ExtendedNotebook extends Omit<ImportedNotebook, 'createdAt' | 'updatedAt'> {
-  createdAt: Timestamp | { seconds: number; nanoseconds: number } | string | number;
-  updatedAt?: Timestamp | { seconds: number; nanoseconds: number } | string | number;
+interface ExtendedNotebook
+  extends Omit<ImportedNotebook, "createdAt" | "updatedAt"> {
+  createdAt:
+    | Timestamp
+    | { seconds: number; nanoseconds: number }
+    | string
+    | number;
+  updatedAt?:
+    | Timestamp
+    | { seconds: number; nanoseconds: number }
+    | string
+    | number;
 }
 
 const getSelectedPagesData = async (
@@ -209,11 +219,14 @@ export default function StudyCards({
       const adaptedNotebooks = notebooks.map((notebook: ExtendedNotebook) => {
         const createdAtDate = (() => {
           const createdAt = notebook.createdAt;
-          if (typeof createdAt === 'object' && createdAt !== null) {
-            if ('toDate' in createdAt && typeof createdAt.toDate === 'function') {
+          if (typeof createdAt === "object" && createdAt !== null) {
+            if (
+              "toDate" in createdAt &&
+              typeof createdAt.toDate === "function"
+            ) {
               return createdAt.toDate();
             }
-            if ('seconds' in createdAt && 'nanoseconds' in createdAt) {
+            if ("seconds" in createdAt && "nanoseconds" in createdAt) {
               return new Date(createdAt.seconds * 1000);
             }
           }
@@ -224,7 +237,7 @@ export default function StudyCards({
           ...notebook,
           createdAt: createdAtDate.toISOString(), // Convert to ISO string
           updatedAt: notebook.updatedAt ? new Date().toISOString() : undefined,
-          userId: notebook.userId || user?.id || ''
+          userId: notebook.userId || user?.id || "",
         };
       });
 
@@ -519,7 +532,9 @@ export default function StudyCards({
         {cardSets.map((studyCard, index) => (
           <div
             key={studyCard.id}
-            className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${index === 0 ? 'border-t-0' : ''}`}
+            className={`border-t border-slate-100 hover:bg-slate-50 transition-all duration-200 cursor-pointer ${
+              index === 0 ? "border-t-0" : ""
+            }`}
             onClick={() => setSelectedSet(studyCard)}
           >
             <div className="py-5 px-6">
@@ -537,12 +552,14 @@ export default function StudyCards({
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between gap-3 mt-1 md:mt-0">
                   <p className="text-sm text-slate-400">
-                    {new Date(studyCard.metadata.createdAt).toLocaleDateString()}
+                    {new Date(
+                      studyCard.metadata.createdAt
+                    ).toLocaleDateString()}
                   </p>
-                  
+
                   <AlertDialog>
                     <AlertDialogTrigger
                       onClick={(e) => {
@@ -558,7 +575,8 @@ export default function StudyCards({
                           Delete Card Set?
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-center">
-                          This will permanently delete this study card set and all associated data.
+                          This will permanently delete this study card set and
+                          all associated data.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter className="flex justify-center gap-3 mt-4">
@@ -589,7 +607,9 @@ export default function StudyCards({
         {cardSets.length === 0 && (
           <div className="text-center py-16 px-4">
             <BookOpen className="h-16 w-16 text-slate-200 mx-auto mb-4" />
-            <h3 className="text-slate-700 font-medium mb-2">No study cards yet</h3>
+            <h3 className="text-slate-700 font-medium mb-2">
+              No study cards yet
+            </h3>
             <p className="text-slate-500 text-sm max-w-md mx-auto">
               Create your first study card set to start reviewing.
             </p>

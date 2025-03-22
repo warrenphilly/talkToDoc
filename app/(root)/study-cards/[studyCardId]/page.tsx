@@ -17,6 +17,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { Message } from "@/lib/types";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
+import "@/styles/math.css";
 import { Notebook } from "@/types/notebooks";
 import { StudyCardSet } from "@/types/studyCards";
 import { User } from "@/types/users";
