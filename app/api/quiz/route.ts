@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   // Check if user is Pro or has enough credits
   const isPro = firestoreUser.metadata?.isPro || false;
   const creditBalance = firestoreUser.creditBalance || 0;
-  const requiredCredits = 250; // Credits needed for quiz generation
+  const requiredCredits = 350; // Credits needed for quiz generation
 
   if (!isPro && creditBalance < requiredCredits) {
     return NextResponse.json(

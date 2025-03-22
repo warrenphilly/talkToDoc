@@ -328,7 +328,7 @@ export default function SettingsPage() {
             </TabsContent>
 
             <TabsContent value="preferences" className="w-full">
-              <div className=" flex flex-col p-6 w-full bg-white border border-gray-200 rounded-xl">
+              <div className=" flex flex-col p-6 w-full bg-white border border-gray-200  shadow-md rounded-xl">
                 <h2 className="text-xl font-semibold mb-4">
                   Preferences & Account Info
                 </h2>
@@ -459,7 +459,7 @@ export default function SettingsPage() {
                           <span>Notebook Generation</span> = 450 credits/request
                         </li>
                         <li>
-                          <span>Quiz Generation</span> = 250 credits/request
+                          <span>Quiz Generation</span> = 350 credits/request
                         </li>
                         <li>
                           <span>Study Guide Generation</span> = 150

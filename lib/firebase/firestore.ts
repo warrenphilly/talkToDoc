@@ -629,7 +629,7 @@ export const createNewUser = async (clerkUser: ClerkUser) => {
       imageUrl: clerkUser.imageUrl,
       createdAt: new Date(),
       metadata: clerkUser.metadata || {},
-      creditBalance: 5000,
+      creditBalance: 2500,
     });
 
     return userId;
