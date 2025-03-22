@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Message } from "@/lib/types";
 import { UploadOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
@@ -10,7 +11,7 @@ interface UploadAreaProps {
   files: File[];
   fileInputRef: React.RefObject<HTMLInputElement>;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSendMessage: () => void;
+  handleSendMessage: (instructions?: string) => void;
   handleClear: () => void;
   className?: string;
   showUpload: boolean;
@@ -51,6 +52,7 @@ const UploadArea = ({
   const [filesToProcess, setFilesToProcess] = useState<File[]>(files);
   const [processingFiles, setProcessingFiles] = useState<boolean>(false);
   const [hasProcessedFiles, setHasProcessedFiles] = useState(false);
+  const [instructions, setInstructions] = useState<string>("");
 
   // Update filesToProcess when files prop changes
   useEffect(() => {
@@ -106,7 +108,7 @@ const UploadArea = ({
       setFilesToProcess([]);
       setHasProcessedFiles(true);
       setShowUpload(false);
-      await handleSendMessage();
+      await handleSendMessage(instructions);
     } finally {
       setProcessingFiles(false);
     }
@@ -144,7 +146,6 @@ const UploadArea = ({
           animate="visible"
           variants={containerVariants}
         >
-   
           <label className="block text-lg font-medium text-gray-700 mb-1">
             Upload your files
           </label>
@@ -244,6 +245,30 @@ const UploadArea = ({
                 </div>
               )}
 
+              {/* Special Instructions Textarea - Moved after file list */}
+              {filesToProcess.length > 0 && (
+                <motion.div
+                  className="w-full space-y-2 mt-4"
+                  variants={containerVariants}
+                >
+                  <label className="block text-sm font-medium text-slate-700">
+                    Override Instructions (Optional)
+                  </label>
+                  <p className="text-xs text-slate-600 mb-2">
+                    Any instructions provided here will take precedence over
+                    default formatting and will control how your content is
+                    processed.
+                  </p>
+                  <Textarea
+                    placeholder="E.g., 'Create a concise summary focused only on key points' or 'Format as a study guide with definitions and examples'"
+                    className="w-full min-h-[120px] resize-none border-2 border-slate-300 rounded-md p-2 text-sm focus:border-slate-500 focus:ring-0"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    disabled={processingFiles}
+                  />
+                </motion.div>
+              )}
+
               {/* Previously Uploaded Files List */}
               {previouslyUploadedFiles.length > 0 && (
                 <motion.div
@@ -310,23 +335,29 @@ const UploadArea = ({
               )}
             </div>
             {/* Generate Button - only shown when there are new files */}
-         
-              <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6">
-                <Button
-                  className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
-                  onClick={handleGenerateNotes}
-                  disabled={
-                    processingFiles ||
-                    filesToProcess.length === 0 ||
-                    isDatabaseUpdating
-                  }
-                >
-                  {processingFiles || isDatabaseUpdating
-                    ? "Processing..."
-                    : "Generate Notes from New Files"}
-                </Button>
-              </div>
-            
+            <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6">
+              <Button
+                className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
+                onClick={handleGenerateNotes}
+                disabled={
+                  processingFiles ||
+                  filesToProcess.length === 0 ||
+                  isDatabaseUpdating
+                }
+              >
+                {processingFiles || isDatabaseUpdating
+                  ? "Processing..."
+                  : instructions.trim()
+                  ? "Generate Notes with Custom Instructions"
+                  : "Generate Notes from New Files"}
+              </Button>
+              {instructions.trim() && (
+                <p className="text-xs text-slate-500 mt-1 text-center max-w-[300px]">
+                  Your custom instructions will override default generation
+                  settings
+                </p>
+              )}
+            </div>
           </div>
         </motion.div>
       )}

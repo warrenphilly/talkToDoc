@@ -26,6 +26,8 @@ import { ResponseMessage } from "./ResponseMessage";
 import SideChat from "@/components/shared/global/SideChat";
 
 import StudyMaterialTabs from "@/components/StudyMaterialTabs";
+import { FullscreenButton } from "@/components/shared/global/fullscreen-button";
+import { ResizeButton } from "@/components/shared/global/resize-button";
 import {
   Dialog,
   DialogContent,
@@ -71,15 +73,13 @@ import {
 } from "@/lib/utils";
 import { useUser } from "@clerk/nextjs";
 import { CircularProgress } from "@mui/material";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import StudyCards from "../study/StudyCards";
 import StudyGuide from "../study/StudyGuide";
 import UploadArea from "./UploadArea";
 import { TitleEditor } from "./title-editor";
-import { FullscreenButton } from "@/components/shared/global/fullscreen-button";
-import { ResizeButton } from "@/components/shared/global/resize-button";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, RefreshCw } from "lucide-react";
 
 interface ChatClientProps {
   title: string;
@@ -163,7 +163,7 @@ const ChatClient = ({
       // Update UI state
       setPrimeSentence(sectionText);
       setShowChat(true);
-      
+
       // For small screens, also open the drawer with chat tab
       if (isSmallScreen) {
         setIsDrawerOpen(true);
@@ -208,7 +208,7 @@ const ChatClient = ({
     }
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (instructions?: string) => {
     setIsDatabaseUpdating(true);
     setIsProcessing(true);
     setCurrentSections(0);
@@ -238,6 +238,7 @@ const ChatClient = ({
         tabId,
         fileMetadata, // Pass the file metadata to be saved
         tabId, // Pass the tabId to be saved
+        instructions // Pass the optional instructions
       );
     } catch (error) {
       console.error("Error processing files:", error);
@@ -446,13 +447,13 @@ const ChatClient = ({
   const handleComponentSelect = (component: string) => {
     setDropdownOpen(false);
     setIsDrawerOpen(true);
-    
+
     // First, always reset all fullscreen states when switching components
     setIsChatFullscreen(false);
     setIsQuizFullscreen(false);
     setIsStudyCardsFullscreen(false);
     setIsStudyGuidesFullscreen(false);
-    
+
     // Then handle the specific component logic
     if (component === "studyGuide") {
       // If we're already showing study guides, toggle it off
@@ -561,47 +562,49 @@ const ChatClient = ({
   // Add this new function to handle cancellation
   const handleCancelGeneration = async () => {
     setIsCancelling(true);
-    
+
     try {
       // First, make a local state change to immediately update UI
       setIsProcessing(false);
       setIsDatabaseUpdating(false);
-      
+
       // We need to add this check to handle the "Page not found" error
       // This will ensure we don't try to save a message to a non-existent page
       const pageExists = await checkPageExists(notebookId, tabId);
-      
+
       if (!pageExists) {
         console.log("Page doesn't exist, redirecting to notebook");
         router.push(`/notes/${notebookId}`);
         return;
       }
-      
+
       // Call the cancel endpoint
-      const response = await fetch('/api/chat/cancel', {
-        method: 'POST',
+      const response = await fetch("/api/chat/cancel", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           notebookId,
           tabId,
         }),
       });
-      
+
       if (!response.ok) {
         console.error("Failed to cancel generation");
       }
-      
+
       // Add a message indicating cancellation if there are existing messages
       if (messages.length > 0) {
         const updatedMessages = [...messages];
-        
+
         // Find the last AI message that might be incomplete
         const lastAIMessageIndex = updatedMessages.findIndex(
-          msg => msg.user === "AI" && (!Array.isArray(msg.text) || msg.text.length === 0)
+          (msg) =>
+            msg.user === "AI" &&
+            (!Array.isArray(msg.text) || msg.text.length === 0)
         );
-        
+
         if (lastAIMessageIndex >= 0) {
           // Add the cancellation information to this message or replace it
           updatedMessages[lastAIMessageIndex] = {
@@ -611,13 +614,16 @@ const ChatClient = ({
           setMessages(updatedMessages);
         } else {
           // Otherwise add a new message
-          handleSetMessages(prev => [...prev, {
-            user: "AI",
-            text: "Generation was cancelled.",
-          }]);
+          handleSetMessages((prev) => [
+            ...prev,
+            {
+              user: "AI",
+              text: "Generation was cancelled.",
+            },
+          ]);
         }
       }
-      
+
       // Reset all states
       setCurrentSections(0);
       setTotalSections(0);
@@ -629,16 +635,22 @@ const ChatClient = ({
   };
 
   // Add this helper function to check if a page exists
-  const checkPageExists = async (notebookId: string, pageId: string): Promise<boolean> => {
+  const checkPageExists = async (
+    notebookId: string,
+    pageId: string
+  ): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/notes/check-page?notebookId=${notebookId}&pageId=${pageId}`, {
-        method: 'GET',
-      });
-      
+      const response = await fetch(
+        `/api/notes/check-page?notebookId=${notebookId}&pageId=${pageId}`,
+        {
+          method: "GET",
+        }
+      );
+
       if (!response.ok) {
         return false;
       }
-      
+
       const data = await response.json();
       return data.exists;
     } catch (error) {
@@ -658,7 +670,7 @@ const ChatClient = ({
         setProgress(0);
         setIsDatabaseUpdating(false);
       }, 1000); // Short delay to ensure animations complete smoothly
-      
+
       return () => clearTimeout(timer);
     }
   }, [isProcessing]);
@@ -679,7 +691,7 @@ const ChatClient = ({
   useEffect(() => {
     // Count all sections in all messages
     let count = 0;
-    messages.forEach(msg => {
+    messages.forEach((msg) => {
       if (msg.user === "AI" && Array.isArray(msg.text)) {
         count += msg.text.length;
       }
@@ -699,15 +711,16 @@ const ChatClient = ({
               Uploads
             </Button>
             {totalSectionCount > 0 && (
-          <div className="w-full flex justify-center h-full ">
-            <div className="bg-white text-[#94b347] text-sm font-bold">
-              {totalSectionCount} {totalSectionCount === 1 ? 'Section' : 'Sections'}
-            </div>
-          </div>
-        )}
+              <div className="w-full flex justify-center h-full ">
+                <div className="bg-white text-[#94b347] text-sm font-bold">
+                  {totalSectionCount}{" "}
+                  {totalSectionCount === 1 ? "Section" : "Sections"}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 md:my-4 " >
+          <div className="hidden md:flex flex-row items-center justify-center w-fit mx-8 gap-4 md:my-4 ">
             <Button
               onClick={() => handleComponentSelect("studyGuide")}
               className="text-slate-500 px-4 py-2 bg-white hover:border-[#94b347] hover:text-[#94b347] hover:bg-white rounded-2xl w-fit font-semibold border border-slate-400 shadow-none"
@@ -798,76 +811,77 @@ const ChatClient = ({
         <AnimatePresence>
           {(isProcessing || isDatabaseUpdating) && (
             <div className="w-full flex justify-center items-center">
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="w-fit bg-[#94b347]/5 border-y border-[#94b347]/10 mb-2"
-            >
-              <div className="w-full max-w-screen-lg mx-auto flex items-center gap-3 px-4 py-2">
-                {/* Spinner and text */}
-                <div className="flex items-center gap-2">
-                <RefreshCw className="text-[#94b347] animate-spin" />
-                  <p className="text-xs font-medium text-gray-600">
-                    {currentSections > 0 && totalSections > 0 
-                      ? `Generating: ${currentSections} sections generated` 
-                      : "Analyzing document..."}
-                  </p>
-                </div>
-                
-                {/* Progress bar */}
-                <div className="flex-grow ml-2">
-                  <div className="w-full bg-gray-100 rounded-full h-1">
-                    {totalSections > 0 ? (
-                      // Determinate progress bar
-                      <motion.div
-                        initial={{ width: "5%" }}
-                        animate={{ 
-                          width:  "100%" 
-                        }}
-                        transition={{ duration: 0.4 }}
-                        className="bg-[#94b347] h-1 rounded-full"
-                      />
-                    ) : (
-                      // Indeterminate loader
-                      <motion.div className="relative w-full h-1 overflow-hidden">
-                          <motion.div
-                        initial={{ width: "5%" }}
-                        animate={{ 
-                          width:  "100%" 
-                        }}
-                        transition={{ duration: 0.4 }}
-                        className="bg-[#94b347] h-1 rounded-full"
-                      />
-                      </motion.div>
-                    )}
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="w-fit bg-[#94b347]/5 border-y border-[#94b347]/10 mb-2"
+              >
+                <div className="w-full max-w-screen-lg mx-auto flex items-center gap-3 px-4 py-2">
+                  {/* Spinner and text */}
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="text-[#94b347] animate-spin" />
+                    <p className="text-xs font-medium text-gray-600">
+                      {currentSections > 0 && totalSections > 0
+                        ? `Generating: ${currentSections} sections generated`
+                        : "Analyzing document..."}
+                    </p>
                   </div>
+
+                  {/* Progress bar */}
+                  <div className="flex-grow ml-2">
+                    <div className="w-full bg-gray-100 rounded-full h-1">
+                      {totalSections > 0 ? (
+                        // Determinate progress bar
+                        <motion.div
+                          initial={{ width: "5%" }}
+                          animate={{
+                            width: "100%",
+                          }}
+                          transition={{ duration: 0.4 }}
+                          className="bg-[#94b347] h-1 rounded-full"
+                        />
+                      ) : (
+                        // Indeterminate loader
+                        <motion.div className="relative w-full h-1 overflow-hidden">
+                          <motion.div
+                            initial={{ width: "5%" }}
+                            animate={{
+                              width: "100%",
+                            }}
+                            transition={{ duration: 0.4 }}
+                            className="bg-[#94b347] h-1 rounded-full"
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cancel button */}
+                  <Button
+                    onClick={handleCancelGeneration}
+                    disabled={isCancelling}
+                    className="text-xs px-2 py-1 h-7 bg-white border border-red-400 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors"
+                  >
+                    {isCancelling ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="w-3 h-3 border-2 border-t-red-500 border-red-300 rounded-full mr-1"
+                      />
+                    ) : null}
+                    {isCancelling ? "Cancelling..." : "Cancel"}
+                  </Button>
                 </div>
-                
-                {/* Cancel button */}
-                <Button
-                  onClick={handleCancelGeneration}
-                  disabled={isCancelling}
-                  className="text-xs px-2 py-1 h-7 bg-white border border-red-400 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors"
-                >
-                  {isCancelling ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-3 h-3 border-2 border-t-red-500 border-red-300 rounded-full mr-1"
-                    />
-                  ) : null}
-                  {isCancelling ? "Cancelling..." : "Cancel"}
-                </Button>
-              </div>
-            </motion.div>
+              </motion.div>
             </div>
           )}
         </AnimatePresence>
-
-      
-
 
         <div className="flex flex-col md:flex-row justify-start w-full h-[calc(100%-3rem)] overflow-hidden">
           <ResizablePanelGroup
@@ -875,12 +889,21 @@ const ChatClient = ({
             className="w-full"
           >
             {/* Notebook panel - show as full width when no side panel is active */}
-            {!(isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) && (
+            {!(
+              isChatFullscreen ||
+              isQuizFullscreen ||
+              isStudyCardsFullscreen ||
+              isStudyGuidesFullscreen
+            ) && (
               <ResizablePanel
                 className={`relative min-w-0 p-0 m-0 flex items-center justify-center
                   w-full p-1 md:p-2
                   flex flex-col gap-1 md:gap-2 h-full overflow-hidden md:min-w-[400px]`}
-                defaultSize={(showChat || showQuiz || showStudyCards || showStudyGuides) ? 50 : 100}
+                defaultSize={
+                  showChat || showQuiz || showStudyCards || showStudyGuides
+                    ? 50
+                    : 100
+                }
               >
                 {/* Messages Container */}
                 <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
@@ -907,7 +930,10 @@ const ChatClient = ({
                           // Add the new paragraph at the beginning of the text array
                           updatedMessages[0] = {
                             ...firstMessage,
-                            text: [...data.text as unknown as Section[], ...firstMessage.text],
+                            text: [
+                              ...(data.text as unknown as Section[]),
+                              ...firstMessage.text,
+                            ],
                           };
                           setMessages(updatedMessages);
                         } else {
@@ -935,12 +961,15 @@ const ChatClient = ({
                               // Calculate the overall section number
                               let sectionNumber = 1;
                               for (let i = 0; i < index; i++) {
-                                if (messages[i].user === "AI" && Array.isArray(messages[i].text)) {
+                                if (
+                                  messages[i].user === "AI" &&
+                                  Array.isArray(messages[i].text)
+                                ) {
                                   sectionNumber += messages[i].text.length;
                                 }
                               }
                               sectionNumber += sectionIndex;
-                              
+
                               return (
                                 <React.Fragment key={`section-${sectionIndex}`}>
                                   <ResponseMessage
@@ -961,15 +990,23 @@ const ChatClient = ({
                                       )
                                     }
                                     onEdit={() =>
-                                      handleMessageEdit(null, index, sectionIndex)
+                                      handleMessageEdit(
+                                        null,
+                                        index,
+                                        sectionIndex
+                                      )
                                     }
                                     onDelete={() =>
                                       handleMessageDelete(index, sectionIndex)
                                     }
                                     onSave={(data) =>
-                                      handleMessageEdit(data, index, sectionIndex)
+                                      handleMessageEdit(
+                                        data,
+                                        index,
+                                        sectionIndex
+                                      )
                                     }
-                                    sectionNumber={sectionNumber} 
+                                    sectionNumber={sectionNumber}
                                     totalSections={totalSectionCount}
                                   />
                                   {!isSaving && (
@@ -1002,12 +1039,14 @@ const ChatClient = ({
                                 handleParagraphSave(
                                   data as unknown as import("@/lib/types").ParagraphData,
                                   index,
-                                  0  // Use 0 instead of undefined sectionIndex
+                                  0 // Use 0 instead of undefined sectionIndex
                                 )
                               }
                               onEdit={() => handleMessageEdit(null, index, 0)}
                               onDelete={() => handleMessageDelete(index, 0)}
-                              onSave={(data) => handleMessageEdit(data, index, 0)}
+                              onSave={(data) =>
+                                handleMessageEdit(data, index, 0)
+                              }
                               sectionNumber={1} // For non-array text messages
                               totalSections={totalSectionCount}
                             />
@@ -1022,116 +1061,146 @@ const ChatClient = ({
             )}
 
             {/* Resizable handle - show only when notebook is not in fullscreen and at least one sidebar component is visible */}
-            {!isChatFullscreen && 
-              !(isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) &&
+            {!isChatFullscreen &&
+              !(
+                isQuizFullscreen ||
+                isStudyCardsFullscreen ||
+                isStudyGuidesFullscreen
+              ) &&
               (showQuiz || showChat || showStudyCards || showStudyGuides) && (
                 <ResizableHandle className="bg-slate-300 m-2 ml-5" />
-            )}
+              )}
 
             {/* Side panels container - show when any sidebar component is visible or in fullscreen mode */}
-            {(showChat || showQuiz || showStudyCards || showStudyGuides || 
-              isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen) && (
+            {(showChat ||
+              showQuiz ||
+              showStudyCards ||
+              showStudyGuides ||
+              isChatFullscreen ||
+              isQuizFullscreen ||
+              isStudyCardsFullscreen ||
+              isStudyGuidesFullscreen) && (
               <ResizablePanel
                 className={`relative ${
-                  (showChat || showQuiz || showStudyCards || showStudyGuides || 
-                   isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen)
+                  showChat ||
+                  showQuiz ||
+                  showStudyCards ||
+                  showStudyGuides ||
+                  isChatFullscreen ||
+                  isQuizFullscreen ||
+                  isStudyCardsFullscreen ||
+                  isStudyGuidesFullscreen
                     ? "hidden md:block translate-x-0 my-2 md:my-4 transition-transform duration-1000 ease-in-out transform rounded-none mx-1 md:mx-2 w-full min-w-[280px] md:min-w-[400px]"
                     : "hidden"
                 }`}
                 defaultSize={
-                  isChatFullscreen || isQuizFullscreen || isStudyCardsFullscreen || isStudyGuidesFullscreen ? 100 : 50
+                  isChatFullscreen ||
+                  isQuizFullscreen ||
+                  isStudyCardsFullscreen ||
+                  isStudyGuidesFullscreen
+                    ? 100
+                    : 50
                 }
               >
                 {/* Chat Panel */}
-                {(showChat || isChatFullscreen) && 
-                 !isQuizFullscreen && !isStudyCardsFullscreen && !isStudyGuidesFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showChat || isChatFullscreen
-                        ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
-                        : "hidden"
-                    }`}
-                    defaultSize={isChatFullscreen || isSideChatExpanded ? 100 : 50}
-                  >
-                    {/* Fullscreen button */}
-                    <FullscreenButton
-                      isFullscreen={isChatFullscreen}
-                      toggleFullscreen={handleChatFullscreen}
-                      className="absolute top-2 right-2 z-50 rounded-full bg-white"
-                    />
-                    
-                    {/* Add resize button */}
-                    
-                    
-                    <SideChat
-                      notebookId={notebookId}
-                      pageId={tabId}
-                      primeSentence={primeSentence}
-                      setPrimeSentence={setPrimeSentence}
-                    />
-                  </ResizablePanel>
-                )}
+                {(showChat || isChatFullscreen) &&
+                  !isQuizFullscreen &&
+                  !isStudyCardsFullscreen &&
+                  !isStudyGuidesFullscreen && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showChat || isChatFullscreen
+                          ? "translate-x-0 overflow-hidden bg-white h-full transition-transform duration-300 ease-in-out transform rounded-xl md:rounded-2xl w-full"
+                          : "hidden"
+                      }`}
+                      defaultSize={
+                        isChatFullscreen || isSideChatExpanded ? 100 : 50
+                      }
+                    >
+                      {/* Fullscreen button */}
+                      <FullscreenButton
+                        isFullscreen={isChatFullscreen}
+                        toggleFullscreen={handleChatFullscreen}
+                        className="absolute top-2 right-2 z-50 rounded-full bg-white"
+                      />
+
+                      {/* Add resize button */}
+
+                      <SideChat
+                        notebookId={notebookId}
+                        pageId={tabId}
+                        primeSentence={primeSentence}
+                        setPrimeSentence={setPrimeSentence}
+                      />
+                    </ResizablePanel>
+                  )}
 
                 {/* Quiz Panel */}
                 {(showQuiz || isQuizFullscreen) &&
-                 !isChatFullscreen && !isStudyCardsFullscreen && !isStudyGuidesFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showQuiz || isQuizFullscreen
-                        ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                        : "hidden"
-                    }`}
-                    defaultSize={isQuizFullscreen ? 100 : 50}
-                  >
-                    <FullscreenButton
-                      isFullscreen={isQuizFullscreen}
-                      toggleFullscreen={handleQuizFullscreen}
-                    />
-                    <QuizPanel notebookId={notebookId} pageId={tabId} />
-                  </ResizablePanel>
-                )}
+                  !isChatFullscreen &&
+                  !isStudyCardsFullscreen &&
+                  !isStudyGuidesFullscreen && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showQuiz || isQuizFullscreen
+                          ? "translate-x-0 min-h-[500px] h-full transition-transform overflow-y-auto duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                          : "hidden"
+                      }`}
+                      defaultSize={isQuizFullscreen ? 100 : 50}
+                    >
+                      <FullscreenButton
+                        isFullscreen={isQuizFullscreen}
+                        toggleFullscreen={handleQuizFullscreen}
+                      />
+                      <QuizPanel notebookId={notebookId} pageId={tabId} />
+                    </ResizablePanel>
+                  )}
 
                 {/* Study Cards Panel */}
                 {(showStudyCards || isStudyCardsFullscreen) &&
-                 !isChatFullscreen && !isQuizFullscreen && !isStudyGuidesFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showStudyCards || isStudyCardsFullscreen
-                        ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                        : "hidden"
-                    }`}
-                    defaultSize={isStudyCardsFullscreen ? 100 : 50}
-                  >
-                    <FullscreenButton
-                      isFullscreen={isStudyCardsFullscreen}
-                      toggleFullscreen={handleStudyCardsFullscreen}
-                    />
-                    <div className="h-full overflow-hidden">
-                      <div className="h-full overflow-y-auto px-2">
-                        <StudyCards notebookId={notebookId} pageId={tabId} />
+                  !isChatFullscreen &&
+                  !isQuizFullscreen &&
+                  !isStudyGuidesFullscreen && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showStudyCards || isStudyCardsFullscreen
+                          ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                          : "hidden"
+                      }`}
+                      defaultSize={isStudyCardsFullscreen ? 100 : 50}
+                    >
+                      <FullscreenButton
+                        isFullscreen={isStudyCardsFullscreen}
+                        toggleFullscreen={handleStudyCardsFullscreen}
+                      />
+                      <div className="h-full overflow-hidden">
+                        <div className="h-full overflow-y-auto px-2">
+                          <StudyCards notebookId={notebookId} pageId={tabId} />
+                        </div>
                       </div>
-                    </div>
-                  </ResizablePanel>
-                )}
+                    </ResizablePanel>
+                  )}
 
                 {/* Study Guides Panel */}
                 {(showStudyGuides || isStudyGuidesFullscreen) &&
-                 !isChatFullscreen && !isQuizFullscreen && !isStudyCardsFullscreen && (
-                  <ResizablePanel
-                    className={`relative ${
-                      showStudyGuides || isStudyGuidesFullscreen
-                        ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
-                        : "hidden"
-                    }`}
-                    defaultSize={isStudyGuidesFullscreen ? 100 : 50}
-                  >
-                    <FullscreenButton
-                      isFullscreen={isStudyGuidesFullscreen}
-                      toggleFullscreen={handleStudyGuidesFullscreen}
-                    />
-                    <StudyGuide notebookId={notebookId} pageId={tabId} />
-                  </ResizablePanel>
-                )}
+                  !isChatFullscreen &&
+                  !isQuizFullscreen &&
+                  !isStudyCardsFullscreen && (
+                    <ResizablePanel
+                      className={`relative ${
+                        showStudyGuides || isStudyGuidesFullscreen
+                          ? "translate-x-0 h-full transition-transform duration-1000 ease-in-out transform rounded-2xl w-full min-w-[400px]"
+                          : "hidden"
+                      }`}
+                      defaultSize={isStudyGuidesFullscreen ? 100 : 50}
+                    >
+                      <FullscreenButton
+                        isFullscreen={isStudyGuidesFullscreen}
+                        toggleFullscreen={handleStudyGuidesFullscreen}
+                      />
+                      <StudyGuide notebookId={notebookId} pageId={tabId} />
+                    </ResizablePanel>
+                  )}
               </ResizablePanel>
             )}
           </ResizablePanelGroup>
@@ -1193,8 +1262,8 @@ const ChatClient = ({
             showUpload={true}
             fileInputRef={fileInputRef as RefObject<HTMLInputElement>}
             handleFileUpload={(event) => handleFileUpload(event, setFiles)}
-            handleSendMessage={() => {
-              handleSendMessage();
+            handleSendMessage={(instructions) => {
+              handleSendMessage(instructions);
               setShowUploadModal(false);
             }}
             handleClear={() => {

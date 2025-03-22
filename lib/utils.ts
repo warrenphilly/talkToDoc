@@ -1,12 +1,12 @@
 import { storage } from "@/firebase";
 import { saveNote } from "@/lib/firebase/firestore";
+import { registerStreamRequest } from "@/lib/streamManager";
 import { Message, Section, Sentence } from "@/lib/types";
 import { clsx, type ClassValue } from "clsx";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import fs from "fs";
 import path from "path";
 import { twMerge } from "tailwind-merge";
-import { registerStreamRequest } from "@/lib/streamManager";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -34,7 +34,8 @@ export const sendMessage = async (
     uploadedAt: number;
     id: string;
   }> = [],
-  tabId: string
+  tabId: string,
+  instructions?: string
 ) => {
   if (!input.trim() && files.length === 0) {
     console.warn("No input text or files provided");
@@ -188,10 +189,10 @@ export const sendMessage = async (
 
           // Create a stream ID from notebookId and tabId
           const streamId = `${notebookId}-${tabId}`;
-          
+
           // Register this stream with the manager
           const controller = registerStreamRequest(streamId);
-          
+
           // Use the controller's signal in your fetch request
           const chatResponse = await fetch("/api/chat", {
             method: "POST",
@@ -205,6 +206,7 @@ export const sendMessage = async (
               pageId,
               stream: true,
               language: language,
+              instructions: instructions?.trim() || null,
             }),
             signal: controller.signal,
           });
@@ -303,7 +305,7 @@ export const sendMessage = async (
                   );
                   // Explicitly set processing to false when done
                   setIsProcessing(false);
-                  
+
                   // Add a final database save to ensure all content is saved
                   try {
                     const aiMessage: Message = {
@@ -312,18 +314,21 @@ export const sendMessage = async (
                       files: files.map((file) => file.name),
                       fileMetadata: fileMetadata,
                     };
-                    await saveNote(notebookId, pageId, [...messages, aiMessage]);
+                    await saveNote(notebookId, pageId, [
+                      ...messages,
+                      aiMessage,
+                    ]);
                   } catch (finalSaveError) {
                     console.error("Error saving final state:", finalSaveError);
                   }
-                  
+
                   // Early completion - exit the loop
                   done = true;
                   break;
                 } else if (data.type === "error") {
                   console.error("Stream error:", data.message);
                   setIsProcessing(false);
-                  
+
                   // Handle error by adding an error message
                   const errorMessage: Message = {
                     user: "AI",
@@ -333,7 +338,9 @@ export const sendMessage = async (
                         sentences: [
                           {
                             id: 1,
-                            text: data.message || "An error occurred during processing",
+                            text:
+                              data.message ||
+                              "An error occurred during processing",
                           },
                         ],
                       },
@@ -341,14 +348,14 @@ export const sendMessage = async (
                     files: files.map((file) => file.name),
                     fileMetadata: fileMetadata,
                   };
-                  
+
                   setMessages((prevMessages) => {
                     // Replace the temporary message with the error
                     const updatedMessages = [...prevMessages];
                     updatedMessages[updatedMessages.length - 1] = errorMessage;
                     return updatedMessages;
                   });
-                  
+
                   // Exit the loop
                   done = true;
                   break;
