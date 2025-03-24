@@ -20,6 +20,7 @@ import {
   MessageCircleQuestion,
   NotebookPen,
   PanelBottom,
+  RefreshCw,
   ScrollText,
   Settings,
   X,
@@ -351,7 +352,7 @@ export function CustomSidebar() {
         <div className="flex-1 overflow-y-auto py-2">
           {isLoading ? (
             <div className="flex items-center justify-center h-20">
-              <CircularProgress size={24} sx={{ color: "#94b347" }} />
+              <RefreshCw className="text-[#94b347] text-[30px] animate-spin" />
             </div>
           ) : (
             <div className="flex flex-col">
@@ -589,8 +590,11 @@ export function CustomSidebar() {
         </div>
 
         {/* App version or branding */}
-        <div className="p-3 text-xs text-center text-slate-400 border-t border-slate-200">
-          Gammanotes v1.0
+        <div className="p-5 text-xs text-center text-slate-400 border-t border-slate-200">
+          <p className="text-xs text-[#94b347]">Gammanotes v1.0</p>
+          <p className="text-xs text-slate-500">
+            Ai is not perfect, double check responses
+          </p>
         </div>
       </div>
 

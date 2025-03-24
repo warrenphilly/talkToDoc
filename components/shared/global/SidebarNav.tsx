@@ -59,6 +59,7 @@ import {
   MessageCircleQuestion,
   NotebookPen,
   PanelBottom,
+  RefreshCw,
   ScrollText,
   Search,
   Settings,
@@ -193,7 +194,7 @@ export function SidebarNav() {
               </div>
               {isLoading ? (
                 <div className="flex items-center justify-center p-4">
-                  <CircularProgress size={20} sx={{ color: "#94b347" }} />
+                  <RefreshCw className="text-[#94b347] text-[30px] animate-spin" />
                 </div>
               ) : (
                 <div className="flex flex-col w-full overflow-y-auto">

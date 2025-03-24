@@ -19,44 +19,13 @@ export default function Page() {
             </span>
           </Link>
           <SignUp
-            appearance={{
-              layout: {
-                showOptionalFields: false,
-                socialButtonsVariant: "iconButton",
-              },
-              elements: {
-                formButtonPrimary:
-                  "bg-[#94b347] hover:bg-[#b0ba93] transition-all shadow-sm hover:shadow-md",
-                card: "shadow-none",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                socialButtonsBlockButton:
-                  "border border-gray-200 hover:bg-gray-50 transition-colors",
-                socialButtonsBlockButtonText: "text-gray-600 font-medium",
-                formFieldInput:
-                  "border-gray-300 focus:ring-[#94b347] focus:border-[#94b347] rounded-lg",
-                footerActionText: "text-gray-500",
-                footerActionLink:
-                  "text-[#94b347] hover:text-[#b0ba93] font-medium",
-                formFieldLabel: "font-medium text-slate-700",
-                dividerLine: "bg-gray-200",
-                dividerText: "text-gray-500 mx-3",
-              },
-            }}
             redirectUrl="/onboarding/language-selection"
+            
             signInUrl="/sign-in"
           />
         </div>
 
-        <p className="text-center mt-6 text-sm text-slate-600">
-          Already have an account?{" "}
-          <Link
-            href="/sign-in"
-            className="text-[#94b347] hover:text-[#b0ba93] font-medium transition-colors"
-          >
-            Sign in
-          </Link>
-        </p>
+  
       </div>
 
       <div className="mt-10 text-center max-w-sm">
