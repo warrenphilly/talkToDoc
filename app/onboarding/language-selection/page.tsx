@@ -43,9 +43,9 @@ export default function LanguageSelectionPage() {
           const newUserId = await createFirestoreUser({
             id: clerkId,
             email: user.primaryEmailAddress?.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            username: user.username,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            username: user.username || "",
             imageUrl: user.imageUrl,
             metadata: {},
             language: "English",
