@@ -1249,7 +1249,8 @@ const ChatClient = ({
                     >
                       <FullscreenButton
                         isFullscreen={isQuizFullscreen}
-                        toggleFullscreen={handleQuizFullscreen}
+                      toggleFullscreen={handleQuizFullscreen}
+                       className="absolute top-2 right-2 z-50 rounded-full bg-white"
                       />
                       <QuizPanel notebookId={notebookId} pageId={tabId} />
                     </ResizablePanel>
@@ -1271,6 +1272,7 @@ const ChatClient = ({
                       <FullscreenButton
                         isFullscreen={isStudyCardsFullscreen}
                         toggleFullscreen={handleStudyCardsFullscreen}
+                         className="absolute top-2 right-2 z-50 rounded-full bg-white"
                       />
                       <div className="h-full overflow-hidden">
                         <div className="h-full overflow-y-auto px-2">
