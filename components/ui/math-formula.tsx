@@ -65,9 +65,13 @@ export const MathFormula: FC<MathFormulaProps> = ({
   // Render the formula safely with error boundary
   try {
     return inline ? (
-      <InlineMath math={processedFormula} className={className} />
+      <div className={className}>
+        <InlineMath math={processedFormula} />
+      </div>
     ) : (
-      <BlockMath math={processedFormula} className={className} />
+      <div className={className}>
+        <BlockMath math={processedFormula} />
+      </div>
     );
   } catch (renderError) {
     console.error(
