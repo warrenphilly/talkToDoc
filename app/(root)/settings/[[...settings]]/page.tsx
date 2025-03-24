@@ -252,8 +252,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="bg-white rounded-lg  max-w-4xl mx-auto">
+    <div className="container mx-auto py-8 px-4 h-screen overflow-y-auto pb-36">
+      <div className="bg-white rounded-lg  max-w-4xl mx-auto ">
         <div className="flex flex-col items-center">
           <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
         </div>
@@ -284,7 +284,7 @@ export default function SettingsPage() {
                 routing="path"
                 appearance={{
                   elements: {
-                    rootBox: "w-full max-w-full bg-white shadow-none",
+                    rootBox: "w-full max-w-full bg-white shadow-md",
                     card: "shadow-none border-0 mx-auto bg-white",
                     navbar: "bg-white",
                     navbarBox: "bg-white",
