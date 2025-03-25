@@ -995,7 +995,7 @@ const ChatClient = ({
               isStudyGuidesFullscreen
             ) && (
               <ResizablePanel
-                className={`relative min-w-0 p-0 m-0 flex items-center justify-center
+                className={`relative min-w-0  m-0  items-center justify-center
                   w-full p-1 md:p-2
                   flex flex-col gap-1 md:gap-2 h-full overflow-hidden md:min-w-[400px]`}
                 defaultSize={
@@ -1005,7 +1005,7 @@ const ChatClient = ({
                 }
               >
                 {/* Messages Container */}
-                <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full bg-blue-500 pb-56 md:pb-0">
+                <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full  pb-56 md:pb-0">
                   {/* This ParagraphEditor should append content at the beginning of the document */}
                   <ParagraphEditor
                     onSave={(data) => {
