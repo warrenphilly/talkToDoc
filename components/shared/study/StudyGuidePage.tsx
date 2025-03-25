@@ -448,7 +448,7 @@ export function StudyGuidePage({
               </div>
             )}
           </div>
-<div className="bg-blue-500 overflow-y-auto h-full pb-72">
+<div className="bg-blue-500 overflow-y-auto h-full pb-44">
 
 {guide.content.map((section, sectionIndex) => (
             <div key={sectionIndex} className="rounded-lg py-6 ">
