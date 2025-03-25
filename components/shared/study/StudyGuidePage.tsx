@@ -379,9 +379,9 @@ export function StudyGuidePage({
   };
 
   return (
-    <div className="w-full mx-auto h-full py-4 ">
-      <Card className=" border-none w-full h-screen  bg-red-500 pb-24  shadow-none  rounded-xl  overflow-y-hidden  ">
-        <div className="flex justify-between items-center mb-6 w-full ">
+    <div className="w-full mx-auto h-full py-4">
+      <Card className=" border-none w-full h-screen  bg-white pb-24  shadow-none  rounded-xl  overflow-y-hidden  ">
+        <div className="flex justify-between items-center mb-6 w-full pb-42">
           <Link href="/">
             <Button
               variant="ghost"
@@ -404,7 +404,7 @@ export function StudyGuidePage({
           </div>
         </div>
 
-        <div className="px-4 h-full  bg-green-500 pb-42 overflow-hidden">
+        <div className="px-4 h-full  bg-white pb-42 overflow-y-hidden">
           <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -448,7 +448,7 @@ export function StudyGuidePage({
               </div>
             )}
           </div>
-<div className="bg-blue-500 overflow-y-auto h-full">
+<div className="bg-blue-500 overflow-y-auto h-full pb-72">
 
 {guide.content.map((section, sectionIndex) => (
             <div key={sectionIndex} className="rounded-lg py-6 ">
