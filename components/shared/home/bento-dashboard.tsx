@@ -792,7 +792,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   return (
     <div className=" mx-auto pb-32 md:pb-12 bg-white  mt-2 md:mt-0 px-2 sm:px-6 ">
       <div className="flex flex-col items-center justify-center h-full w-full">
-        <h1 className="text-xl sm:text-3xl font-semibold text-[#94b347] mb-2 sm:mb-4">
+        <h1 className="text-xl sm:text-3xl font-semibold text-slate-600 mb-2 sm:mb-4">
           Dashboard
         </h1>
       </div>

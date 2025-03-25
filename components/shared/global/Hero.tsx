@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from "next/image";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import {
   ArrowRight,
@@ -30,8 +31,8 @@ export default function Hero() {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef] overflow-y-auto">
       <header className="px-6 lg:px-10 h-16 flex items-center border-b border-gray-100 backdrop-blur-sm bg-white/70 fixed w-full z-50">
         <Link className="flex items-center gap-2" href="#">
-          <Cpu className="h-6 w-6 text-[#94b347]" />
-          <span className="font-semibold text-slate-800">GammaNotes</span>
+          <Image src="/zeLogo.svg" alt="logo" width={32} height={32} />
+          <span className="font-semibold text-[#94b347]">Gammanotes</span>
         </Link>
 
         {/* Mobile Menu Button */}
@@ -105,7 +106,7 @@ export default function Hero() {
               <div className="space-y-6">
                 <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-[#94b347] text-white">
                   <span className="flex h-2 w-2 rounded-full bg-white mr-2"></span>
-                  Introducing GammaNote
+                  Introducing Gammanotes
                 </div>
                 <div className="space-y-3">
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
