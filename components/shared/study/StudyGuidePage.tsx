@@ -380,7 +380,7 @@ export function StudyGuidePage({
 
   return (
     <div className="w-full mx-auto h-full ">
-      <Card className=" border-none w-full h-screen  bg-red-500 pb-24  shadow-none  rounded-xl  overflow-y-auto  ">
+      <Card className=" border-none w-full h-screen  bg-red-500 pb-24  shadow-none  rounded-xl  overflow-y-hidden  ">
         {/* <div className="flex justify-between items-center mb-6 w-full pb-42">
           <Link href="/">
             <Button
@@ -404,7 +404,7 @@ export function StudyGuidePage({
           </div>
         </div> */}
 
-        <div className="px-4 h-screen  bg-green-500 pb-42 overflow-y-auto">
+        <div className="px-4 h-full  bg-green-500 pb-42 overflow-hidden">
           <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -448,8 +448,9 @@ export function StudyGuidePage({
               </div>
             )}
           </div>
+<div className="bg-blue-500 overflow-y-auto h-full">
 
-          {guide.content.map((section, sectionIndex) => (
+{guide.content.map((section, sectionIndex) => (
             <div key={sectionIndex} className="rounded-lg py-6 ">
               <div className="text-center mb-6">
                 <h4 className="text-xl font-semibold text-slate-800 mb-2">
@@ -522,7 +523,10 @@ export function StudyGuidePage({
                 ))}
               </div>
             </div>
-          ))}
+          ))}        
+
+</div>
+          
         </div>
 
         <div className="w-full mx-auto p-4 mt-4">
