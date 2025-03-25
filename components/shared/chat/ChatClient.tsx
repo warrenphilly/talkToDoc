@@ -1005,7 +1005,7 @@ const ChatClient = ({
                 }
               >
                 {/* Messages Container */}
-                <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full">
+                <div className="flex flex-col overflow-y-auto rounded-2xl w-full h-full bg-blue-500 pb-56 md:pb-0">
                   {/* This ParagraphEditor should append content at the beginning of the document */}
                   <ParagraphEditor
                     onSave={(data) => {
