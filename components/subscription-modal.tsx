@@ -363,7 +363,7 @@ export default function SubscriptionModal({
   return (
     <div className="bg-red-500">
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10  max-h-screen">
-        <div className="relative w-full max-w-4xl min-h-[70vh] max-h-[60%] md:min-h-fit rounded-xl bg-white shadow-lg m-8 flex flex-col">
+        <div className="relative w-full max-w-4xl min-h-[70vh] max-h-[70%] md:max-h-[80%] md:min-h-fit rounded-xl bg-white shadow-lg m-8 flex flex-col">
           {/* Header - Fixed at top */}
       
           {/* Scrollable content area */}
@@ -604,7 +604,7 @@ export default function SubscriptionModal({
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-green-500">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white">
                 {subscriptionPlans.map((plan) => (
                   <div
                     key={plan.id}
