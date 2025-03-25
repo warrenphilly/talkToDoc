@@ -235,7 +235,7 @@ export default function StudyGuidePage() {
   }
 
   return (
-    <div className="w-full mx-auto  h-full bg-white  overflow-hidden">
+    <div className="w-full mx-auto  h-full bg-white  overflow-hidden ">
       <StudyGuidePageComponent
         guide={studyGuide}
         onDelete={handleDelete}

@@ -380,8 +380,8 @@ export function StudyGuidePage({
 
   return (
     <div className="w-full mx-auto h-full ">
-      <Card className="bg-white border-none w-full h-screen container wrapper shadow-none  rounded-xl  overflow-y-auto ">
-        <div className="flex justify-between items-center mb-6 w-full ">
+      <Card className=" border-none w-full h-screen  bg-red-500 pb-24  shadow-none  rounded-xl  overflow-y-auto  ">
+        {/* <div className="flex justify-between items-center mb-6 w-full pb-42">
           <Link href="/">
             <Button
               variant="ghost"
@@ -402,9 +402,9 @@ export function StudyGuidePage({
               <span className="hidden md:block">Create New Guide</span>
             </Button>
           </div>
-        </div>
+        </div> */}
 
-        <div className="px-4 h-full ">
+        <div className="px-4 h-screen  bg-green-500 pb-42 overflow-y-auto">
           <div className="flex flex-row items-center justify-center w-full pb-6 border-b border-slate-100">
             {isEditing ? (
               <div className="flex items-center gap-2">
