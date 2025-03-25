@@ -253,7 +253,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 h-screen overflow-y-auto pb-36">
-      <div className="bg-white rounded-lg  max-w-4xl mx-auto ">
+      <div className="bg-red-500 rounded-lg  max-w-4xl mx-auto pb-36">
         <div className="flex flex-col items-center">
           <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
         </div>
