@@ -361,11 +361,15 @@ export default function SubscriptionModal({
   };
 
   return (
-    <>
+    <div className="bg-red-500">
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 overflow-y-auto py-10 bg-red-">
         <div className="relative w-full max-w-4xl min-h-[70vh] max-h-[90vh] rounded-xl bg-white shadow-lg m-8 flex flex-col">
           {/* Header - Fixed at top */}
-          <div className="sticky top-0 bg-red p-6 pb-2 border-b border-gray-100 z-10">
+      
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto p-6 pt-2 m-6">
+
+            <div className=" p-4">
             <button
               onClick={onClose}
               className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
@@ -391,10 +395,7 @@ export default function SubscriptionModal({
                   : "Select the plan that works best for your needs"}
               </p>
             </div>
-          </div>
-
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto p-6 pt-2 m-6">
+            </div>
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
                 {error}
@@ -735,7 +736,7 @@ export default function SubscriptionModal({
         currentPlan={currentPlan}
         targetPlan={targetPlan}
       />
-    </>
+    </div>
   );
 }
 
