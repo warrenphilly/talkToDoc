@@ -138,7 +138,7 @@ const UploadArea = ({
   };
 
   return (
-    <div className="flex min-h-[580px] md:min-h-[300px] bg-white md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit pb-32 md:pb-0">
+    <div className="flex min-h-[580px] md:min-h-[300px] bg-white md:min-w-[300px] flex-col md:px-6 gap-2 items-start justify-center rounded-2xl w-full h-full md:h-fit pb-16 md:pb-0">
       {showUpload && (                                                   
         <motion.div
           className="flex flex-col min-h-[480px] md:min-h-[300px] dd . gap-2 items-center justify-start rounded-2xl w-full md:max-w-[800px]  h-full md:h-fit p-6 "
@@ -335,7 +335,7 @@ const UploadArea = ({
               )}
             </div>
             {/* Generate Button - only shown when there are new files */}
-            <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6 pb-32 md:pb-0">
+            <div className="flex flex-col gap-2 w-full h-full items-center justify-start pt-6 pb-8 md:pb-0">
               <Button
                 className="border border-slate-600 shadow-none hover:bg-white bg-white text-slate-700 hover:border-[#94b347] hover:text-[#94b347] w-fit rounded-full"
                 onClick={handleGenerateNotes}
