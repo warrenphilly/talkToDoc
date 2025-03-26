@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Image from "next/image";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import {
   ArrowRight,
@@ -17,6 +16,7 @@ import {
   X,
   ZapIcon,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -137,16 +137,16 @@ export default function Hero() {
                 <div className="absolute -top-8 -left-8 w-64 h-64 bg-[#94b347] rounded-full opacity-70 blur-3xl"></div>
                 <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-blue-100 rounded-full opacity-70 blur-3xl"></div>
                 <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2 relative z-10">
-                  <div className="aspect-video rounded-lg bg-slate-100 w-full overflow-hidden flex items-center justify-center">
-                    <div className="text-center p-8">
-                      <div className="flex justify-center mb-4">
-                        <FileText className="h-12 w-12 text-emerald-600" />
-                      </div>
-                      <p className="text-sm text-slate-500">
-                        Your intelligent notes preview
-                      </p>
-                    </div>
-                  </div>
+                  <video
+                    className="aspect-video rounded-lg w-full object-cover"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  >
+                    <source src="/gammaDemotrue.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               </div>
             </div>
