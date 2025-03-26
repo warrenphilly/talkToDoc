@@ -1,6 +1,7 @@
 import { SignIn } from "@clerk/nextjs";
 import { Cpu } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Page() {
   return (
@@ -13,9 +14,9 @@ export default function Page() {
             href="/"
             className=" items-center gap-2 mb-8 transition-transform hover:scale-105 text-center flex justify-center"
           >
-            <Cpu className="h-8 w-8 text-[#94b347]" />
-            <span className="font-semibold text-slate-800 text-xl">
-              GammaNotes
+             <Image src="/zeLogo.svg" alt="logo" width={32} height={32} />
+            <span className="font-semibold text-[#94b347] text-xl">
+              Gammanotes
             </span>
           </Link>
           <SignIn
