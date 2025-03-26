@@ -758,7 +758,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         {studyCards.map((studyCard) => (
           <Link key={studyCard.id} href={`/study-cards/${studyCard.id}`}>
             <Card className="transition-transform shadow-none bg-white border-none relative">
-              <CardContent className="p-2 sm:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
+              <CardContent className="p-6 md:p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 border-slate-50">
                 <div className="p-1 sm:p-2 rounded-full w-fit bg-white">
                   <PanelBottom className="h-4 w-4 sm:h-6 sm:w-6 text-[#94b347]" />
                 </div>

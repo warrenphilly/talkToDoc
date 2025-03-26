@@ -442,7 +442,7 @@ export default function StudyCardPage() {
 
   return (
     <div className="bg-white  ">
-      <div className="flex items-center justify-between  py-2 md:pt-0 px-5">
+      <div className="flex items-center justify-between  py-2 md:pt-0 px-6">
         <Link href="/">
           <Button
             variant="ghost"
@@ -461,7 +461,7 @@ export default function StudyCardPage() {
           <span className="hidden md:block">Create Study Cards</span>
         </Button>
       </div>
-      <div className="p-6 pb-40 md:pb-12 rounded-lg w-full h-[95vh] overflow-y-auto bg-white">
+      <div className="p-6 pb-48 md:pb-12 rounded-lg w-full h-[95vh] overflow-y-auto bg-white">
         <CreateCardModal
           showNotebookModal={showNotebookModal}
           setShowNotebookModal={setShowNotebookModal}

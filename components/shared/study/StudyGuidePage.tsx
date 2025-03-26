@@ -381,7 +381,7 @@ export function StudyGuidePage({
   return (
     <div className="w-full mx-auto h-full py-4">
       <Card className=" border-none w-full h-screen  bg-white pb-24  shadow-none  rounded-xl  overflow-y-hidden  ">
-        <div className="flex justify-between items-center mb-6 w-full pb-42">
+        <div className="flex justify-between items-center mb-6 w-full pb-42 px-6">
           <Link href="/">
             <Button
               variant="ghost"
