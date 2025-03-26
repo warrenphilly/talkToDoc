@@ -650,14 +650,14 @@ const PageQuiz: React.FC<QuizProps> = ({
                     ))}
                   </div>
                 ) : currentQuestion.type === "multipleChoice" ? (
-                  <div className="flex flex-col items-center w-full max-w-2xl p-2 sm:p-4">
+                  <div className="flex flex-col  items-center justify-center w-full max-w-2xl p-2 sm:p-4">
                     {(currentQuestion.options || []).map((option) => (
                       <Button
                         key={option}
                         onClick={() => !selectedAnswer && handleAnswer(option)}
                         disabled={!!selectedAnswer}
                         variant="outline"
-                        className={`w-full line-clamp-2 text-wrap min-h-[48px] h-fit p-3 sm:p-4  hover:bg-slate-300 justify-between my-1 ${
+                        className={`w-full   text-wrap min-h-[48px] h-fit p-3 sm:p-4  hover:bg-slate-300 justify-center my-1 ${
                           selectedAnswer === option
                             ? isCorrect
                               ? "border-green-500 bg-green-50 text-green-500 shadow-lg"
@@ -665,13 +665,18 @@ const PageQuiz: React.FC<QuizProps> = ({
                             : "border border-slate-400 text-slate-400 bg-white "
                         } `}
                       >
-                        <span className="font-medium text-left">{option}</span>
+                        <span className="font-medium text-left  line-clamp-2 ">{option}
+
+                       
+                        </span>
+                        <div className="flex items-center justify-center  w-fit">
                         {selectedAnswer === option &&
                           (isCorrect ? (
-                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            <CheckCircle className="w-5 h-5 text-green-500" />
                           ) : (
-                            <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                          ))}
+                            <XCircle className="w-5 h-5 text-red-500 " />
+                            ))}
+                          </div>
                       </Button>
                     ))}
                   </div>
