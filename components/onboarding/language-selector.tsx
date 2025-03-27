@@ -54,7 +54,7 @@ export default function LanguageSelector({ userId, onComplete }: LanguageSelecto
       if (onComplete) {
         onComplete();
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       console.error("Failed to save language preference:", error);
