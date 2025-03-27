@@ -8,7 +8,7 @@ export default function Page() {
     <div className=" flex flex-col items-center justify-center  w-full h-screen  bg-white overflow-y-auto py-16 md:py-0">
   
 
-      <div className="w-full max-w-md flex flex-col items-center justify-center pt-16 mt-16 md:mt-0 md:pt-0 ">
+      <div className="w-full max-w-md flex flex-col items-center justify-center pt-8 mt-16 md:mt-0 md:pt-0 ">
         <div className=" ">
           <Link
             href="/"
