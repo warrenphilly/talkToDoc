@@ -5,10 +5,10 @@ import Image from "next/image";
 
 export default function Page() {
   return (
-    <div className=" flex flex-col items-center justify-center bg-blue-500 ">
+    <div className=" flex flex-col items-center justify-center bg-blue-500 h-screen p-6 py-16 overflow-y-auto">
   
 
-      <div className="w-full max-w-md bg-green-500 flex flex-col items-center justify-center h-screen p-6 py-16 overflow-y-auto">
+      <div className="w-full max-w-md bg-green-500 flex flex-col items-center justify-center ">
         <div className="">
           <Link
             href="/"
