@@ -43,7 +43,7 @@ export default function TermsOfService() {
         </div>
       </header>
 
-      <main className="min-h-screen pt-16 sm:pt-20 pb-8 px-4 sm:px-6 bg-slate-50">
+      <main className="h-[99%] pt-16 sm:pt-20 pb-8 px-4 sm:px-6 bg-slate-50 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <div className="p-2 rounded-full bg-[#94b347]/10">
