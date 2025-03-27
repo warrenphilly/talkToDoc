@@ -591,7 +591,7 @@ export function CustomSidebar() {
 
         {/* App version or branding */}
         <div className="p-2 md:p-5 text-xs text-center text-slate-400 border-t border-slate-200">
-          <p className="text-xs text-[#94b347]">Gammanotes Beta-v1.0</p>
+          <p className="text-xs text-[#94b347]">Gammanotes Beta-v1.2</p>
           <p className="text-xs text-slate-500">
             Ai is not perfect, double check responses
           </p>
