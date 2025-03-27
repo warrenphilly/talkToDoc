@@ -162,7 +162,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
   const [isSavingLanguage, setIsSavingLanguage] = useState(false);
 
   const languages = [
@@ -296,7 +296,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
     try {
       setIsSavingLanguage(true);
-      await updateUserLanguage(user.id, selectedLanguage);
+      const firestoreUser = await getUserByClerkId(user.id);
+      if (!firestoreUser) {
+        throw new Error("User not found in Firestore");
+      }
+      await updateUserLanguage(firestoreUser.id, selectedLanguage);
       setShowLanguageModal(false);
       toast.success("Language preference saved successfully");
     } catch (error) {
@@ -1369,7 +1373,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
       <Dialog open={showLanguageModal}>
         <DialogContent
-          className="sm:max-w-[425px] bg-white"
+          className="sm:max-w-[425px] bg-white [&>button]:hidden"
           onInteractOutside={(e) => {
             e.preventDefault(); // Prevent closing on outside click
           }}
@@ -1379,7 +1383,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#94b347]">
-              <Languages className="h-5 w-5 " /> 
+              <Languages className="h-5 w-5 " />
               Choose your preferred language
             </DialogTitle>
           </DialogHeader>
@@ -1394,11 +1398,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 </SelectTrigger>
                 <SelectContent className="bg-white">
                   {languages.map((language) => (
-                    <SelectItem key={language.code} value={language.code} className="hover:bg-slate-100">
+                    <SelectItem
+                      key={language.code}
+                      value={language.name}
+                      className="hover:bg-slate-100"
+                    >
                       <div className="flex items-center gap-2 ">
-                       
                         <div className="flex flex-row gap-2 items-center ">
-                          <div className="font-medium text-slate-700">{language.nativeName}</div>
+                          <div className="font-medium text-slate-700">
+                            {language.nativeName}
+                          </div>
                           <div className="text-xs text-slate-500">
                             ({language.name} - {language.flag})
                           </div>
