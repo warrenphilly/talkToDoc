@@ -100,7 +100,7 @@ export async function POST(req: Request) {
             username: username || undefined,
             imageUrl: image_url,
             metadata: (public_metadata as Record<string, any>) || {},
-            language: "English", // Default language
+            language: "none", // Default language
           };
 
           console.log("User data to be saved:", JSON.stringify(userData));

@@ -630,6 +630,7 @@ export const createNewUser = async (clerkUser: ClerkUser) => {
       createdAt: new Date(),
       metadata: clerkUser.metadata || {},
       creditBalance: 2500,
+      language: "none",
     });
 
     return userId;
@@ -670,8 +671,8 @@ export const createFirestoreUser = async (clerkUser: {
         accountStatus: "Free", // Default account status
         isPro: false, // Default pro status
       },
-      creditBalance: 5000, // Default credit balance
-      language: clerkUser.language || "English", // Default language
+      creditBalance: 2500, // Default credit balance
+      language: "none", // Default language
     };
 
     await setDoc(userRef, {
