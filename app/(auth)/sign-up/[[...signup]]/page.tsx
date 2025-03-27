@@ -30,7 +30,7 @@ export default function Page() {
       </div>
 
       <div className="mt-10 text-center max-w-sm">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 flex flex-col items-center justify-center">
           By signing in, you agree to our
           <Link
             href="/terms"
