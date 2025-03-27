@@ -9,7 +9,7 @@ export default function Page() {
   
 
       <div className="w-full max-w-md flex flex-col items-center justify-center pt-8 mt-16 md:mt-0 md:pt-0 ">
-        <div className=" bg-blue-500 mt-44">
+        <div className=" bg-blue-500 mt-44 pt-44">
           <Link
             href="/"
             className=" items-center gap-2 mb-8 transition-transform hover:scale-105 text-center flex justify-center"
