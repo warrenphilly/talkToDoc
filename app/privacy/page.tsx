@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
         </div>
       </header>
 
-      <main className="h-[99%] pt-16 sm:pt-20  px-4 sm:px-6 bg-slate-50 overflow-y-auto pb-32 md:pb-0">
+      <main className="h-[99%] pt-16 sm:pt-20  px-4 sm:px-6 bg-slate-50 overflow-y-auto pb-56 md:pb-0">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-6 sm:mb-8">
             <div className="p-2 rounded-full bg-[#94b347]/10">
