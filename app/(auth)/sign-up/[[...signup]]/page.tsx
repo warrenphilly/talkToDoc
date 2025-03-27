@@ -13,7 +13,7 @@ export default function Page() {
               elements: {
                 rootBox: "w-full overflow-visible",
                 card: "w-full shadow-none overflow-visible",
-                formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-white",
+                formButtonPrimary: "bg-[#94b347] hover:bg-[#94b347] text-white border-none",
               },
             }}
           />
