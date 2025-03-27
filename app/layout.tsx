@@ -49,9 +49,9 @@ export default function RootLayout({
           <SignedIn>
             <div className="flex h-screen overflow-hidden bg-white max-h-[90vh] md:max-h-screen  ">
               <CustomSidebar />
-              <main className="flex-1 flex-col ml-0 md:ml-64 bg-blue-500  transition-all duration-300 overflow-hidden bg-white ">
-                <div className="w-full rounded-lg bg-green-500  items-center  py-2 justify-center flex text-center text-[#94b347] text-2xl ">
-                  <Link href="/" className="flex items-center gap-2 text-[#94b347] pt-4 bg-red-500">
+              <main className="flex-1 flex-col ml-0 md:ml-64  transition-all duration-300 overflow-hidden bg-white ">
+                <div className="w-full rounded-lg bg-white  items-center  py-2 justify-center flex text-center text-[#94b347] text-2xl ">
+                  <Link href="/" className="flex items-center gap-2 text-[#94b347] pt-4 bg-white">
                     <Image
                       src="/zeLogo.svg"
                       alt="logo"
