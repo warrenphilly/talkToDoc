@@ -37,6 +37,9 @@ import {
   ChevronDown,
   ChevronRight,
   FileText,
+  Globe,
+  Languages,
+  Loader2,
   MessageCircleQuestion,
   MessageSquare,
   NotebookPen,
@@ -44,9 +47,8 @@ import {
   Plus,
   RefreshCw,
   ScrollText,
+  SpellCheck,
   Trash2,
-  Loader2,
-  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -80,16 +82,26 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCollectionData } from "@/hooks/useCollectionData";
-import { saveStudyCardSet } from "@/lib/firebase/firestore";
+import { saveStudyCardSet, updateUserLanguage } from "@/lib/firebase/firestore";
 import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil";
 import { Notebook as NotebookType } from "@/types/notebooks";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { BookOpen } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { updateUserLanguage } from "@/lib/firebase/firestore";
 
 interface StudyCardData {
   title: string;
@@ -248,10 +260,11 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   useEffect(() => {
     const checkUserLanguage = async () => {
       if (!user?.id) return;
-      
+
       try {
         const userDoc = await getUserByClerkId(user.id);
-        if (!userDoc?.language) {
+        // Show modal if language is not set (null, undefined, or "none")
+        if (!userDoc?.language || userDoc.language === "none") {
           setShowLanguageModal(true);
         }
       } catch (error) {
@@ -261,17 +274,26 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       }
     };
 
-    // Add a small delay to ensure the user is fully loaded
-    const timer = setTimeout(() => {
+    // Only check language when loading is false (bento section is about to render)
+    if (
+      !loading &&
+      !loadingStudyCards &&
+      !loadingQuizzes &&
+      !loadingStudyGuides
+    ) {
       checkUserLanguage();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [user?.id]);
+    }
+  }, [
+    user?.id,
+    loading,
+    loadingStudyCards,
+    loadingQuizzes,
+    loadingStudyGuides,
+  ]);
 
   const handleSaveLanguage = async () => {
     if (!user?.id) return;
-    
+
     try {
       setIsSavingLanguage(true);
       await updateUserLanguage(user.id, selectedLanguage);
@@ -920,8 +942,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
       )}
 
       <div className="w-full mt-6 sm:mt-8">
-     
-
         {loading ? (
           <div className="flex flex-col items-center justify-center h-full w-full gap-2 min-h-[200px] sm:min-h-[300px]">
             <div className="text-slate-400 text-lg sm:text-xl font-semibold">
@@ -939,7 +959,7 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 Study cards, study guides, and quizzes. All in one place.
               </p>
             </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-8 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-8 w-full">
               <section className="rounded-lg h-fit">
                 <AccordionDemo
                   sections={[
@@ -954,22 +974,45 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                       content: (
                         <div className="space-y-4">
                           {quizzes.map((quiz) => (
-                            <Link key={quiz.id} href={`/quizzes/${quiz.id}`} className="transition-transform hover:scale-[1.02]">
+                            <Link
+                              key={quiz.id}
+                              href={`/quizzes/${quiz.id}`}
+                              className="transition-transform hover:scale-[1.02]"
+                            >
                               <Card className="shadow-none bg-white border-none relative">
                                 <CardContent className="p-4 flex flex-row items-center justify-between border-t hover:bg-slate-50 transition-all duration-200 border-slate-50">
                                   <div className="p-2 rounded-full w-fit bg-white">
                                     <MessageCircleQuestion className="h-6 w-6 text-[#94b347]" />
                                   </div>
                                   <div className="flex flex-col w-full px-4">
-                                    <h3 className="font-medium text-slate-700 line-clamp-1">{quiz.quizData?.title || "Untitled Quiz"}</h3>
+                                    <h3 className="font-medium text-slate-700 line-clamp-1">
+                                      {quiz.quizData?.title || "Untitled Quiz"}
+                                    </h3>
                                     <div className="flex items-center gap-2 mt-1">
-                                      <p className="text-sm text-slate-400">{formatDate(quiz.startedAt)}</p>
-                                    
+                                      <p className="text-sm text-slate-400">
+                                        {formatDate(quiz.startedAt)}
+                                      </p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                  {quiz.isComplete ? <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-full"> <span className="font-medium">{quiz.score}/{quiz.totalQuestions}</span></span> : <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Active</span>}
-                                    <button onClick={(e) => handleDeleteQuiz(e, quiz.id)} className="p-2 hover:bg-red-50 rounded-full transition-colors">
+                                    {quiz.isComplete ? (
+                                      <span className="text-xs px-2 py-0.5 bg-slate-100 rounded-full">
+                                        {" "}
+                                        <span className="font-medium">
+                                          {quiz.score}/{quiz.totalQuestions}
+                                        </span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                                        Active
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) =>
+                                        handleDeleteQuiz(e, quiz.id)
+                                      }
+                                      className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                                    >
                                       <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
                                     </button>
                                     <ChevronRight className="h-5 w-5 text-slate-400" />
@@ -1056,7 +1099,6 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                   ]}
                 />
               </section>
-            
             </div>
           </>
         )}
@@ -1325,16 +1367,19 @@ export default function BentoDashboard({ listType }: { listType: string }) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={showLanguageModal} onOpenChange={(open) => {
-        // Only allow closing if a language is selected
-        if (!open && selectedLanguage) {
-          setShowLanguageModal(false);
-        }
-      }}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={showLanguageModal}>
+        <DialogContent
+          className="sm:max-w-[425px] bg-white"
+          onInteractOutside={(e) => {
+            e.preventDefault(); // Prevent closing on outside click
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault(); // Prevent closing on Escape key
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-[#94b347]" />
+            <DialogTitle className="flex items-center gap-2 text-[#94b347]">
+              <Languages className="h-5 w-5 " /> 
               Choose your preferred language
             </DialogTitle>
           </DialogHeader>
@@ -1347,14 +1392,16 @@ export default function BentoDashboard({ listType }: { listType: string }) {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a language" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {languages.map((language) => (
-                    <SelectItem key={language.code} value={language.code}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{language.flag}</span>
-                        <div>
-                          <div>{language.name}</div>
-                          <div className="text-xs text-slate-500">{language.nativeName}</div>
+                    <SelectItem key={language.code} value={language.code} className="hover:bg-slate-100">
+                      <div className="flex items-center gap-2 ">
+                       
+                        <div className="flex flex-row gap-2 items-center ">
+                          <div className="font-medium text-slate-700">{language.nativeName}</div>
+                          <div className="text-xs text-slate-500">
+                            ({language.name} - {language.flag})
+                          </div>
                         </div>
                       </div>
                     </SelectItem>
