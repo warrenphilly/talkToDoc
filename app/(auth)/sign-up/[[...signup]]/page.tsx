@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function Page() {
   return (
-    <div className=" flex flex-col items-center justify-center  w-full h-screen  bg-white overflow-y-auto  md:py-0 pb-24 md:pb-0">
+    <div className=" flex flex-col items-center justify-center  w-full h-screen  bg-white overflow-y-auto  md:py-0 py-32 md:pb-0">
   
 
           <SignUp
