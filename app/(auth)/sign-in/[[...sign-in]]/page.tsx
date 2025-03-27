@@ -29,7 +29,7 @@ export default function Page() {
 
       </div>
 
-      <div className="mt-10 text-center max-w-sm">
+      {/* <div className="mt-10 text-center max-w-sm">
         <p className="text-xs text-slate-500">
           By signing in, you agree to our
           <Link
@@ -46,7 +46,7 @@ export default function Page() {
             Privacy Policy
           </Link>
         </p>
-      </div>
+      </div> */}
     </div>
   );
 }
