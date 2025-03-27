@@ -5,7 +5,7 @@ export default function Page() {
   return (
     <div className=" w-full h-screen overflow-y-auto bg-white">
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="w-fit h-fit overflow-visible pt-6 bg-green-500 items-center justify-center">
+        <div className="w-fit h-fit overflow-visible pt-6 bg-green-500 items-center justify-center pb-44">
           <SignUp
             redirectUrl="/"
             signInUrl="/sign-in"
