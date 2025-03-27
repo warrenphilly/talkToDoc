@@ -20,10 +20,8 @@ export default function Page() {
             </span>
           </Link>
           <SignUp
-        
-              redirectUrl="/onboarding/language-selection"
+            redirectUrl="/"
             signInUrl="/sign-in"
-            
           />
         </div>
 

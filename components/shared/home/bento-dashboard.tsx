@@ -45,6 +45,8 @@ import {
   RefreshCw,
   ScrollText,
   Trash2,
+  Loader2,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -85,6 +87,9 @@ import { handleGenerateCards as generateCards } from "@/lib/utils/studyCardsUtil
 import { Notebook as NotebookType } from "@/types/notebooks";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { BookOpen } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { updateUserLanguage } from "@/lib/firebase/firestore";
 
 interface StudyCardData {
   title: string;
@@ -144,6 +149,22 @@ export default function BentoDashboard({ listType }: { listType: string }) {
   const router = useRouter();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
+
+  const languages = [
+    { code: "en", name: "English", flag: "🇺🇸", nativeName: "English" },
+    { code: "es", name: "Spanish", flag: "🇪🇸", nativeName: "Español" },
+    { code: "fr", name: "French", flag: "🇫🇷", nativeName: "Français" },
+    { code: "de", name: "German", flag: "🇩🇪", nativeName: "Deutsch" },
+    { code: "zh", name: "Chinese", flag: "🇨🇳", nativeName: "中文" },
+    { code: "ja", name: "Japanese", flag: "🇯🇵", nativeName: "日本語" },
+    { code: "ko", name: "Korean", flag: "🇰🇷", nativeName: "한국어" },
+    { code: "ar", name: "Arabic", flag: "🇸🇦", nativeName: "العربية" },
+    { code: "hi", name: "Hindi", flag: "🇮🇳", nativeName: "हिन्दी" },
+    { code: "pt", name: "Portuguese", flag: "🇧🇷", nativeName: "Português" },
+  ];
 
   const { data: studyCards, loading: loadingStudyCards } =
     useCollectionData<StudyCardSet>("studyCards");
@@ -223,6 +244,46 @@ export default function BentoDashboard({ listType }: { listType: string }) {
 
     fetchNotebooks();
   }, []);
+
+  useEffect(() => {
+    const checkUserLanguage = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const userDoc = await getUserByClerkId(user.id);
+        if (!userDoc?.language) {
+          setShowLanguageModal(true);
+        }
+      } catch (error) {
+        console.error("Error checking user language:", error);
+        // Show modal even if there's an error checking the language
+        setShowLanguageModal(true);
+      }
+    };
+
+    // Add a small delay to ensure the user is fully loaded
+    const timer = setTimeout(() => {
+      checkUserLanguage();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [user?.id]);
+
+  const handleSaveLanguage = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setIsSavingLanguage(true);
+      await updateUserLanguage(user.id, selectedLanguage);
+      setShowLanguageModal(false);
+      toast.success("Language preference saved successfully");
+    } catch (error) {
+      console.error("Failed to save language preference:", error);
+      toast.error("Failed to save language preference");
+    } finally {
+      setIsSavingLanguage(false);
+    }
+  };
 
   const handleDeleteNotebook = async (
     e: React.MouseEvent,
@@ -1263,6 +1324,61 @@ export default function BentoDashboard({ listType }: { listType: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showLanguageModal} onOpenChange={(open) => {
+        // Only allow closing if a language is selected
+        if (!open && selectedLanguage) {
+          setShowLanguageModal(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-[#94b347]" />
+              Choose your preferred language
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Select
+                value={selectedLanguage}
+                onValueChange={setSelectedLanguage}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((language) => (
+                    <SelectItem key={language.code} value={language.code}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{language.flag}</span>
+                        <div>
+                          <div>{language.name}</div>
+                          <div className="text-xs text-slate-500">{language.nativeName}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleSaveLanguage}
+              disabled={isSavingLanguage || !selectedLanguage}
+              className="bg-[#94b347] hover:bg-[#b0ba93] text-white"
+            >
+              {isSavingLanguage ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </span>
+              ) : (
+                "Continue"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
