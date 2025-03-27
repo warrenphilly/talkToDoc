@@ -6,13 +6,20 @@ import Image from "next/image";
 export default function Page() {
   return (
     <div className=" flex flex-col items-center justify-center  w-full h-screen  bg-white overflow-y-auto  md:py-0 py-32 md:pb-0">
-  
 
-          <SignUp
+
+
+
+
+
+      <div className="w-full max-w-md bg-blue-500 h-[90%] py-12">
+        <SignUp
             redirectUrl="/"
             signInUrl="/sign-in"
           />
-      
+      </div>
+
+         
 
     
 
