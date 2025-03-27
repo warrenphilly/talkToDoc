@@ -1,14 +1,15 @@
-import { SignUp } from "@clerk/nextjs";
+import { SignIn, SignUp } from "@clerk/nextjs";
+import { Cpu } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function Page() {
   return (
-    <div className=" flex flex-col items-center justify-center ">
-      <div className="absolute top-0 left-0 w-full h-64 bg-[#94b347]/10 rounded-b-full blur-3xl -z-10 transform-gpu"></div>
+    <div className=" flex flex-col items-center justify-center  w-full h-screen  bg-white overflow-y-auto py-16 md:py-0">
+  
 
-      <div className="w-full max-w-md">
-        <div className="">
+      <div className="w-full max-w-md flex flex-col items-center justify-center pt-96 mt-16 md:mt-0 md:pt-0 ">
+        <div className=" ">
           <Link
             href="/"
             className=" items-center gap-2 mb-8 transition-transform hover:scale-105 text-center flex justify-center"
@@ -19,13 +20,13 @@ export default function Page() {
             </span>
           </Link>
           <SignUp
-            redirectUrl="/onboarding/language-selection"
-            
+        
+              redirectUrl="/onboarding/language-selection"
             signInUrl="/sign-in"
+            
           />
         </div>
 
-  
       </div>
 
       <div className="mt-10 text-center max-w-sm">
