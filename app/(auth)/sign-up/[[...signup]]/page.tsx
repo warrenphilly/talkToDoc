@@ -12,7 +12,7 @@ export default function Page() {
 
 
 
-      <div className="w-full max-w-md bg-blue-500 h-[90%] py-12">
+      <div className="w-full  bg-blue-500 h-[90%] ">
         <SignUp
             redirectUrl="/"
             signInUrl="/sign-in"
