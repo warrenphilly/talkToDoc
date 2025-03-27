@@ -8,7 +8,7 @@ export default function Page() {
     <div className=" flex flex-col items-center justify-center bg-blue-500">
   
 
-      <div className="w-full max-w-md bg-green-500">
+      <div className="w-full max-w-md bg-green-500 flex flex-col items-center justify-center p-6">
         <div className="">
           <Link
             href="/"
