@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function Page() {
   return (
     <div className=" w-full h-screen overflow-y-auto bg-red-500">
-      <div className="flex h-fit items-center justify-center bg-blue-500">
+      <div className="flex h-screen items-center justify-center bg-blue-500">
         <div className="w-fit h-fit overflow-visible  items-center justify-center py-20 pb-32 bg-green-500">
           <SignUp
             redirectUrl="/auth-redirect"
