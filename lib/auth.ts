@@ -18,6 +18,7 @@ export async function getCurrentUserId() {
     return userId;
   } catch (error) {
     // If there's an error (invalid/expired session), redirect to home
+    
     redirect("/");
   }
 }
