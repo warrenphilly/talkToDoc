@@ -4,8 +4,8 @@ import Link from "next/link";
 export default function Page() {
   return (
     <div className=" w-full h-screen overflow-y-auto bg-red-500">
-      <div className="flex min-h-full items-center justify-center bg">
-     
+      <div className="flex h-fttems-center justify-center bg">
+        <div className="w-fit h-fit overflow-visible  items-center justify-center py-20 pb-32 bg-green-500">
           <SignUp
             redirectUrl="/auth-redirect"
             signInUrl="/sign-in"
@@ -18,7 +18,7 @@ export default function Page() {
               },
             }}
           />
-        
+        </div>
       </div>
     </div>
   );
