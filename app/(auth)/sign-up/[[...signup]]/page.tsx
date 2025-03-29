@@ -7,8 +7,8 @@ export default function Page() {
       <div className="flex min-h-full items-center justify-center">
         <div className="w-fit h-fit overflow-visible  items-center justify-center py-16 pb-32 bg-white">
           <SignUp
-            forceRedirectUrl="/"
-            fallbackRedirectUrl="/"
+            forceRedirectUrl="/auth-redirect"
+            fallbackRedirectUrl="/auth-redirect"
             signInFallbackRedirectUrl="/sign-in"
             signInUrl="/sign-in"
             appearance={{
