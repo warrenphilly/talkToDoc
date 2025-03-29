@@ -20,7 +20,7 @@ export default function AuthRedirect() {
           // If not authenticated, redirect to sign-in
           router.push("/sign-in");
         }
-      }, 1500); // Reduced timeout to 1.5 seconds
+      }, 3500); // Reduced timeout to 1.5 seconds
 
       return () => clearTimeout(redirectTimeout);
     }
