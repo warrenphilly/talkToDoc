@@ -15,7 +15,8 @@ export default function AuthRedirect() {
       const redirectTimeout = setTimeout(() => {
         // If user is authenticated, redirect to dashboard
         if (userId) {
-          router.push("/");
+          // router.push("/");
+          window.location.href = "/";
         } else {
           // If not authenticated, redirect to sign-in
           router.push("/sign-in");
