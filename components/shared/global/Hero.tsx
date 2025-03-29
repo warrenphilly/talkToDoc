@@ -101,14 +101,14 @@ export default function Hero() {
 
       <main className="flex-1 pt-16">
         <section className="w-full py-20 md:py-28 lg:py-32 xl:py-40 flex flex-col items-center justify-center">
-          <div className="container px-4 md:px-6 max-w-6xl">
+          <div className="container px-4 md:px-6 max-w-6xl ">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
+              <div className="space-y-6 flex flex-col items-center justify-center  md:items-start">
                 <div className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium bg-[#94b347] text-white">
                   <span className="flex h-2 w-2 rounded-full bg-white mr-2"></span>
                   Introducing Gammanotes
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 flex flex-col items-center justify-center md:items-start text-center md:text-left">
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
                     Transform your <span className="text-[#94b347]">notes</span>{" "}
                     into an intelligent{" "}
@@ -120,17 +120,29 @@ export default function Hero() {
                     interaction.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <div className="flex flex-col items-center justify-center sm:items-start gap-6  ">
+                  <div className="relative lg:hidden  w-full flex justify-center">
+                    <div className="absolute -top-8 -left-8 w-64 h-64 bg-[#94b347] rounded-full opacity-70 blur-3xl"></div>
+                    <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-blue-100 rounded-full opacity-70 blur-3xl"></div>
+                    <div className="rounded-xl overflow-hidden shadow-2xl border border-gray-200 bg-white p-2 relative z-10 max-w-[60%]">
+                      <video
+                        className="aspect-video rounded-lg w-full object-cover"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                      >
+                        <source src="/gammaDemotrue.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
                   <SignInButton>
-                    <Button className="bg-[#94b347] hover:bg-[#b0ba93] shadow-md text-white h-12 px-6 rounded-lg font-medium gap-2 text-base">
+                    <Button className="bg-[#94b347] hover:bg-[#b0ba93] w-full max-w-64 shadow-md text-white h-12 px-6 rounded-lg font-medium gap-2 text-base">
                       Try it free
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                   </SignInButton>
-                  <Button className="h-12 px-6 rounded-lg font-medium gap-2 text-base border-none  bg-white shadow-md text-slate-700 hover:bg-slate-100">
-                    <Play className="h-5 w-5" />
-                    Watch demo
-                  </Button>
                 </div>
               </div>
               <div className="relative hidden lg:block">

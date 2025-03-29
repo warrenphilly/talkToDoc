@@ -1171,7 +1171,7 @@ export const ResponseMessage = ({
               <Button
                 onClick={handleCancelEdit}
                 variant="outline"
-                className="border-gray-300"
+                className="border-gray-300 bg-white text-red-600 hover:bg-white hover:border-red-500 hover:text-red-500" 
               >
                 Cancel
               </Button>

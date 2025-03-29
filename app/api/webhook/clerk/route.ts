@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const payload = await req.json();
     const body = JSON.stringify(payload);
 
-    console.log("Received webhook payload:", body);
+
 
     // Create a new Svix instance with your secret
     const wh = new Webhook(WEBHOOK_SECRET);
@@ -61,12 +61,7 @@ export async function POST(req: Request) {
 
     // Handle the webhook
     const eventType = evt.type;
-    console.log(
-      "Received Clerk webhook event:",
-      eventType,
-      "with data:",
-      JSON.stringify(evt.data)
-    );
+ 
 
     if (eventType === "user.created") {
       const {
@@ -89,7 +84,7 @@ export async function POST(req: Request) {
         const existingUser = await getUserByClerkId(id);
 
         if (!existingUser) {
-          console.log("Creating new Firestore user for Clerk user:", id);
+     
 
           // Create the user in Firestore
           const userData = {
@@ -103,14 +98,14 @@ export async function POST(req: Request) {
             language: "none", // Default language
           };
 
-          console.log("User data to be saved:", JSON.stringify(userData));
+        
 
           // Create the user in Firestore
           const userId = await createFirestoreUser(userData);
 
-          console.log("Successfully created Firestore user:", userId);
+          
         } else {
-          console.log("User already exists in Firestore:", existingUser.id);
+         
         }
       } catch (error) {
         console.error("Error processing user.created event:", error);
